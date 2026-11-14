@@ -9,7 +9,11 @@ import sys
 
 ver, v1, v2, date, news_p, out = sys.argv[1:7]
 news = open(news_p, encoding="utf-8").read().strip()
-DL = f"https://github.com/yoniny/beit-rishon/releases/download/v{ver}/beit-hamikdash-{ver}.html"   # the version in the name (the user: "תוסיף לשם הHTML את שם הגרסה")
+from urllib.parse import quote
+NAME = f"בית המקדש - לצפייה בלי אוצריא - גרסה {ver}.html"   # the version in the name (the user: "תוסיף לשם הHTML את שם הגרסה")
+# the file's page on the branch html (tools/publish-release.sh html): GitHub's "Download raw file" button saves it by its own name.
+# (releases are refused from Claude's session - HTTP 403 - and "Releases" beside the page still shows an old file of 4.11.2026)
+DL = "https://github.com/yoniny/beit-rishon/blob/html/" + quote(NAME)
 text = f"""<div dir="rtl">
 
 # בית המקדש — מודל תלת־ממדי
@@ -28,10 +32,11 @@ text = f"""<div dir="rtl">
 
 ### [⬇ הורדת הקובץ — גרסה {ver}]({DL})
 
+- בדף שנפתח לוחצים על כפתור ההורדה (״Download raw file״), בצד ימין למעלה.
 - זה קובץ אחד. פותחים אותו בדפדפן: כרום, אדג׳ או פיירפוקס. אין צורך בהתקנה.
-- הקובץ יורד בשם `beit-hamikdash-{ver}.html`. אפשר לשנות את שמו.
+- שם הקובץ: ״{NAME}״.
 - בתוך הקובץ, בסוף התפריט של כל בית, יש כפתור ״בדיקת עדכונים״. הוא בודק אם יצאה גרסה חדשה, ומוריד ושומר אותה.
-- כל הגרסאות שפורסמו: [דף הגרסאות](https://github.com/yoniny/beit-rishon/releases).
+- שימו לב: ב״Releases״ שבצד הדף מופיעה גרסה ישנה מאוד, של בית ראשון בלבד. הגרסה העדכנית — בקישור שלמעלה.
 
 ## מה חדש בגרסה {ver}
 

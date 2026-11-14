@@ -7,7 +7,10 @@
 #       the branch "html" of yoniny/beit-rishon: ONE commit with beit-hamikdash.html and version.txt (version, size in bytes, SHA-256),
 #       force-pushed - the update button of the single HTML file (unified/update-check.js) reads both from raw.githubusercontent.com.
 #       Run it BEFORE main is pushed.
+#       (and the same file under its versioned Hebrew name - one blob - for README.md's link)
 #   sh tools/publish-release.sh release <version> <standalone.html> <file.otzplugin> <notes.md>
+#       NOTE (14.11.2026): from Claude's session GitHub refuses releases ("HTTP 403: Creating, editing, or deleting releases is not
+#       permitted for this session type") - README.md links to the branch html instead; the step is kept for a session that may.
 #       the GitHub release v<version>, marked "latest", with beit-hamikdash-<version>.html and beit-hamikdash-<version>.otzplugin (ASCII
 #       names: GitHub mangles others; the version in the name - the user: "תוסיף לשם הHTML את שם הגרסה"). README.md, written anew at
 #       every release, links to releases/download/v<version>/beit-hamikdash-<version>.html. Run it AFTER main is pushed (the tag is made
@@ -31,7 +34,10 @@ case "$cmd" in
     cd "$DIR"
     H1=$(git hash-object -w "$T/beit-hamikdash.html")
     H2=$(git hash-object -w "$T/version.txt")
-    TREE=$(printf '100644 blob %s\tbeit-hamikdash.html\n100644 blob %s\tversion.txt\n' "$H1" "$H2" | git mktree)
+    # the same file under its versioned name too (one blob, two names), for README.md's download link (the user: "תוסיף לשם הHTML את שם
+    # הגרסה"): GitHub's download button keeps the file's name
+    NAME="בית המקדש - לצפייה בלי אוצריא - גרסה $VER.html"
+    TREE=$(printf '100644 blob %s\tbeit-hamikdash.html\n100644 blob %s\tversion.txt\n100644 blob %s\t%s\n' "$H1" "$H2" "$H1" "$NAME" | git mktree)
     C=$(git commit-tree "$TREE" -m "html $VER — הקובץ לצפייה בלי אוצריא, לכפתור ״בדיקת עדכונים״" -m "$TRAILER")
     git push -f origin "$C:refs/heads/html"
     # the check: what the button will read (a query string passes the cache of raw.githubusercontent.com)
