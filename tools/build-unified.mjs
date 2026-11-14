@@ -9,7 +9,7 @@
 //   <out>/plugin/                 the plugin folder (manifest.json, index.html = the choice screen, house-bridge.js, icon/,
 //                                 rishon/{index.html,bundle.js}, sheni/{index.html,bundle.js}, DEV_NOTES.md, .otzignore)
 //   <out>/בית-המקדש-<ver>.otzplugin
-//   <out>/בית המקדש - לצפייה בלי אוצריא.html   one file: the choice screen and both houses inside it (and, in this file only,
+//   <out>/בית המקדש - לצפייה בלי אוצריא - גרסה <ver>.html   one file: the choice screen and both houses inside it (and, in this file only,
 //                                 unified/update-check.js: the button "בדיקת עדכונים" at the end of each house's menu)
 //
 // The unified manifest is unified/manifest.json (id = בית ראשון's id, so the store updates the installed plugin).
@@ -180,7 +180,8 @@ if (!argv.includes('--no-pack')) {
     doc = doc.replace('<script src="./bundle.js"></script>', () => inlineScript(houses[h].bundle));
     parts += '<textarea id="src-' + h + '" hidden aria-hidden="true">' + esc(doc) + '</textarea>\n';
   }
-  const file = path.join(out, 'בית המקדש - לצפייה בלי אוצריא.html');
+  // 2.0.10 (the user, 14.11.2026: "תוסיף לשם הHTML את שם הגרסה")
+  const file = path.join(out, 'בית המקדש - לצפייה בלי אוצריא - גרסה ' + version + '.html');
   fs.writeFileSync(file, shell(true, parts), 'utf8');
   log('standalone: ' + file + ' (' + fs.statSync(file).size + ' bytes)');
 }

@@ -3078,7 +3078,7 @@
       g.add(devirLight);
       // 1.2.0 (the user: "אבן השתיה - אני רוצה שתציג את האבן"): the place lifts the ark off the stone for 15 s (70-ui.js feature arkLift) - every
       // part that stands on the ark's footprint (the body, the kaporet with its cherubim, the rings, what is inside) goes up 3 amot; the
-      // stone, the staffs and the big cherubim stay. The parts are found by their bounds once, when first lifted.
+      // stone and the big cherubim stay (2.0.1: the staffs go up with it - below). The parts are found by their bounds once, when first lifted.
       {
         const LIFT = 3, parts = [];
         let found = false, up = false;
@@ -3099,7 +3099,10 @@
             if (v === up) return;
             if (!found) find();
             up = v;
-            for (const o of parts) o.position.y += v ? LIFT : -LIFT;
+            // ARK_STAFFS_210 (the outside review, 14.11.2026: the ark rose and its staffs stayed on the floor - as if drawn out of the rings;
+            // "בטבעת הארן יהיו הבדים לא יסרו ממנו", Shemot 25:15): the staffs and their swellings in the curtain go up with it
+            const AP = ctx.shared.arkParts || {};
+            for (const o of parts.concat(AP.staffs || [], AP.swell || [])) o.position.y += v ? LIFT : -LIFT;
           }
         };
       }
