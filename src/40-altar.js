@@ -230,6 +230,41 @@
     rampYoseG.visible = false;
     g.add(rampDefG);
     g.add(rampYoseG);
+    // RAMP_WAYS_211 (1.4.4, as in בית שני; stage ב, point 6; the user: "מעולה"): Yoma 4:5 (55:35) - "בכל יום כהנים עולים במזרחו של כבש
+    // ויורדין במערבו, והיום כהן גדול עולה באמצע ויורד באמצע". Chevrons on the big ramp's face - blue up the east lane, orange down the west
+    // lane, gold up and down the middle (Yom Kippur) - in each reading's ramp group (R. Yose's ramp: 2 further south); shown only while
+    // the place is chosen (the feature "rampWays"). The lanes and the marks: model choices.
+    const WAYS = [];
+    {
+      const slope = Math.atan2(AH - 0.02, 32);
+      const chevGeo = (() => { const sh = new Shape(); sh.moveTo(0, -0.55); sh.lineTo(0.8, 0.35); sh.lineTo(0.8, 0.6); sh.lineTo(0, -0.25); sh.lineTo(-0.8, 0.6); sh.lineTo(-0.8, 0.35); sh.lineTo(0, -0.55); const q = new ShapeGeometry(sh); q.rotateX(-Math.PI / 2); return q; })();
+      const cm = (col) => new MeshBasicMaterial({ color: col, transparent: true, opacity: 0.88, depthWrite: false, side: DoubleSide });
+      const M3 = [cm(0x2f7fe0), cm(0xf08a1c), cm(0xe2b13c)];
+      const build = (parent, top, dz) => {
+        const WG = new Group();
+        WG.visible = false;
+        parent.add(WG);
+        WAYS.push(WG);
+        const lane = (x, mat, up, zs) => { for (const z0 of zs) { const z = z0 + dz, m = new Mesh(chevGeo, mat); m.position.set(x, F + top(z) + 0.06, z); m.rotation.set(slope, up ? Math.PI : 0, 0, "XYZ"); m.renderOrder = 7; m.userData.noPick = true; WG.add(m); } };
+        lane(ACX + 4.5, M3[0], true, [38, 32.5, 27, 21.5, 16]);
+        lane(ACX - 4.5, M3[1], false, [38, 32.5, 27, 21.5, 16]);
+        lane(ACX - 0.9, M3[2], true, [35.5, 27.5, 19.5]);
+        lane(ACX + 0.9, M3[2], false, [31.5, 23.5, 15.5]);
+      };
+      build(rampDefG, RTOP, 0);
+      build(rampYoseG, (z) => (AH - 0.02) * (44 - z) / 32, 2);
+      const WL = new Group();   // the labels' layer
+      WL.visible = false;
+      g.add(WL);
+      WAYS.push(WL);
+      ctx.layers = ctx.layers || {};
+      ctx.layers.rampWays = WL;
+      ctx.labels.push({ text: "״כהנים עולים במזרחו של כבש״", x: ACX + 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#2f7fe0", layer: "rampWays" },
+        { text: "״ויורדין במערבו״", x: ACX - 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#f08a1c", layer: "rampWays" },
+        { text: "״והיום כהן גדול עולה באמצע ויורד באמצע״ (יומא ד, ה)", x: ACX, y: F + RTOP(35.5) + 3.2, z: 35.5, size: 1.0, box: true, rim: "#e2b13c", layer: "rampWays" });
+      ctx.shared.features = ctx.shared.features || {};
+      ctx.shared.features.rampWays = { key: "rampWays", timed: false, isOn: () => WL.visible, on: () => { for (const w of WAYS) w.visible = true; }, off: () => { for (const w of WAYS) w.visible = false; } };
+    }
     // 1.3.5 (the user, 10.11.2026 22:12, of the three readings built in the Second Temple: "אפשרות 3"): THE AIR BETWEEN THE RAMP AND THE
     // ALTAR - three readings, each a whole prism of its own (no seam), switched by ctx.shared.rampGap.set("hair" | "tosafot" | "chaim"):
     //  "hair" (the default, as before): "מבדל מן המזבח מלא חוט השערה" (Rashi Shemot 27:5; book 3692, line 1912), "ואויר מעט" (Rambam 2:13);
@@ -273,17 +308,73 @@
     // the small ramps.) The small ramps are stone like the big one in both looks.
     const SRW = 1.25;                                  // the width of a small ramp (model choice)
     const BRZ = 42 - 2 * 32 / (AH - 0.02);             // 35.59: where the big ramp's top is 2 amot over the floor
-    const RX0 = ACX - 8, RX1 = ACX + 8;                // 41.5, 57.5: the big ramp's west and east faces
-    const toSovev = [[ZS + YS + GAP, 0], [BRZ, 0], [BRZ, 2], [ZS + GAP, SVH], [ZS + GAP, YS + GAP], [ZS + YS + GAP, YS + GAP]];
-    const smallRamps = {
-      // east of the big ramp, up to the sovev (x 57.5..58.75; 0.01 into the big ramp, so that no seam shows)
-      sovevEast: prism(RX1 - 0.01, RX1 + SRW, toSovev, AS, rampDefG),
-      // west of it, down to the southern yesod (x 40.25..41.5): from 2 amot to the yesod's top, 1 amah
-      yesod: prism(RX0 - SRW, RX0 + 0.01, [[ZS + YS + GAP, 0], [BRZ, 0], [BRZ, 2], [ZS + YS + GAP, YS]], AS, rampDefG),
-      // Tosafot: the raised half of the same wide western ramp, up to the sovev (x 39..40.25), hidden for Rashi (the default)
-      sovevWest: prism(RX0 - 2 * SRW, RX0 - SRW + 0.01, toSovev, AS, rampDefG)
+    const RX0 = ACX - 8, RX1 = ACX + 8;                // 47, 63: the big ramp's west and east faces
+    // SMALL_RAMPS3_211 (the user, 15.11.2026 09:03-09:08, of the booklet's picture: "מתחיל מהשליש כרשי, פונה אלכסונית ומשם מתחבר
+    // לסובב (מאז שמשתפע אין יותר חיבור לכבש הגדול - יש שם רוח מלא)"; "אותו רעיון שעשית עם הכבש מן היסוד"; "הכבש צריך להיות ממש המשך
+    // לסובב"): THE RAMP TO THE SOVEV leaves the big ramp's side at its lower THIRD (ZT) - Rashi (Zevachim 62b; 2191 line 3022): "ויוצא
+    // ומתחיל בשפולו של כבש ונמשך ועולה באלכסון עד שמגיע לסובב" - its top there flush with the big ramp's walk; from there it turns away
+    // DIAGONALLY and rises gently, the air open down to the floor between it and the big ramp, and its head is cut along the sovev's edge
+    // at the sovev's own height (the sovev's walk goes on into it), a hair from the altar, floating over the yesod (as the big ramp's).
+    // The altar of 20 leaves only 3 amot by the big ramp's side to the altar's corner (4 for R. Yose's), so it turns as far as that allows.
+    // The ramp to the yesod (Rashi) leaves at two amot up (BRZ), as before. In Tosafot's reading the third ramp, to the sovev, is the
+    // eastern one's twin on the west, and the walk to the yesod runs OUTSIDE it, along it, from the same third down to the yesod - one
+    // wide ramp: the Tosafot Yom Tov (Zevachim 6:3) "שאותו כבש עצמו היה רחב ומקצת ממנו מוגבה ועולה עד על הסובב גם כן"; the Lechem
+    // Shamayim (Beit HaBechirah 2:14; 5069 line 31): the left one to the sovev "לירידה, שבו יורדין מן המזבח להוליך בו שירים ליסוד
+    // דרומי", and the one to the yesod beside it "קטן ונמוך ביותר, לפי גובהו של יסוד בלבד". How far they turn - model choices.
+    const ZT = 42 - 32 / 3;                            // 31.33: the big ramp's lower third (RTOP 3.33)
+    // to the sovev: from the third (zt, ht) up to the sovev's edge (zs + GAP), floating over the yesod (zs .. zs + YS) when `fl`
+    const sovProf = (zs, zt, ht, fl) => fl ? [[zs + YS + GAP, 0], [zt, 0], [zt, ht], [zs + GAP, SVH], [zs + GAP, YS + GAP], [zs + YS + GAP, YS + GAP]]
+      : [[zs + GAP, 0], [zt, 0], [zt, ht], [zs + GAP, SVH]];
+    // to the yesod: from the third down to the yesod's top
+    const yesProf = (zs, zt, ht) => [[zs + YS + GAP, 0], [zt, 0], [zt, ht], [zs + YS + GAP, YS]];
+    // every point of a mesh pushed in x by a piecewise line over z: pts [[z, dx] ...] from the far end to the near, held at both ends
+    const shiftZ = (m, pts) => {
+      const p = m.geometry.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const z = p.getZ(i);
+        let dx = pts[0][1];
+        for (let k = 0; k + 1 < pts.length; k++) {
+          const za = pts[k][0], a = pts[k][1], zb = pts[k + 1][0], b = pts[k + 1][1];
+          if (z <= za && z >= zb) { dx = a + (b - a) * (za - z) / (za - zb); break; }
+          if (z < zb) dx = b;
+        }
+        p.setX(i, p.getX(i) + dx);
+      }
+      p.needsUpdate = true;
+      m.geometry.computeVertexNormals();
+      m.geometry.computeBoundingBox();
+      m.geometry.computeBoundingSphere();
+      return m;
     };
-    smallRamps.sovevWest.visible = false;
+    const diag = (xa, xb, prof, zFar, zNear, dx, grp) => shiftZ(prism(xa, xb, prof, AS, grp), [[zFar, 0], [zNear, dx]]);
+    // SMALL_RAMPS4_211 (the user, 09:32-09:34: "צריך לחבר יותר לכבש שלא תהיה קפיצה של הכהן"; "החיבור צריך להיות רק בחלק הצמוד לכבש"):
+    // from the third the small ramp runs ALONG the big ramp's side for 4 amot (to zj), one with it - its top at the big ramp's own
+    // height, no step - and only from zj does it turn away. Two pieces in one group (the second sheared from zj), so that each
+    // one's faces stay flat; the walk to the yesod beside the third ramp (Tosafot) the same way. The 4 amot - a model choice.
+    const ALONG = 4;
+    const two = (xa, xb, zt, top, zEnd, prof2, zNear, dx, grp) => {   // top(z): the piece's height along the attached length
+      const g2 = new Group(), zj = zt - ALONG;
+      grp.add(g2);
+      prism(xa, xb, [[zj, 0], [zt, 0], [zt, top(zt)], [zj, top(zj)]], AS, g2);
+      shiftZ(prism(xa, xb, prof2(zj, top(zj)), AS, g2), [[zj, 0], [zNear, dx]]);
+      return g2;
+    };
+    // to the sovev from (zj, hj); to the yesod from (zj, hj) - (the yesod's piece descends all the way, from the third to its top)
+    const sovP2 = (zs, fl) => (zj, hj) => fl ? [[zs + YS + GAP, 0], [zj, 0], [zj, hj], [zs + GAP, SVH], [zs + GAP, YS + GAP], [zs + YS + GAP, YS + GAP]]
+      : [[zs + GAP, 0], [zj, 0], [zj, hj], [zs + GAP, SVH]];
+    const yesP2 = (zs) => (zj, hj) => [[zs + YS + GAP, 0], [zj, 0], [zj, hj], [zs + YS + GAP, YS]];
+    const yesTop = (zs, zt, ht) => (z) => YS + (ht - YS) * (z - (zs + YS + GAP)) / (zt - (zs + YS + GAP));
+    const DXD = XE - (RX1 + SRW) - 0.05;               // 1.70: the east ramp's head ends by the altar's south-east corner
+    const smallRamps = {
+      // east of the big ramp, from its third up to the sovev, turning east (0.01 into the big ramp at the third, so that no seam shows)
+      sovevEast: two(RX1 - 0.01, RX1 + SRW, ZT, RTOP, ZS, sovP2(ZS, true), ZS + GAP, DXD, rampDefG),
+      // west of it, down to the southern yesod: from 2 amot to the yesod's top, 1 amah
+      yesod: prism(RX0 - SRW, RX0 + 0.01, [[ZS + YS + GAP, 0], [BRZ, 0], [BRZ, 2], [ZS + YS + GAP, YS]], AS, rampDefG),
+      // Tosafot: the third ramp, to the sovev, turning west - and the walk to the yesod outside it, along it
+      sovevWest: two(RX0 - SRW, RX0 + 0.01, ZT, RTOP, ZS, sovP2(ZS, true), ZS + GAP, -DXD, rampDefG),
+      yesodT: two(RX0 - 2 * SRW, RX0 - SRW + 0.01, ZT, yesTop(ZS, ZT, RTOP(ZT)), ZS, yesP2(ZS), ZS + GAP, -DXD, rampDefG)
+    };
+    smallRamps.sovevWest.visible = smallRamps.yesodT.visible = false;
     for (const [k, m] of Object.entries(smallRamps)) m.name = "smallRamp_" + k;
     // 1.3.7 R. TAM'S READING (RTM, above): no yesod under the ramps. The big ramp floats over the sovev only and stands on the floor from
     // the wall's face; R. Chaim's air is then the sovev's amah and a quarter (as in the Second Temple model). The small ramps to the
@@ -305,7 +396,7 @@
     // a small ramp whose head is moved sideways: every point is pushed in x in proportion to its way from zFar (no push) to zNear (dx)
     const askew = (m, zFar, zNear, dx) => {
       const p = m.geometry.attributes.position;
-      for (let i = 0; i < p.count; i++) p.setX(i, p.getX(i) + dx * (zFar - p.getZ(i)) / (zFar - zNear));
+      for (let i = 0; i < p.count; i++) p.setX(i, p.getX(i) + dx * Math.max(0, zFar - p.getZ(i)) / (zFar - zNear));
       p.needsUpdate = true;
       m.geometry.computeVertexNormals();
       m.geometry.computeBoundingBox();
@@ -313,21 +404,24 @@
       return m;
     };
     // zs - the south face of the wall below the sovev; brz - where the small ramps leave the big one; xw - that wall's west face
-    const smallRT = (grp, zs, brz, xw, tag) => {
-      const sov = [[zs + GAP, 0], [brz, 0], [brz, 2], [zs + GAP, SVH]];
-      const yes = [[zs + YS + GAP, 0], [brz, 0], [brz, 2], [zs + YS + GAP, YS]];
+    // SMALL_RAMPS3_211: dxE - how far the east ramp turns; dxW - the west pair (Tosafot), so that the walk to the yesod lands on the one
+    // amah of yesod in the south-west corner and the third ramp's head is east of it
+    const smallRT = (grp, zs, brz, xw, tag, dxE, dxW) => {
+      const ft = brz + 2 * 32 / (AH - 0.02);   // the big ramp's foot
+      const zt = ft - 32 / 3, rt = (z) => (AH - 0.02) * (ft - z) / 32, ht = rt(zt), zE = zs + YS + GAP;
+      const yes = [[zE, 0], [brz, 0], [brz, 2], [zE, YS]];
       const xEnd = xw + YS - SRW / 2;   // the walk's head: its east edge on the east end of the south's one amah
       const o = {
-        sovevEast: prism(RX1 - 0.01, RX1 + SRW, sov, AS, grp),
-        yesodNear: askew(prism(RX0 - SRW, RX0 + 0.01, yes, AS, grp), brz, zs + YS + GAP, xEnd - (RX0 - SRW / 2)),               // Rashi: the walk leaves the big ramp's side
-        sovevWest: prism(RX0 - SRW, RX0 + 0.01, sov, AS, grp),                                                                   // Tosafot: the raised half, beside the big ramp
-        yesodFar: askew(prism(RX0 - 2 * SRW, RX0 - SRW + 0.01, yes, AS, grp), brz, zs + YS + GAP, xEnd - (RX0 - 1.5 * SRW))     // and the walk to the yesod outside it
+        sovevEast: two(RX1 - 0.01, RX1 + SRW, zt, rt, zs, sovP2(zs, false), zs + GAP, dxE, grp),                               // to the sovev, from the third, turning east
+        yesodNear: askew(prism(RX0 - SRW, RX0 + 0.01, yes, AS, grp), brz, zE, xEnd - (RX0 - SRW / 2)),                          // Rashi: the walk leaves the big ramp's side
+        sovevWest: two(RX0 - SRW, RX0 + 0.01, zt, rt, zs, sovP2(zs, true), zs + GAP, dxW, grp),                                 // Tosafot: the third ramp
+        yesodFar: two(RX0 - 2 * SRW, RX0 - SRW + 0.01, zt, yesTop(zs, zt, ht), zs, yesP2(zs), zs + GAP, dxW, grp)               // and the walk to the yesod outside it
       };
       for (const k in o) { o[k].visible = false; o[k].name = "smallRampRT_" + tag + "_" + k; }
       return o;
     };
     RTM.main.def = mainRampRT(rampDefG, ACZ + S / 2, ZS, 42, RTOP);
-    RTM.small.def = smallRT(rampDefG, ZS, BRZ, XW, "def");
+    RTM.small.def = smallRT(rampDefG, ZS, BRZ, XW, "def", DXD, -0.63);   // SMALL_RAMPS3_211
     // 1.3.2: R. YOSE'S ALTAR - the yesod 28 (z +-14), the wall below the sovev 26 (to 6 amot), above it 24 up to the top (16), the horns
     // and the priests' walk round the place of the pyre, 20 x 20 - the verse's measure (Rashi Zevachim 61b; Malbim on II Chr 4:1 "היינו
     // מקום המערכה היה עשרים על עשרים"). Centred where the verse's altar is (model choice); the yesod's run as there. Its ramp is the same
@@ -362,13 +456,14 @@
       // its ramps: the same profiles, 2 further south
       const YRT = (z) => (AH - 0.02) * (44 - z) / 32, YBRZ = 44 - 2 * 32 / (AH - 0.02);
       rampMain.yose = mainRamp(rampYoseG, ACZ + YT / 2, YZS, 44, YRT);   // 1.3.5: the three readings of the air (above)
-      const ySov = [[YZS + YS + GAP, 0], [YBRZ, 0], [YBRZ, 2], [YZS + GAP, SVH], [YZS + GAP, YS + GAP], [YZS + YS + GAP, YS + GAP]];
-      smallRamps.yoseSovevEast = prism(RX1 - 0.01, RX1 + SRW, ySov, AS, rampYoseG);
+      const ZTY = 44 - 32 / 3, DXY = YXE - (RX1 + SRW) - 0.05;   // SMALL_RAMPS3_211: its ramp's third; 3.70 to its south-east corner
+      smallRamps.yoseSovevEast = two(RX1 - 0.01, RX1 + SRW, ZTY, YRT, YZS, sovP2(YZS, true), YZS + GAP, DXY, rampYoseG);
       smallRamps.yoseYesod = prism(RX0 - SRW, RX0 + 0.01, [[YZS + YS + GAP, 0], [YBRZ, 0], [YBRZ, 2], [YZS + YS + GAP, YS]], AS, rampYoseG);
-      smallRamps.yoseSovevWest = prism(RX0 - 2 * SRW, RX0 - SRW + 0.01, ySov, AS, rampYoseG);
-      smallRamps.yoseSovevWest.visible = false;
+      smallRamps.yoseSovevWest = two(RX0 - SRW, RX0 + 0.01, ZTY, YRT, YZS, sovP2(YZS, true), YZS + GAP, -DXY, rampYoseG);
+      smallRamps.yoseYesodT = two(RX0 - 2 * SRW, RX0 - SRW + 0.01, ZTY, yesTop(YZS, ZTY, YRT(ZTY)), YZS, yesP2(YZS), YZS + GAP, -DXY, rampYoseG);
+      smallRamps.yoseSovevWest.visible = smallRamps.yoseYesodT.visible = false;
       RTM.main.yose = mainRampRT(rampYoseG, ACZ + YT / 2, YZS, 44, YRT);   // 1.3.7: R. Tam's reading in R. Yose's altar
-      RTM.small.yose = smallRT(rampYoseG, YZS, YBRZ, YXW, "yose");
+      RTM.small.yose = smallRT(rampYoseG, YZS, YBRZ, YXW, "yose", YXE - (RX1 + SRW) - 0.05, -2.73);   // SMALL_RAMPS3_211
     }
     // 1.3.7: what is seen of the yesod's south and of the ramps - by R. Tam's reading (RTM.on), the air's (rampGap) and the small ramps'
     RTM.sync = () => {
@@ -377,11 +472,13 @@
       const third = !!(ctx.shared.altarRamps && ctx.shared.altarRamps.current === "tosafot");
       for (const r of [rampMain.def, rampMain.yose]) if (r) for (const k in r) r[k].visible = !rt && k === gm;
       for (const r of [RTM.main.def, RTM.main.yose]) if (r) for (const k in r) r[k].visible = rt && k === gm;
-      smallRamps.sovevEast.visible = smallRamps.yesod.visible = !rt;
-      smallRamps.sovevWest.visible = !rt && third;
+      smallRamps.sovevEast.visible = !rt;
+      smallRamps.yesod.visible = !rt && !third;   // SMALL_RAMPS2_211: with the third ramp the walk to the yesod is the outer one
+      smallRamps.sovevWest.visible = smallRamps.yesodT.visible = !rt && third;
       if (smallRamps.yoseSovevEast) {
-        smallRamps.yoseSovevEast.visible = smallRamps.yoseYesod.visible = !rt;
-        smallRamps.yoseSovevWest.visible = !rt && third;
+        smallRamps.yoseSovevEast.visible = !rt;
+        smallRamps.yoseYesod.visible = !rt && !third;
+        smallRamps.yoseSovevWest.visible = smallRamps.yoseYesodT.visible = !rt && third;
       }
       for (const k of ["def", "yose"]) {
         const s = RTM.small[k];
@@ -758,13 +855,15 @@
     ctx.shared.flyPoints.mizbeach = { pos: [115, 52, 72], target: [ACX, TOP, ACZ] };
     ctx.shared.flyPoints.mizbeachTop = { pos: [ACX + 0.5, TOP + 44, ACZ + 3], target: [ACX + 0.5, TOP, ACZ + 0.5] };   // 1.3.0: the top from above (the pyres' row); 1.3.2 (the list): straight down, the 28 of R. Yose in the frame too; moves with the altar (FPK below)
     // 1.3.3: the measures' frames (below) from the north-east, above: the north and east sides with their numbers, the top and the height line
-    ctx.shared.flyPoints.mizbeachMeasures = { pos: [ACX + 35, TOP + 31, ACZ - 35], target: [ACX + 1, F + 3, ACZ + 1] };
+    // MEASURES_211: from the side, out of the court, a man's height over the top - the steps' entries are seen (the view the user chose
+    // in the Second Temple plugin, 15.11.2026: "התצוגה צריכה להיות מן הצד מתוך העזרה כדי להבין את הפערים"); until 1.4.3 from high above
+    ctx.shared.flyPoints.mizbeachMeasures = { pos: [ACX + 27, F + 13.5, ACZ - 31], target: [ACX + 1, F + 5, ACZ - 1] };
     // 1.3.3: the libation bowls by the south-west horn, close, from the south-east above the top (the ramp's head below)
     ctx.shared.flyPoints.sfalim = { pos: [ACX - S / 2 + 5, TOP + 7.5, ACZ + S / 2 + 3], target: [ACX - S / 2 + 1.8, TOP + 0.2, ACZ + S / 2 - 1.3] };
 
     // --- 1.0.2: השיתין - the text, the sources (book id + line index, each line read in the Otzaria DB), the label and the fly point ---
     {
-      const SHITIN_INFO = "לשון המשנה: 'ובקרן מערבית דרומית היו שני נקבים, כמין שני חטמין דקין' — הדם יורד בהם ויוצא לנחל קדרון (מדות ג, ב; רמב״ם בית הבחירה ב, יא). ועוד: 'למטה ברצפה באותה הקרן, מקום היה שם אמה על אמה, וטבלא של שיש, וטבעת היתה קבועה בה, שבו יורדין לשית ומנקין אותו' (מדות ג, ג).\nבבית ראשון: המשנה מתארת את מזבח הבית השני, אבל השיתין היו כבר בבית ראשון — 'שיתין מששת ימי בראשית נבראו' (סוכה מט.), ו'בשעה שכרה דוד שיתין' (סוכה נג.).\nרש״י: בימי שלמה היה 'כמין בור כרוי אצל המזבח באותה זוית', וכשעלו בני הגולה 'קלטו אותו הבור לתוך המזבח ועשו נקבים כנגדן בראש המזבח' (רש״י זבחים סא:).\nבמודל: פי הבור מסומן בשני פתחים ברצפה, לרגלי היסוד שבקרן — אחד במערב ואחד בדרום (בחירת המודל).";
+      const SHITIN_INFO = "לשון המשנה: 'ובקרן מערבית דרומית היו שני נקבים, כמין שני חטמין דקין' — הדם יורד בהם ויוצא לנחל קדרון (מדות ג, ב; רמב״ם בית הבחירה ב, יא). ועוד: 'למטה ברצפה באותה הקרן, מקום היה שם אמה על אמה, וטבלא של שיש, וטבעת היתה קבועה בה, שבו יורדין לשית ומנקין אותו' (מדות ג, ג).\nבבית ראשון: המשנה מתארת את מזבח הבית השני, אבל השיתין היו כבר בבית ראשון — 'שיתין מששת ימי בראשית נבראו' (סוכה מט.), ו'בשעה שכרה דוד שיתין' (סוכה נג.).\nרש״י: בימי שלמה היה 'כמין בור כרוי אצל המזבח באותה זוית', וכשעלו בני הגולה 'קלטו אותו הבור לתוך המזבח ועשו נקבים כנגדן בראש המזבח' (רש״י זבחים סא:).\nבמודל: פי הבור מסומן בשני פתחים ברצפה, לרגלי היסוד שבקרן — אחד במערב ואחד בדרום (בחירת מודל).";
       // 1.0.2 (fix, the review): the text no longer derives the two openings from Rashi - he has one pit beside the altar (book 2191, line 2955)
       // and the holes only in the Second Temple ("וכשעלו בני הגולה", Zevachim 61b, book 130, line 2096); the two openings are the model's mark of it
       const SHITIN_REFS = [
@@ -793,7 +892,7 @@
       const PROFILE = {
         yesod: {
           title: "היסוד",
-          info: "היסוד — השלמה מן המשנה: 'שכל מזבח שאין לו קרן וכבש ויסוד וריבוע – פסול' (זבחים סב.), ולכן גם למזבח שלמה היה יסוד. צורתו כמשנה: 'עלה אמה וכנס אמה, זה היסוד' (מדות ג, א).\nבבית שני: 'קרן מזרחית דרומית לא היה לה יסוד... לפי שלא היתה בחלקו של טורף' (זבחים נג:).\nהתוספות, על בית ראשון: 'היה להם יסוד לדרום שהיה משוך בחלקו של טורף חוץ מרוח מזרחית שלא נשתנה שהיה בלא יסוד' (תוספות זבחים סא:). בקצרה — רבינו תם (שם): 'דמסתמא בבית ראשון לא היה יסוד לקרן דרומית מזרחית', כבבית שני; ראו בטבלת השיטות, בשורה ״יסוד המזבח בדרום — ומקום המזבח״.\nרש״י, על מזבח משה: 'יסוד וסובב לא היו ממעטין בארכו ורחבו לפי שמקיפין ובולטין סביביו' (רש״י זבחים נט:). ולרש״י, כרבי יוסי במדות, 'בתחילה בימי שלמה לא היה אלא כ\"ח' (רש״י זבחים סא:), ועשרים על עשרים הם מקום המערכה.\nבמודל: **היסוד על פני כל הצפון, כל המערב וכל הדרום, ובמזרח רק אמה אחת בקרן הצפונית**; לקרן הדרומית המזרחית אין יסוד בצד המזרח. עשרים על עשרים של הפסוק (דברי הימים ב ד, א) הם גוף המזבח, והיסוד והסובב בולטים סביבו. המזבח לא הורחב — בחירת המודל.\nהיסוד כבית קיבול: רש״י (שמות כט, יב): 'אל יסוד המזבח. כמין בליטת בית קבול עשוי לו סביב סביב, לאחר שעלה אמה מן הארץ'. במודל: שפה נמוכה על קצה גג היסוד, בכל מקום שיש יסוד; מידות השפה — בחירת מודל.",
+          info: "היסוד — השלמה מן המשנה: 'שכל מזבח שאין לו קרן וכבש ויסוד וריבוע – פסול' (זבחים סב.), ולכן גם למזבח שלמה היה יסוד. צורתו כמשנה: 'עלה אמה וכנס אמה, זה היסוד' (מדות ג, א).\nבבית שני: 'קרן מזרחית דרומית לא היה לה יסוד... לפי שלא היתה בחלקו של טורף' (זבחים נג:).\nהתוספות, על בית ראשון: 'היה להם יסוד לדרום שהיה משוך בחלקו של טורף חוץ מרוח מזרחית שלא נשתנה שהיה בלא יסוד' (תוספות זבחים סא:). בקצרה — רבינו תם (שם): 'דמסתמא בבית ראשון לא היה יסוד לקרן דרומית מזרחית', כבבית שני; ראו בתפריט, תחת ״שיטות ומחלוקות״, במתג ״יסוד המזבח בדרום — ומקום המזבח״.\nרש״י, על מזבח משה: 'יסוד וסובב לא היו ממעטין בארכו ורחבו לפי שמקיפין ובולטין סביביו' (רש״י זבחים נט:). ולרש״י, כרבי יוסי במדות, 'בתחילה בימי שלמה לא היה אלא כ\"ח' (רש״י זבחים סא:), ועשרים על עשרים הם מקום המערכה.\nבמודל: **היסוד על פני כל הצפון, כל המערב וכל הדרום, ובמזרח רק אמה אחת בקרן הצפונית**; לקרן הדרומית המזרחית אין יסוד בצד המזרח. עשרים על עשרים של הפסוק (דברי הימים ב ד, א) הם גוף המזבח, והיסוד והסובב בולטים סביבו. המזבח לא הורחב — בחירת מודל.\nהיסוד כבית קיבול: רש״י (שמות כט, יב): 'אל יסוד המזבח. כמין בליטת בית קבול עשוי לו סביב סביב, לאחר שעלה אמה מן הארץ'. במודל: שפה נמוכה על קצה גג היסוד, בכל מקום שיש יסוד; מידות השפה — בחירת מודל.",
           refs: [
             ["זבחים סב.", { book: 130, index: 2110 }], ["מדות ג, א", { book: 89, index: 19 }], ["זבחים נג:", { book: 130, index: 1865 }],
             ["תוספות זבחים סא:", { book: 1936, index: 654 }], ["רש״י זבחים נג:", { book: 2191, index: 2590 }],
@@ -812,7 +911,7 @@
         },
         redLine: {
           title: "חוט הסיקרא",
-          info: "חוט הסיקרא — השלמה מן המשנה: 'וחוט של סקרא חוגרו באמצע, להבדיל בין הדמים העליונים לדמים התחתונים' (מדות ג, א); הרמב״ם: 'כששה טפחים מסוף הסובב ולמטה' (רמב״ם בית הבחירה ב, ט).\nבמודל: באמצע גובה המזבח — **חמש אמות מן הרצפה, אמה מתחת לסובב**. עוביו — בחירת המודל.",
+          info: "חוט הסיקרא — השלמה מן המשנה: 'וחוט של סקרא חוגרו באמצע, להבדיל בין הדמים העליונים לדמים התחתונים' (מדות ג, א); הרמב״ם: 'כששה טפחים מסוף הסובב ולמטה' (רמב״ם בית הבחירה ב, ט).\nבמודל: באמצע גובה המזבח — **חמש אמות מן הרצפה, אמה מתחת לסובב**. עוביו — בחירת מודל.",
           refs: [["מדות ג, א", { book: 89, index: 19 }], ["רמב״ם בית הבחירה ב, ט", { book: 337, index: 32 }]]
         }
       };
@@ -863,14 +962,14 @@
     // --- 1.0.2 (add-on): the two readings of the small ramps - Rashi (the default) or Tosafot; only the western ramp to the sovev changes ---
     {
       const RAMP_INFO = {
-        rashi: "בגמרא: 'שני כבשים קטנים יוצאין מן הכבש, שבהן פונים ליסוד ולסובב; ומובדלין מן המזבח מלא נימא' (זבחים סב:).\nרש״י: 'אותו שפונין בו לסובב יצא במזרחו של כבש לימין... ונמשך ועולה באלכסון עד שמגיע לסובב והפונה ליסוד יוצא למערבו... ומתחיל לצאת בשיפולו של כבש רחוק מן המזבח כדי שיהא נוח לשפע ולירד ליסוד' (רש״י זבחים סב:). ובמערב **אין כבש לסובב**: 'אבל לצד המערב אין לו [כבש] לפנות לסובב וצריך לעלות על ראש המזבח ועומד בדרומה של קרן' (רש״י זבחים סד.).\nבמודל: מקום תחילתם ורוחבם — בחירת המודל.",
-        tosafot: "התוספות: 'ונראה דאין משם ראי' שלא היה כבש לסובב במערב', שאם לא כן, בדם החטאת 'כשהיה מגיע לקרן מערבית דרומית היה צריך לחזור על עקיבו ולכך נראה דהיה שם כבש' (תוספות זבחים סד.).\nתוספות יום טוב — ולמה מנו רק שניים? 'שאותו כבש עצמו היה רחב ומקצת ממנו מוגבה ועולה עד על הסובב גם כן' (תוספות יום טוב זבחים ו, ג).\nהמשנה למלך: 'התוספות ס\"ל דגם במערבו היה כבש קטן פונה לסובב' (משנה למלך בית הבחירה ב, יד).\nבמודל: **הכבש המערבי רחב, וחציו החיצון עולה לסובב**."
+        rashi: "בגמרא: 'שני כבשים קטנים יוצאין מן הכבש, שבהן פונים ליסוד ולסובב; ומובדלין מן המזבח מלא נימא' (זבחים סב:).\nרש״י: 'אותו שפונין בו לסובב יצא במזרחו של כבש לימין ויוצא ומתחיל בשפולו של כבש ונמשך ועולה באלכסון עד שמגיע לסובב והפונה ליסוד יוצא למערבו... ומתחיל לצאת בשיפולו של כבש רחוק מן המזבח כדי שיהא נוח לשפע ולירד ליסוד' (רש״י זבחים סב:). ובמערב **אין כבש לסובב**: 'אבל לצד המערב אין לו [כבש] לפנות לסובב וצריך לעלות על ראש המזבח ועומד בדרומה של קרן' (רש״י זבחים סד.).\nבמודל: הכבש לסובב יוצא מצד הכבש הגדול בשליש התחתון שלו — ״בשפולו של כבש״ — וראשו שם בגובה הילוכו של הכבש הגדול; משם הוא פונה באלכסון ועולה במתינות, ובינו ובין הכבש הגדול אוויר גמור עד הרצפה; וראשו חתוך לאורך שפת הסובב ובגובהו, כהמשך הסובב, ״ומובדלין מן המזבח מלא נימא״. הכבש ליסוד יוצא בשיפולו של הכבש, שתי אמות מן הרצפה, ויורד אל היסוד. במודל זה גוף המזבח עשרים אמה; לכן נשארות בצד הכבש הגדול רק שלוש אמות עד קרן המזבח, והאלכסון קצר. מידת הנטייה ורוחב הכבשים — בחירת מודל.",
+        tosafot: "התוספות: 'ונראה דאין משם ראי' שלא היה כבש לסובב במערב', שאם לא כן, בדם החטאת 'כשהיה מגיע לקרן מערבית דרומית היה צריך לחזור על עקיבו ולכך נראה דהיה שם כבש' (תוספות זבחים סד.).\nתוספות יום טוב — ולמה מנו רק שניים? 'שאותו כבש עצמו היה רחב ומקצת ממנו מוגבה ועולה עד על הסובב גם כן' (תוספות יום טוב זבחים ו, ג).\nהמשנה למלך: 'התוספות ס\"ל דגם במערבו היה כבש קטן פונה לסובב' (משנה למלך בית הבחירה ב, יד).\nלחם שמים (על הרמב״ם, בית הבחירה ב, יד): ״שהיו שני כבשים קטנים פונים לסובב מזה אחד ומזה אחד, יוצאין משיפולו של כבש גדול ומשפעין ועולין עד שנעשין גבוהים בשוה עם הסובב, הימני לעלייה והשמאלי לירידה, שבו יורדין מן המזבח להוליך בו שירים ליסוד דרומי״; והכבש ליסוד — ״הוא קטן ונמוך ביותר לפי גובהו של יסוד בלבד״.\nבמודל: **גם במערב כבש לסובב**, היוצא מן השליש התחתון של הכבש הגדול ופונה באלכסון אל הסובב, כמו המזרחי; והכבש ליסוד — צמוד לו מבחוץ, לאורכו, ויורד אל היסוד: כבש אחד רחב ומקצתו מוגבה, כדברי התוספות יום טוב."
       };
       const R_SUGYA = [["זבחים סב:", { book: 130, index: 2129 }], ["רמב״ם בית הבחירה ב, יד", { book: 337, index: 37 }]];
       const RAMP_REFS = {
         rashi: R_SUGYA.concat([["רש״י זבחים סב:", { book: 2191, index: 3022 }], ["רש״י זבחים סד.", { book: 2191, index: 3089 }]]),
         tosafot: R_SUGYA.concat([["תוספות זבחים סד.", { book: 1936, index: 681 }], ["תוספות יום טוב זבחים ו, ג", { book: 945, index: 183 }],
-          ["משנה למלך בית הבחירה ב, יד", { book: 4606, index: 25 }]])
+          ["משנה למלך בית הבחירה ב, יד", { book: 4606, index: 25 }], ["לחם שמים בית הבחירה ב, יד", { book: 5069, index: 31 }]])
       };
       let cur = "rashi";
       const ramps = {
@@ -917,7 +1016,7 @@
         keys: ["stone", "abarbanel"],
         options: [{ key: "stone", label: "מזבח אבנים" }, { key: "abarbanel", label: "אברבנאל — מצופה נחושת" }],
         info: {
-          stone: "במודל: **המזבח בצבע אבן** — 'אבנים שלמות תבנה את מזבח ה׳ אלהיך' (דברים כז, ו); הרמב״ם: 'המזבח אין עושין אותו אלא בנין אבנים' (רמב״ם בית הבחירה א, יג).\nהשם כלשון הפסוק: 'כי מזבח הנחשת אשר לפני ה׳ קטן' (מלכים א ח, סד). המראה — בחירת המודל.",
+          stone: "במודל: **המזבח בצבע אבן** — 'אבנים שלמות תבנה את מזבח ה׳ אלהיך' (דברים כז, ו); הרמב״ם: 'המזבח אין עושין אותו אלא בנין אבנים' (רמב״ם בית הבחירה א, יג).\nהשם כלשון הפסוק: 'כי מזבח הנחשת אשר לפני ה׳ קטן' (מלכים א ח, סד). המראה — בחירת מודל.",
           abarbanel: "אברבנאל: 'ועם היותו מזבח אבנים כמו שצותה התורה, הנה קראו מזבח הנחשת, לפי שהיה מצופה נחשת, כמו שנקרא מזבח הזהב להיותו מצופה זהב' (אברבנאל מלכים א ח, סד).\nבמודל: **המזבח כולו מצופה נחושת** — היסוד, הסובב, השפה והקרנות — וכך גם הכבש והכבשים הקטנים, שהכבש חלק מן המזבח: 'כל מזבח שאין לו קרן וכבש ויסוד וריבוע – פסול' (זבחים סב.)."
         },
         // 1.0.2 (fix, the review): the name with the article is I Kings 8:64 (book 10, line 340, read in the DB); II Chr 4:1 has "ויעש מזבח נחשת"
@@ -1002,11 +1101,12 @@
           what: ["היסוד", "מעל היסוד — ״כונס ועולה״", "מעל הסובב", "מקום הקרנות — ״אמה מזה ואמה מזה״", "מקום המערכה — ״עשרים על עשרים״"] }
       };
       const INFO = {
-        chronicles: "הפסוק: ״ויעש מזבח נחשת עשרים אמה ארכו ועשרים אמה רחבו ועשר אמות קומתו״ (דברי הימים ב ד, א).\nהשלמה מן המשנה — היסוד והסובב: ״עלה אמה וכנס אמה, זה היסוד... עלה חמש וכנס אמה. זה הסובב״ (מדות ג, א).\nרש״י: הם אינם ממעטים במידה שבפסוק — ״יסוד וסובב לא היו ממעטין בארכו ורחבו לפי שמקיפין ובולטין סביביו״ (זבחים נט:).\nבמודל, בקריאה זו: **גוף המזבח עשרים על עשרים, ועשר אמות גובהו**; לכן הכותל שעד הסובב עשרים ושתים, והיסוד עשרים וארבע. גובה היסוד אמה, והסובב שש אמות מן הרצפה. קו היסוד הוא מתארו: במזרח היסוד רק אמה אחת, בקרן הצפונית (תוספות זבחים סא:). בחירת מודל.",
+        chronicles: "הפסוק: ״ויעש מזבח נחשת עשרים אמה ארכו ועשרים אמה רחבו ועשר אמות קומתו״ (דברי הימים ב ד, א).\nהשלמה מן המשנה — היסוד והסובב: ״עלה אמה וכנס אמה, זה היסוד... עלה חמש וכנס אמה. זה הסובב״ (מדות ג, א).\nרש״י: הם אינם ממעטים במידה שבפסוק — ״יסוד וסובב לא היו ממעטין בארכו ורחבו לפי שמקיפין ובולטין סביביו״ (זבחים נט:).\nבמודל, בשיטה זו: **גוף המזבח עשרים על עשרים, ועשר אמות גובהו**; לכן הכותל שעד הסובב עשרים ושתים, והיסוד עשרים וארבע. גובה היסוד אמה, והסובב שש אמות מן הרצפה. קו היסוד הוא מתארו: במזרח היסוד רק אמה אחת, בקרן הצפונית (תוספות זבחים סא:). בחירת מודל.",
         yose: "לשון המשנה (מדות ג, א): ״אמר רבי יוסי, מתחלה לא היה אלא שמנה ועשרים על שמנה ועשרים, כונס ועולה במדה זו, עד שנמצא מקום המערכה עשרים על עשרים״.\nרש״י (זבחים סא:): ״בתחילה בימי שלמה לא היה אלא כ״ח כונס ועולה יסוד וסובב ומקום קרנות ומקום הילוך עד שהיה מקום המערכה כ׳ על כ׳״.\n״במדה זו״ — כמידות שבמשנה: ״מקום הקרנות אמה מזה ואמה מזה... מקום הלוך רגלי הכהנים, אמה מזה ואמה מזה״.\nבמודל: **עשרים ושמונה היסוד**, עשרים ושש מעליו, עשרים וארבע מעל הסובב, עשרים ושתים בתוך מקום הקרנות, **ועשרים מקום המערכה** — העשרים שבפסוק. גובהו עשר אמות, כפסוק."
       };
       const REFS = [["דברי הימים ב ד, א", { book: 39, index: 57 }], ["מדות ג, א", { book: 89, index: 19 }], ["רש״י זבחים סא:", { book: 2191, index: 2952 }], ["רש״י זבחים נט:", { book: 2191, index: 2871 }]];
       const subs = {};
+      const RIM = ["#6f9bff", "#22c08a", "#f562a6", "#b08cff", "#ff9648"], STEPN = ["הבסיס", "מעל היסוד", "מעל הסובב", "בין הקרנות", "מקום המערכה"], MEASL = {};   // MEASURES_211
       for (const key of Object.keys(READ)) {
         const R = READ[key], grp = new Group();
         grp.visible = key === "chronicles";
@@ -1020,12 +1120,14 @@
           const bar = (bw, bd, x, z) => { const b = new Mesh(new BoxGeometry(bw, 0.06, bd), lm); b.position.set(x, y, z); b.userData.noPick = true; grp.add(b); };
           bar(w + 2 * th, th, ACX, ACZ - o); bar(w + 2 * th, th, ACX, ACZ + o);
           bar(th, w, ACX - o, ACZ); bar(th, w, ACX + o, ACZ);
-          // the number on all four sides, just outside the line, each side's numbers spread along it the other way round, so that the
-          // plates of two frames never meet (as the Second Temple plugin, 1.9.1)
-          const t = -W0 / 2 + 3 + i * (W0 - 8) / (n - 1);
-          const lay = { size: 2.6, box: true, layers: ["altarMeasures", "altarM_" + key], title: R.what[i], info: INFO[key], refs: REFS };
-          for (const [lx, lz] of [[ACX + t, ACZ + half + 0.6], [ACX + half + 0.6, ACZ - t], [ACX - t, ACZ - half - 0.6], [ACX - half - 0.6, ACZ + t]])
-            ctx.labels.push(Object.assign({ text: amotTxt(w), x: lx, y: y + 0.8, z: lz }, lay));
+          // MEASURES_211 (as the Second Temple plugin 2.0.2; the user, 15.11.2026, of this plugin's altar with a plate on every side
+          // of every frame: "כך זה בכל הקריאות... איך פספסת את זה?"): ONE plate for each line - its number and the step's name, its rim
+          // in the line's own colour - and the plates stand in a ladder beside the altar (measLayout, below). Until 1.4.3 the number
+          // stood on all four sides of every frame.
+          const rec = { text: amotTxt(w) + " (" + STEPN[i] + ")", x: ACX + half + 4, y: y + 1.5 + i * 1.6, z: ACZ - half - 4, size: 2.6, box: true, rim: RIM[i], onTop: true,
+            layers: ["altarMeasures", "altarM_" + key], title: R.what[i], info: INFO[key], refs: REFS };
+          ctx.labels.push(rec);
+          (MEASL[key] || (MEASL[key] = [])).push(rec);
         });
         // the height: a line up the north-east corner, outside the yesod, with its ticks at the yesod (1), the sovev (6) and the top (10)
         const hx = ACX + W0 / 2 + 2.6, hz = ACZ - W0 / 2 - 2.6;
@@ -1035,10 +1137,120 @@
         for (const [hy, txt, what] of [[YS, amotTxt(YS), "גובה היסוד"], [SVH, amotTxt(SVH), "הסובב — מן הרצפה"], [AH, amotTxt(AH), "קומתו — ״ועשר אמות קומתו״"]]) {
           const tick = new Mesh(new BoxGeometry(1.4, 0.16, 0.16), hm);
           tick.position.set(hx - 0.5, F + hy, hz); tick.userData.noPick = true; grp.add(tick);
-          ctx.labels.push({ text: txt, x: hx + 1.8, y: F + hy, z: hz - 1.2, size: 2.2, box: true, layers: ["altarMeasures", "altarM_" + key], title: what, info: INFO[key], refs: REFS });
+          ctx.labels.push({ text: txt, x: hx + 1.4, y: F + hy + 0.5, z: hz - 1.0, size: 1.3, box: true, layers: ["altarMeasures", "altarM_" + key], title: what, info: INFO[key], refs: REFS });   // MEASURES_211: 1.3 (2.2) - from the side view the post stands near the eye
         }
         const bot = new Mesh(new BoxGeometry(1.4, 0.16, 0.16), hm);
         bot.position.set(hx - 0.5, F + 0.06, hz); bot.userData.noPick = true; grp.add(bot);
+      }
+      // measLayout - MEAS_SCREEN_211 (the user, 15.11.2026, of the plates seen from above: "שים לב לבריחה של הכרטיסיות" - they stood at the
+      // picture's foot, under the bar; and of the ladder beside the altar: "זה עדיף, רק יותר צמוד למזבח"): the plates of the reading that
+      // shows stand in a ladder - the lowest step's at the bottom - set every frame IN THE PICTURE'S OWN MEASURES: close beside the altar's
+      // outline on the right (on the left when the right has no room), its foot at the outline's foot, and always inside the part of the
+      // picture that nothing covers - the places' panel, the card, the bar at the top and the row of buttons at the bottom (freeRect).
+      // When the altar fills the picture the ladder stands at the free part's edge, over the altar's side.
+      {
+        const v0 = new Vector3(), v1 = new Vector3(), mR = new Vector3(), mU = new Vector3();
+        let lg = null;
+        const sprOf = (l) => {
+          if (l.__spr && l.__spr.parent) return l.__spr;
+          if (!lg) { try { lg = ctx.root.getObjectByName("labels") || (ctx.scene ? ctx.scene.getObjectByName("labels") : null); } catch (_) { lg = null; } }
+          if (!lg) return null;
+          for (const s of lg.children) if (s.userData && s.userData.label === l) { l.__spr = s; return s; }
+          return null;
+        };
+        let fr = { x0: -0.97, x1: 0.97, y0: -0.97, y1: 0.97 }, frAt = -1e9, frameN = 0;
+        const freeRect = () => {   // the free part of the picture, in the camera's own -1..1 (read now and then)
+          frameN++;
+          if (frameN - frAt < 20) return fr;
+          frAt = frameN;
+          let x0 = -1, x1 = 1, y0 = -1, y1 = 1;
+          try {
+            const el = ctx.renderer ? ctx.renderer.domElement : document.querySelector("canvas"), r = el.getBoundingClientRect();
+            const nx = (px) => ((px - r.left) / Math.max(1, r.width)) * 2 - 1, ny = (py) => 1 - ((py - r.top) / Math.max(1, r.height)) * 2;
+            const seen = (e) => {
+              if (!e) return null;
+              const cs = getComputedStyle(e);
+              if (cs.display === "none" || cs.visibility === "hidden" || +cs.opacity === 0) return null;
+              const q = e.getBoundingClientRect();
+              if (q.width < 20 || q.height < 12 || q.right <= r.left || q.left >= r.right || q.bottom <= r.top || q.top >= r.bottom) return null;
+              return q;
+            };
+            for (const id of ["tm-xcard", "tm-panel"]) {   // the sides
+              const q = seen(document.getElementById(id));
+              if (!q || q.width > r.width * 0.7) continue;   // (a phone's sheet spans the width: not a side)
+              if ((q.left + q.right) / 2 < r.left + r.width / 2) x0 = Math.max(x0, nx(q.right)); else x1 = Math.min(x1, nx(q.left));
+            }
+            const top = seen(document.querySelector("header.topbar"));
+            if (top) y1 = Math.min(y1, ny(top.bottom));
+            for (const id of ["tm-nav", "tm-compass", "tm-measure-out"]) {   // the foot
+              const q = seen(document.getElementById(id));
+              if (q && q.top > r.top + r.height * 0.5) y0 = Math.max(y0, ny(q.top));
+            }
+          } catch (_) {}
+          x0 += 0.02; x1 -= 0.02; y0 += 0.03; y1 -= 0.03;
+          if (x1 - x0 < 0.3) { x0 = -0.97; x1 = 0.97; }
+          if (y1 - y0 < 0.3) { y0 = -0.97; y1 = 0.97; }
+          fr = { x0, x1, y0, y1 };
+          return fr;
+        };
+        ctx.animated.push(() => {
+          if (!(measG.visible)) return;
+          const cam = ctx.camera;
+          if (!cam) return;
+          let L = null, key = null, cx = 0, cz = 0;
+          { key = (ctx.shared.altarYose && ctx.shared.altarYose.current) === "yose" ? "yose" : "chronicles"; if (subs[key] && subs[key].visible) L = MEASL[key]; }
+          if (!L || !L.length) return;
+          const S = L.map(sprOf);
+          if (S.some((s) => !s)) return;
+          v0.set(ACX, F, ACZ); measG.localToWorld(v0); cx = v0.x; cz = v0.z;
+          const W0 = READ[key].w[0], yF = F, yT = TOP;
+          // the altar's outline in the picture, and its depth
+          let sx0 = 1e9, sx1 = -1e9, sy0 = 1e9, sy1 = -1e9;
+          for (const dx of [-1, 1]) for (const dz of [-1, 1]) for (const yy of [yF, yT + 1]) {
+            v0.set(cx + dx * W0 / 2, yy, cz + dz * W0 / 2).project(cam);
+            if (!(v0.z > -1 && v0.z < 1)) continue;
+            if (v0.x < sx0) sx0 = v0.x;
+            if (v0.x > sx1) sx1 = v0.x;
+            if (v0.y < sy0) sy0 = v0.y;
+            if (v0.y > sy1) sy1 = v0.y;
+          }
+          if (sx0 > sx1) return;
+          v0.set(cx, yF + 5, cz).project(cam);
+          const zc = v0.z, c0x = v0.x, c0y = v0.y;
+          if (!(zc > -1 && zc < 1)) return;
+          // a plate's size in the picture, at the altar's depth
+          let h = 0, wid = 0;
+          for (const s of S) { if (s.scale.y > h) h = s.scale.y; if (s.scale.x > wid) wid = s.scale.x; }
+          mR.setFromMatrixColumn(cam.matrixWorld, 0);
+          mU.setFromMatrixColumn(cam.matrixWorld, 1);
+          v1.set(cx, yF + 5, cz).addScaledVector(mR, wid).project(cam);
+          const wN = Math.abs(v1.x - c0x);
+          v1.set(cx, yF + 5, cz).addScaledVector(mU, h).project(cam);
+          const hN = Math.abs(v1.y - c0y);
+          v1.set(cx, yF + 5, cz).addScaledVector(mR, 0.3).project(cam);
+          const gN = Math.abs(v1.x - c0x);
+          if (!(wN > 0 && hN > 0) || !isFinite(wN + hN)) return;
+          const R = freeRect(), n = L.length;
+          let stepN = 1.1 * hN;
+          const room = R.y1 - R.y0 - hN;
+          if (n > 1 && stepN * (n - 1) > room) stepN = Math.max(0.55 * hN, room / (n - 1));
+          // the side: close on the right of the outline; on the left when the right has no room; else at the edge of the free part that
+          // it passes least
+          const xr = sx1 + gN + wN / 2, xl = sx0 - gN - wN / 2;
+          let xN;
+          if (xr + wN / 2 <= R.x1) xN = Math.max(xr, R.x0 + wN / 2);
+          else if (xl - wN / 2 >= R.x0) xN = Math.min(xl, R.x1 - wN / 2);
+          else xN = xr + wN / 2 - R.x1 <= R.x0 - (xl - wN / 2) ? R.x1 - wN / 2 : R.x0 + wN / 2;
+          // the height: the lowest plate at the outline's foot, the whole ladder inside the free part
+          let yb = Math.max(sy0 + hN / 2, R.y0 + hN / 2);
+          if (yb + stepN * (n - 1) + hN / 2 > R.y1) yb = R.y1 - hN / 2 - stepN * (n - 1);
+          if (yb < R.y0 + hN / 2) yb = R.y0 + hN / 2;
+          for (let i = 0; i < n; i++) {
+            v1.set(xN, yb + i * stepN, zc).unproject(cam);
+            S[i].position.copy(v1);
+            L[i].x = v1.x; L[i].y = v1.y; L[i].z = v1.z;
+          }
+        });
       }
       ctx.shared.altarMeasures = {
         on: false,

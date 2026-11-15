@@ -203,13 +203,23 @@
     const fbm = (x, z) => vn(x, z) * 0.55 + vn(x * 2.1, z * 2.1) * 0.28 + vn(x * 4.3, z * 4.3) * 0.17;
     const bump = (x, z, cx, cz, rx, rz, amp) => amp * Math.exp(-(((x - cx) / rx) ** 2) - ((z - cz) / rz) ** 2);
     const rectDist = (x, z) => Math.hypot(Math.max(CO2.harW - x, x - CO2.harE, 0), Math.max(CO2.harN - z, z - CO2.harS, 0));
+    // TERRAIN_211 (as the Second Temple's 20-mount.js; the user, 14.11.2026: the mountain's shape): the mount on its ridge - the ground falls
+    // away from the walls' feet (level for 35 amot, where the stairs stand) into the Kidron on the east (32 lower, 150 amot from the wall)
+    // and into the valley on the west; level on the north and on the south (the palace). Depths, widths and places - model choices
+    const valley = (x, z) => {
+      let v = 0;
+      if (x > CO2.harE) v += 32 * Math.exp(-((((x - CO2.harE) - 150) / 85) ** 2));
+      // (no slope on the south here: Solomon's palace stands there on its terrace - 60-palace.js reads the ground under it)
+      if (x < CO2.harW) v += 24 * Math.exp(-((((CO2.harW - x) - 110) / 70) ** 2));
+      return v;
+    };
     const terrainH = (x, z) => {
       const d = rectDist(x, z);
       const ramp = sm(70, 380, d);
       let h = bump(x, z, 1100, 30, 460, 950, 190) + bump(x, z, -700, 620, 420, 330, 130) + bump(x, z, -560, -760, 460, 380, 100) + bump(x, z, 220, 1350, 560, 320, 130) + bump(x, z, 380, -1380, 620, 360, 120);
       h += (fbm(x * 3e-3, z * 3e-3) - 0.5) * 120 + (fbm(x * 0.012, z * 0.012) - 0.5) * 22;
       const rim = sm(1500, 2500, Math.hypot(x - CX, z - CZ)) * 260;
-      return GROUND_Y + ramp * Math.max(h * 0.2, -5) + rim * 0.15 * ramp;
+      return GROUND_Y + ramp * Math.max(h * 0.2, -5) + rim * 0.15 * ramp - sm(35, 100, d) * valley(x, z);
     };
     try {
       const SIZE = 5200, SEG = 220;
@@ -434,19 +444,33 @@
       const lidH = 0.2, bodyH = R.h - lidH; // body 1.0 + lid 0.2 = 1.2 high
       // a cedar chest 2 x 1.2 x 1.2 (its long side along z), two bronze bands, a lid with the slot (II Kings 12:10 "ויקב חר בדלתו";
       // Ralbag: "והיה בדלת שהיא מכסה הארון כדי שלא יוכל אחד לקחת ממנו בזולת פתיחת הארון")
-      const chest = (x, y, z) => {
-        H2.box(yh, R.w, bodyH, R.l, chestMat, x, y, z);                                                 // body 1.2 x 1.0 x 2
-        H2.box(yh, R.w + 0.1, lidH, R.l + 0.1, chestMat, x, y + bodyH, z);                               // lid 1.3 x 0.2 x 2.1, 0.05 proud all round
-        H2.box(yh, 0.12, 0.03, R.l * 0.6, slotMat, x, y + R.h, z);                                       // the slot: 0.12 x 1.2, a hair above the lid
-        for (const yb of [0.3, 0.75]) H2.box(yh, R.w + 0.06, 0.14, R.l + 0.06, M2.bronze, x, y + yb, z); // 2 bronze bands, 0.14 high, 0.03 proud (model choice)
+      // YEHOYADA_ONE_211 (the sources review, S4-18; the user, 15.11.2026 18:12 "להוסיף מתג לרשי", 18:21 "2. ארון יהיודע"): a switch -
+      // the Malbim's two chests (the default, as until now), or ONE chest, as Rashi on II Chr 24:8 (3662:739): "ויעשו ארון אחד. ובמלכים
+      // כתיב ויקב חור בדלתו". Where the one chest stands Rashi does not say in one place: on Chronicles (3662:740) "ויתנהו בשער בית ה׳
+      // חוצה. כדי שיוכלו לבא אליו כל נדיב לב", on Kings (3680:446) "אצל המזבח. בעזרה" - so two modes, "gate" and "altar", each a verse
+      // (which of them the switch offers - the user's to say; 70-ui.js). The two chests are two groups; the labels go by flag layers.
+      const yhOut = new Group(), yhIn = new Group(), fM = new Group(), fRG = new Group(), fRA = new Group();
+      fRG.visible = fRA.visible = false;
+      for (const q of [yhOut, yhIn, fM, fRG, fRA]) yh.add(q);
+      ctx.layers.yehoyadaMalbim = fM; ctx.layers.yehoyadaRashiGate = fRG; ctx.layers.yehoyadaRashiAltar = fRA;
+      const chest = (par, x, y, z) => {
+        H2.box(par, R.w, bodyH, R.l, chestMat, x, y, z);                                                 // body 1.2 x 1.0 x 2
+        H2.box(par, R.w + 0.1, lidH, R.l + 0.1, chestMat, x, y + bodyH, z);                               // lid 1.3 x 0.2 x 2.1, 0.05 proud all round
+        H2.box(par, 0.12, 0.03, R.l * 0.6, slotMat, x, y + R.h, z);                                       // the slot: 0.12 x 1.2, a hair above the lid
+        for (const yb of [0.3, 0.75]) H2.box(par, R.w + 0.06, 0.14, R.l + 0.06, M2.bronze, x, y + yb, z); // 2 bronze bands, 0.14 high, 0.03 proud (model choice)
       };
-      chest(R.x, WC.y, R.z);
-      ctx.labels.push({ text: "ארון יהוידע שבשער — לתקלין עתיקין (דברי הימים ב כד, ח; מלבי״ם)", x: R.x, y: WC.y + 5, z: R.z, size: 2.5, layer: "yehoyada" });
+      chest(yhOut, R.x, WC.y, R.z);
+      ctx.labels.push({ text: "ארון יהוידע שבשער — לתקלין עתיקין (דברי הימים ב כד, ח; מלבי״ם)", x: R.x, y: WC.y + 3.0, z: R.z, size: 1.0, layers: ["yehoyada", "yehoyadaMalbim"] });
+      ctx.labels.push({ text: "ארון יהוידע — ״ויתנהו בשער בית ה׳ חוצה״ (דברי הימים ב כד, ח; לרש״י — ארון אחד)", x: R.x, y: WC.y + 3.0, z: R.z, size: 1.0, layers: ["yehoyada", "yehoyadaRashiGate"] });
       ocItem("aronNedavot", "ארון יהוידע שבשער (דברי הימים ב כד, ח)", R.x, WC.y + R.h / 2, R.z, [216, 8, 13]); // cam from the west-south-west, the gate behind
       const YI = MNT_ARON_IN;
-      chest(YI.x, LV.AZ, YI.z);
-      ctx.labels.push({ text: "ארון יהוידע אצל המזבח — לתקלין חדתין (מלכים ב יב, י; מלבי״ם)", x: YI.x, y: LV.AZ + 4.6, z: YI.z, size: 2.2, layer: "yehoyada" });
-      ctx.shared.yehoyada = { get on() { return yh.visible; }, set(v) { yh.visible = !!v; return yh.visible; }, inner: [YI.x, LV.AZ, YI.z], outer: [R.x, WC.y, R.z] };
+      chest(yhIn, YI.x, LV.AZ, YI.z);
+      ctx.labels.push({ text: "ארון יהוידע אצל המזבח — לתקלין חדתין (מלכים ב יב, י; מלבי״ם)", x: YI.x, y: LV.AZ + 4.6, z: YI.z, size: 2.2, layers: ["yehoyada", "yehoyadaMalbim"] });
+      ctx.labels.push({ text: "ארון יהוידע — ״אצל המזבח מימין״ (מלכים ב יב, י; לרש״י — ארון אחד)", x: YI.x, y: LV.AZ + 4.6, z: YI.z, size: 2.2, layers: ["yehoyada", "yehoyadaRashiAltar"] });
+      ctx.shared.yehoyada = { get on() { return yh.visible; }, set(v) { yh.visible = !!v; return yh.visible; }, inner: [YI.x, LV.AZ, YI.z], outer: [R.x, WC.y, R.z],
+        mode: "two",   // YEHOYADA_ONE_211: "two" (the Malbim), "gate" / "altar" (Rashi's one chest, by the verse of Chronicles / of Kings)
+        setMode(m) { this.mode = m === "gate" || m === "altar" ? m : "two"; yhOut.visible = this.mode !== "altar"; yhIn.visible = this.mode !== "gate";
+          fM.visible = this.mode === "two"; fRG.visible = this.mode === "gate"; fRA.visible = this.mode === "altar"; return this.mode; } };
       ctx.shared.modelButtons = ctx.shared.modelButtons || [];
       ctx.shared.modelButtons.push({
         id: "mnt-yehoyada",

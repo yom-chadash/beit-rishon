@@ -1326,6 +1326,31 @@
     // label stood between the base and the bases' row behind it; nearer the eye, over the bare floor, it reads clear of both. Moved by demo.rebuild.
     const washLabel = { text: WASH_TEXT, x: WASH[0] - 8, y: F + 3.4, z: WASH[1] - 5, size: 2.4, layer: "mechonaWash" };
     ctx.labels.push(washLabel);
+    // KIDDUSH_211 (the user, 14.11.2026: "B1 mechona: wash the innards for real; kohen right hand on right foot"; Zevachim 19b: "כיצד
+    // מצות קידוש? מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש"): at the wash stop a priest stands east
+    // of the base under its east tap's stream, bent low, each hand down to its foot (the lean under 1 rad - the pose of the Second Temple's
+    // 55-tamid.js "kiddush"); at the rinsing stop another holds the innards under the stream, by the marble tables. In the stops' own
+    // layers (mechonaWash / mechonaPurpose), so they show while the water runs. The figures and their places - model choices.
+    const kidd = { w: null, p: null, organs: null };
+    try {
+      const w = ark_priestFig(3);
+      w.g.position.set(WASH[0] + VSL_TAP_R + 0.85, F, WASH[1]); w.g.rotation.y = -Math.PI / 2;
+      w.lean.rotation.x = 0.5;   // the kit bends from the ankles (no hip joint): a moderate lean, the arms straight down past the knees
+      ark_setArm(w.L, [-0.3, 0.14, 0], 1); ark_setArm(w.R, [-0.3, 0.14, 0], -1);
+      wash.add(w.g); kidd.w = w;
+      const q = ark_priestFig(5);
+      q.g.position.set(STOP[0] + VSL_TAP_R + 0.48, F, STOP[1] - 0.9); q.g.rotation.y = Math.atan2(-0.48, 0.9);   // north of the stream, his face to it
+      q.lean.rotation.x = 0.32;
+      ark_setArm(q.L, [-0.95, -0.12, -0.55], 1); ark_setArm(q.R, [-0.95, -0.12, -0.55], -1);
+      purpose.add(q.g); kidd.p = q;
+      const organM = new MeshStandardMaterial({ color: 0xc9a08c, roughness: 0.75 });
+      const og = new Group();
+      for (const [dx, dy, dz, sx, sy, sz] of [[0, 0, 0, 0.36, 0.22, 0.28], [0.12, -0.05, 0.22, 0.22, 0.16, 0.2], [-0.1, -0.06, -0.2, 0.2, 0.15, 0.18]]) {
+        const m = new Mesh(new SphereGeometry(1, 12, 8), organM); m.scale.set(sx, sy, sz); m.position.set(dx, dy, dz); og.add(m);
+      }
+      og.position.set(STOP[0] + VSL_TAP_R + 0.12, F + 1.5, STOP[1] - 0.25);
+      purpose.add(og); kidd.organs = og;
+    } catch (_) {}
     let sprites = null, spriteTries = 0;           // the UI's sprites of the part labels (sprite.userData.label), looked up a few times
     const findSprites = () => {
       try {
@@ -1449,6 +1474,7 @@
         buildTL();
         // the wash stop's label (and the follow view's aim at it) go with the stop
         washLabel.z = WASH[1] - 5;
+        if (kidd.w) kidd.w.g.position.z = WASH[1];   // KIDDUSH_211: the priest at the wash stop with it
         FOL_LABW[0] = WASH[0] - 8;
         FOL_LABW[1] = WASH[1] - 5;
         try {

@@ -539,7 +539,7 @@
           const b = document.createElement("button");
           b.type = "button";
           b.textContent = nameOf(t);
-          b.title = t && t.o ? "פתיחת השורה שבטבלת השיטות — הכרטיס והמבט; המודל אינו משתנה" : "מעבר אל המקום במודל";
+          b.title = t && t.o ? "פתיחת המתג שבתפריט, תחת ״שיטות ומחלוקות״ — הכרטיס והמבט; המודל אינו משתנה" : "מעבר אל המקום במודל";
           if (t && t.o) b.className = "op";
           b.addEventListener("click", (ev) => { ev.stopPropagation(); go(t, label); });
           return b;

@@ -74,8 +74,9 @@
       c.lineTo(x0 + r, y1); c.quadraticCurveTo(x0, y1, x0, y1 - r); c.lineTo(x0, y0 + r); c.quadraticCurveTo(x0, y0, x0 + r, y0); c.closePath();
       c.fillStyle = typeof l.box === "string" ? l.box : "rgba(24,16,6,.86)";
       c.fill();
-      c.lineWidth = 4;
-      c.strokeStyle = "rgba(243,220,154,.9)";
+      // MEASURES_211: a plate may carry its own rim colour (l.rim) - the colour of the line it names (the altar's measures)
+      c.lineWidth = typeof l.rim === "string" ? 9 : 4;
+      c.strokeStyle = typeof l.rim === "string" ? l.rim : "rgba(243,220,154,.9)";
       c.stroke();
     }
     lt.draw(c, cv.width - pad, cv.height / 2);
@@ -97,6 +98,9 @@
   // 4K/HiDPI screen rendered at 2x was the heaviest single cost) and the shadow map is 2048 (4096 at 1.0.0); see also the orbit limits below
   // and the lighter cloud ray test in ui.js
   var renderer = new WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  // LOAD_211 (the user, 14.11.2026: "זמן הטעינה הוכפל לפחות, יש דרך לקצר?"): the shaders' logs are not read - three.js then never waits
+  // for a program to finish linking before its first use (on Windows/ANGLE the wait is the heaviest single cost of the first frame)
+  renderer.debug.checkShaderErrors = false;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   // 1.0.1-H (robustness, the user: "נתקע ולא מסתובב נכון"): a webview may create the page while its tab is hidden - window.innerWidth /
   // innerHeight are then 0, the camera aspect becomes NaN and OrbitControls divides a drag by the canvas height (0): every value turns
@@ -321,6 +325,21 @@
       ray.far = L;
       for (const h of ray.intersectObjects(ent_solids(false), false)) {
         if (!h.object.userData.tmPass || h.distance >= L - 0.05) continue;
+        // KEEP_CUT_211 (the place of the vessels' chamber, 15.11.2026: the eye looks down into a cell whose ceiling the section has cut
+        // away - and the ceiling, which no one sees, still drew the eye down to a span from the shelves): a surface that stands in the
+        // half that the section removed (ent_sec: the side of the larger coordinate) is not there - it holds no eye
+        if (ent_sec.on) { const hp = h.point, c = ent_sec.axis === "x" ? hp.x : ent_sec.axis === "y" ? hp.y : hp.z; if (c > ent_sec.v + 0.02) continue; }
+        // KEEP_NEAR_211 (the user, 15.11.2026, the lambs' chamber: the eye landed a third of an amah from the floor and all one saw was
+        // a blank surface - the straw, a flat sheet 0.4 over the target, was taken for a ceiling): a surface that stands this close to
+        // the target is the thing one looks at or what it lies on, not a wall of its room - and an eye drawn to less than 1.5 from the
+        // target sees nothing; and a low flat thing whose top is within 2 over the target (a floor's covering, a table's top) is no ceiling
+        if (h.distance < 1.8) continue;
+        try {
+          const o = h.object, bb = cam_in.bb || (cam_in.bb = new Box3());
+          if (o.isInstancedMesh) { if (!o.boundingBox && typeof o.computeBoundingBox === "function") o.computeBoundingBox(); if (o.boundingBox) bb.copy(o.boundingBox); else bb.makeEmpty(); }
+          else { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox); }
+          if (!bb.isEmpty()) { bb.applyMatrix4(o.matrixWorld); if (bb.max.y - bb.min.y < 0.6 && bb.max.y < q.y + 2) continue; }
+        } catch (_) {}
         p.copy(q).addScaledVector(v, Math.max(0.3, h.distance - 0.3));
         return;
       }
@@ -749,6 +768,13 @@
   // the next frame): its touch pinch, middle-button dolly and plain mouse wheel are unchanged; other listeners (the presentation pauses on
   // a wheel) still see the event.
   var ent_zoom = { pending: 0, held: false, off: new Vector3(), anchor: null, aT: 0, ax: 0, ay: 0, P: new Vector3(), O: new Vector3(), cur: 0 };
+  // CURSOR_211 (the user, 14.11.2026: "עוד לא הוספת לי סמן כפי שדיברנו"; 12.11.2026: "יהיה אפשר לעמוד עם סמן (בצורת זכוכית מגדלת)"):
+  // the cursor over the model is a magnifying glass at all times - a style rule on the canvas; a label's hand ("pointer") still wins
+  try {
+    const st = document.createElement("style");
+    st.textContent = "canvas{cursor:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'><circle cx='12' cy='12' r='8' fill='rgba(255,255,255,0.22)' stroke='%23000' stroke-width='3.4'/><circle cx='12' cy='12' r='8' fill='none' stroke='%23f3dc9a' stroke-width='1.7'/><line x1='18' y1='18' x2='27' y2='27' stroke='%23000' stroke-width='5.4' stroke-linecap='round'/><line x1='18' y1='18' x2='27' y2='27' stroke='%23c9a84c' stroke-width='3' stroke-linecap='round'/><path d='M8.2 12h7.6M12 8.2v7.6' stroke='%23000' stroke-width='1.7'/></svg>\") 12 12, zoom-in}";
+    document.head.appendChild(st);
+  } catch (_) {}
   // ZOOM_CURSOR_207 (the user, 12.11.2026 20:23: "המקום עליו עומד הסמן - הוא זה שיוגדל בזום"): the point of the model under the cursor -
   // a ray from the cursor (x, y: the canvas's own pixels); the first solid that is seen (not hidden, not see-through, not a sprite, not the
   // sky); over the sky the point of the ray at the target's distance
@@ -829,6 +855,7 @@
       }
       ent_zoom.aT = now;
       el.style.cursor = k < 0 ? "zoom-in" : "zoom-out";   // the magnifying glass while the wheel turns
+
       clearTimeout(ent_zoom.cur);
       ent_zoom.cur = setTimeout(() => { el.style.cursor = ""; }, 450);
       // WHEEL_ROOFED_205 (the user's recording, 12.11.2026: "ריצה בגלילה" - under a roof, with the target far, a notch was 5% of a long way:
@@ -848,6 +875,41 @@
         controls.enableZoom = false;
       }
     }, { capture: true, passive: false });
+    // ENTER_ZOOM_211 (the user, 15.11.2026: "הסמן לא עושה כלום אמנם רואים אותו אבל הוא לא מגדיל את המקום (צריך שבלחיצה על אנטר יגדיל
+    // את המקום שנמצא עליו)"; his recording: the magnifying glass went from place to place in the Holy and nothing grew): Enter brings
+    // the eye half the way to the point of the model under the cursor - Shift + Enter takes it back, twice as far - and a double
+    // click does as Enter. While the cursor is over the picture the key is the picture's, whichever button the last click left the
+    // focus on (a field one types in keeps its own Enter, and so do the open dialogs). Never nearer than six amot to the point: the
+    // wheel's own limit is two and a half, and at a point of a floor the picture went white (the end of his recording).
+    const curAt = { x: 0, y: 0, over: false };
+    el.addEventListener("pointermove", (e) => { curAt.x = e.clientX; curAt.y = e.clientY; curAt.over = true; }, { passive: true });
+    el.addEventListener("pointerenter", (e) => { curAt.x = e.clientX; curAt.y = e.clientY; curAt.over = true; }, { passive: true });
+    el.addEventListener("pointerleave", () => { curAt.over = false; }, { passive: true });
+    const zoomAtCursor = (x, y, out) => {
+      if (ent_load.loading || !controls || controls.enabled === false || flyAnim) return false;
+      const P = ent_zoomAnchor(el, x, y);
+      const Lp = P ? camera.position.distanceTo(P) : 0;
+      if (!(Lp > 0) || !isFinite(Lp)) return false;
+      const NEAR = 6;
+      if (!out && Lp <= NEAR + 0.05) return true;   // there already (the key is still the picture's)
+      ent_zoom.anchor = P;
+      ent_zoom.ax = x;
+      ent_zoom.ay = y;
+      ent_zoom.aT = performance.now();
+      ent_zoom.pending = out ? Math.log(2) : Math.log(Math.max(0.5, NEAR / Lp));
+      return true;
+    };
+    window.__zoomQA.enter = (x, y, out) => zoomAtCursor(x, y, !!out);   // (tests)
+    window.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || e.ctrlKey || e.altKey || e.metaKey || e.defaultPrevented || e.repeat || !curAt.over) return;
+      const a = document.activeElement, tag = a && a.tagName ? String(a.tagName).toUpperCase() : "";
+      if (tag === "TEXTAREA" || tag === "SELECT" || (a && a.isContentEditable) ||
+        (tag === "INPUT" && !/^(checkbox|radio|button|submit|reset|range|color)$/i.test(String(a.type || "text")))) return;
+      for (const id of ["tm-confirm", "tm-help", "tm-news"]) { const d = document.getElementById(id); if (d && d.style.display === "flex") return; }
+      if (document.querySelector("dialog[open]")) return;
+      if (zoomAtCursor(curAt.x, curAt.y, e.shiftKey)) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
+    el.addEventListener("dblclick", (e) => { if (zoomAtCursor(e.clientX, e.clientY, e.shiftKey)) e.preventDefault(); });
     window.addEventListener("wheel", release, { passive: true });
     // 1.0.1-K review (ui-4): a pinch with the pointer over a pill, the label's card, the side panel, the nav row or the presentation's
     // box never reached the canvas listener (they are the canvas's siblings under body), so nothing prevented it and the WebView zoomed
@@ -1002,9 +1064,14 @@
       bs.n = list.length;
       list.__boxes = bs;
     }
+    // ROOF_HOLD_211 (the user's recording, 15.11.2026: "נסגר מיד, לא מציג" - Beit HaMoked's dome came back while he was still looking
+    // at the room from outside): a roof also stays off while one LOOKS at what is under it from near by - the view's target is inside
+    // the piece's plan and under its top, the eye within 150 of it. Flying to another place still puts it back at once (closeAuto).
+    const q = controls ? controls.target : null, look = !!q && p.distanceTo(q) < 150;
     for (const b of list.__boxes) {
       if (b.isEmpty()) continue;
       if (p.x > b.min.x - 1 && p.x < b.max.x + 1 && p.z > b.min.z - 1 && p.z < b.max.z + 1 && p.y < b.max.y + 0.5) return true;
+      if (look && q.x > b.min.x - 1 && q.x < b.max.x + 1 && q.z > b.min.z - 1 && q.z < b.max.z + 1 && q.y < b.max.y + 0.5) return true;
     }
     return false;
   };
@@ -1052,7 +1119,24 @@
     S.t = setTimeout(close, ms || 15000);
     return true;
   };
+  // FADE_HOLD_211 (the user, 15.11.2026, the row of the eastern wall's height: "החומות משתקפות, ואי אפשר לראות את גובה החומה אם היא
+  // שקופה"): a reading whose SUBJECT is a wall itself shows it whole - its fly sets the hold at its target (fadeHold.set([x, y, z]));
+  // the fade loop of 70-ui.js fades nothing while the hold is on. It ends when another place or reading is chosen (closeAuto), or
+  // when the view's target has gone 30 amot away from it (the user went on to look at something else).
+  ctx.shared.fadeHold = { on: false, arrived: false, t0: 0, at: new Vector3(),
+    set(t) { if (Array.isArray(t) && t.length >= 3 && isFinite(t[0] + t[1] + t[2])) { this.at.set(t[0], t[1], t[2]); this.arrived = false; this.t0 = performance.now(); this.on = true; } else this.on = false; },
+    held() {
+      if (!this.on || !controls) return false;
+      const d = controls.target.distanceTo(this.at);
+      if (!this.arrived) {   // the flight to it: until the target is there (or 4 s: a flight that ends a little elsewhere)
+        if (d < 2 || performance.now() - this.t0 > 4000) { this.arrived = true; this.at.copy(controls.target); }
+        return true;
+      }
+      if (d > 30) { this.on = false; return false; }
+      return true;
+    } };
   ctx.shared.closeAuto = () => {
+    try { ctx.shared.fadeHold.on = false; } catch (_) {}
     const T = ctx.shared.__pillT;
     if (T) {
       for (const id of Object.keys(T)) {
@@ -1147,7 +1231,7 @@
   document.addEventListener("click", (ev) => {
     const t = ev.target && ev.target.closest ? ev.target.closest("button, input, select, [role='button'], .tm-op a") : null;
     // TOUR_SOFT_204 (the user, 12.11.2026 02:14): closing a floating card, folding it, folding the panel - no command, the demonstration goes on
-    if (!t || t.closest(".tm-pill, #tm-news, #tm-help, .tm-src, .tm-srcl, #tm-xcard .x, #tm-card .x, #tm-burger, #tm-dpause, #tm-tour-box")) return;   // DEMO_PAUSE_207: + the pause bar; TOUR_DEMO_PAUSE_209: + the presentation's banner (its buttons pause, step and end it - its own undo stops a slide's demonstration; until 2.0.8 its "⏸" ENDED the slide's demonstration)
+    if (!t || t.closest(".tm-pill, #tm-news, #tm-help, .tm-src, .tm-srcl, #tm-xcard .x, #tm-card .x, .tm-more, #tm-burger, #tm-dpause, #tm-tour-box")) return;   // DEMO_PAUSE_207: + the pause bar; TOUR_DEMO_PAUSE_209: + the presentation's banner (its buttons pause, step and end it - its own undo stops a slide's demonstration; until 2.0.8 its "⏸" ENDED the slide's demonstration)
     ctx.shared.stopDemos();
   }, true);
   // 1.0.1-K: the shadow pass's depth programs. renderer.compile() prepares the materials of the scene only; WebGLShadowMap draws every

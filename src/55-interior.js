@@ -65,6 +65,15 @@
     m.compose(new Vector3(x, y, z), new Quaternion().setFromEuler(new Euler(rx, ry, rz)), new Vector3(sx, sy, sz));
     return m;
   }
+  // NOZZLE_211b (LAMPS_MIDDLE_211): a lamp's nozzle - a short tube rising out of its top from 0.04 to 0.125 off its centre (x) toward
+  // (dirX, dirZ), the wick's mouth at the rim (3.205 over the menorah's foot; the lamps' tops 3.16). Its form and size - model choices
+  function int_nozzle211(dirX, dirZ, x) {
+    const B = new Vector3(x + dirX * 0.04, 3.13, dirZ * 0.04), T = new Vector3(x + dirX * 0.125, 3.205, dirZ * 0.125), v = T.clone().sub(B);
+    const sg = new CylinderGeometry(0.02, 0.034, v.length(), 8);
+    sg.applyQuaternion(new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), v.clone().normalize()));
+    sg.translate((B.x + T.x) / 2, (B.y + T.y) / 2, (B.z + T.z) / 2);
+    return sg;
+  }
   function int_inst(parent, geo, mat, mats, shadows = true) {
     const im = new InstancedMesh(geo, mat, mats.length);
     mats.forEach((mm, i) => im.setMatrixAt(i, mm));
@@ -1149,6 +1158,7 @@
     const goldFloor = goldStd(int_floorTex(false), { roughness: 0.36, bumpScale: 0.5 });
     // 1.0.1-K (K.4): the materials of the rebuilt vessels, the parochet and the cherubim (gold = M.gold or goldStd, FIXES K 0.4)
     const breadMat = std(int_speckleTex("bread", "#a2612d", ["rgba(206,150,84,0.36)", "rgba(196,138,76,0.3)", "rgba(92,48,18,0.38)"], 170, 8), { roughness: 0.78 });   // the baked loaves (a darker crust, as the book draws them)
+    breadMat.side = DoubleSide;   // SHOWBREAD_SHAPE_211: the boat loaf is a shell
     const crownMat = goldStd(int_crownTex(), { bumpScale: 0.7, roughness: 0.3 });     // the table's crown (Ex 25:24-25)
     const tubeEndMat = new MeshStandardMaterial({ color: 0x24170c, roughness: 0.9 });      // the dark hollow ends of the tubes
     const incenseMat = new MeshStandardMaterial({ color: 0xf4efe2, roughness: 0.95 });     // the white frankincense ("לבונה זכה", Lev 24:7)
@@ -1296,6 +1306,7 @@
         const SFX = (() => {
           let ac = null;
           const A = () => {
+            if (ctx.shared && ctx.shared.soundOff) return null;   // SOUND_211: the settings' row "קולות בהדגמות"
             if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { ac = new C(); } catch (_) { return null; } }
             if (ac.state === "suspended") { try { ac.resume(); } catch (_) {} }
             return ac;
@@ -1632,6 +1643,78 @@
     const HORN = 7 / 24;                    // 7 fingers (4 to a tefach)
     const POST_Z = 0.56, POST_T = 0.05, STACK_TOP = TBL_TOP + 6 * LOAF_H;   // the posts' plane; the top of the stacks 3.5 above the floor
     const TUBE_R = 0.03, TUBE_L = 2 * (POST_Z + POST_T / 2);               // the tubes run from the outer face of one post to the other's
+  // SHOWBREAD_SHAPE_211 (2.0.2 / 1.4.4; the user, 15.11.2026 08:38: "א: כן ברירת מחדל כר"י") - R. Yochanan's loaf, "כמין ספינה רוקדת"
+  // (Menachot 94b, 131:3364): Rashi (2186:4470) "אין לה שוליים אלא מלמעלה רחבה ומלמטה כלה והולכת עד כאצבע... וב' ראשיה חדין והולכין
+  // וגבוהין למעלה"; its mouth "דומה כמין טבלא מרובעת" (95a, 131:3372; Rashi 2186:4490 "השוליים עשויין כספינה"). A hollow shell: the
+  // mouth a rectangle LX x W (half-sizes), the two walls sloping down to a keel KEEL wide (half a finger), the two ends raked - the keel
+  // shorter than the mouth - and rising toward the corners (SH over H). T - the walls' thickness. The measures: model choices.
+  function int_boatLoaf(LX, W, KEEL, H, T, SH) {
+    const NU = 12, NV = 5, pos = [], uvs = [];
+    const P = (u, v, s, inn) => {
+      const xe = LX * (0.62 + 0.38 * v) - (inn ? T * 0.75 : 0);
+      const y = v * (H + SH * u * u) + (inn ? T * (1 - v) + T * 0.2 : 0);
+      const hw = KEEL + (W - KEEL) * v - (inn ? T * 0.85 : 0);
+      return [u * xe, y, s * Math.max(inn ? 0.004 : KEEL, hw)];
+    };
+    // NOTE 7 (the understandability review, U-53 2): the boat's loaves looked like dark wooden wedges beside the box's - its texture
+    // was 2.4 times denser than the box's (uvWorldBox: one unit an amah), and its inner faces turned away from the eye. The same scale
+    // now, and the inner faces wound the other way (their normals toward the hollow)
+    const tri = (a, b, c) => { for (const q of [a, b, c]) { pos.push(q[0], q[1], q[2]); uvs.push(q[0] * 1.2, q[2] * 1.2 + q[1] * 0.4); } };   // seen from above, as the box's top
+    const quad = (a, b, c, d) => { tri(a, b, c); tri(a, c, d); }, quadO = quad;
+    for (const inn of [false, true]) {
+      const quad = inn ? (a, b, c, d) => quadO(a, d, c, b) : quadO;
+      for (const s of [-1, 1]) for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {   // the two walls
+        const u0 = -1 + 2 * i / NU, u1 = -1 + 2 * (i + 1) / NU, v0 = j / NV, v1 = (j + 1) / NV;
+        quad(P(u0, v0, s, inn), P(u1, v0, s, inn), P(u1, v1, s, inn), P(u0, v1, s, inn));
+      }
+      for (let i = 0; i < NU; i++) {                                                           // the keel
+        const u0 = -1 + 2 * i / NU, u1 = -1 + 2 * (i + 1) / NU;
+        quad(P(u0, 0, -1, inn), P(u1, 0, -1, inn), P(u1, 0, 1, inn), P(u0, 0, 1, inn));
+      }
+      for (const e of [-1, 1]) for (let j = 0; j < NV; j++) {                                  // the two raked ends
+        const v0 = j / NV, v1 = (j + 1) / NV;
+        quad(P(e, v0, -1, inn), P(e, v0, 1, inn), P(e, v1, 1, inn), P(e, v1, -1, inn));
+      }
+    }
+    for (const s of [-1, 1]) for (let i = 0; i < NU; i++) {                                    // the rim along the walls
+      const u0 = -1 + 2 * i / NU, u1 = -1 + 2 * (i + 1) / NU;
+      quad(P(u0, 1, s, false), P(u1, 1, s, false), P(u1, 1, s, true), P(u0, 1, s, true));
+    }
+    for (const e of [-1, 1]) quad(P(e, 1, -1, false), P(e, 1, 1, false), P(e, 1, 1, true), P(e, 1, -1, true));   // the rim of the ends
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(new Float32Array(pos), 3));
+    g.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), 2));
+    g.computeVertexNormals();
+    // NOTE 7 (U-53 2): the flat normals made each row of the curved walls a band of its own - the "wood grain". Smooth them: a vertex
+    // takes the mean of the normals at its point that lie within 60 degrees of its own (the keel's and the rim's edges stay sharp)
+    {
+      const nA = g.attributes.normal, pA = g.attributes.position, at = new Map(), out = new Float32Array(nA.count * 3);
+      for (let i = 0; i < pA.count; i++) {
+        const k = Math.round(pA.getX(i) * 1e4) + "," + Math.round(pA.getY(i) * 1e4) + "," + Math.round(pA.getZ(i) * 1e4);
+        if (!at.has(k)) at.set(k, []);
+        at.get(k).push(i);
+      }
+      for (const idx of at.values()) for (const i of idx) {
+        const nx = nA.getX(i), ny = nA.getY(i), nz = nA.getZ(i);
+        let x = 0, y = 0, z = 0;
+        for (const j of idx) { const mx = nA.getX(j), my = nA.getY(j), mz = nA.getZ(j); if (nx * mx + ny * my + nz * mz > 0.5) { x += mx; y += my; z += mz; } }
+        const L = Math.hypot(x, y, z) || 1;
+        out[i * 3] = x / L; out[i * 3 + 1] = y / L; out[i * 3 + 2] = z / L;
+      }
+      g.setAttribute("normal", new BufferAttribute(out, 3));
+    }
+    return g;
+  }
+  // SHOWBREAD_SHAPE_211: the switch of the loaves' shape, one object for the whole model (whichever module asks first makes it):
+  // set("boat" | "box"); shaped(mesh, boxGeo, boatGeo) - a mesh (instanced or not) whose geometry follows it
+  function int_breadShape(c) {
+    return c.shared.breadShape || (c.shared.breadShape = { mode: "boat", list: [],
+      // NOTE 7 (U-53 2): the boat's walls face down and sideways, and in the same material as the box's lit top they looked like dark
+      // wood - the boat gets the same material lifted by a warm glow (the bread's own colour; model choice), the box keeps its own
+      mat(e) { if (!e.mBoat) { const m = e.mBox && e.mBox.clone ? e.mBox.clone() : e.mBox; if (m && m.emissive) { m.emissive.setHex(0x6a3a14); m.emissiveIntensity = 0.6; } e.mBoat = m; } return this.mode === "box" ? e.mBox : e.mBoat; },
+      shaped(im, box, boat) { const e = { im, box, boat, mBox: im.material, mBoat: null }; this.list.push(e); if (this.mode === "boat") { im.geometry = boat; im.material = this.mat(e); if (im.isInstancedMesh) im.computeBoundingSphere(); } return im; },
+      set(m) { this.mode = m === "box" ? "box" : "boat"; for (const e of this.list) { e.im.geometry = this.mode === "box" ? e.box : e.boat; e.im.material = this.mat(e); if (e.im.isInstancedMesh) e.im.computeBoundingSphere(); } return this.mode; } });
+  }
     const tableGeo = (() => {
       const box = (arr, w, h, d, x, y, z) => { const b = uvWorldBox(new BoxGeometry(w, h, d), w, h, d); b.translate(x, y + h / 2, z); arr.push(b); };
       const put = (arr, geo, x, y, z) => { const c = geo.clone(); c.translate(x, y, z); arr.push(c); };   // a copy of a part made once
@@ -1651,22 +1734,37 @@
         for (const hx of [-1, 1]) box(loaf, LOAF_T, 0.055, HORN, hx * (LOAF_X - LOAF_T / 2), LOAF_H - 0.055, sz * (LOAF_Z - LOAF_T - HORN / 2));   // the horns, bent inward
       }
       const loafG = mergeGeometries(loaf);
+      // SHOWBREAD_SHAPE_211: R. Yochanan's loaf (int_boatLoaf) - its mouth 5 tefachim by a little less than the table's breadth, so that the
+      // posts STAND ON THE TABLE ("לדברי האומר כמין ספינה רוקדת - סניפין על גבי שלחן מונחין", Menachot 94b, 131:3369), against its rim
+      const BOAT_W = 0.46, loafB = int_boatLoaf(LOAF_X, BOAT_W, INT_TEF / 8, LOAF_H, LOAF_T * 0.8, LOAF_H * 0.4);
+      const POST_ZB = BOAT_W + POST_T / 2, TUBE_LB = 2 * (POST_ZB + POST_T / 2);
+      const breadB = [], rigB = [], endsB = [];
       const tubeG = new CylinderGeometry(TUBE_R, TUBE_R, TUBE_L, 8, 1, true); tubeG.rotateX(Math.PI / 2);
       const endG = new CircleGeometry(TUBE_R * 0.8, 10), endGb = endG.clone().rotateY(Math.PI);
       const post = [];                                                                        // a post (סניף), floor to the stack's top,
       box(post, 2 * LOAF_X - 0.012, STACK_TOP, POST_T, 0, 0, 0);
       for (let k = 0; k < 5; k++) box(post, 2 * LOAF_X - 0.06, 0.025, 0.03, 0, TBL_TOP + (k + 1) * LOAF_H - TUBE_R - 0.025, -(POST_T / 2 + 0.015));   // with its five branches on the inner face
       const postG = mergeGeometries(post), postGb = postG.clone().rotateY(Math.PI);           // for the +z side / the -z side
+      const postB = [];                                                                       // SHOWBREAD_SHAPE_211: from the table's top
+      box(postB, 2 * LOAF_X - 0.012, STACK_TOP - TBL_TOP, POST_T, 0, TBL_TOP, 0);
+      for (let k = 0; k < 5; k++) box(postB, 2 * LOAF_X - 0.06, 0.025, 0.03, 0, TBL_TOP + (k + 1) * LOAF_H - TUBE_R - 0.025, -(POST_T / 2 + 0.015));
+      const postBG = mergeGeometries(postB), postBGb = postBG.clone().rotateY(Math.PI);
+      const tubeBG = new CylinderGeometry(TUBE_R, TUBE_R, TUBE_LB, 8, 1, true); tubeBG.rotateX(Math.PI / 2);
       for (const sx of [-1, 1]) {
         const xc = sx * STACK_X;
         for (const sz of [-1, 1]) put(rig, sz > 0 ? postG : postGb, xc, 0, sz * POST_Z);
         for (let i = 0; i < 6; i++) put(bread, loafG, xc, TBL_TOP + i * LOAF_H, 0);              // the six loaves of this stack
+        for (const sz of [-1, 1]) put(rigB, sz > 0 ? postBG : postBGb, xc, 0, sz * POST_ZB);      // SHOWBREAD_SHAPE_211
+        for (let i = 0; i < 6; i++) put(breadB, loafB, xc, TBL_TOP + i * LOAF_H, 0);
         for (let k = 0; k < 5; k++) {                                                           // 3 + 3 + 3 + 3 + 2 tubes
           const y = TBL_TOP + (k + 1) * LOAF_H;
           for (const dx of k < 4 ? [-0.27, 0, 0.27] : [-0.17, 0.17]) {
             put(rig, tubeG, xc + dx, y, 0);
             put(ends, endG, xc + dx, y, TUBE_L / 2 + 0.001);                                    // the hollow ends, dark dots on the posts
             put(ends, endGb, xc + dx, y, -TUBE_L / 2 - 0.001);
+            put(rigB, tubeBG, xc + dx, y, 0);                                                    // SHOWBREAD_SHAPE_211: the reeds under the keels ("מורשא עביד להו")
+            put(endsB, endG, xc + dx, y, TUBE_LB / 2 + 0.001);
+            put(endsB, endGb, xc + dx, y, -TUBE_LB / 2 - 0.001);
           }
         }
       }
@@ -1684,8 +1782,12 @@
         incense.push(mound);
       }
       const M2 = (a) => mergeGeometries(a);
-      return { body: M2(body), crown: M2(crown), rig: M2(rig), ends: M2(ends), bread: M2(bread), spoons: M2(spoons), incense: M2(incense) };
+      return { body: M2(body), crown: M2(crown), rig: M2(rig), ends: M2(ends), bread: M2(bread), spoons: M2(spoons), incense: M2(incense),
+        breadB: M2(breadB), rigB: M2(rigB), endsB: M2(endsB) };   // SHOWBREAD_SHAPE_211
     })();
+    // SHOWBREAD_SHAPE_211: ctx.shared.breadShape.set("boat" | "box") - every loaf, post and reed of every table changes its geometry
+    // (R. Yochanan's boat, the default; R. Chanina's open box, with the posts on the floor). breadShape.shaped(im, box, boat) - one more
+    const BREAD_SH = int_breadShape(ctx);
 
     // ---- 1.3.3 (the user: "שלחנות באולם יש, רק צריך להוסיף לחם כמו שעשית" - as in the Second Temple plugin): THE TWELVE LOAVES ON THE
     // ULAM'S ENTRY TABLE (north: silver for R. Yose b. R. Yehuda, marble for the Mishnah) - "על של שיש נותנין לחם הפנים בכניסתו" (Shekalim
@@ -1696,7 +1798,7 @@
       const UT = ctx.shared.ulamTables;
       if (UT && UT.entry && UT.group) {
         const m = new Matrix4().makeTranslation(UT.entry.x, UT.entry.floor + (UT.entry.top - UT.entry.floor - TBL_TOP), UT.entry.z);
-        const br = new InstancedMesh(tableGeo.bread, breadMat, 1);
+        const br = BREAD_SH.shaped(new InstancedMesh(tableGeo.bread, breadMat, 1), tableGeo.bread, tableGeo.breadB);   // SHOWBREAD_SHAPE_211
         br.setMatrixAt(0, m);
         br.castShadow = br.receiveShadow = true;
         br.name = "ulam-table-bread";
@@ -1803,12 +1905,25 @@
         }
       });
       for (const dx of [-3, -2, -1, 0, 1, 2, 3]) add(new CylinderGeometry(0.13, 0.08, 0.16, 8), dx * LAMP_R, 3.08, 0);   // the seven lamps ("נרתיה")
+      // LAMPS_MIDDLE_211 (as the Second Temple's 45-vessels.js; Menachot 98b "מלמד שהיו מצדדין פניהם כלפי נר אמצעי"; Rashi: the middle
+      // "פי הפתילה כלפי מערב", "ושאר הפתילות מצודדות פיהן כלפי האמצעי"): a spout on every side lamp toward the middle; the middle one's,
+      // toward the west, is set per menorah in buildLayout (each menorah has its own turn). Their form and size - model choices.
+      // NOZZLE_211b: the lamps stand LAMP_R (0.27) apart and their tops are 0.26 wide, so a spout cannot reach out sideways (the first try
+      // put each side flame in its neighbour's lamp) - each is a short nozzle rising out of its own lamp's top on the side of its face,
+      // from 0.04 to 0.125 off the lamp's centre, the wick's mouth at the rim (int_nozzle211; the flames on them in buildLayout)
+      // LAMPS_REBBI_211 (the review, R-08 / S4-12; the user, 15.11.2026 18:12: "5. לשנות את רבי לד' הרמבם"): Rashi's picture - the middle
+      // one west and the others toward it - was said for the one who sets the lamps NORTH-SOUTH ("לעולם צפון ודרום מנחי...", Menachot
+      // 98b). For Rebbi, EAST-WEST (this model's default), the Rambam drew the seven in a row between west and east - "ופיות כל הנרות
+      // לצד מערב זה לאחור זה" (his commentary on Tamid 3:9). So the six side nozzles are no longer part of the body: two geometries,
+      // sideNS (toward the middle lamp) and sideEW (all toward -x, the west), chosen per menorah in buildLayout.
+      const sideNS = mergeGeometries([-3, -2, -1, 1, 2, 3].map((dx) => int_nozzle211(-Math.sign(dx), 0, dx * LAMP_R)));
+      const sideEW = mergeGeometries([-3, -2, -1, 1, 2, 3].map((dx) => int_nozzle211(-1, 0, dx * LAMP_R)));
       const sbox = (w, h, d, y, z) => { const b = uvWorldBox(new BoxGeometry(w, h, d), w, h, d); b.translate(0, y + h / 2, z); steps.push(b); };
       const ST_R = 8.5 * MEN_T / 3;                                                    // A19: a third of 8.5 tefachim
       sbox(1.2, ST_R, 1.5, 0, -1.05);                                                  // the three steps (L.71; A19): treads 0.5 from z -0.3 outward, 9 tefachim in all
       sbox(1.2, ST_R, 1, ST_R, -0.8);
       sbox(1.2, ST_R, 0.5, 2 * ST_R, -0.55);
-      return { body: mergeGeometries(parts), steps: mergeGeometries(steps) };
+      return { body: mergeGeometries(parts), steps: mergeGeometries(steps), sideNS, sideEW };
     })();
 
     // ---- 1.0.1-K (K.4): מזבח הזהב / מזבח הקטרת, with its LAYERS (the user: "וכן במזבח הקטורת... שכחת בכלל לעשות אותו"; "אינו מוצג אצלך כזהב") ----
@@ -1894,11 +2009,11 @@
       const tenM = tM.filter((m, i) => !tables[i].moses), mosesM = tM.filter((m, i) => tables[i].moses);
       int_inst(lg, tableGeo.body, tableGold, tM);
       int_inst(lg, tableGeo.crown, crownMat, tM, false);
-      int_inst(lg, tableGeo.rig, tableGold, tM);
-      int_inst(lg, tableGeo.ends, tubeEndMat, tM, false);
+      BREAD_SH.shaped(int_inst(lg, tableGeo.rig, tableGold, tM), tableGeo.rig, tableGeo.rigB);                 // SHOWBREAD_SHAPE_211
+      BREAD_SH.shaped(int_inst(lg, tableGeo.ends, tubeEndMat, tM, false), tableGeo.ends, tableGeo.endsB);
       int_inst(lg, tableGeo.spoons, tableGold, tM, false);
-      out.ten.push(int_inst(lg, tableGeo.bread, breadMat, tenM, false), int_inst(lg, tableGeo.incense, incenseMat, tenM, false));
-      int_inst(lg, tableGeo.bread, breadMat, mosesM, false);           // Moses' table: all opinions (99a "לא היו מסדרין אלא על של משה")
+      out.ten.push(BREAD_SH.shaped(int_inst(lg, tableGeo.bread, breadMat, tenM, false), tableGeo.bread, tableGeo.breadB), int_inst(lg, tableGeo.incense, incenseMat, tenM, false));
+      BREAD_SH.shaped(int_inst(lg, tableGeo.bread, breadMat, mosesM, false), tableGeo.bread, tableGeo.breadB);           // Moses' table: all opinions (99a "לא היו מסדרין אלא על של משה")
       int_inst(lg, tableGeo.incense, incenseMat, mosesM, false);
       // --- menorot (1.0.1-L, L.73: ONE merged geometry with every cup, knob and flower - menorahGeo above; L.71: the stone of three steps
       // before each one; the flames stay their own instanced mesh, animated below). 3 amot high (Menachot 28b, Rambam 3:10: 18 tefachim);
@@ -1914,7 +2029,11 @@
         stepM.push(int_part(m.x, FL, m.z, m.rot, 0, 0, 0));              // the steps (L.71): north of it for Rabbi, west of it for R. Elazar b. R. Shimon (Ma'asei LaMelech)
         const c = Math.cos(m.rot), s = Math.sin(m.rot);
         for (const dx of lampX) {                                        // the flames in the seven lamps (the lamps end at 3.16; 1.0.1-L, verifier of L.73: the flames' feet in them - at 3.2 they hovered over the lamps)
-          const b = { x: m.x + dx * c, y: FL + 3.14, z: m.z - dx * s, rot: m.rot };
+          // LAMPS_MIDDLE_211 (NOZZLE_211b): on the nozzles' mouths, each in its own lamp - north-south: the side ones toward the middle, the
+          // middle one west; LAMPS_REBBI_211: east-west - every flame 0.115 west of its lamp's middle
+          const ew = Math.abs(s) < 1e-6;
+          const d = Math.abs(dx) < 1e-6 ? 0 : dx - Math.sign(dx) * 0.115;
+          const b = ew ? { x: m.x + dx * c - 0.115, y: FL + 3.17, z: m.z, rot: m.rot } : { x: m.x + d * c - (Math.abs(dx) < 1e-6 ? 0.115 : 0), y: FL + 3.17, z: m.z - d * s, rot: m.rot };
           (m.moses ? baseMoses : baseTen).push(b);
           (m.moses ? flamesMoses : flamesTen).push(int_m4(b.x, b.y, b.z, 0, m.rot, 0));
         }
@@ -1926,6 +2045,16 @@
         }
       }
       int_inst(lg, menorahGeo.body, menorahGold, menM);
+      {   // LAMPS_MIDDLE_211: the middle lamps' spouts, toward the west (-x) whatever the menorah's turn
+        const mg = int_nozzle211(-1, 0, 0);                              // NOZZLE_211b: its mouth to -x
+        int_inst(lg, mg, menorahGold, menorot.map((m) => int_m4(m.x, FL, m.z, 0, 0, 0)), false);
+        // LAMPS_REBBI_211: the six side nozzles - a menorah whose lamps run east-west: all to the west (not turned with the menorah);
+        // north-south: toward the middle lamp (turned with it)
+        const isEW = (m) => Math.abs(Math.sin(m.rot)) < 1e-6;
+        const mEW = menorot.filter(isEW), mNS = menorot.filter((m) => !isEW(m));
+        if (mEW.length) int_inst(lg, menorahGeo.sideEW, menorahGold, mEW.map((m) => int_m4(m.x, FL, m.z, 0, 0, 0)), false);
+        if (mNS.length) int_inst(lg, menorahGeo.sideNS, menorahGold, mNS.map((m) => int_part(m.x, FL, m.z, m.rot, 0, 0, 0)), false);
+      }
       int_inst(lg, menorahGeo.steps, M.marble, stepM);                  // A19: "של שיש טהור" (Yalkut Me'am Lo'ez)
       const fTen = int_inst(lg, flameG, flameMat, flamesTen, false);      // lit only for R. Elazar ben Shamua ("בכולן היו מדליקין", 99a)
       const fMoses = int_inst(lg, flameG, flameMat, flamesMoses, false);  // Tanna Kamma: "לא היו מדליקין אלא בשל משה" (99a)

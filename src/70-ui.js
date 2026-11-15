@@ -295,7 +295,7 @@
     }
     return { plain, segs };
   }
-  function ui_fillRich(el, text, link) {
+  function ui_fillRich(el, text, link, fold) {
     el.textContent = "";
     el.__raw = String(text == null ? "" : text);
     const R = ui_richSegs(el.__raw);
@@ -326,6 +326,35 @@
         b.textContent = sg.t;
         p.appendChild(b);
       } else p.appendChild(document.createTextNode(sg.t));
+    }
+    // FOLD_211 (stage ג, "קיצור כרטיסים ארוכים"; as the Second Temple's 70-ui.js): a long card (over `fold` letters) shows its first
+    // paragraphs and keeps the rest behind a button - none of its words or its sources is cut; the print (el.__raw) sees the whole of it
+    // FOLD_MODEL_211 (the understandability review, U-23 / U-40 / U-52; the user, 15.11.2026 18:39: "21. א"): the fold hid the END of the
+    // card - and the end is where every card says what in the model has no source ("במודל: ... בחירת מודל"). Now only the MIDDLE folds
+    // (the commentators): the paragraphs that open "במודל" - or, in a card that has none, those that say "בחירת מודל" - always show,
+    // under the button. The shown head never ends on a line that announces a list (":") nor in the middle of one ("•"). The button is
+    // a full-width bar that says how much it hides (it looked like one more source chip).
+    if (fold && el.__raw.length > fold) {
+      const ps = [...el.children].filter((c) => c.classList && c.classList.contains("p"));
+      const tx = (c) => c.textContent.trim();
+      let acc = 0, k = -1;
+      for (let i = 0; i < ps.length; i++) { acc += ps[i].textContent.length; if (i >= 1 && acc > fold * 0.5) { k = i; break; } }
+      if (k >= 0) {
+        while (k + 1 < ps.length && (/:$/.test(tx(ps[k])) || /^•/.test(tx(ps[k + 1])))) k++;
+        const rest = ps.slice(k + 1);
+        const isModel = (c) => /^במודל/.test(tx(c));
+        const keep = new Set(ps.some(isModel) ? rest.filter(isModel) : rest.filter((c) => /בחיר(ת|ות) (ה)?מודל/.test(c.textContent)));
+        rest.forEach((c, i) => { if (keep.has(c) && /:$/.test(tx(c))) for (let j = i + 1; j < rest.length && /^•/.test(tx(rest[j])); j++) keep.add(rest[j]); });
+        const hide = rest.filter((c) => !keep.has(c)), nH = hide.filter(tx).length;
+        if (hide.reduce((n, c) => n + c.textContent.length, 0) > 200) {
+          for (const c of hide) c.style.display = "none";
+          const bt = document.createElement("button");
+          bt.className = "tm-more";
+          bt.textContent = "▾ המשך הכרטיס — " + (nH === 1 ? "עוד פסקה אחת" : "עוד " + nH + " פסקאות");
+          bt.onclick = (e) => { e.stopPropagation(); for (const c of hide) c.style.display = ""; bt.remove(); };
+          el.insertBefore(bt, hide[0]);
+        }
+      }
     }
   }
   function ui_richHTML(text) {
@@ -772,23 +801,23 @@
   }
   // ===== explanation texts of the views (Hebrew, verse reference first; wording after research/*.md) =====
   // 1.0.1-L: the pillars' text is shared by the far view "יכין ובועז" (yachinBoazFull, L.58) and the in-doorway place (yachinBoaz)
-  var ui_YB_BODY = "יכין ובועז (מלכים א ז, טו–כב): עמודי נחושת — 'שמנה עשרה אמה קומת העמוד האחד וחוט שתים עשרה אמה יסב' — עגולים, ארבע אמות עוביים, 'והוא חלול' (רש״י), ודופנם ארבע אצבעות (ירמיהו נב, כא: 'ועביו ארבע אצבעות נבוב').\nהכותרת: על כל עמוד כותרת של חמש אמות (ז, טז), והעמוד תחוב בה שתי אמות (רש״י), ולכן **גובה כל העמוד עם הכותרת עשרים ואחת אמה**, כציור הספר. הכותרת — 'כמין שני אגנים' (רש״י ז, יח): הגולה מצוירת שושנים, הבטן ועליה שני טורי רימונים, 'מאה רמונים בטור, חרוזים בשרשרות' (רש״י ז, מב), השבכה 'כמין כפה' הקלועה משבעה לולבים (רש״י ז, יז), וכותרת קטנה בראשה. קריאת מלבי״ם לכותרת — בטבלת 'שיטות ומחלוקות'.\nמקומם — 'שהעמיד באולם' (רש״י ז, טו), יכין מימין, 'בפאת הדרומי' (מצודת דוד ז, כא), ובועז משמאל — 'העמידם שלמה באולם סמוך לכותל ההיכל' (רש״י ירמיהו נב, כג).\nבמודל: צמודים לכותל ככל שהכותרת מניחה (ראו 'יכין ובועז — מבט מפתח האולם').";
+  var ui_YB_BODY = "יכין ובועז (מלכים א ז, טו–כב): עמודי נחושת — 'שמנה עשרה אמה קומת העמוד האחד וחוט שתים עשרה אמה יסב' — עגולים, ארבע אמות עוביים, 'והוא חלול' (רש״י), ודופנם ארבע אצבעות (ירמיהו נב, כא: 'ועביו ארבע אצבעות נבוב').\nהכותרת: על כל עמוד כותרת של חמש אמות (ז, טז), והעמוד תחוב בה שתי אמות (רש״י), ולכן **גובה כל העמוד עם הכותרת עשרים ואחת אמה**, כציור הספר. הכותרת — 'כמין שני אגנים' (רש״י ז, יח): הגולה מצוירת שושנים, הבטן ועליה שני טורי רימונים, 'מאה רמונים בטור, חרוזים בשרשרות' (רש״י ז, מב), השבכה 'כמין כפה' הקלועה משבעה לולבים (רש״י ז, יז), וכותרת קטנה בראשה. שיטת מלבי״ם לכותרת — בתפריט, תחת ״שיטות ומחלוקות״.\nמקומם — 'שהעמיד באולם' (רש״י ז, טו), יכין מימין, 'בפאת הדרומי' (מצודת דוד ז, כא), ובועז משמאל — 'העמידם שלמה באולם סמוך לכותל ההיכל' (רש״י ירמיהו נב, כג).\nבמודל: צמודים לכותל ככל שהכותרת מניחה (ראו 'יכין ובועז — מבט מפתח האולם').";
   var ui_INFO = {
     __general: "בית המקדש הראשון שבנה שלמה: **הבית שישים אמה אורך, עשרים רוחב ושלושים גובה** (מלכים א ו, ב), ולפניו האולם. בחצר הכהנים מזבח הנחושת, הים והמכונות, וסביב הכול החצר הגדולה.\nבמודל: מה שאינו בפסוקים הושלם מחז״ל ומן המפרשים, ומסומן בלוח 'השלמות'.",
-    harHabayit: "העזרה הגדולה (דברי הימים ב ד, ט) מקיפה את הבית ואת חצר הכהנים. דלתותיה מצופות נחושת (דברי הימים ב ד, ט).\nבמודל: חומתה בדגם חצר המלך וחצר בית ה' הפנימית — שלושה טורי גזית וטור כרותות ארזים (מלכים א ז, יב) — בחירת מודל. גודלה **חמש מאות על חמש מאות אמה** — על פי מסכת מדות (ב, א), כי בפסוקים אין מידה.",
+    harHabayit: "העזרה הגדולה (דברי הימים ב ד, ט) מקיפה את הבית ואת חצר הכהנים. דלתותיה מצופות נחושת (דברי הימים ב ד, ט).\nבמודל: חומתה כדוגמת חצר המלך וחצר בית ה' הפנימית — שלושה טורי גזית וטור כרותות ארזים (מלכים א ז, יב) — בחירת מודל. גודלה **חמש מאות על חמש מאות אמה** — על פי מסכת מדות (ב, א), כי בפסוקים אין מידה.",
     eastGate: "השער המזרחי של החצר הגדולה, מול פתח הבית. דלתות השערים היו מצופות נחושת (דברי הימים ב ד, ט).\nבמודל: מספר השערים ושמותיהם אינם בפסוקים — שער אחד בכל צד הוא בחירת מודל.",
     newCourt: "החצר החיצונה (החצר החדשה): לפנים ממנה חצר הכהנים (רש״י מלכים א ו, לו: 'לפנים מעזרת נשים'). היא 'החצר החדשה' שלפניה עמד יהושפט (דברי הימים ב כ, ה; זבחים לב:).\nבה לשכות (ירמיה לה, ד; לו, י), 'העמוד' שעליו עמד המלך (מלכים ב יא, יד; כג, ג) וארון יהוידע שבשער (דברי הימים ב כד, ח) — מימי יואש, ומוצג רק בכפתור שלו.\nבמודל: גודלה ומפלסה — בחירת מודל.",
     azarah: "חצר הכהנים — 'החצר הפנימית' (מלכים א ו, לו): שלושה טורי גזית וטור כרותות ארזים.\nמידותיה (187 על 135) ושבעת שעריה — על פי מסכת מדות (ה, א; א, ד), כי במלכים אין מידה לחצר. רצפתה לוחות שיש — 'ואבני שיש לרב' (דברי הימים א כט, ב), ורש״י שם: 'לעמודים ושלחנות ולרצפה'.\nבמודל: בה מזבח הנחושת ובצפונו בית המטבחים (השלמה מבית שני); **הים בקרן המזרחית הצפונית** (רש״י), ועשר המכונות וכיור משה בגוש אחד מדרום לציר הבית, מול אגף האולם הדרומי; ולשכת הגזית על החומה הצפונית, בין השער הצפוני לים.",
     mizbeach: "מזבח הנחושת (דברי הימים ב ד, א): **עשרים אמה אורך, עשרים רוחב ועשר גובה**.\nהשלמת מודל: הכבש מדרום ('לא תעלה במעלות', שמות כ; מידותיו כמדות ג, ג) והקרנות (כמזבח המשכן, שמות כז; מדות ג, א). סביבו היסוד, הסובב וחוט הסיקרא, כמשנה (מדות ג, א; זבחים סב.), והכבש 'פורח אמה על יסוד ואמה על סובב' (זבחים סב:) — השלמה.",
     // 1.0.1-L (L.7 / L.75, the user: "כרש\"י ובספר"; vessels.json): the Sea in the inner court's CORNER, north-east for Rashi (the default)
-    yam: "הים (מלכים א ז, כג–כו): עשר אמות משפה אל שפה, חמש אמות קומתו, 'ועביו טפח' ו'אלפים בת יכיל' (ז, כו) — ובמודל 450 אמה מעוקבת, ראו 'צורת הים' בהמשך — ועומד על שנים עשר בקר: פניהם לחוץ ואחוריהם 'ביתה' (ז, כה). שלוש אמותיו התחתונות מרובעות ושתיים העליונות עגולות (עירובין יד:).\nמקומו — במקצוע, בקרן העזרה: 'ואת הים נתן מכתף הבית הימנית קדמה ממול נגב' (ז, לט).\nרש״י: 'מקצוע מזרחית צפונית, כנגד האויר שבין כתל צפוני של בית לצד כתל העזרה' — **ברירת המחדל**, כציור הספר ומפתו, ממזרח לצפון בית המטבחים.\nבקצרה — המחלוקת: לרד״ק, מצודות ורלב״ג ולרש״י על דברי הימים ב ד, י — במקצוע המזרחית־דרומית (השורה 'מקום הים' בטבלת 'שיטות ומחלוקות').\nבמודל: ציר הים 11 אמות מן הכתלים — בחירת מודל; המקורות אומרים 'מקצוע' ולא מרחק.",
+    yam: "הים (מלכים א ז, כג–כו): עשר אמות משפה אל שפה, חמש אמות קומתו, 'ועביו טפח' ו'אלפים בת יכיל' (ז, כו) — ובמודל 450 אמה מעוקבת, ראו 'צורת הים' בהמשך — ועומד על שנים עשר בקר: פניהם לחוץ ואחוריהם 'ביתה' (ז, כה). שלוש אמותיו התחתונות מרובעות ושתיים העליונות עגולות (עירובין יד:).\nמקומו — במקצוע, בקרן העזרה: 'ואת הים נתן מכתף הבית הימנית קדמה ממול נגב' (ז, לט).\nרש״י: 'מקצוע מזרחית צפונית, כנגד האויר שבין כתל צפוני של בית לצד כתל העזרה' — **ברירת המחדל**, כציור הספר ומפתו, ממזרח לצפון בית המטבחים.\nבקצרה — המחלוקת: לרד״ק, מצודות ורלב״ג ולרש״י על דברי הימים ב ד, י — במקצוע המזרחית־דרומית (המתג 'מקום הים' בתפריט, תחת ״שיטות ומחלוקות״).\nבמודל: ציר הים 11 אמות מן הכתלים — בחירת מודל; המקורות אומרים 'מקצוע' ולא מרחק.",
     // 1.0.1-K (K.3): the bases rebuilt after Rashi, "בעל צורת הבית" and the book. 1.0.1-L (L.40, L.64, L.77; vessels.json): ALL TEN in one
     // block of 2 x 5 south of the house with Moses' laver between the rows (the book p. לח), their purpose, the pills (L.51: no panel places)
     mechonot: "עשר המכונות (מלכים א ז, כז–לט): 'ארבע באמה ארך המכונה האחת וארבע באמה רחבה ושלש באמה קומתה'; על כל אחת כן וכיור של ארבעים בת.\nמקומן: כולן במקום אחד, שתי שורות של חמש וכיור משה ביניהן — רש״י: 'ויתן חמשה מימין. לכיור של משה' (רש״י דברי הימים ב ד, ו); רד״ק: 'מימין כיור משה ומשמאלו' (רד״ק דברי הימים ב ד, ו). שתי השורות כציור 'מקרא מפורש' (עמ' לח) וכמפתו (עמ' ב–ג): מדרום לציר הבית, מול אגף האולם הדרומי, בינו לבין הכבש — השורה הצפונית בין האגף לכבש, והדרומית מעט מדרום להם.\nתפקידן: 'את מעשה העולה ידיחו בם' (דברי הימים ב ד, ו) וקידוש ידיהם ורגליהם של הכהנים — רש״י: 'לרחצה בהם. קדוש ידים ורגלים' (רש״י שם); רד״ק: 'והכיורים היו לרחוץ מהם הכהנים ידיהם ורגליהם ולהדיח בהם מעשה העולה' (רד״ק ז, לט).\nבמודל: על המכונה שבשורה הצפונית שני כפתורים — 'הבא את הכיור לקידוש ידים ורגלים ולהדחת העולה' ו'פרק: כיור, כן ומכונה'; ובלוח 'המזבח וכלי הנחושת': 'המכונות מקרוב'.",
     // 1.0.1-K (K.2): the house closed on all sides, the chambers' block, the ulam 84 wide and its courses (7:12, not Rashi). 1.0.1-L (L.41):
     // the camera from the south-east above, as the book's general view; L.59 the doorway 10 x 22 with its open doors
     heichalFront: "בית ה׳ מבחוץ (מלכים א ו, ב–ג): **שישים אמה אורך, עשרים רוחב ושלושים גובה מבפנים**; האולם על פניו — עשרים אמה על עשר.\nהבית סגור מכל צדדיו, וסביבו מדרום, ממערב ומצפון גוש התאים הנמוך של היציע — כותליו החיצוניים אבן, וראשי קורות הגג בראשם — וכותל הבית עולה מעליו, כציור הכללי בספר.\nהאולם: חזיתו, עם בית החליפות משני צדיו (רש״י יומא לו.), שמונים וארבע אמות; פתחו עשר על עשרים ושתיים (בחירת מודל) ובו שתי דלתות ארז פתוחות — 'גם סגרו דלתות האולם' (דברי הימים ב כט, ז); כתליו שלושה נדבכי גזית ונדבך ארזים — 'ולאלם הבית' (ז, יב) כפירוש מצודת דוד, רלב״ג, מלבי״ם ורד״ק.\nבמודל: המבט מדרום־מזרח ומלמעלה, כציור הכללי בספר. על המודל: 'פתח את הבית', 'פתח את האולם' — כלי צפייה בלבד.",
-    heichalSouth: "היציע (מלכים א ו, ה–י): שלוש קומות של תאים סביב הבית, מדרום, ממערב ומצפון.\nכברירת מחדל הוא סגור, כציור הכללי בספר: כותל התאים החיצוני אבן, חמש אמות עוביו ('וכתל התא חמש', מדות ד, ז), ובראשו רצועת ראשי קורות הגג; ופתח אחד מבחוץ — 'שבחמש תאים שבדרום היה לה פתח אל החוץ בשורה התחתונה' (רש״י ו, ח).\nחשבון רש״י (ו, ו; ו, י): **התאים חמש, שש ושבע אמות רוחבם**, וחמש אמות גובה כל קומה, כי כותל הבית נכנס אמה בכל קומה — שבע, שש וחמש, וארבע מעל גג התאים — וקורות הארז מונחות על המגרעות, 'לבלתי אחז בקירות הבית'.\nבמודל: בלוח 'היציע' — 'חתך היציע' מסובב את המבט אל החתך ומראה את החשבון במידות, כל קומה בצבע משלה (וחוזר לבד אחרי 15 שניות). על המודל: 'הצג חתך של היציע (רש״י)' עושה זאת גם הוא, ו'הסר את קירות היציע' מסיר את הכתלים החיצוניים (הגג נשאר) — לצפייה בלבד.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״צורת היציע״ שבקטגוריית ״שיטות ומחלוקות״): רש״י (כספר, ברירת המחדל) — תאים, וכותל הבית נגרע אמה בכל קומה; הרמב״ם — שני כתלים וביניהם הרחקה, והיציעים גזוזטראות מחוץ לבית.",
+    heichalSouth: "היציע (מלכים א ו, ה–י): שלוש קומות של תאים סביב הבית, מדרום, ממערב ומצפון.\nכברירת מחדל הוא סגור, כציור הכללי בספר: כותל התאים החיצוני אבן, חמש אמות עוביו ('וכתל התא חמש', מדות ד, ז), ובראשו רצועת ראשי קורות הגג; ופתח אחד מבחוץ — 'שבחמש תאים שבדרום היה לה פתח אל החוץ בשורה התחתונה' (רש״י ו, ח).\nחשבון רש״י (ו, ו; ו, י): **התאים חמש, שש ושבע אמות רוחבם**, וחמש אמות גובה כל קומה, כי כותל הבית נכנס אמה בכל קומה — שבע, שש וחמש, וארבע מעל גג התאים — וקורות הארז מונחות על המגרעות, 'לבלתי אחז בקירות הבית'.\nבמודל: בלוח 'היציע' — 'חתך היציע' מסובב את המבט אל החתך ומראה את החשבון במידות, כל קומה בצבע משלה (וחוזר לבד אחרי 15 שניות). על המודל: 'הצג חתך של היציע (רש״י)' עושה זאת גם הוא, ו'הסר את קירות היציע' מסיר את הכתלים החיצוניים (הגג נשאר) — לצפייה בלבד.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״צורת היציע״ שבתפריט, תחת ״שיטות ומחלוקות״): רש״י (כספר, ברירת המחדל) — תאים, וכותל הבית נגרע אמה בכל קומה; הרמב״ם — שני כתלים וביניהם הרחקה, והיציעים גזוזטראות מחוץ לבית.",
     // 1.0.1-L (L.44 the view from the front; L.59 the doorway 10 x 22, a model choice, with two open cedar doors - heichal-door.md)
     ulamInside: "האולם (מלכים א ו, ג): 'עשרים אמה ארכו על פני רחב הבית עשר באמה רחבו' — לפני ההיכל.\nהמבט מן החזית, מול פתח האולם: חזיתו כולה ופתחו באמצע — ובעדו נראה פתח ההיכל — בלי להסיר דבר. משני צדיו בית החליפות, חמש עשרה אמה מכל צד (רש״י יומא לו.), כך שחזיתו שמונים וארבע אמות.\nפתחו — עשר על עשרים ושתיים, בחירת מודל (אין מקור למידות פתח האולם בבית ראשון; 'פתחו של אולם, גבהו ארבעים אמה, ורחבו עשרים אמה', מדות ג, ז, הוא בית שני) — ושתי דלתות ארז פתוחות, מקופלות אל תוך עובי הפתח: 'גם סגרו דלתות האולם ויכבו את הנרות' (דברי הימים ב כט, ז). המאירי (יומא נד.): 'ואע״פ ששערים של עץ היו שם מ״מ לא היו נועלים אותם ביום ופורסים הפרוכת לפניהם' — הפרוכת לא נבנתה. **ראש הפתח קשת** — רש״י (מלכים א ז, ה): 'רבועין היו כשאר פתחי בתים, ולא עשויין כפה כעין פתחי אולם'; והדלתות מגיעות עד תחילת הקשת.\nתקרת האולם — **כיפה**. בקצרה — רש״י (יומא נב., על אולם בית שני): 'כיפת החלל שהיא י״א אמה'; ותוספות רי״ד שם חולק: 'ולא הי׳ שם תקרה ולא כיפה'. במודל: כיפה על עשר האמות של חלל האולם, וראשה בגובה תקרת הארז; העתקת דברי רש״י לבית ראשון, גובה הכיפה וצורתה — בחירת מודל.\nכתליו שלושה נדבכי גזית ונדבך ארזים — 'ולאלם הבית' (ז, יב) כפירוש מצודת דוד ('כי כולם בנה בשלשה טורים גזית'), רלב״ג, מלבי״ם ורד״ק; רש״י שם מתאר את הדגם בלבד ('החומה עשויה שלשה נדבכין של אבנים, ונדבך של עץ עליהם').\nבתוכו, משני צדי פתח ההיכל, יכין ובועז (רש״י ז, טו). **אין בו ציפוי זהב** (רש״י ומצודות על דברי הימים ב ג, ד).\nבמודל: 'פתח את האולם' שעל המודל מסיר את חזיתו ואת גגו — לפתיחה מלאה, לצפייה בלבד.",
     // 1.0.1-K (K.1): after Rashi and the book - the whole pillar 21, the two basins, Rashi on Jer 52:23. 1.0.1-L (L.6, L.58): the far view
@@ -799,11 +828,11 @@
     heichalDoor: "פתח ההיכל (מלכים א ו, לג–לה): מזוזות עצי שמן מרובעות ('מאת רבעית' — רש״י ותרגום), ושתי דלתות ברושים מגולפות כרובים, תמורות ופרחים ומצופות זהב.\nבמודל: מידות הפתח (עשר על עשרים) — בחירת מודל.",
     // 1.0.1-K (K.5, the addendum D): the carvings after the book are the default look; the layers are an option; the floor; the smoke
     kodesh: "ההיכל: ארבעים אמה (מלכים א ו, יז), ובו המנורות, השולחנות ומזבח הזהב — 'הבית הוא ההיכל לפני' (ו, יז): החלל שלפני הדביר, ולא הבית כולו.\nהקירות ארז מגולף ומצופה זהב — 'הכל ארז אין אבן נראה' (ו, יח) — והרצפה ברושים מצופים זהב (ו, טו; ו, ל).\nהגילופים: 'פתוחי מקלעות כרובים ותמורות ופטורי ציצים' (ו, כט) ו'מקלעת פקעים ופטורי ציצים' (ו, יח). רש״י: כרובים, דקלים, חבלים ופרחים, והפקעים 'כמין כפתורים' (תרגום: ביצים). רד״ק: מפותחים ולא בולטים.\nבמודל, כציור הספר: רקע קלוע דק, חבל שזור, זוגות כרובים בגלימות ארוכות בלי ידיים ובפני ילד ('כרביא', חגיגה יג:), דקלים גבוהים, פקעים, שושנים ושרשרות — שורה כל עשר אמות, והזהב שוקע בחקק (רש״י ו, לב). זה מראה הבית; שכבות האבן והארז שמתחת לזהב — אפשרות תצוגה בכפתור 'הצג את שכבות הקיר והרצפה' שעל הקיר הצפוני, סמוך לפתח.\nהכלים: **מנורת משה ועשר המנורות בדרום** — כל אחת עם גביעיה, כפתוריה ופרחיה ואבן של שלוש מעלות לפניה; **שולחן משה ועשרה השולחנות בצפון**, כולם בתבנית שולחן משה; ומזבח הזהב, אמה על אמה ואמתים קומתו (שמות ל, ב), מיד מזרחית לשורות, ועליו עשן הקטורת (ז, מח–מט; מנחות צח:).",
-    devirDoor: "הפסוק: 'ואת פתח הדביר עשה דלתות עצי שמן האיל מזוזות חמשית' (מלכים א ו, לא).\nרש״י — שני ביאורים, ושניהם במודל (טבלת 'שיטות ומחלוקות'): (א) 'ואני אומר' — חמש צלעות היו למזוזות ולא היו מרובעות, ואין הכתוב מדבר במפתן ובמשקוף (**ברירת המחדל**) — ומעל הפתח משקוף של זהב בחתך המזוזות המחומשות, כציור הספר: רד״ק 'האיל הוא הסף העליון... וכן האיל', רלב״ג 'שהאיל והוא הסף אשר על הפתח', מלבי״ם 'האיל ר״ל המשקוף' (רש״י אינו שולל משקוף) — בחירת מודל; (ב) 'כך שמעתי' — חמישה חלקי מסגרת: המפתן, שתי המזוזות והמשקוף העשוי כשניים.\nבקצרה — עוד שיטות: רד״ק — חמש מדרגות זו לפנים מזו; רלב״ג ומלבי״ם — 'חמישית': הפתח החמישי שבמקדש.\nבמודל: הדלתות עצי שמן מגולפות ומצופות זהב (ו, לב), עומדות פתוחות (רד״ק), ועליהן הפרוכת (דברי הימים ב ג, יד). מידות הפתח — בחירת מודל.",
-    kodeshHakodashim: "הדביר — קודש הקדשים (מלכים א ו, יט–כ): **עשרים אמה אורך, עשרים רוחב ועשרים גובה**, כולו זהב, וקירותיו מגולפים כהיכל (ו, כט 'מלפנים').\nשני הכרובים: עצי שמן מצופים זהב, עשר אמות קומתם, חמש אמות כל כנף — כנף נוגעת בקיר וכנף נוגעת בכנף חברו (ו, כג–כח; דברי הימים ב ג, י–יג); 'מעשה צעצעים' — תבנית ילדים (רש״י), 'והם עמדים על רגליהם ופניהם לבית'.\nחז״ל: 'כרובים — בנס הן עומדין' — ארבע הכנפיים ממלאות את כל עשרים האמה ואין מקום לגופם (בבא בתרא צט.; רש״י מלכים א ו, כד: 'וגוף הכרובים אינו מן המדה ועומד בנס'); ושם מקשה אביי: 'ודלמא בולטין כתרנגולין הוו קיימי' — גופם תחת כנפיהם, וכך רד״ק (ו, כז) — וכך נבנה המודל.\nבמודל, כציור הספר: לבושים עד הקרקע, בלי ידיים, פני ילד ('כרביא'), וארבע הכנפיים פרושות במישור אחד מאוזן, שוכבות לרוחב הדביר מתחת לראשים כסוכה על הארון — 'כי הכרובים פרשים כנפים אל מקום הארון ויסכו הכרבים על הארון ועל בדיו מלמעלה' (ח, ז). הארון ובדיו (ח, ו–ח) על אבן השתייה (יומא נג:). **קודש הקדשים מכוסה בענן**; 'הסר ענן' שעליו מבקש אישור.\nבקצרה — גובהו: עשרים אמה, כרש״י (**ברירת המחדל**); לגמרא (בבא בתרא צח:) ולתוספות — שלושים, והעשרים נמנות משפת הכרובים ולמעלה; לרד״ק — שלושים, ועשר העליונות אבן יקרה (בטבלת השיטות, בשורה 'גובה קודש הקדשים').",
+    devirDoor: "הפסוק: 'ואת פתח הדביר עשה דלתות עצי שמן האיל מזוזות חמשית' (מלכים א ו, לא).\nרש״י — שני ביאורים, ושניהם במודל (בתפריט, תחת ״שיטות ומחלוקות״): (א) 'ואני אומר' — חמש צלעות היו למזוזות ולא היו מרובעות, ואין הכתוב מדבר במפתן ובמשקוף (**ברירת המחדל**) — ומעל הפתח משקוף של זהב בחתך המזוזות המחומשות, כציור הספר: רד״ק 'האיל הוא הסף העליון... וכן האיל', רלב״ג 'שהאיל והוא הסף אשר על הפתח', מלבי״ם 'האיל ר״ל המשקוף' (רש״י אינו שולל משקוף) — בחירת מודל; (ב) 'כך שמעתי' — חמישה חלקי מסגרת: המפתן, שתי המזוזות והמשקוף העשוי כשניים.\nבקצרה — עוד שיטות: רד״ק — חמש מדרגות זו לפנים מזו; רלב״ג ומלבי״ם — 'חמישית': הפתח החמישי שבמקדש.\nבמודל: הדלתות עצי שמן מגולפות ומצופות זהב (ו, לב), עומדות פתוחות (רד״ק), ועליהן הפרוכת (דברי הימים ב ג, יד). מידות הפתח — בחירת מודל.",
+    kodeshHakodashim: "הדביר — קודש הקדשים (מלכים א ו, יט–כ): **עשרים אמה אורך, עשרים רוחב ועשרים גובה**, כולו זהב, וקירותיו מגולפים כהיכל (ו, כט 'מלפנים').\nשני הכרובים: עצי שמן מצופים זהב, עשר אמות קומתם, חמש אמות כל כנף — כנף נוגעת בקיר וכנף נוגעת בכנף חברו (ו, כג–כח; דברי הימים ב ג, י–יג); 'מעשה צעצעים' — תבנית ילדים (רש״י), 'והם עמדים על רגליהם ופניהם לבית'.\nחז״ל: 'כרובים — בנס הן עומדין' — ארבע הכנפיים ממלאות את כל עשרים האמה ואין מקום לגופם (בבא בתרא צט.; רש״י מלכים א ו, כד: 'וגוף הכרובים אינו מן המדה ועומד בנס'); ושם מקשה אביי: 'ודלמא בולטין כתרנגולין הוו קיימי' — גופם תחת כנפיהם, וכך רד״ק (ו, כז) — וכך נבנה המודל.\nבמודל, כציור הספר: לבושים עד הקרקע, בלי ידיים, פני ילד ('כרביא'), וארבע הכנפיים פרושות במישור אחד מאוזן, שוכבות לרוחב הדביר מתחת לראשים כסוכה על הארון — 'כי הכרובים פרשים כנפים אל מקום הארון ויסכו הכרבים על הארון ועל בדיו מלמעלה' (ח, ז). הארון ובדיו (ח, ו–ח) על אבן השתייה (יומא נג:). **קודש הקדשים מכוסה בענן**; 'הסר ענן' שעליו מבקש אישור.\nבקצרה — גובהו: עשרים אמה, כרש״י (**ברירת המחדל**); לגמרא (בבא בתרא צח:) ולתוספות — שלושים, והעשרים נמנות משפת הכרובים ולמעלה; לרד״ק — שלושים, ועשר העליונות אבן יקרה (בתפריט, תחת ״שיטות ומחלוקות״, במתג 'גובה קודש הקדשים').",
     aliyot: "הפסוק: 'והגובה מאה ועשרים' (דברי הימים ב ג, ד).\nרש״י: שלושים אמה עד תקרת העלייה הראשונה, ועוד תשעים אמה של עליות עד הגג העליון. רד״ק (כדעה שנייה): 'ג' עליות גבהן תשעים אמה'.\nלמה שימשו? לגניזת אהל מועד וכליו — אברבנאל: 'והיו הכהנים נושאים הארון והלויים נושאים אהל מועד, והכלים אשר עשה משה במדבר ואהל מועד גנזו באוצרות בית האלקים, והם העליות שהיו ממעל לדביר ולהיכל' (אברבנאל מלכים א ח); וכן מצודת דוד (מלכים א ח, ד): אהל מועד וכליו הועלו להיגנז בבית.\nבמודל: **שתי עליות, זו על גב זו**, וכל אחת סגורה בתקרת הגבים, בית דילפא ושדרות בארזים — כאיור הספר (חלוקת הגובה — בחירת מודל). הכפתור שעל העליות פותח את הכותל הדרומי ומראה את פנימן.",
     // 1.0.1-L (L.20, L.22, L.33, L.57, L.81): three readings of the forest house, the king's own court, the garden without the pool, the throne's versions
-    palace: "בית שלמה (מלכים א ז, א–יב):\nבית יער הלבנון — בשלוש קריאות (רש״י כציור הספר; מלבי״ם ורלב״ג; מצודת דוד — בטבלת 'שיטות ומחלוקות'), ובו המגינים והצינות (י, טז–יז); אולם העמודים ו'אולם על פניהם' (ז, ו).\nאולם הכסא ואולם המשפט עם כסא שלמה (ז, ז; י, יח–כ) — בארבע גרסאות מדרשיות, ועליית המלך אליו.\nבית המלך בחצר משלו — החצר האחרת, 'מבית לאולם' (ז, ח) — ובה הגן (קהלת ב, ה; בלי בריכה); בית בת פרעה בחצר הגדולה, חצר בית יער הלבנון; והחצר הגדולה סביב (ז, יב)." // 1.0.1: buildUI appends the placement basis (ctx.shared.palaceBasis / ui_PALACE_BASIS); 1.0.1-K: review Q2-5 (Ralbag only with his count)
+    palace: "בית שלמה (מלכים א ז, א–יב):\nבית יער הלבנון — בשלוש שיטות (רש״י כציור הספר; מלבי״ם ורלב״ג; מצודת דוד — בתפריט, תחת ״שיטות ומחלוקות״), ובו המגינים והצינות (י, טז–יז); אולם העמודים ו'אולם על פניהם' (ז, ו).\nאולם הכסא ואולם המשפט עם כסא שלמה (ז, ז; י, יח–כ) — בארבע גרסאות מדרשיות, ועליית המלך אליו.\nבית המלך בחצר משלו — החצר האחרת, 'מבית לאולם' (ז, ח) — ובה הגן (קהלת ב, ה; בלי בריכה); בית בת פרעה בחצר הגדולה, חצר בית יער הלבנון; והחצר הגדולה סביב (ז, יב)." // 1.0.1: buildUI appends the placement basis (ctx.shared.palaceBasis / ui_PALACE_BASIS); 1.0.1-K: review Q2-5 (Ralbag only with his count)
   };
   // 1.0.1 (FIXES E.2 / F.3): the basis of the palace's placement (south of the Temple's great court, on a lower terrace) - the UI's copy,
   // used when 60-palace.js did not write ctx.shared.palaceBasis. The verses: I Kings 10:5 (II Chr 9:4 "ועליתו"), II Kings 11:19,
@@ -858,6 +887,7 @@
   };
   // 1.0.6 (the user): what is new by version, newest first - one who saw a version is shown only the versions after it; nothing stored -> all
   var UI_NEWS_VERS = [
+    ["1.4.4", ["**המלך בלבוש מלכות** — בהדגמה ״עליית המלך לכסא״ עולה עכשיו המלך עצמו — בתכלת, בארגמן ובזהב, וכיפה לראשו — ולא צללית. בכל מעלה הוא נשען על הארי ועל הנשר המושיטים לו יד וכנף, כמתואר במדרשים. דמותו ולבושו — בחירת מודל. בתפריט: ״עליית המלך לכסא״.", "**צורת לחם הפנים** — מתג חדש בתפריט, תחת ״שיטות ומחלוקות״: ״כמין ספינה רוקדת״ (רבי יוחנן) או ״כמין תיבה פרוצה״ (רבי חנינא) — מנחות צד:. החלות שעל השולחנות משתנות לפי הבחירה.", "**נרות המנורות** — לרבי, שהנרות ממזרח למערב (ברירת המחדל) — פי כל הנרות למערב, כציור הרמב״ם בפירוש המשנה (תמיד ג, ט); ולרבי אלעזר ברבי שמעון, מצפון לדרום — הם פונים אל הנר האמצעי, ופי האמצעי למערב (מנחות צח: ורש״י).", "**ארון יהוידע** — מתג חדש בתפריט, תחת ״שיטות ומחלוקות״: שני ארונות, כמלבי״ם (ברירת המחדל), או ארון אחד, כרש״י (דברי הימים ב כד, ח). הארון האחד עומד אצל המזבח, בעזרה — כלשון מלכים (ב יב, י) ורש״י שם.", "**הכבש** — הכבש הקטן העולה לסובב יוצא מצד הכבש הגדול. מקום חדש בתפריט, ״עולים במזרח ויורדים במערב — הכבש״: חיצים מראים את דרך העולים ואת דרך היורדים (יומא ד, ה). ובכרטיס ״הכבש״ — למה שימשה הרבובה.", "**מידות המזבח** — לכל מידה קו בצבע משלו, ולצד המזבח לוחית לכל קו: 24, 22 ו־20 אמה כדברי הימים, או 28 עד 20 לרבי יוסי — לפי המתג ״מידות המזבח״. המבט מן הצד, מתוך העזרה, כדי שייראו הכניסות שבין מדרגה למדרגה. בתפריט: ״מידות המזבח — קווי האמות״.", "**בית המטבחים — ארבע שיטות** — שיטת הראבי״ה ושיטת הגר״א הוצגו עד כה, בטעות, כשיטה אחת; עכשיו כל אחת לעצמה, במתג ״בית המטבחים״.", "**המכונות** — בהדגמה ״הבא את הכיור לקידוש ידים ורגלים ולהדחת העולה״ (הכפתור שעל המכונה שבשורה הצפונית) נראים עכשיו כהן המקדש ידיו ורגליו — יד ימין על רגל ימין (זבחים יט:) — וכהן המדיח את קרבי העולה. הדמויות ומקומן — בחירת מודל.", "**צורת ההר** — הקרקע שסביב הר הבית יורדת אל נחל קדרון שבמזרח ואל העמק שבמערב. העומקים והמרחקים — בחירת מודל.", "**נוח יותר** — קולות בהדגמות (לכיבוי: בתפריט, תחת ״תצוגה״); כרטיס הסבר ארוך מציג את תחילתו ואת הפסקה ״במודל״, והכפתור ״המשך הכרטיס״ פותח את האמצע; המקש Enter מקרב אל המקום שהסמן עומד עליו, ו־Shift עם Enter מרחיק; דף ״ניווט״ נכתב מחדש בלשון פשוטה; גוון אבן עתיקה לחומות וללשכות (״תצוגה״); ו״מה חדש בגרסה זו״, בסוף התפריט, פותח שוב את הרשימה הזאת.", "**תיקונים** — ״מבט כללי״ מחזיר את מה שמקום הדליק מעצמו (העליות, משמרות השוערים), ואחרי ״עליית המלך לכסא״ הכסא חוזר לשיטה שנבחרה. תוקנו מבטים שנכנסו לתוך קיר, וכפתור שעל המודל מופיע רק במקום שהוא שייך לו. לדמויות שיער ופאות; הלויים בלבוש פשוט, ולא בבגדי כהונה."]],
     ["1.4.3", ["**הבדים עולים עם הארון** — במקום ״אבן השתייה״ הארון מורם לרגע, כדי שתיראה האבן שתחתיו. עד כה שני הבדים נשארו מונחים על הרצפה, כאילו הוצאו מן הטבעות. עכשיו הם עולים עם הארון — ״בטבעת הארן יהיו הבדים לא יסרו ממנו״ (שמות כה, טו).", "**מעבר בין מקומות** — מקום בתפריט שהדליק לעצמו תצוגה מיוחדת — כמו המגדל של מאה ועשרים אמה ב״העליות״, או השומרים ב״משמרות השוערים״ — מכבה אותה כשעוברים למקום אחר. עד כה התצוגה נשארה דולקת גם במקומות הבאים, ונראה כאילו היא חלק מן המודל. מה שהדלקתם בעצמכם — נשאר דולק.", "**כפתורים שעל המודל** — כפתור שנפל מתחת לתפריט או מתחת לכרטיס ההסבר זז עכשיו הצידה, אל המקום הפנוי, כדי שאפשר יהיה ללחוץ עליו.", "**תיקון ציטוט** — בכרטיס ״משמרות השוערים״ הובא לשון המשנה במידות (א, א) בנוסח שהגמרא מביאה בתמיד (כז.). עכשיו מובא לשון המשנה עצמה.", "**בקובץ לצפייה בלי אוצריא בלבד — עדכון בלחיצה** — כפתור ״בדיקת עדכונים״ שבסוף התפריט מוריד עכשיו את הגרסה החדשה ושומר אותה. בכרום ובאדג׳ נפתח חלון ״שמירה בשם״; בשם הקובץ מופיע מספר הגרסה, כך שהקובץ הישן אינו נדרס. הקובץ נבדק לפני השמירה, וקובץ פגום אינו נשמר."]],
     ["1.4.2", ["**הכנסת הארון — עכשיו גם במצגת** — ההדגמה ״דבקו שערים״ נכנסה למצגת המודרכת. בסדר הפסוקים היא באה לפני ״הארון אל תחת כנפי הכרובים״, ובסדר הנושאים — במקומה בתפריט. המצגת ממתינה עד שההדגמה מסתיימת.", "**השהיה במצגת** — כפתור ״השהה״ של המצגת משהה עכשיו גם הדגמה שרצה באותה שקופית, ו״המשך״ ממשיך אותה מאותו רגע. עד כה ההשהיה עצרה את ההדגמה לגמרי."]],
     ["1.4.1", ["**הדגמה חדשה: הכנסת הארון — ״דבקו שערים״** — כמסופר בגמרא (שבת ל.): כששלמה ביקש להכניס את הארון לקודש הקדשים, נדבקו השערים זה בזה ולא נפתחו, עד שהזכיר את חסדי דוד אביו. בהדגמה: ארבעה כהנים נושאים את הארון, שלמה כורע על ברכיו ומתפלל בעזרה, השערים נפתחים, הארון נכנס למקומו, והענן ממלא את הבית (מלכים א ח). מפעילים בכפתור שליד פתח קודש הקדשים, או בתפריט — בקטגוריה ״הבית מבפנים״.", "**ארון יהוידע** — הארון שהעמיד יהוידע הכהן לאיסוף הכסף לבדק הבית (מלכים ב יב, י; דברי הימים ב כד, ח). לפי המלבי״ם היו שני ארונות: אחד אצל המזבח ואחד בשער. הם מוצגים רק כשלוחצים על הכפתור שלהם — בתפריט, בקטגוריה ״הר הבית והחצרות״.", "**הגדלה בצביטה** — במחשב נייד עם משטח מגע, צביטה בשתי אצבעות עבדה הפוך. עכשיו פתיחת האצבעות מקרבת, וסגירתן מרחיקה."]],
@@ -1047,7 +1077,7 @@ body.tm-measuring canvas{cursor:crosshair}
 #tm-confirm .b{display:flex;gap:8px;justify-content:center;margin-top:12px}
 #tm-confirm button{padding:6px 14px;border-radius:8px;border:1px solid rgba(201,168,76,.55);background:rgba(201,168,76,.18);color:#f3dc9a;cursor:pointer;font-size:13px}
 #tm-confirm button.y{background:rgba(201,168,76,.5);color:#14110a}
-#tm-compass{position:fixed;bottom:10px;left:12px;z-index:30;width:58px;height:58px;border-radius:50%;box-sizing:border-box;
+#tm-compass{position:fixed;bottom:10px;left:12px;z-index:30;width:58px;height:58px;border-radius:50%;box-sizing:border-box;transform:scale(1.25);transform-origin:0 100%;
   background:rgba(12,16,24,.75);border:1px solid rgba(201,168,76,.45);backdrop-filter:blur(6px);user-select:none;-webkit-user-select:none}
 #tm-rotor{position:absolute;left:0;top:0;width:56px;height:56px;will-change:transform;pointer-events:none}
 #tm-rotor .a{position:absolute;left:28px;top:28px;transform:translate(-50%,-62%);color:#e2544a;font-size:13px;line-height:1}
@@ -1086,10 +1116,13 @@ body.tm-measuring canvas{cursor:crosshair}
 #tm-xcard .b{white-space:pre-line}
 #tm-xcard .b,#tm-card .b{line-height:1.5}
 #tm-xcard .b .p,#tm-card .b .p{display:block;margin-top:3px}
+#tm-xcard .tm-more,#tm-card .tm-more{display:block;width:100%;box-sizing:border-box;text-align:center;margin:8px 0 6px;background:rgba(201,168,76,.26);border:1px solid rgba(201,168,76,.65);color:#f3dc9a;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit}
+#tm-xcard .tm-more:hover,#tm-card .tm-more:hover{background:rgba(201,168,76,.3)}
 #tm-xcard .b .p:first-child,#tm-card .b .p:first-child{margin-top:0}
 #tm-xcard .b b,#tm-card .b b{font-weight:700;color:#f3dc9a}
-#tm-xcard .o,#tm-card .o{flex:none;margin-top:5px;padding-top:4px;border-top:1px solid rgba(201,168,76,.25);font-size:11px;line-height:1.5;color:#b9ac82}
+#tm-xcard .o,#tm-card .o{flex:none;max-height:40vh;overflow-y:auto;overscroll-behavior:contain;margin-top:5px;padding-top:4px;border-top:1px solid rgba(201,168,76,.25);font-size:11px;line-height:1.5;color:#b9ac82}
 #tm-xcard.min .o{display:none}
+#tm-card .o{max-height:20vh}
 #tm-xcard .o .g,#tm-card .o .g{display:block}
 #tm-xcard .o .k,#tm-card .o .k{margin-left:3px}
 #tm-xcard .o a,#tm-card .o a{display:inline-block;color:#f3dc9a;margin:2px 0 2px 5px;padding:2px 7px;border:1px solid rgba(201,168,76,.45);border-radius:6px;background:rgba(201,168,76,.12);text-decoration:none;cursor:pointer}
@@ -1106,7 +1139,14 @@ body.tm-measuring canvas{cursor:crosshair}
 #tm-news,#tm-help{background:rgba(0,0,0,.35)}
 #tm-news .box,#tm-help .box{width:min(340px,90vw);max-height:calc(100vh - var(--topbar-h, 56px) - 40px);overflow-y:auto}
 #tm-help .box{width:min(400px,92vw)}
-#tm-news .box{width:min(430px,92vw)}
+#tm-news .box{width:min(560px,92vw);display:flex;flex-direction:column;overflow:hidden;font-size:13px;line-height:1.55}
+#tm-news .box:focus{outline:none}
+#tm-news ul{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#tm-news .t{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#tm-news .t .x{cursor:pointer;border:1px solid rgba(201,168,76,.45);background:rgba(201,168,76,.12);color:#e8dcae;border-radius:6px;padding:0 8px;font:inherit;line-height:1.5}
+#tm-news .b{flex:none}
+#tm-foot-news{margin-top:4px;font-size:10px;color:#c9b77a;text-align:center;cursor:pointer;text-decoration:underline}
+@media (max-height:700px){#tm-xcard .o,#tm-card .o{max-height:24vh}#tm-xcard .r{max-height:70px}}
 #tm-help h4{margin:9px 0 3px;font-size:12.5px;color:#f3dc9a}
 #tm-help h4:first-of-type{margin-top:2px}
 #tm-help ul{margin:0;padding:0 16px 0 0;list-style:disc}
@@ -1490,7 +1530,9 @@ body.tm-measuring canvas{cursor:crosshair}
             // buildings' walls and ceilings userData.tmPass, and 90-entry.js's cam_keepInside holds the eye in the room by those marks -
             // but it ran only in the modes "גם קיר מסתיר" / "מעבר דרך קירות", so in the default mode no wall was marked. Now every tick (cached 5 s).
             try { hideList(); } catch (_) {}
-            if (fs.on) {
+            let fadeHeld = false;   // FADE_HOLD_211: a reading that shows a wall itself (90-entry.js)
+            try { fadeHeld = !!(ctx.shared.fadeHold && ctx.shared.fadeHold.held()); } catch (_) { fadeHeld = false; }
+            if (fs.on && !fadeHeld) {
               const cam = ctx.camera.position, tg = ctx.controls.target;
               let inside = false;
               try { inside = underRoof(cam); } catch (_) { inside = false; }
@@ -1729,6 +1771,15 @@ body.tm-measuring canvas{cursor:crosshair}
           if (b.textContent !== label) b.title = label;
           if (row.disabled) b.disabled = true;
           b.addEventListener("click", () => {
+            // CHIP_CLOSEAUTO_211 (the user, 15.11.2026: after the place "לשכת הכלים" a reading's view came out EMPTY - that place's section
+            // of the house stayed, since only a place put back what the place before it had opened): a reading does the same first - the
+            // roof, the section or the zone that a place or a row opened for a while goes back at once (a reading that flies nowhere
+            // leaves the view as it is)
+            if (typeof row.fly === "function") {
+              try { autoOff.flush(); } catch (_) {}
+              try { if (typeof ctx.shared.closeAuto === "function") ctx.shared.closeAuto(); } catch (_) {}
+              try { placeLeave({}); } catch (_) {}   // the layer or the untimed feature of the place before
+            }
             mark(key);
             try {
               row.onPick(key);
@@ -1820,11 +1871,11 @@ body.tm-measuring canvas{cursor:crosshair}
       // UI_OPS_P by place title, UI_OPS_L by a label's text or layer (model choice: the rows that the subject's own text or picture shows). =====
       const UI_OPS_V = {
         heichalFront: ["aliyot", "ulamRambam"], aliyot: ["aliyot"],
-        ulamInside: ["ulamRambam", "ulamCeiling", "ulamTables"], ulamTables: ["ulamTables"],   // 1.3.5: the ceiling
+        ulamInside: ["ulamRambam", "ulamCeiling", "ulamTables"],   // 1.3.5: the ceiling (ulamTables: below, with the loaves' shape)
         yachinBoaz: ["pillarCapital"], yachinBoazFull: ["pillarCapital"], boazFar: ["pillarCapital"], yachinBoazCapital: ["pillarCapital"],
         yam: ["seaPlacement"], yamOxen: ["seaPlacement"],
-        kodesh: ["kodeshLayout", "kodeshOpinion"], menorot: ["kodeshLayout", "kodeshOpinion"], shulchanot: ["kodeshLayout", "kodeshOpinion"],
-        shulchanMoshe: ["kodeshLayout", "kodeshOpinion"],
+        kodesh: ["kodeshLayout", "kodeshOpinion"], menorot: ["kodeshLayout", "kodeshOpinion"], shulchanot: ["kodeshLayout", "kodeshOpinion", "breadShape"],
+        shulchanMoshe: ["kodeshLayout", "kodeshOpinion", "breadShape"], ulamTables: ["ulamTables", "breadShape"],   // SHOWBREAD_SHAPE_211
         devirDoor: ["devirDoor", "potot"], heichalDoor: ["potot"], cherubim: ["cherubPose"],   // 1.3.3: potot
         kodeshHakodashim: ["devirHeight"],   // 1.3.7: the devir's height
         slaughterPlace: ["slaughterLayout"], slaughterPlaceClose: ["slaughterLayout"],
@@ -1838,15 +1889,16 @@ body.tm-measuring canvas{cursor:crosshair}
       const UI_OPS_P = {
         "הבית (בית ה׳)": ["aliyot"], "גג הבית ותקרותיו": ["aliyot"], "העליות (רש״י דה״י ג, ד)": ["aliyot"],
         "יכין — מבעד לפתח, לכל גובהו": ["pillarCapital"], "בועז — מבעד לפתח, לכל גובהו": ["pillarCapital"],
-        "סידור הכלים — עשר המנורות ועשרה השולחנות (מנחות צח:–צט.)": ["kodeshLayout", "kodeshOpinion"],
+        "סידור הכלים — עשר המנורות ועשרה השולחנות (מנחות צח:–צט.)": ["kodeshLayout", "kodeshOpinion", "breadShape"],   // SHOWBREAD_SHAPE_211
         "בית יער הלבנון": ["forestHouse"],
         // 1.0.2 (fix): the completions whose whole subject is a row of the table
         "מקום הים (רש״י / רד״ק)": ["seaPlacement"], "בית החליפות (רש״י יומא לו.)": ["ulamRambam"],
+        "ארון יהוידע אצל המזבח — לתקלין חדתין": ["yehoyadaChests"], "ארון יהוידע שבשער — לתקלין עתיקין": ["yehoyadaChests"],   // YEHOYADA_ONE_211
         "לשכת הגזית": ["sanhedrinRows"], "לשכת הגזית — מקורות מבית שני": ["sanhedrinRows"],   // 1.3.5
         "שתי הסנהדראות הקטנות": ["lesserPlace", "sanhedrinRows"],   // 1.3.7
         "עליית קודש הקדשים — מעל הדביר": ["devirHeight"], "קודש הקדשים — הדביר": ["devirHeight"],   // 1.3.7
         "שערי חצר הכהנים": ["eastSteps"],   // 1.3.7: the east gate's steps - two readings
-        "בית יער הלבנון — שלוש קריאות (רש״י / מלבי״ם ורלב״ג / מצודת דוד)": ["forestHouse"],
+        "בית יער הלבנון — שלוש שיטות (רש״י / מלבי״ם ורלב״ג / מצודת דוד)": ["forestHouse"],
         "הכבשים הקטנים — השלמה מן הגמרא": ["altarRamps"],   // 1.0.2 add-on
         "הכבש": ["rampGap"], "פתח האולם ודלתותיו": ["ulamCeiling"],   // 1.3.5
         "מידות המזבח — קווי האמות": ["altarYose"],   // 1.3.3
@@ -1910,6 +1962,7 @@ body.tm-measuring canvas{cursor:crosshair}
         } catch (_) {
         }
         if (row.cardFly && typeof row.fly === "function") {
+          try { if (typeof ctx.shared.closeAuto === "function") ctx.shared.closeAuto(); } catch (_) {}   // CHIP_CLOSEAUTO_211: a card's chip that flies, too
           try {
             row.fly(key);
           } catch (_) {
@@ -1927,11 +1980,14 @@ body.tm-measuring canvas{cursor:crosshair}
         host.appendChild(document.createTextNode("שיטות: "));
         for (const row of rows) {
           const g = document.createElement("span");
-          if (rows.length > 1) {
+          // CHIP_NAME_211 (the understandability review, U-45): a card with ONE row ended "שיטות:" and bare chips - in "הרובד הרביעי"
+          // the three chips of "מעלות האולם" read as three opinions about the rovad. The row's name stands before its chips always.
+          const nm = row.short || (row.cardOnly ? "" : row.cap) || "";
+          if (rows.length > 1 || nm) {
             g.className = "g";
             const k = document.createElement("span");
             k.className = "k";
-            k.textContent = (row.short || "") + (row.short ? ":" : "");
+            k.textContent = nm + (nm ? ":" : "");
             g.appendChild(k);
           }
           for (const [key, label] of row.options) {
@@ -2017,7 +2073,7 @@ body.tm-measuring canvas{cursor:crosshair}
         closeLabelCard();   // one card at a time
         ui_fillSrc(xTitle, String(title || ""));   // 1.0.1-L (L.89)
         if (/^\s*</.test(String(text || ""))) { xBody.innerHTML = String(text); xBody.__raw = null; }
-        else ui_fillRich(xBody, String(text || ""), srcLinker(refs));   // 1.0.2 (A): the brackets open their sources; 1.3.3: rich
+        else ui_fillRich(xBody, String(text || ""), srcLinker(refs), 1700);   // 1.0.2 (A): the brackets open their sources; 1.3.3: rich; FOLD_211
         xRefs.textContent = "";
         const rs = Array.isArray(refs) ? refs : [];
         if (rs.length) {
@@ -2075,12 +2131,16 @@ body.tm-measuring canvas{cursor:crosshair}
       // go back by autoOff.flush, as before.
       let leaveLayer = null, leaveFeat = null;
       const placeLeave = (it) => {
-        if (leaveLayer && leaveLayer !== it.layer) { const g = ctx.layers && ctx.layers[leaveLayer]; if (g && g.visible) setLayer(leaveLayer, false); }
-        if (leaveFeat && !(it.feature && it.feature.key === leaveFeat.key)) { try { if (leaveFeat.isOn()) leaveFeat.off(); } catch (_) {} }
-        leaveLayer = null; leaveFeat = null;
-        if (it.layer) { const g = ctx.layers && ctx.layers[it.layer]; if (g && !g.visible) leaveLayer = it.layer; }
+        // LEAVE_TWICE_211 (the refuter, R-03): the same place clicked twice in a row keeps what it armed at the first click - before
+        // this the second click forgot it (the feature was "already on", so it passed for the reader's own) and it never went off again.
+        const keepL = (leaveLayer && leaveLayer === it.layer) ? leaveLayer : null;
+        const keepF = (leaveFeat && it.feature && it.feature.key === leaveFeat.key) ? leaveFeat : null;
+        if (leaveLayer && !keepL) { const g = ctx.layers && ctx.layers[leaveLayer]; if (g && g.visible) setLayer(leaveLayer, false); }
+        if (leaveFeat && !keepF) { try { if (leaveFeat.isOn()) leaveFeat.off(); if (typeof leaveFeat.leave === "function") leaveFeat.leave(); } catch (_) {} }   // THRONE_BACK_211: + the feature's own leave()
+        leaveLayer = keepL; leaveFeat = keepF;
+        if (it.layer && !keepL) { const g = ctx.layers && ctx.layers[it.layer]; if (g && !g.visible) leaveLayer = it.layer; }
         const F = it.feature;
-        if (F && F.timed === false && typeof F.off === "function" && typeof F.isOn === "function") { try { if (!F.isOn()) leaveFeat = F; } catch (_) {} }
+        if (!keepF && F && F.timed === false && typeof F.off === "function" && typeof F.isOn === "function") { try { if (!F.isOn()) leaveFeat = F; } catch (_) {} }
       };
       const autoOff = {
         seconds: ui_AUTO_OFF_S,
@@ -2359,7 +2419,7 @@ body.tm-measuring canvas{cursor:crosshair}
       const gazitTop = () => {
         const gz = ctx.shared.lishkatHaGazit;
         const x = gz ? (gz.x0 + gz.x1) / 2 : 62, z = gz ? (gz.z0 + gz.z1) / 2 : -67.5, y = gz ? gz.y : 13.5;
-        return { tg: [x, y + 1, z], cam: [x + 6, y + 50, z + 20] };
+        return { tg: [x, y + 1, z], cam: [x, y + 50, z + 19] };   // GAZIT_STRAIGHT_211 (the user, 15.11.2026: "זווית מבט לשכת הגזית עקומה"): straight from the south, no turn (was x + 6)
       };
       // (1.0.1-L: no explanation is shown at the start - the card opens on the first choice; the panel's intro line says what the lists are)
       const secViews = document.createElement("div");
@@ -2922,6 +2982,12 @@ body.tm-measuring canvas{cursor:crosshair}
         b.addEventListener("click", () => {
           try {
             if (v.layer) setLayer(v.layer, true);
+            // VIEW_LEAVE_211 (the function review, F1-04 / F2-02): a view button did not put back what the place before it had switched on by
+            // itself - the tower of "העליות", the officers, the golden stands stayed over "מבט כללי" for good. It does now what a place's
+            // click and a chip do (CHIP_CLOSEAUTO_211).
+            try { autoOff.flush(); } catch (_) {}
+            try { if (typeof ctx.shared.closeAuto === "function") ctx.shared.closeAuto(); } catch (_) {}
+            try { placeLeave({}); } catch (_) {}
             // 1.0.1-K: no automatic removal (v.interior / v.yatzia / v.ulam are data only)
             const fp = resolveFp(v.key);
             if (fp) fly(fp.pos, fp.target);
@@ -2989,13 +3055,15 @@ body.tm-measuring canvas{cursor:crosshair}
         explodeWas = on;
         if (!on && ctx.layers.mechonaParts && ctx.layers.mechonaParts.visible) setLayer("mechonaParts", false);
       });
+      // NOTE 13 (F2-08): how far the altar stands from its default place now (the row "מקום המזבח בעזרה", R. Tam's four amot too)
+      const altarShift = () => { try { const A = ctx.shared.altarPlace; return A && A.dz && A.current in A.dz ? A.dz[A.current] + (A.extra || 0) - A.dz.south : 0; } catch (_) { return 0; } };
       const PLACES = [
         ["הר הבית והחצרות", [
           { t: "הר הבית והחצר הגדולה", view: "harHabayit",
             // 1.3.3: the great court lit on the floor for 15 s (30-courts.js, ctx.shared.zones)
             feature: { key: "zoneGreat", isOn: () => !!(ctx.shared.zones && ctx.shared.zones.zoneGreat && ctx.shared.zones.zoneGreat.get()),
               on: () => { const z = ctx.shared.zones && ctx.shared.zones.zoneGreat; if (z) z.set(true); }, off: () => { const z = ctx.shared.zones && ctx.shared.zones.zoneGreat; if (z) z.set(false); } },
-            info: "הפסוק: 'ויעש חצר הכהנים והעזרה הגדולה' (דברי הימים ב ד, ט) — העזרה הגדולה מקיפה את הבית ואת חצר הכהנים. דלתותיה מצופות נחושת (דברי הימים ב ד, ט).\nבמודל: חומתה בדגם חצר המלך וחצר בית ה' הפנימית — 'שלשה טורים גזית וטור כרתת ארזים' (מלכים א ז, יב), שלושה נדבכי אבן ונדבך של עץ עליהם (רש״י) — בחירת מודל. **הגודל, חמש מאות אמה, על פי מדות ב, א**; גובה החומה, עשרים אמה — בחירת מודל.",
+            info: "הפסוק: 'ויעש חצר הכהנים והעזרה הגדולה' (דברי הימים ב ד, ט) — העזרה הגדולה מקיפה את הבית ואת חצר הכהנים. דלתותיה מצופות נחושת (דברי הימים ב ד, ט).\nבמודל: חומתה כדוגמת חצר המלך וחצר בית ה' הפנימית — 'שלשה טורים גזית וטור כרתת ארזים' (מלכים א ז, יב), שלושה נדבכי אבן ונדבך של עץ עליהם (רש״י) — בחירת מודל. **הגודל, חמש מאות אמה, על פי מדות ב, א**; גובה החומה, עשרים אמה — בחירת מודל.",
             refs: [["מלכים א ז, יב", V(10, 7, 12)], ["דברי הימים ב ד, ט", V(39, 4, 9)], ["מדות ב, א", MI(2, 1)]] },
           { t: "השער המזרחי", view: "eastGate",
             info: "השער המזרחי של החצר הגדולה, מול פתח הבית: 'ודלתותיהם צפה נחשת' (דברי הימים ב ד, ט).\nבמודל: בפסוקים אין מספר לשערי החצר הגדולה ואין שמות — שער אחד בכל צד (בצפון ובדרום באמצע הצלע, במזרח ובמערב על ציר הבית) ו־56 מעלות אליו מן הקרקע הם בחירת מודל.",
@@ -3029,22 +3097,27 @@ body.tm-measuring canvas{cursor:crosshair}
           // YEHOYADA_208 (the user, 12.11.2026: "כמלבים"; the inner one "בעזרת ישראל"): the two chests, one switch, off by default (20-mount.js)
           { t: "ארון יהוידע אצל המזבח — לתקלין חדתין", tg: [70, 6.7, -8], cam: [80.5, 12.5, 1.5],
             feature: { key: "yehoyada", timed: false, isOn: () => !!(ctx.shared.yehoyada && ctx.shared.yehoyada.on), on: () => { if (ctx.shared.yehoyada) ctx.shared.yehoyada.set(true); }, off: () => { if (ctx.shared.yehoyada) ctx.shared.yehoyada.set(false); } },
-            info: "שני ארונות, כמלבי״ם (מלכים ב יב, י): ״ופה נזכר הארון של תקלין חדתין, וזה ניתן בפנים״; והארון שבדברי הימים — ״שנעשה לתקלין עתיקין... וזה נתנו בחוץ״. ובדברי הימים ב (כד, ח): הפנימי ״לשם נדרים ונדבות החדשים״, והחיצון ״מתקלין עתיקין... שזה הולך כולו לבדק הבית״.\n**הפנימי:** ״ויקח יהוידע הכהן ארון אחד ויקב חר בדלתו ויתן אתו אצל המזבח מימין בבוא איש בית ה׳״ (מלכים ב יב, י). רש״י: ״אצל המזבח — בעזרה״; ״מימין ביאת האנשים״. מצודת דוד: ״בימין הבא אל הבית, לא בימין היוצא״. הרלב״ג: ״הנה דרך החור היו משליכין שם הכסף והיה בדלת שהיא מכסה הארון כדי שלא יוכל אחד לקחת ממנו בזולת פתיחת הארון״.\n**החיצון:** ״ויאמר המלך ויעשו ארון אחד ויתנהו בשער בית ה׳ חוצה״ (דברי הימים ב כד, ח).\n**בקצרה —** לפשט הפסוקים זה ארון אחד, ובמלכים הוא אצל המזבח ובדברי הימים בשער מבחוץ; המלבי״ם מיישב שהיו שניים.\nבימי שלמה עוד לא היו — יהוידע היה בימי יואש. לכן **אינם מוצגים כברירת מחדל**; הכפתור כאן מציג אותם, והכפתור שעל המודל מסתיר.\n**במודל:** ארון ארז, שתי אמות על אמה וחומש, וחור במכסהו. הפנימי — בחצר הפנימית (חצר הכהנים ועזרת ישראל, כאן חצר אחת), חמש אמות ממזרח למזבח ושמונה אמות מצפון לקו האמצע, מימין לנכנס מן השער המזרחי. מידותיהם ומקומם המדויק — בחירת דגם.",
+            info: "שני ארונות, כמלבי״ם (מלכים ב יב, י): ״ופה נזכר הארון של תקלין חדתין, וזה ניתן בפנים״; והארון שבדברי הימים — ״שנעשה לתקלין עתיקין... וזה נתנו בחוץ״. ובדברי הימים ב (כד, ח): הפנימי ״לשם נדרים ונדבות החדשים״, והחיצון ״מתקלין עתיקין... שזה הולך כולו לבדק הבית״.\n**הפנימי:** ״ויקח יהוידע הכהן ארון אחד ויקב חר בדלתו ויתן אתו אצל המזבח מימין בבוא איש בית ה׳״ (מלכים ב יב, י). רש״י: ״אצל המזבח — בעזרה״; ״מימין ביאת האנשים״. מצודת דוד: ״בימין הבא אל הבית, לא בימין היוצא״. הרלב״ג: ״הנה דרך החור היו משליכין שם הכסף והיה בדלת שהיא מכסה הארון כדי שלא יוכל אחד לקחת ממנו בזולת פתיחת הארון״.\n**החיצון:** ״ויאמר המלך ויעשו ארון אחד ויתנהו בשער בית ה׳ חוצה״ (דברי הימים ב כד, ח).\n**בקצרה —** לרש״י (דברי הימים ב כד, ח) זה ארון אחד: ״ויעשו ארון אחד. ובמלכים כתיב ויקב חור בדלתו״ — ובמלכים הוא אצל המזבח, ובדברי הימים בשער מבחוץ; המלבי״ם מיישב שהיו שניים, וכך ברירת המחדל. במתג ״ארון יהוידע — שניים או אחד״ אפשר לבחור בארון אחד, כרש״י — ובמודל הוא עומד אצל המזבח, כלשון מלכים.\nבימי שלמה עוד לא היו — יהוידע היה בימי יואש. לכן **אינם מוצגים כברירת מחדל**; הכפתור כאן מציג אותם, והכפתור שעל המודל מסתיר.\n**במודל:** ארון ארז, שתי אמות על אמה וחומש, וחור במכסהו. הפנימי — בחצר הפנימית (חצר הכהנים ועזרת ישראל, כאן חצר אחת), חמש אמות ממזרח למזבח ושמונה אמות מצפון לקו האמצע, מימין לנכנס מן השער המזרחי. מידותיהם ומקומם המדויק — בחירת מודל.",
             refs: [["מלכים ב יב, י", V(11, 12, 10)], ["דברי הימים ב כד, ח", V(39, 24, 8)], ["מלבי״ם מלכים ב יב, י", { book: 3379, index: 449 }], ["מלבי״ם דברי הימים ב כד, ח", { book: 3364, index: 652 }], ["רש״י מלכים ב יב, י", { book: 3680, index: 446 }], ["מצודת דוד מלכים ב יב, י", { book: 3335, index: 756 }], ["רלב״ג מלכים ב יב, י", { book: 3644, index: 391 }]] },
-          { t: "ארון יהוידע שבשער — לתקלין עתיקין", tg: () => oci("ארון", OCI_FB.aron), cam: () => ociCam("ארון", OCI_FB.aron, 14),
+          { t: "ארון יהוידע שבשער — לתקלין עתיקין", tg: () => oci("ארון", OCI_FB.aron), cam: () => ociCam("ארון", OCI_FB.aron, 14), noFade: true,   // NOFADE2_211 (the full scan: the gate's walls behind the chest stood as ghosts)
+           
             feature: { key: "yehoyada", timed: false, isOn: () => !!(ctx.shared.yehoyada && ctx.shared.yehoyada.on), on: () => { if (ctx.shared.yehoyada) ctx.shared.yehoyada.set(true); }, off: () => { if (ctx.shared.yehoyada) ctx.shared.yehoyada.set(false); } },
-            info: "שני ארונות, כמלבי״ם (מלכים ב יב, י): ״ופה נזכר הארון של תקלין חדתין, וזה ניתן בפנים״; והארון שבדברי הימים — ״שנעשה לתקלין עתיקין... וזה נתנו בחוץ״. ובדברי הימים ב (כד, ח): הפנימי ״לשם נדרים ונדבות החדשים״, והחיצון ״מתקלין עתיקין... שזה הולך כולו לבדק הבית״.\n**הפנימי:** ״ויקח יהוידע הכהן ארון אחד ויקב חר בדלתו ויתן אתו אצל המזבח מימין בבוא איש בית ה׳״ (מלכים ב יב, י). רש״י: ״אצל המזבח — בעזרה״; ״מימין ביאת האנשים״. מצודת דוד: ״בימין הבא אל הבית, לא בימין היוצא״. הרלב״ג: ״הנה דרך החור היו משליכין שם הכסף והיה בדלת שהיא מכסה הארון כדי שלא יוכל אחד לקחת ממנו בזולת פתיחת הארון״.\n**החיצון:** ״ויאמר המלך ויעשו ארון אחד ויתנהו בשער בית ה׳ חוצה״ (דברי הימים ב כד, ח).\n**בקצרה —** לפשט הפסוקים זה ארון אחד, ובמלכים הוא אצל המזבח ובדברי הימים בשער מבחוץ; המלבי״ם מיישב שהיו שניים.\nבימי שלמה עוד לא היו — יהוידע היה בימי יואש. לכן **אינם מוצגים כברירת מחדל**; הכפתור כאן מציג אותם, והכפתור שעל המודל מסתיר.\n**במודל:** ארון ארז, שתי אמות על אמה וחומש, וחור במכסהו. הפנימי — בחצר הפנימית (חצר הכהנים ועזרת ישראל, כאן חצר אחת), חמש אמות ממזרח למזבח ושמונה אמות מצפון לקו האמצע, מימין לנכנס מן השער המזרחי. מידותיהם ומקומם המדויק — בחירת דגם.",
+            info: "שני ארונות, כמלבי״ם (מלכים ב יב, י): ״ופה נזכר הארון של תקלין חדתין, וזה ניתן בפנים״; והארון שבדברי הימים — ״שנעשה לתקלין עתיקין... וזה נתנו בחוץ״. ובדברי הימים ב (כד, ח): הפנימי ״לשם נדרים ונדבות החדשים״, והחיצון ״מתקלין עתיקין... שזה הולך כולו לבדק הבית״.\n**הפנימי:** ״ויקח יהוידע הכהן ארון אחד ויקב חר בדלתו ויתן אתו אצל המזבח מימין בבוא איש בית ה׳״ (מלכים ב יב, י). רש״י: ״אצל המזבח — בעזרה״; ״מימין ביאת האנשים״. מצודת דוד: ״בימין הבא אל הבית, לא בימין היוצא״. הרלב״ג: ״הנה דרך החור היו משליכין שם הכסף והיה בדלת שהיא מכסה הארון כדי שלא יוכל אחד לקחת ממנו בזולת פתיחת הארון״.\n**החיצון:** ״ויאמר המלך ויעשו ארון אחד ויתנהו בשער בית ה׳ חוצה״ (דברי הימים ב כד, ח).\n**בקצרה —** לרש״י (דברי הימים ב כד, ח) זה ארון אחד: ״ויעשו ארון אחד. ובמלכים כתיב ויקב חור בדלתו״ — ובמלכים הוא אצל המזבח, ובדברי הימים בשער מבחוץ; המלבי״ם מיישב שהיו שניים, וכך ברירת המחדל. במתג ״ארון יהוידע — שניים או אחד״ אפשר לבחור בארון אחד, כרש״י — ובמודל הוא עומד אצל המזבח, כלשון מלכים.\nבימי שלמה עוד לא היו — יהוידע היה בימי יואש. לכן **אינם מוצגים כברירת מחדל**; הכפתור כאן מציג אותם, והכפתור שעל המודל מסתיר.\n**במודל:** ארון ארז, שתי אמות על אמה וחומש, וחור במכסהו. הפנימי — בחצר הפנימית (חצר הכהנים ועזרת ישראל, כאן חצר אחת), חמש אמות ממזרח למזבח ושמונה אמות מצפון לקו האמצע, מימין לנכנס מן השער המזרחי. מידותיהם ומקומם המדויק — בחירת מודל.",
             refs: [["מלכים ב יב, י", V(11, 12, 10)], ["דברי הימים ב כד, ח", V(39, 24, 8)], ["מלבי״ם מלכים ב יב, י", { book: 3379, index: 449 }], ["מלבי״ם דברי הימים ב כד, ח", { book: 3364, index: 652 }], ["רש״י מלכים ב יב, י", { book: 3680, index: 446 }], ["מצודת דוד מלכים ב יב, י", { book: 3335, index: 756 }], ["רלב״ג מלכים ב יב, י", { book: 3644, index: 391 }]] },
           // 1.3.5 (the user, 22:12: "בר שורא חובה"): bar shura (30-courts.js)
-          { t: "בר שורא — חומה קטנה לפנים מן החומה", tg: [90, 6.2, 40.5], cam: [84, 16, 40],   // VIEWFIX_138: from above, down on the band at the wall's foot (from the side it was a line under ghosted walls)
-            info: "בגמרא (פסחים פו.), על 'עובי החומה' שהוא כלפנים: 'משכחת לה בבר שורא, דכתיב: ויאבל חל וחומה, ואמר רבי אחא ואיתימא רבי חנינא: שורא ובר שורא'.\nרש״י: 'בר שורא — חומה קטנה לפנים מן החומה גדולה, והיא נמוכה ושוה לקרקע גובה העזרה, שקרקע העזרה הולך וגבוה ועולה במעלות'.\nתוספות יום טוב (מדות ב, ג): 'כלומר שראשה תהא שוה לקרקע העזרה ותהא מוקדשת כמוה'; 'והיה זה לדעתי לחזוק הקרקע שלא יפול העפר ממנה'.\nבמודל: חומה קטנה צמודה לחומת החצר הפנימית מבפנים, סביב, וראשה בגובה רצפת החצר. כאן רצפת החצר במפלס אחד, ולכן **ראשה שווה לרצפה**, והיא נראית כפס אבן כהה, ברוחב אמה, לרגלי החומה — חוץ מן השערים ומלשכת הגזית. (במודל בית שני, שבו עזרת ישראל נמוכה מעזרת הכהנים, היא בולטת שם שתי אמות וחצי.) עוביה אמה — בחירת מודל.",
+          // BARSHURA_VIEW_211 (the user, 15.11.2026, with a picture of the floor and the label alone: "לא מציג כלום"): from inside the court,
+          // some 25 amot off, on the eastern wall and the band at its foot - and the wall is not made see-through while the place shows
+          // (noFade: PLACE_NOFADE_211). Until 1.4.3 from right above the band (VIEWFIX_138), the wall a ghost.
+          { t: "בר שורא — חומה קטנה לפנים מן החומה", tg: [90.5, 6.6, 41], cam: [69, 12.5, 25], noFade: true,
+            feature: { key: "barShura", isOn: () => !!(ctx.shared.barShura && ctx.shared.barShura.on), on: () => { if (ctx.shared.barShura) ctx.shared.barShura.set(true); }, off: () => { if (ctx.shared.barShura) ctx.shared.barShura.set(false); } },
+            info: "בגמרא (פסחים פו.), על 'עובי החומה' שהוא כלפנים: 'משכחת לה בבר שורא, דכתיב: ויאבל חל וחומה, ואמר רבי אחא ואיתימא רבי חנינא: שורא ובר שורא'.\nרש״י: 'בר שורא — חומה קטנה לפנים מן החומה גדולה, והיא נמוכה ושוה לקרקע גובה העזרה, שקרקע העזרה הולך וגבוה ועולה במעלות'.\nתוספות יום טוב (מדות ב, ג): 'כלומר שראשה תהא שוה לקרקע העזרה ותהא מוקדשת כמוה'; 'והיה זה לדעתי לחזוק הקרקע שלא יפול העפר ממנה'.\nבמודל: חומה קטנה צמודה לחומת החצר הפנימית מבפנים, סביב, וראשה בגובה רצפת החצר. כאן רצפת החצר במפלס אחד, ולכן **ראשה שווה לרצפה**, והיא נראית כפס אבן כהה, ברוחב אמה, לרגלי החומה — חוץ מן השערים ומלשכת הגזית. כשבוחרים במקום הזה הפס מואר לחמש עשרה שניות, כדי שהעין תמצא אותו. (במודל בית שני, שבו עזרת ישראל נמוכה מעזרת הכהנים, היא בולטת שם שתי אמות וחצי.) עוביה אמה — בחירת מודל.",
             refs: [["פסחים פו.", { book: 106, index: 2736 }], ["רש״י פסחים פו.", { book: 2162, index: 4148 }], ["תוספות יום טוב מדות ב, ג", { book: 948, index: 69 }]] },
           // 1.3.5 (the user, 22:12: "תוסיף סנהדראות"): the two lesser courts (30-courts.js, ctx.shared.lesserCourts)
           { t: "שתי הסנהדראות הקטנות", action: () => openPill20("crt-lesser-roofs"),
             tourThen: [{ cam: [240.55, 31, 9.5], tg: [240.55, 2, -14.5] }],   // TOUR_FIX_137: the second of the two
             tg: () => { const L = ctx.shared.lesserCourts, p = (L && L.azarah) || [114, 3, -15]; return [p[0], p[1] + 2, p[2]]; },
             cam: () => { const L = ctx.shared.lesserCourts, p = (L && L.azarah) || [114, 3, -15]; return [p[0], p[1] + 31, p[2] + 24]; },
-            info: "לשון המשנה (סנהדרין יא, ב): 'שלשה בתי דינין היו שם, אחד יושב על פתח הר הבית, ואחד יושב על פתח העזרה, ואחד יושב בלשכת הגזית'.\nבקצרה — מקום בית הדין שעל פתח הר הבית: לרש״י — אצל השער המזרחי שלפני עזרת נשים (**ברירת המחדל**); וכפשט המשנה — אצל שער הר הבית עצמו (בטבלת השיטות, בשורה 'מקום שתי הסנהדראות הקטנות'). ושורות התלמידים: לרש״י כעגולה, וליד רמה פשוטות (שם, בשורה 'שורות התלמידים שלפני הסנהדרין').\nרש״י (פו:): 'אחד יושב על פתח הר הבית — הוא שער המזרחי שלפנים מן החיל לפני עזרת נשים'; 'ואחד יושב למעלה הימנו — כשעברו עזרת נשים ובאין לפני עזרת ישראל'.\nועל ישיבתם (סנהדרין ד, ג–ד): 'סנהדרין היתה כחצי גרן עגלה, כדי שיהו רואין זה את זה. ושני סופרי הדינין עומדין לפניהם, אחד מימין ואחד משמאל'; 'ושלש שורות של תלמידי חכמים יושבין לפניהם, כל אחד ואחד מכיר את מקומו'.\nבמודל: כל בית דין יושב **בלשכה סגורה** — עשרים ושלושה כחצי גורן, חמש עשרה אמה קוטרו; לפניהם שני סופרי הדיינים ושלוש שורות התלמידים. המשנה ורש״י מדברים בלשון בית שני; העתקת הדבר לחצרות בית ראשון, הלשכה, מידותיה, פתחה ומקומה המדויק — בחירת מודל. הדמויות — כבלשכת הגזית: הדיינים בגלימה שחורה ובכיפה, הזקן לבן סמוך לאמצע השורה וכהה בקצותיה; התלמידים בלי זקן; הסופרים עומדים — בחירת מודל. המבט כאן: אל בית הדין שלפני שער חצר הכהנים; גג הלשכה מוסר לשעה.",
+            info: "לשון המשנה (סנהדרין יא, ב): 'שלשה בתי דינין היו שם, אחד יושב על פתח הר הבית, ואחד יושב על פתח העזרה, ואחד יושב בלשכת הגזית'.\nבקצרה — מקום בית הדין שעל פתח הר הבית: לרש״י — אצל השער המזרחי שלפני עזרת נשים (**ברירת המחדל**); וכפשט המשנה — אצל שער הר הבית עצמו (בתפריט, תחת ״שיטות ומחלוקות״, במתג 'מקום שתי הסנהדראות הקטנות'). ושורות התלמידים: לרש״י כעגולה, וליד רמה פשוטות (שם, במתג 'שורות התלמידים שלפני הסנהדרין').\nרש״י (פו:): 'אחד יושב על פתח הר הבית — הוא שער המזרחי שלפנים מן החיל לפני עזרת נשים'; 'ואחד יושב למעלה הימנו — כשעברו עזרת נשים ובאין לפני עזרת ישראל'.\nועל ישיבתם (סנהדרין ד, ג–ד): 'סנהדרין היתה כחצי גרן עגלה, כדי שיהו רואין זה את זה. ושני סופרי הדינין עומדין לפניהם, אחד מימין ואחד משמאל'; 'ושלש שורות של תלמידי חכמים יושבין לפניהם, כל אחד ואחד מכיר את מקומו'.\nבמודל: כל בית דין יושב **בלשכה סגורה** — עשרים ושלושה כחצי גורן, חמש עשרה אמה קוטרו; לפניהם שני סופרי הדיינים ושלוש שורות התלמידים. המשנה ורש״י מדברים בלשון בית שני; העתקת הדבר לחצרות בית ראשון, הלשכה, מידותיה, פתחה ומקומה המדויק — בחירת מודל. הדמויות — כבלשכת הגזית: הדיינים בגלימה שחורה ובכיפה, הזקן לבן סמוך לאמצע השורה וכהה בקצותיה; התלמידים בלי זקן; הסופרים עומדים — בחירת מודל. המבט כאן: אל בית הדין שלפני שער חצר הכהנים; גג הלשכה מוסר לשעה.",
             refs: [["משנה סנהדרין יא, ב", { book: 73, index: 78 }], ["רש״י סנהדרין פו:", { book: 2180, index: 4632 }], ["רמב״ם סנהדרין א, ג", { book: 375, index: 5 }], ["משנה סנהדרין ד, ג", MN(73, 4, 3)], ["משנה סנהדרין ד, ד", MN(73, 4, 4)], ["משנה סנהדרין א, ו", MN(73, 1, 6)]] },
           { t: "חצר הכהנים", view: "azarah", key: "azarah" },
           // 1.0.1-K (integration; the user: "אכן רצפת העזרה היתה משיש, אייר זאת כך"): the court floor in marble (30-courts.js, M.marblePave)
@@ -3056,7 +3129,7 @@ body.tm-measuring canvas{cursor:crosshair}
           // 1.2.2 (the scan): from the south, straight at the wall's three gates (x -40, 0, 40), the house rising behind it - and 136 amot off:
           // nearer than the fade distance (120, the rays along the view) the wall went a ghost over the house's chambers (1.0.x: z 128)
           { t: "שערי חצר הכהנים", tg: [0, 12, 64], cam: [0, 62, 200],
-            info: "שבעה שערים לחצר הכהנים — שלושה בצפון, שלושה בדרום ואחד במזרח — על פי מדות א, ד (מוסכמה למודל; במלכים לא נמנו השערים ולא נקראו בשם). דלתותיהם מצופות נחושת (דברי הימים ב ד, ט).\nבמודל: לפני השער המזרחי **שש מעלות**. בקצרה — צורתן (בטבלת השיטות, בשורה 'מעלות השער המזרחי — צורתן'), כשתי הקריאות בחמש עשרה המעלות של בית שני (מדות ב, ה: 'לא היו טרוטות, אלא מקפות כחצי גרן עגלה'): לרמב״ם — המעלות אינן ארוכות; כל מעלה חצי עיגול, זו על גבי זו, לפני השער (**ברירת המחדל**); ולרי״ד ולרבינו יהונתן — אורך המעלה כרוחב העזרה, מכותל לכותל, ובמודל כאן לאורך פני החצר. המעלות עצמן, מספרן, צורתן ואורכן בבית ראשון — בחירת מודל.",
+            info: "שבעה שערים לחצר הכהנים — שלושה בצפון, שלושה בדרום ואחד במזרח — על פי מדות א, ד (מוסכמה למודל; במלכים לא נמנו השערים ולא נקראו בשם). דלתותיהם מצופות נחושת (דברי הימים ב ד, ט).\nבמודל: לפני השער המזרחי **שש מעלות**. בקצרה — צורתן (בתפריט, תחת ״שיטות ומחלוקות״, במתג 'מעלות השער המזרחי — צורתן'), כשתי השיטות בחמש עשרה המעלות של בית שני (מדות ב, ה: 'לא היו טרוטות, אלא מקפות כחצי גרן עגלה'): לרמב״ם — המעלות אינן ארוכות; כל מעלה חצי עיגול, זו על גבי זו, לפני השער (**ברירת המחדל**); ולרי״ד ולרבינו יהונתן — אורך המעלה כרוחב העזרה, מכותל לכותל, ובמודל כאן לאורך פני החצר. המעלות עצמן, מספרן, צורתן ואורכן בבית ראשון — בחירת מודל.",
             refs: [["מדות א, ד", MI(1, 4)], ["דברי הימים ב ד, ט", V(39, 4, 9)], ["מלכים א ו, לו", V(10, 6, 36)], ["מדות ב, ה", MI(2, 5)], ["פירוש המשניות לרמב״ם מדות ב, ה", { book: 573, index: 25 }], ["פסקי הרי״ד סוכה נג.", { book: 7576, index: 355 }], ["רבינו יהונתן סוכה נא:", { book: 7576, index: 353 }], ["המאירי מדות ב, ה", { book: 6033, index: 35 }]] },
           // GATEKEEPERS_137 - 1.3.7 (the user, 11.11.2026: "מתג חדש אפשרות ב"; "ב"): the gatekeepers' watches of I Chr 26 at the Mishnah's
           // places (30-courts.js, ctx.shared.gatekeepers). The place switches them on and they stay on (timed: false) until the pill on
@@ -3071,7 +3144,7 @@ body.tm-measuring canvas{cursor:crosshair}
           // "גם בבית ראשון"): in the NORTH, east part of the north wall opposite the altar, lengthwise, half in / half out (courts.md FOR-UI);
           // the camera: from inside, high over the court half, west of the court door, looking down at the lots' ring, the line of the wall and the seats
           { t: "לשכת הגזית", action: () => openPill20("crt-gazit-roof"), tg: () => gazitTop().tg, cam: () => gazitTop().cam,   // 1.3.0: from above, the roof open (was view lishkatHaGazit, the low view from the court - the presentation keeps it)
-            info: "לשכת הגזית — בצפון: 'שלש שבצפון: לשכת העץ, לשכת הגולה, לשכת הגזית' (יומא יט.; ראיית רב פפא שם עומדת רק בנוסח זה).\nהרמב״ם (בית הבחירה ה, יז): 'והשלש שבצפון לשכת הגזית. לשכת הגולה. לשכת העץ. לשכת הגזית שבה סנהדרי גדולה יושבת. וחציה היה קדש וחציה היה חל. ולה שני פתחים אחד לקדש ואחד לחל ובחצי של חל היו הסנהדרין יושבין'.\nתוספות יום טוב (מדות ה, ג): 'ונראה בעיני שגירסת הספר נשתבשה' — ובמשנה הנדפסת (מדות ה, ד): 'שבדרום, לשכת העץ, לשכת הגולה, לשכת הגזית'.\nמקומה — בחלקו המזרחי של הכותל הצפוני, מול המזבח: ציור התוספות יום טוב 'שבצפון סמוכה למזרח לשכת הגזית'; תפארת ישראל 'בזוית צפונית מזרחית של עזרת ישראל'; מכילתא 'נמצינו למדין שסנהדרין בצד מזבח'; תוספות רי״ד 'סמוכה למזבח ופתוחה למזבח'.\nבגמרא: 'לשכת הגזית כמין בסילקי גדולה היתה, פייס במזרחה, וזקן יושב במערבה' (יומא כה.; רש״י: 'בית גבוה שעל עלייה'), ואביי שם: 'שמע מינה לשכת הגזית חציה בקדש וחציה בחול, ושמע מינה שני פתחים היו לה, אחד פתוח בקדש, ואחד פתוח בחול' — לכן **היא עומדת על קו חומת החצר הפנימית הצפונית, חלקה בחצר וחלקה בחוץ**.\nחלוקתה במודל (מגרסה 1.3.7) — מזרח ומערב, כלשון הגמרא וכמאירי (יומא כה.): הכהנים 'מתקבצים בחציה של קדש שהיה בצד מזרחה של לשכה', 'וזקן מזקני הסנהדרין יושב בחציה של חול לצד מערבה של לשכה'. פס נחושת ברצפה, מצפון לדרום, מסמן את הגבול. בקצרה — **תפארת ישראל** (צורת בית המקדש): 'בנויה חציה בדרום בקודש וחציה בצפון בחול', והסנהדרין 'פניהם לדרום ואחוריהן לצפון'.\nהפתחים כחק נתן: 'שהפתח הפתוח לחול היה פתוח לצד צפון סמוך למערב והפתח הפתוח לקדש היה פתוח לצד דרום סמוך למזרח', ומן הפתח החיצון מעלות: 'היו מעלות שעליה עולין וממנה יורדין לחול' (תוספות יום טוב ה, ד).\nבפנים: הסנהדרין בחצי המערבי, חצי החול: 'סנהדרי גדולה היתה של שבעים ואחד' (סנהדרין א, ו), 'כחצי גרן עגלה, כדי שיהו רואין זה את זה' (ד, ג) — **שבעים ואחד מושבים בשורה אחת, כחצי גורן**, פניהם למזרח, אל חצי הקודש; כיוון פניהם לשיטת המאירי — בחירת מודל. מקום הפייס ('פייס במזרחה') אינו מצויר בבית ראשון: הפייס — תקנה ('התקינו שלא יהו תורמין את המזבח אלא בפיס', יומא ב, ב), ולא נמצא מקור שנהג בבית ראשון. רש״י (סנהדרין לו:): 'בעגולה היו יושבין כדי שיהו כולן רואין זה את זה, לפי שאם היו יושבין בשורה אין פני הראשונים רואין זה את זה'.\nגם בבית ראשון: רש״י (דברי הימים ב לד, כב) 'כי לשכה אחת היתה לה לחולדה, סמוכה ללשכת הגזית'; מהרש״א (בבא בתרא צא:) 'כי במלכותו נתמנה סנהדרי גדולה לישב בלשכת הגזית'. וכך בתרשים הספר 'מקרא מפורש' (עמ' ב–ג, לשיטת רש״י): על החומה הצפונית, לאורכה, חציה בפנים וחציה בחוץ, ממערב לים.\nבמודל: אין מידות במקורות — מידותיה (כ־24 על 22), מקומה המדויק בין השער לים, והמעלות — בחירת מודל. **המושבים קטנים ממידת אדם**, כדי ששבעים ואחד ישבו בשורה אחת בתוך הלשכה: שורה אחת במידת אדם צריכה חצי עיגול שרדיוסו כעשרים ושלוש אמות. על כל מושב דיין, והנשיא באמצע; ושני סופרי הדיינים עומדים לפניהם, אחד מימין ואחד משמאל (סנהדרין ד, ג). בקצרה — שלוש שורות התלמידים (סנהדרין ד, ד): לרש״י אף הן כעגולה, וליד רמה שורות פשוטות — בטבלת השיטות.\nהדמויות: הדיינים — בגלימה שחורה ובכיפה; הזקן לבן סמוך לאמצע השורה, אפור בהמשכה ושחור־חום בקצותיה — על פי 'ושאר השבעים יושבין לפניו כפי שניהם וכפי מעלתם' (רמב״ם, סנהדרין א, ג). התלמידים שלפניהם — בלי זקן, פניהם אל הדיינים. שני הסופרים — עומדים, ולוח בידם. צורת הדמויות, לבושן וצבעי הזקנים — בחירת מודל.",
+            info: "לשכת הגזית — בצפון: 'שלש שבצפון: לשכת העץ, לשכת הגולה, לשכת הגזית' (יומא יט.; ראיית רב פפא שם עומדת רק בנוסח זה).\nהרמב״ם (בית הבחירה ה, יז): 'והשלש שבצפון לשכת הגזית. לשכת הגולה. לשכת העץ. לשכת הגזית שבה סנהדרי גדולה יושבת. וחציה היה קדש וחציה היה חל. ולה שני פתחים אחד לקדש ואחד לחל ובחצי של חל היו הסנהדרין יושבין'.\nתוספות יום טוב (מדות ה, ג): 'ונראה בעיני שגירסת הספר נשתבשה' — ובמשנה הנדפסת (מדות ה, ד): 'שבדרום, לשכת העץ, לשכת הגולה, לשכת הגזית'.\nמקומה — בחלקו המזרחי של הכותל הצפוני, מול המזבח: ציור התוספות יום טוב 'שבצפון סמוכה למזרח לשכת הגזית'; תפארת ישראל 'בזוית צפונית מזרחית של עזרת ישראל'; מכילתא 'נמצינו למדין שסנהדרין בצד מזבח'; תוספות רי״ד 'סמוכה למזבח ופתוחה למזבח'.\nבגמרא: 'לשכת הגזית כמין בסילקי גדולה היתה, פייס במזרחה, וזקן יושב במערבה' (יומא כה.; רש״י: 'בית גבוה שעל עלייה'), ואביי שם: 'שמע מינה לשכת הגזית חציה בקדש וחציה בחול, ושמע מינה שני פתחים היו לה, אחד פתוח בקדש, ואחד פתוח בחול' — לכן **היא עומדת על קו חומת החצר הפנימית הצפונית, חלקה בחצר וחלקה בחוץ**.\nחלוקתה במודל — מזרח ומערב, כלשון הגמרא וכמאירי (יומא כה.): הכהנים 'מתקבצים בחציה של קדש שהיה בצד מזרחה של לשכה', 'וזקן מזקני הסנהדרין יושב בחציה של חול לצד מערבה של לשכה'. פס נחושת ברצפה, מצפון לדרום, מסמן את הגבול. בקצרה — **תפארת ישראל** (צורת בית המקדש): 'בנויה חציה בדרום בקודש וחציה בצפון בחול', והסנהדרין 'פניהם לדרום ואחוריהן לצפון'.\nהפתחים כחק נתן: 'שהפתח הפתוח לחול היה פתוח לצד צפון סמוך למערב והפתח הפתוח לקדש היה פתוח לצד דרום סמוך למזרח', ומן הפתח החיצון מעלות: 'היו מעלות שעליה עולין וממנה יורדין לחול' (תוספות יום טוב ה, ד).\nבפנים: הסנהדרין בחצי המערבי, חצי החול: 'סנהדרי גדולה היתה של שבעים ואחד' (סנהדרין א, ו), 'כחצי גרן עגלה, כדי שיהו רואין זה את זה' (ד, ג) — **שבעים ואחד מושבים בשורה אחת, כחצי גורן**, פניהם למזרח, אל חצי הקודש; כיוון פניהם לשיטת המאירי — בחירת מודל. מקום הפייס ('פייס במזרחה') אינו מצויר בבית ראשון: הפייס — תקנה ('התקינו שלא יהו תורמין את המזבח אלא בפיס', יומא ב, ב), ולא נמצא מקור שנהג בבית ראשון. רש״י (סנהדרין לו:): 'בעגולה היו יושבין כדי שיהו כולן רואין זה את זה, לפי שאם היו יושבין בשורה אין פני הראשונים רואין זה את זה'.\nגם בבית ראשון: רש״י (דברי הימים ב לד, כב) 'כי לשכה אחת היתה לה לחולדה, סמוכה ללשכת הגזית'; מהרש״א (בבא בתרא צא:) 'כי במלכותו נתמנה סנהדרי גדולה לישב בלשכת הגזית'. וכך בתרשים הספר 'מקרא מפורש' (עמ' ב–ג, לשיטת רש״י): על החומה הצפונית, לאורכה, חציה בפנים וחציה בחוץ, ממערב לים.\nבמודל: אין מידות במקורות — מידותיה (כ־24 על 22), מקומה המדויק בין השער לים, והמעלות — בחירת מודל. **המושבים קטנים ממידת אדם**, כדי ששבעים ואחד ישבו בשורה אחת בתוך הלשכה: שורה אחת במידת אדם צריכה חצי עיגול שרדיוסו כעשרים ושלוש אמות. על כל מושב דיין, והנשיא באמצע; ושני סופרי הדיינים עומדים לפניהם, אחד מימין ואחד משמאל (סנהדרין ד, ג). בקצרה — שלוש שורות התלמידים (סנהדרין ד, ד): לרש״י אף הן כעגולה, וליד רמה שורות פשוטות — בתפריט, תחת ״שיטות ומחלוקות״.\nהדמויות: הדיינים — בגלימה שחורה ובכיפה; הזקן לבן סמוך לאמצע השורה, אפור בהמשכה ושחור־חום בקצותיה — על פי 'ושאר השבעים יושבין לפניו כפי שניהם וכפי מעלתם' (רמב״ם, סנהדרין א, ג). התלמידים שלפניהם — בלי זקן, פניהם אל הדיינים. שני הסופרים — עומדים, ולוח בידם. צורת הדמויות, לבושן וצבעי הזקנים — בחירת מודל.",
             refs: [["רמב״ם סנהדרין א, ג", { book: 375, index: 5 }], ["יומא יט.", P(107, "יט.")], ["רמב״ם בית הבחירה ה, יז", RB(5, 17)], ["תוספות יום טוב מדות ה, ג", { book: 948, index: 194 }], ["מדות ה, ד", MI(5, 4)], ["צורת בית המקדש להתוספות יום טוב", { book: 6028, index: 42 }], ["צורת בית המקדש להתפארת ישראל", { book: 6029, index: 65 }], ["מכילתא בחדש יא", { book: 285, index: 1474 }], ["תוספות רי״ד יומא כה.", { book: 2109, index: 76 }], ["יומא כה.", P(107, "כה.")], ["חק נתן על מדות", { book: 6026, index: 116 }], ["תוספות יום טוב מדות ה, ד", { book: 948, index: 208 }], ["משנה סנהדרין א, ו", MN(73, 1, 6)], ["משנה סנהדרין ד, ג", MN(73, 4, 3)], ["רש״י סנהדרין לו:", { book: 2180, index: 1777 }], ["רש״י דברי הימים ב לד, כב", { book: 3662, index: 1065 }], ["מהרש״א בבא בתרא צא:", { book: 2845, index: 313 }], ["המאירי יומא כה.", { book: 2199, index: 228 }], ["משנה יומא ב, ב", MN(55, 2, 2)]] },
           // 1.0.1-L (L.68, the user: "מול השולחנות והטבעות שבבית שני... למה לא הוספת אותם גם בבית ראשון? - תוסיף"): the Second Temple's
           // slaughter place north of the altar, a model choice ("השלמות"); the texts and the refs from courts-2.md FOR-UI (every quote DB-checked)
@@ -3092,23 +3165,30 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "קו ציר הבית — כנגד פתח ההיכל, ומקום המזבח", view: "altarPlaceView",
             feature: { key: "altarAxis", isOn: () => !!(ctx.shared.altarAxis && ctx.shared.altarAxis.get()),
               on: () => { if (ctx.shared.altarAxis) ctx.shared.altarAxis.set(true); }, off: () => { if (ctx.shared.altarAxis) ctx.shared.altarAxis.set(false); } },
-            info: "קו מצויר על רצפת העזרה, מפתח ההיכל מזרחה — ציר הבית.\nהמחלוקת (יומא טז.; זבחים סג.): לרבי אליעזר בן יעקב 'כוליה מזבח בדרום קאי' — המזבח כולו מדרום לקו, והפתח פנוי; לרבי יוסי 'כוליה מזבח בצפון קאי' — כולו מצפונו; לרבי יהודה המזבח ממוצע — הקו עובר באמצעו, וגוף המזבח והכבש חוסמים את מראה הפתח.\nבמודל: הקו מוצג לחמש עשרה שניות; השיטה נבחרת בשורה 'מקום המזבח' שבטבלת השיטות. הקו עצמו — עזר למודל, לא חלק מן הבניין.",
+            info: "קו מצויר על רצפת העזרה, מפתח ההיכל מזרחה — ציר הבית.\nהמחלוקת (יומא טז.; זבחים סג.): לרבי אליעזר בן יעקב 'כוליה מזבח בדרום קאי' — המזבח כולו מדרום לקו, והפתח פנוי; לרבי יוסי 'כוליה מזבח בצפון קאי' — כולו מצפונו; לרבי יהודה המזבח ממוצע — הקו עובר באמצעו, וגוף המזבח והכבש חוסמים את מראה הפתח.\nבמודל: הקו מוצג לחמש עשרה שניות; השיטה נבחרת במתג 'מקום המזבח' שבתפריט, תחת ״שיטות ומחלוקות״. הקו עצמו — עזר למודל, לא חלק מן הבניין.",
             refs: [["יומא טז.", P(107, "טז.")], ["זבחים סג.", P(130, "סג.")], ["רמב״ם בית הבחירה ה, יג", RB(5, 13)]] },
           { t: "מפתח ההיכל אל המזבח — האם המזבח חוסם את הפתח", view: "altarFromDoor",
-            info: "המבט מפתח הבית מזרחה, לאורך ציר הבית, אל המזבח והכבש.\nבקצרה — השיטות: לפי רבי יהודה (ממוצע) גוף המזבח והכבש עומדים בקו ישר כנגד הפתח וחוסמים את מראהו; לפי רבי אליעזר בן יעקב (כולו בדרום) הפתח פנוי וגוף המזבח מתחיל בקו הציר; לפי רבי יוסי (כולו בצפון) הכבש הוא שנמשך אל מול הפתח.\nבמודל: החלפת השיטה — בשורה 'מקום המזבח' שבטבלת השיטות (ובכרטיס זה).",
+            info: "המבט מפתח הבית מזרחה, לאורך ציר הבית, אל המזבח והכבש.\nבקצרה — השיטות: לפי רבי יהודה (ממוצע) גוף המזבח והכבש עומדים בקו ישר כנגד הפתח וחוסמים את מראהו; לפי רבי אליעזר בן יעקב (כולו בדרום) הפתח פנוי וגוף המזבח מתחיל בקו הציר; לפי רבי יוסי (כולו בצפון) הכבש הוא שנמשך אל מול הפתח.\nבמודל: החלפת השיטה — במתג 'מקום המזבח' שבתפריט, תחת ״שיטות ומחלוקות״ (ובכרטיס זה).",
             refs: [["יומא טז.", P(107, "טז.")], ["זבחים סג.", P(130, "סג.")]] },
           // 1.0.1-K review (ui-1 / cross-3): the camera stood by לשכת הגזית (30-courts.js, x 59..89, z 50..85, 22 high and its lantern)
           // and looked through its walls and roofs; now inside the court WEST of it, south-west of the ramp (40-altar.js: x 41.5..57.5,
           // z 10..42, rising to the altar's top at 16) - ray-tested clear to the target, fade on and off, both placements of the Sea;
           // model choice
-          { t: "הכבש", tg: [55, 12, 28], cam: [40.5, 32, 62],
-            info: "הכבש עולה אל המזבח מדרומו, כי אסור לעלות במעלות ('ולא תעלה במעלת על מזבחי', שמות כ).\nבמודל: מידותיו, **שלושים ושתיים על שש עשרה**, על פי מדות ג, ג כמוסכמה; במלכים ובדברי הימים אין כבש.",
-            refs: [["דברי הימים ב ד, א", V(39, 4, 1)], ["מדות ג, ג", MI(3, 3)]] },
+          // NOTE 13 (the function review, F2-08): the two places of the ramp follow the altar when its place is changed (as the altar's
+          // own views do): the altar's shift from the default, added to the eye and its target
+          { t: "הכבש", tg: () => [55, 12, 28 + altarShift()], cam: () => [40.5, 32, 62 + altarShift()],
+            info: "הכבש עולה אל המזבח מדרומו, כי אסור לעלות במעלות ('ולא תעלה במעלת על מזבחי', שמות כ).\nבמודל: מידותיו, **שלושים ושתיים על שש עשרה**, על פי מדות ג, ג כמוסכמה; במלכים ובדברי הימים אין כבש.\n**הרבובה — למה שימשה**: 'ורבובה היתה לו במערבו, ששם היו נותנים פסולי חטאת העוף' (מדות ג, ג); הרמב״ם (בית הבחירה ב, יד): 'וחלון היתה במערבו של כבש אמה על אמה ורבובה היתה נקראת. שבה נותנין פסולי חטאת העוף עד שתעבר צורתה ותצא לבית השרפה'.\nבקצרה — מקומה: לרמב״ם — חלון בגוף הכבש, ולר׳ שמעיה 'כעין ארובה חקוקה בכבש במערבו'; לרש״י (פסחים לד., כפי שהביא הבועז) — ברצפת העזרה, בקרן שבין הכבש למזבח; והראב״ד: 'לא כי אלא החלון לבד והרבובה לבד'. במודל — חלון בצד המערבי של הכבש, כרמב״ם. כל זה נאמר על בית שני; לבית ראשון אין לה מקור מאומת.",
+            refs: [["דברי הימים ב ד, א", V(39, 4, 1)], ["מדות ג, ג", MI(3, 3)], ["רמב״ם בית הבחירה ב, יד", RB(2, 14)], ["ר׳ שמעיה מדות ג, ג", { book: 645, index: 94 }], ["בועז מדות ג", { book: 1329, index: 15 }], ["כסף משנה בית הבחירה ב, יד (הראב״ד)", { book: 4260, index: 109 }]] },
+          // RAMP_WAYS_211 (1.4.4): the ways on the ramp (40-altar.js, the feature "rampWays") - Yoma 4:5
+          { t: "עולים במזרח ויורדים במערב — הכבש", tg: () => [55, 12.5, 30 + altarShift()], cam: () => [76, 25, 50 + altarShift()],
+            feature: (ctx.shared.features || {}).rampWays || null,
+            info: "לשון המשנה (יומא ד, ה): 'בכל יום כהנים עולים במזרחו של כבש ויורדין במערבו, והיום כהן גדול עולה באמצע ויורד באמצע'.\nבמודל: על פני הכבש — חיצים כחולים במחצית המזרחית, כלפי מעלה; חיצים כתומים במחצית המערבית, כלפי מטה; וחיצים זהובים באמצע, למעלה ולמטה — של הכהן הגדול ביום הכיפורים, כתנא קמא. המשנה מדברת על המקדש שבימיה; רוחב כל מסלול והסימון — בחירת מודל.\nבקצרה — המחלוקת: 'רבי יהודה אומר, לעולם כהן גדול עולה באמצע ויורד באמצע' (שם) — לדבריו, המסלול האמצעי של הכהן הגדול בכל ימות השנה. במודל — כתנא קמא.",
+            refs: [["משנה יומא ד, ה", MN(55, 4, 5)]] },
           // 1.0.1-H: one place for the Sea; its two placements (Rashi / Radak) are chosen in the opinions table, not here
           { t: "הים של שלמה", view: "yam", key: "yam" },
           // 1.0.1-K (K.3): the oxen close (flyPoints.yamOxen, follows ctx.shared.seaPlacement)
           { t: "שנים עשר הבקר", view: "yamOxen",
-            info: "הפסוק: 'עמד על שני עשר בקר שלשה פנים צפונה ושלשה פנים ימה ושלשה פנים נגבה ושלשה פנים מזרחה והים עליהם מלמעלה וכל אחריהם ביתה' (מלכים א ז, כה; דברי הימים ב ד, ד).\nרש״י: 'אל תחת הים היו אחוריהם פונים'. מצודת דוד: 'אחוריו של זה מול אחוריו של זה'. רלב״ג: 'והנה היו פני הבקר בחוץ נראים ואחוריהם היו נסתרים תחת הים'.\nבמודל, כציור הספר: **חציו הקדמי של כל שור יוצא מתחת לים** — הצוואר, החזה והרגליים הקדמיות בקו דופן הים, והחוטם כשתי אמות מחוץ לדופן — וראשו ראש שור מובהק: מצח רחב ושטוח, חוטם מרובע, אוזניים לצדדים וקרניים קצרות ועבות. גודל השוורים וצורתם — בחירת מודל.\nבקצרה — מקום הים (צפון־מזרח לרש״י, דרום־מזרח לרד״ק) — בטבלת 'שיטות ומחלוקות'.",
+            info: "הפסוק: 'עמד על שני עשר בקר שלשה פנים צפונה ושלשה פנים ימה ושלשה פנים נגבה ושלשה פנים מזרחה והים עליהם מלמעלה וכל אחריהם ביתה' (מלכים א ז, כה; דברי הימים ב ד, ד).\nרש״י: 'אל תחת הים היו אחוריהם פונים'. מצודת דוד: 'אחוריו של זה מול אחוריו של זה'. רלב״ג: 'והנה היו פני הבקר בחוץ נראים ואחוריהם היו נסתרים תחת הים'.\nבמודל, כציור הספר: **חציו הקדמי של כל שור יוצא מתחת לים** — הצוואר, החזה והרגליים הקדמיות בקו דופן הים, והחוטם כשתי אמות מחוץ לדופן — וראשו ראש שור מובהק: מצח רחב ושטוח, חוטם מרובע, אוזניים לצדדים וקרניים קצרות ועבות. גודל השוורים וצורתם — בחירת מודל.\nבקצרה — מקום הים (צפון־מזרח לרש״י, דרום־מזרח לרד״ק) — בתפריט, תחת ״שיטות ומחלוקות״.",
             refs: [["מלכים א ז, כה", V(10, 7, 25)], ["ז, מד", V(10, 7, 44)], ["דברי הימים ב ד, ד", V(39, 4, 4)], ["רש״י ז, כה", V(10, 7, 25)]] },
           // 1.0.1-L (L.74, the user: "הכיור בין שתי השורות! של המכונות"; L.77 the book p. לח; vessels-2.md): Moses' laver in the middle column, between the two rows
           // of five; flyPoints.kiyorMoshe (45-vessels.js), with a fallback of the same camera
@@ -3146,7 +3226,7 @@ body.tm-measuring canvas{cursor:crosshair}
             info: ui_YB_BODY + "\nבמודל: המבט מרחוק, מן החצר, מדרום־מזרח, והאולם סגור. בעד פתח האולם (עשר על עשרים ושתיים) ובין דלתותיו הפתוחות נראה בועז בשלמותו, מן הרצפה ועד ראש הכותרת — **עשרים ואחת אמה** — כנגד חזית האולם, המעלות והמזבח, כדי שייראה גודלו. שני העמודים יחד אינם נראים בשלמותם מבחוץ. גררו את המבט סביב הפתח אל הצפון־מזרח — ונראה יכין. מקום המבט — בחירת מודל.",
             refs: ui_REFS.yachinBoaz },
           { t: "כותרת העמוד — שבכה, רימונים ושושנים", view: "yachinBoazCapital",
-            info: "הפסוק: 'חמש אמות קומת הכתרת האחת' (מלכים א ז, טז).\nרש״י (ז, יח): 'כמין שני אגנים היתה כל אחת, אגן התחתון בית קבולה למעלה, והוא קרוי גלה... העליון כפוי על התחתון', 'נמצא רחבה במקום הדבק... והוא קרוי בטן', 'והאמה החמישית, היא כותרת קטנה למעלה מן הגדולה'.\nבמודל, כציור הספר: הגולה התחתונה — שתי אמות, ועליה שושנים; על הבטן שני טורי רימונים, 'מאה רמונים בטור, חרוזים בשרשרות' (רש״י ז, מב; 'והרמונים מאתים', ז, כ), 'והרמונים מכסים את מקום הדבק' (רש״י ירמיהו נב, כב); השבכה — 'דומה כמין כפה' (רש״י ז, יז), 'שבעה לולבין היה להקף אחד', 'וגדילים היו להם כמעשה שרשראות'; ועל ראשה הכותרת הקטנה, אמה. 'וקומת הכתרת שלש אמות ושבכה ורמנים על הכתרת סביב' (מלכים ב כה, יז) — הכיפה עם הכותרת הקטנה. העמוד תחוב בכותרת שתי אמות (רש״י ז, טז).\nבקצרה — המחלוקות: רש״י (ז, טז) מביא גם ששתי האמות התחתונות 'היו שוות לעמוד, שלא היו בהן צורה'; הספר והמודל הולכים אחרי רש״י (ז, יח) בגולה מצוירת שושנים. קריאה שנייה — מלבי״ם על 'מעשה שושן' (ז, יט): שבכה ארוגה מנחושת, שרשרות ורימונים תלויים, ושושן מצויר על הכותל — בשורה 'כותרות יכין ובועז' בטבלת 'שיטות ומחלוקות'.",
+            info: "הפסוק: 'חמש אמות קומת הכתרת האחת' (מלכים א ז, טז).\nרש״י (ז, יח): 'כמין שני אגנים היתה כל אחת, אגן התחתון בית קבולה למעלה, והוא קרוי גלה... העליון כפוי על התחתון', 'נמצא רחבה במקום הדבק... והוא קרוי בטן', 'והאמה החמישית, היא כותרת קטנה למעלה מן הגדולה'.\nבמודל, כציור הספר: הגולה התחתונה — שתי אמות, ועליה שושנים; על הבטן שני טורי רימונים, 'מאה רמונים בטור, חרוזים בשרשרות' (רש״י ז, מב; 'והרמונים מאתים', ז, כ), 'והרמונים מכסים את מקום הדבק' (רש״י ירמיהו נב, כב); השבכה — 'דומה כמין כפה' (רש״י ז, יז), 'שבעה לולבין היה להקף אחד', 'וגדילים היו להם כמעשה שרשראות'; ועל ראשה הכותרת הקטנה, אמה. 'וקומת הכתרת שלש אמות ושבכה ורמנים על הכתרת סביב' (מלכים ב כה, יז) — הכיפה עם הכותרת הקטנה. העמוד תחוב בכותרת שתי אמות (רש״י ז, טז).\nבקצרה — המחלוקות: רש״י (ז, טז) מביא גם ששתי האמות התחתונות 'היו שוות לעמוד, שלא היו בהן צורה'; הספר והמודל הולכים אחרי רש״י (ז, יח) בגולה מצוירת שושנים. שיטה שנייה — מלבי״ם על 'מעשה שושן' (ז, יט): שבכה ארוגה מנחושת, שרשרות ורימונים תלויים, ושושן מצויר על הכותל — במתג 'כותרות יכין ובועז' בתפריט, תחת ״שיטות ומחלוקות״.",
             refs: [["מלכים א ז, טז", V(10, 7, 16)], ["ז, יז", V(10, 7, 17)], ["ז, יח", V(10, 7, 18)], ["ז, כ", V(10, 7, 20)], ["ז, מב", V(10, 7, 42)], ["ירמיהו נב, כב", V(13, 52, 22)], ["מלכים ב כה, יז", V(11, 25, 17)]] }
         ]],
         ["הבית מבחוץ", [
@@ -3167,7 +3247,7 @@ body.tm-measuring canvas{cursor:crosshair}
           // 1.0.1-L (L.72, the user: "תוסיף את שיטת ר' יוסי בר' יהודה שהיו עוד 2 שולחנות... הוסף בכפתור נפרד"; heichal-door.md): the place
           // switches the reading on (ctx.shared.ulamTables "ryby") for 15 s (L.27) and flies to the tables; the row of the opinions table keeps it
           { t: "שולחנות האולם — ר׳ יוסי בר׳ יהודה", view: "ulamTables",   // 1.1.0: the tables are always shown (no feature to switch on)
-            info: "שני שולחנות באולם, לפני פתח ההיכל.\nבגמרא: 'רבי יוסי ברבי יהודה אומר: לא היו מסדרין אלא על של משה, אלא מה אני מקיים ״ואת השלחנות אשר עליהם לחם הפנים זהב״? אלו שלשה שלחנות שהיו במקדש: שנים שהיו באולם מבפנים לפתח הבית, אחד של כסף ואחד של זהב' (מנחות צט.) — ולדבריו עמדו בבית שלמה (דברי הימים ב ד, יט: 'ואת השלחנות ועליהם לחם הפנים').\nרש״י: 'אצל פתח ההיכל אחד של כסף ואחד של זהב והאי דקרי הכא כסף ובמתניתין שייש משום דשייש לבן ככסף'; 'בכניסתו מניחו על של כסף וכשמגיע להיכל מסדר על של משה שמצופה זהב הרי עלייה ולא מורידין לכך ביציאתו מניחו על של זהב'.\nהמשנה (שקלים ו, ד; מנחות יא, ז): 'ושנים באולם מבפנים על פתח הבית, אחד של שיש ואחד של זהב, על של שיש נותנין לחם הפנים בכניסתו, ועל של זהב ביציאתו, שמעלין בקדש ולא מורידין', וכן הרמב״ם (בית הבחירה ג, טז).\nבמודל: שני שולחנות במידת שולחן לחם הפנים (שמות כה, כג), בתוך האולם סמוך לפתח ההיכל משני צדי המעבר — **הכסף בצפון והזהב בדרום**, בחירת מודל על פי 'המכניסים עומדים בצפון... המוציאין עומדים בדרום' (מנחות יא, ז). על השולחן שבצפון — שתים עשרה החלות, בשני סדרים של שש, ברגע שהן נכנסות: 'בכניסתו מניחו על של כסף' (רש״י), 'על של שיש נותנין לחם הפנים בכניסתו' (שקלים ו, ד); הרגע הזה — בחירת מודל. הכפתור מראה אותם וחוזר לבד אחרי 15 שניות; לבחירה קבועה — השורה 'שני השולחנות שבאולם' בטבלת 'שיטות ומחלוקות' (שם גם המשנה: שיש וזהב).",
+            info: "שני שולחנות באולם, לפני פתח ההיכל.\nבגמרא: 'רבי יוסי ברבי יהודה אומר: לא היו מסדרין אלא על של משה, אלא מה אני מקיים ״ואת השלחנות אשר עליהם לחם הפנים זהב״? אלו שלשה שלחנות שהיו במקדש: שנים שהיו באולם מבפנים לפתח הבית, אחד של כסף ואחד של זהב' (מנחות צט.) — ולדבריו עמדו בבית שלמה (דברי הימים ב ד, יט: 'ואת השלחנות ועליהם לחם הפנים').\nרש״י: 'אצל פתח ההיכל אחד של כסף ואחד של זהב והאי דקרי הכא כסף ובמתניתין שייש משום דשייש לבן ככסף'; 'בכניסתו מניחו על של כסף וכשמגיע להיכל מסדר על של משה שמצופה זהב הרי עלייה ולא מורידין לכך ביציאתו מניחו על של זהב'.\nהמשנה (שקלים ו, ד; מנחות יא, ז): 'ושנים באולם מבפנים על פתח הבית, אחד של שיש ואחד של זהב, על של שיש נותנין לחם הפנים בכניסתו, ועל של זהב ביציאתו, שמעלין בקדש ולא מורידין', וכן הרמב״ם (בית הבחירה ג, טז).\nבמודל: שני שולחנות במידת שולחן לחם הפנים (שמות כה, כג), בתוך האולם סמוך לפתח ההיכל משני צדי המעבר — **הכסף בצפון והזהב בדרום**, בחירת מודל על פי 'המכניסים עומדים בצפון... המוציאין עומדים בדרום' (מנחות יא, ז). על השולחן שבצפון — שתים עשרה החלות, בשני סדרים של שש, ברגע שהן נכנסות: 'בכניסתו מניחו על של כסף' (רש״י), 'על של שיש נותנין לחם הפנים בכניסתו' (שקלים ו, ד); הרגע הזה — בחירת מודל. הכפתור מראה אותם וחוזר לבד אחרי 15 שניות; לבחירה קבועה — המתג 'שני השולחנות שבאולם' בתפריט, תחת ״שיטות ומחלוקות״ (שם גם המשנה: שיש וזהב).",
             refs: [["מנחות צט.", P(131, "צט.")], ["דברי הימים ב ד, יט", V(39, 4, 19)], ["משנה שקלים ו, ד", MN(54, 6, 4)], ["משנה מנחות יא, ז", MN(81, 11, 7)], ["רמב״ם בית הבחירה ג, טז", RB(3, 16)], ["שמות כה, כג", V(2, 25, 23)]] },
           { t: "הבית (בית ה׳)", tg: [-25, 24, 27.2], cam: [90, 80, 150], // 1.0.1: was "ההיכל" - that name is the kodesh (I Kings 6:17, the user); the whole house is "בית ה׳" (the 3D label too)
             info: "הפסוק: 'והבית אשר בנה המלך שלמה לה׳ ששים אמה ארכו ועשרים רחבו ושלשים אמה קומתו' (מלכים א ו, ב) — מידות הפנים.\n'ההיכל' בפסוקים הוא חלל ארבעים האמה שבתוך הבית, שבו המנורות ('הבית הוא ההיכל לפני', ו, יז); הבית כולו — 'בית ה׳'.\nהקירות אבן שלמה מסע (ו, ז), והבית סגור מכל צדדיו; סביבו מדרום, ממערב ומצפון שלוש קומות התאים, וכותל הבית נכנס אמה בכל קומה — 'מגרעות' (ו, ו).\nבמודל: **שבע אמות עוביו בקומה התחתונה, שש בתיכונה, חמש בעליונה וארבע מעל גג התאים** — חשבון רש״י כפי שמצייר הספר (במדות ד, ז, בבית שני — שש).",
@@ -3183,12 +3263,12 @@ body.tm-measuring canvas{cursor:crosshair}
             feature: { key: "houseSection", isOn: () => !!(ctx.ui && ctx.ui.sectionOn && ctx.ui.sectionOn()),
               on: () => { try { setCutaway(false); setSection(true); if (ctx.shared.aliyotOpen) ctx.shared.aliyotOpen.set(true); } catch (_) {} },
               off: () => { try { setSection(false); if (ctx.shared.aliyotOpen) ctx.shared.aliyotOpen.set(false); } catch (_) {} } },
-            info: "הפסוק: 'ויספן את הבית גבים ושדרת בארזים' (מלכים א ו, ט) — שתי תקרות.\nהגבים — התחתונה, לנוי: רש״י — 'נסרים ארוגים נאים כמין צורה' (בשם רבי מנחם), ולדעתו: 'לבנים חלולים, והם כחצי קנה עגל' (רעפים); מצודת דוד — 'תקרה חקוקה ומצוירת גבים, לנוי ולפאר'. מעל ההיכל תקרת הגבים קמורה — רש״י (דברי הימים ב ג, ז): 'שהגג היה כמו ספינה וערבה הפוכה, שכן מנהג לקרות את הקרוי עגל כעין ספינה'.\nהשדרות — העליונה: ארזים סדורים זה בצד זה 'לדריסת הרגל' (רש״י) — רצפת העלייה. ביניהן חלל של שתי אמות, 'בית דילפא' (רמב״ם בית הבחירה ד, ג, שהובא במלבי״ם): שם נוטף הגשם, ולא לתקרת ההיכל.\nבמודל: הגבים כיור מצויר ומצופה זהב. גובה תחילת הקימור (עשרים וארבע אמות מן הרצפה, מעל החלונות) — בחירת המודל; **ראש הקמרון בשלושים אמה**. כך מעל ההיכל, וכך מעל כל אחת משתי העליות. לראות: הכפתור ״פתח את העליות״ שעל המודל — חתך ממזרח לאורך הבית, והתקרות חתוכות בקצן המזרחי.",
+            info: "הפסוק: 'ויספן את הבית גבים ושדרת בארזים' (מלכים א ו, ט) — שתי תקרות.\nהגבים — התחתונה, לנוי: רש״י — 'נסרים ארוגים נאים כמין צורה' (בשם רבי מנחם), ולדעתו: 'לבנים חלולים, והם כחצי קנה עגל' (רעפים); מצודת דוד — 'תקרה חקוקה ומצוירת גבים, לנוי ולפאר'. מעל ההיכל תקרת הגבים קמורה — רש״י (דברי הימים ב ג, ז): 'שהגג היה כמו ספינה וערבה הפוכה, שכן מנהג לקרות את הקרוי עגל כעין ספינה'.\nהשדרות — העליונה: ארזים סדורים זה בצד זה 'לדריסת הרגל' (רש״י) — רצפת העלייה. ביניהן חלל של שתי אמות, 'בית דילפא' (רמב״ם בית הבחירה ד, ג, שהובא במלבי״ם): שם נוטף הגשם, ולא לתקרת ההיכל.\nבמודל: הגבים כיור מצויר ומצופה זהב. גובה תחילת הקימור (עשרים וארבע אמות מן הרצפה, מעל החלונות) — בחירת מודל; **ראש הקמרון בשלושים אמה**. כך מעל ההיכל, וכך מעל כל אחת משתי העליות. לראות: הכפתור ״פתח את העליות״ שעל המודל — חתך ממזרח לאורך הבית, והתקרות חתוכות בקצן המזרחי.",
             refs: [["מלכים א ו, ט", V(10, 6, 9)], ["רש״י שם", { book: 3673, index: 232 }], ["מצודת דוד שם", { book: 3345, index: 432 }], ["רש״י דברי הימים ב ג, ז", { book: 3662, index: 81 }], ["רמב״ם בית הבחירה ד, ג", RB(4, 3)], ["דברי הימים ב ג, ט", V(39, 3, 9)]] },
           { t: "גג הבית ותקרותיו", tg: [-30, 46, 0], cam: [40, 92, 62],
             // 1.2.2 (the scan): the roof of the 30-amah reading - after "בית דילפא" the eye stood inside the open aliyot; the layer, the section and the cutaway go off
             action: () => { try { setLayer("aliyot", false); if (ctx.shared.aliyotOpen) ctx.shared.aliyotOpen.set(false); setSection(false); setCutaway(false); } catch (_) {} },
-            info: "הפסוק: 'ויספן את הבית גבים ושדרת בארזים' (מלכים א ו, ט) — תקרה כפולה.\nה'גבים' למטה (כיור מצויר ומצופה זהב; מעל ההיכל קמורה, 'כמו ספינה וערבה הפוכה' — רש״י דברי הימים ב ג, ז), חלל 'בית דילפא' (שתי אמות; הרמב״ם בית הבחירה ד, במלבי״ם), וה'שדרות' למעלה — ארזים זה בצד זה, רצפת העלייה (רש״י).\nמעליה, בקריאת 120 האמה, שתי העליות (השורה 'גובה הבית'). **תקרת קודש הקדשים נמוכה מתקרת ההיכל** (רש״י ו, כ), ומעליה עלייה מצופה זהב (דברי הימים ב ג, ט).",
+            info: "הפסוק: 'ויספן את הבית גבים ושדרת בארזים' (מלכים א ו, ט) — תקרה כפולה.\nה'גבים' למטה (כיור מצויר ומצופה זהב; מעל ההיכל קמורה, 'כמו ספינה וערבה הפוכה' — רש״י דברי הימים ב ג, ז), חלל 'בית דילפא' (שתי אמות; הרמב״ם בית הבחירה ד, במלבי״ם), וה'שדרות' למעלה — ארזים זה בצד זה, רצפת העלייה (רש״י).\nמעליה, בשיטת 120 האמה, שתי העליות (המתג 'גובה הבית'). **תקרת קודש הקדשים נמוכה מתקרת ההיכל** (רש״י ו, כ), ומעליה עלייה מצופה זהב (דברי הימים ב ג, ט).",
             refs: [["מלכים א ו, ט", V(10, 6, 9)], ["ו, כ", V(10, 6, 20)], ["רש״י דברי הימים ב ג, ז", { book: 3662, index: 81 }], ["דברי הימים ב ג, ט", V(39, 3, 9)], ["רמב״ם בית הבחירה ד, ג", RB(4, 3)]] },
           { t: "קודש הקדשים מבחוץ", view: "heichalWest",
             info: "הדביר בירכתי הבית במערב: 'עשרים אמה ארך ועשרים אמה רחב ועשרים אמה קומתו' (מלכים א ו, כ).\nמבחוץ סובבים אותו תאי היציע של המערב, ומעליו עליית קודש הקדשים — **תקרתו נמוכה מתקרת ההיכל** (רש״י ו, כ).",
@@ -3214,7 +3294,7 @@ body.tm-measuring canvas{cursor:crosshair}
             refs: [["מלכים א ו, ח", V(10, 6, 8)], ["רש״י ו, ח", { book: 3673, index: 226 }], ["מדות ד, ג", MI(4, 3)]] },   // 1.3.4: Rashi's own line (was the verse's)
           // 1.3.4: the walk up the lulim (50-heichal.js ctx.shared.lulimDemo; a button by the door too)
           { t: "הליכה בלולים — הדגמה", action: () => { const L = ctx.shared.lulimDemo; if (typeof L === "function") L(); },
-            info: "לשון הכתוב (מלכים א ו, ח): ״פתח הצלע התיכנה אל כתף הבית הימנית, ובלולים יעלו על התיכנה, ומן התיכנה אל השלשים״.\n**רש״י:** ״שאחד מן התחתונים שבכותל דרומי, היה לו פתח אל החוץ, ודרך אותו פתח נכנסים לכולם״; ״בלולים — תרגם יונתן: מסבתא... והוא בנין עמוד אבנים עשוי מעלות מעלות, וההולך בהן דומה כמקיף סביבות עמוד, ועולין בו כמה וכמה אמות גבוה, ואין צריך לשפע כשאר סלם, כי הקיפו הוא שפוע״; ״אל השלשים — כמו אל השלישים״.\nההדגמה: בגובה העיניים — מן החצר, דרך הפתח שבתא האמצעי של השורה התחתונה בדרום, עד הלולים. בעלייה נפתח חתך היציע, והעין עומדת בצד ועולה עם העולה, המסומן באור בצבע צף: סיבוב אחד סביב העמוד אל הקומה האמצעית, וסיבוב נוסף אל השלישית. בסוף החתך נסגר.\nבקצרה — ״הצלע התיכנה״: לרש״י ולתרגום — האמצעי בחמשת התאים שבדרום, בשורה התחתונה (כך במודל); לרד״ק ולמצודות — הקומה התיכונה. ההדגמה בקריאת רש״י ליציע (ברירת המחדל); בקריאת הרמב״ם שבטבלה (״צורת היציע״) הלולים אינם מצוירים, וההדגמה מחזירה לקריאת רש״י.\nמקום העמוד בתוך התא, מספר המעלות וגובה העין — בחירת מודל.",
+            info: "לשון הכתוב (מלכים א ו, ח): ״פתח הצלע התיכנה אל כתף הבית הימנית, ובלולים יעלו על התיכנה, ומן התיכנה אל השלשים״.\n**רש״י:** ״שאחד מן התחתונים שבכותל דרומי, היה לו פתח אל החוץ, ודרך אותו פתח נכנסים לכולם״; ״בלולים — תרגם יונתן: מסבתא... והוא בנין עמוד אבנים עשוי מעלות מעלות, וההולך בהן דומה כמקיף סביבות עמוד, ועולין בו כמה וכמה אמות גבוה, ואין צריך לשפע כשאר סלם, כי הקיפו הוא שפוע״; ״אל השלשים — כמו אל השלישים״.\nההדגמה: בגובה העיניים — מן החצר, דרך הפתח שבתא האמצעי של השורה התחתונה בדרום, עד הלולים. בעלייה נפתח חתך היציע, והעין עומדת בצד ועולה עם העולה, המסומן באור בצבע צף: סיבוב אחד סביב העמוד אל הקומה האמצעית, וסיבוב נוסף אל השלישית. בסוף החתך נסגר.\nבקצרה — ״הצלע התיכנה״: לרש״י ולתרגום — האמצעי בחמשת התאים שבדרום, בשורה התחתונה (כך במודל); לרד״ק ולמצודות — הקומה התיכונה. ההדגמה בשיטת רש״י ליציע (ברירת המחדל); בשיטת הרמב״ם (המתג ״צורת היציע״) הלולים אינם מצוירים, וההדגמה מחזירה לשיטת רש״י.\nמקום העמוד בתוך התא, מספר המעלות וגובה העין — בחירת מודל.",
             refs: [["מלכים א ו, ח", V(10, 6, 8)], ["רש״י ו, ח", { book: 3673, index: 226 }], ["רש״י ו, ח — בלולים", { book: 3673, index: 228 }]] }
         ]],
         ["הבית מבפנים", [
@@ -3223,12 +3303,12 @@ body.tm-measuring canvas{cursor:crosshair}
             // 1.0.1-H review (sources): "שני צלעים" = two boards is MALBIM's (Rashi/Targum: two pivots); "גלילים" per Radak/Metzudot/Ralbag is a
             // painted design on both faces. 1.0.1-K (review Q2-2, checked in the library): "הפותות" (7:50) = the pivots for the Targum (as Radak
             // reads it) and Radak; for Ralbag and Metzudat Zion the socket the pivot enters (Kelim 11:2 "והפותה שתחת הציר"); for Rashi keys
-            info: "הפסוק: 'וכן עשה לפתח ההיכל מזוזות עצי שמן מאת רבעית' (מלכים א ו, לג) — מזוזות מרובעות (רש״י, תרגום). 'ושתי דלתות עצי ברושים, שני צלעים הדלת האחת גלילים' (ו, לד): כל דלת כחצי רוחב הפתח (רש״י).\n'שני צלעים' — לפי התרגום ורש״י שני צירים לכל דלת, 'ציר העליון וציר התחתון', ו'גלילים' — 'סגלגלין', עגולים; לפי מלבי״ם — 'שני לוחות'; לפי רד״ק, מצודות ורלב״ג — שני צדי הדלת מצוירים 'מעשה גלילים' (מצודות: 'אופנים'; רלב״ג: 'גלילים ועמודים') — ציור זה לא נבנה.\nהדלתות מגולפות כרובים, תמורות ופטורי ציצים ומצופות זהב 'מישר על המחקה' (ו, לה) — הגילוף במודל כטקסטורה על שני פני כל לוח.\n'והפתות לדלתות הבית' (ז, נ): לרש״י — מפתחות ('מפתחות, שמעתי. שמפתחין בהם את המנעול'), וכך **ברירת המחדל במודל: מפתח של זהב במנעול הדלת הצפונית**; לתרגום ולרד״ק — צירי הדלתות; לרלב״ג ולמצודת ציון — מה שהציר נכנס בו ('והפותה שתחת הציר', משנה כלים יא, ב). הצירים של זהב שבמודל — לשני הפירושים האחרונים; הבחירה — בשורה 'הפותות' שבטבלת השיטות.\nבמודל: כל דלת שני לוחות (כמלבי״ם), מקופלים אל דפנות הפתח כדי שהמעבר יהיה פנוי; מידות הפתח — בחירת מודל.",
+            info: "הפסוק: 'וכן עשה לפתח ההיכל מזוזות עצי שמן מאת רבעית' (מלכים א ו, לג) — מזוזות מרובעות (רש״י, תרגום). 'ושתי דלתות עצי ברושים, שני צלעים הדלת האחת גלילים' (ו, לד): כל דלת כחצי רוחב הפתח (רש״י).\n'שני צלעים' — לפי התרגום ורש״י שני צירים לכל דלת, 'ציר העליון וציר התחתון', ו'גלילים' — 'סגלגלין', עגולים; לפי מלבי״ם — 'שני לוחות'; לפי רד״ק, מצודות ורלב״ג — שני צדי הדלת מצוירים 'מעשה גלילים' (מצודות: 'אופנים'; רלב״ג: 'גלילים ועמודים') — ציור זה לא נבנה.\nהדלתות מגולפות כרובים, תמורות ופטורי ציצים ומצופות זהב 'מישר על המחקה' (ו, לה) — הגילוף במודל כטקסטורה על שני פני כל לוח.\n'והפתות לדלתות הבית' (ז, נ): לרש״י — מפתחות ('מפתחות, שמעתי. שמפתחין בהם את המנעול'), וכך **ברירת המחדל במודל: מפתח של זהב במנעול הדלת הצפונית**; לתרגום ולרד״ק — צירי הדלתות; לרלב״ג ולמצודת ציון — מה שהציר נכנס בו ('והפותה שתחת הציר', משנה כלים יא, ב). הצירים של זהב שבמודל — לשני הפירושים האחרונים; הבחירה — במתג 'הפותות' שבתפריט, תחת ״שיטות ומחלוקות״.\nבמודל: כל דלת שני לוחות (כמלבי״ם), מקופלים אל דפנות הפתח כדי שהמעבר יהיה פנוי; מידות הפתח — בחירת מודל.",
             refs: [["מלכים א ו, לג", V(10, 6, 33)], ["ו, לד", V(10, 6, 34)], ["רש״י ו, לד", V(10, 6, 34)], ["ו, לה", V(10, 6, 35)], ["ז, נ", V(10, 7, 50)], ["משנה כלים יא, ב", MN(91, 11, 2)]] },
           // 1.3.3 (the user's list): the doors shut, the key of gold turns (Rashi's reading of "והפתות"), and they open with the sound of heavy
           // doors - ctx.shared.heichalDoors (55-interior.js), which flies to its own camera
           { t: "פתיחת דלתות ההיכל — הדגמה", action: () => { const D = ctx.shared.heichalDoors; if (D && typeof D.demo === "function") D.demo(true); },
-            info: "ההדגמה: שתי הדלתות סגורות על הפתח, ומפתח של זהב מסתובב במנעול הדלת הצפונית — ״והפתות לדלתות הבית הפנימי לקדש הקדשים לדלתי הבית להיכל זהב״ (מלכים א ז, נ). אחר כך הדלתות נפתחות לאט לתוך הבית, עם קול של דלת כבדה.\nרש״י: ״והפתות. מפתחות, שמעתי. שמפתחין בהם את המנעול״.\nהצירים: ״ושתי דלתות עצי ברושים שני צלעים הדלת האחת גלילים ושני קלעים הדלת השנית גלילים״ (מלכים א ו, לד); רש״י: ״שני צלעים. תרגם יונתן: תרין צירין, ציר העליון, וציר התחתון״ — הדלתות סובבות על צירים.\nבמודל: **המפתח מוצג רק בקריאת רש״י** (השורה ״הפותות״ שבטבלת השיטות). דלתות הדביר אינן נסגרות בהדגמה: הן עמדו פתוחות, ועליהן הפרוכת (רש״י ורד״ק בדברי הימים ב ג, יד — בכרטיס ״פתח הדביר״). הקול נוצר בתוסף עצמו, בלי קובץ; מקום המנעול, צורת המפתח והזמנים — בחירת מודל.",
+            info: "ההדגמה: שתי הדלתות סגורות על הפתח, ומפתח של זהב מסתובב במנעול הדלת הצפונית — ״והפתות לדלתות הבית הפנימי לקדש הקדשים לדלתי הבית להיכל זהב״ (מלכים א ז, נ). אחר כך הדלתות נפתחות לאט לתוך הבית, עם קול של דלת כבדה.\nרש״י: ״והפתות. מפתחות, שמעתי. שמפתחין בהם את המנעול״.\nהצירים: ״ושתי דלתות עצי ברושים שני צלעים הדלת האחת גלילים ושני קלעים הדלת השנית גלילים״ (מלכים א ו, לד); רש״י: ״שני צלעים. תרגם יונתן: תרין צירין, ציר העליון, וציר התחתון״ — הדלתות סובבות על צירים.\nבמודל: **המפתח מוצג רק בשיטת רש״י** (המתג ״הפותות״ שבתפריט, תחת ״שיטות ומחלוקות״). דלתות הדביר אינן נסגרות בהדגמה: הן עמדו פתוחות, ועליהן הפרוכת (רש״י ורד״ק בדברי הימים ב ג, יד — בכרטיס ״פתח הדביר״). הקול נוצר בתוסף עצמו, בלי קובץ; מקום המנעול, צורת המפתח והזמנים — בחירת מודל.",
             refs: [["מלכים א ז, נ", V(10, 7, 50)], ["רש״י ז, נ", { book: 3673, index: 468 }], ["מלכים א ו, לד", V(10, 6, 34)], ["רש״י ו, לד", { book: 3673, index: 300 }]] },
           { t: "ההיכל", view: "kodesh", key: "kodesh" }, // 1.0.1: "ההיכל" is this room (I Kings 6:17, the user)
           // 1.3.5 (the user, of the kuntres "בגדרי ודיני צורת הבית": "חובה לשנות"; "צריך מתג ומבט שיראה את זה"): THE SLOPING FLOOR, shown - the house
@@ -3261,21 +3341,21 @@ body.tm-measuring canvas{cursor:crosshair}
             refs: [["משנה סוטה ב, ב", { book: 67, index: 13 }], ["רש״י סוטה טו:", { book: 2172, index: 851 }], ["מלכים א ו, טו", V(10, 6, 15)], ["ו, ל", V(10, 6, 30)]] },
           // 1.0.1-H: one place for the vessels' arrangement; the two layouts and the lighting opinions are chosen in the opinions table
           { t: "סידור הכלים — עשר המנורות ועשרה השולחנות (מנחות צח:–צט.)", tg: [-34, 16, 0], cam: [-14, 36, 4],
-            info: "בגמרא — מנחות צח:: רבי — השולחנות והמנורות מזרח ומערב (אורכם לאורך הבית); רבי אלעזר ברבי שמעון — צפון ודרום.\nהמוסכם: כולם בחצי הפנימי של ההיכל, השולחנות בצפון והמנורות בדרום — 'של משה באמצע, חמשה מימינו, וחמשה משמאלו' (צח:); לרבי שולחן משה ומנורתו בראש השורות, 'כתלמיד היושב לפני רבו' (צט.).\nרלב״ג: המנורות משוכות מערבה מן השולחנות — 'ידענו שהמנורות יותר קרובות מקדש הקדשים מהשולחנות' (מלכים א ז, מט), וכציור הספר; השיעור, אמה אחת — בחירת מודל.\nבקצרה — עוד מחלוקת: מנחות צט. — לתנא קמא הדליקו וסידרו לחם רק בשל משה, ולרבי אלעזר בן שמוע — בכולן. את הקריאה בוחרים בטבלת 'שיטות ומחלוקות'.",
+            info: "בגמרא — מנחות צח:: רבי — השולחנות והמנורות מזרח ומערב (אורכם לאורך הבית); רבי אלעזר ברבי שמעון — צפון ודרום.\nהמוסכם: כולם בחצי הפנימי של ההיכל, השולחנות בצפון והמנורות בדרום — 'של משה באמצע, חמשה מימינו, וחמשה משמאלו' (צח:); לרבי שולחן משה ומנורתו בראש השורות, 'כתלמיד היושב לפני רבו' (צט.).\nרלב״ג: המנורות משוכות מערבה מן השולחנות — 'ידענו שהמנורות יותר קרובות מקדש הקדשים מהשולחנות' (מלכים א ז, מט), וכציור הספר; השיעור, אמה אחת — בחירת מודל.\nבקצרה — עוד מחלוקת: מנחות צט. — לתנא קמא הדליקו וסידרו לחם רק בשל משה, ולרבי אלעזר בן שמוע — בכולן. את השיטה בוחרים בתפריט, תחת ״שיטות ומחלוקות״.",
             refs: [["רלב״ג ז, מט", { book: 3645, index: 312 }], ["מנחות צח:", P(131, "צח:")], ["מנחות צט.", P(131, "צט.")], ["רמב״ם בית הבחירה ג, יב", RB(3, 12)], ["מלכים א ז, מט", V(10, 7, 49)]] },
           // 1.0.1-L (L.70, L.71, L.73; interior.md): Moses' menorah between 5 and 5, every cup / knob / flower of the Mishkan's menorah
           // (22 / 11 / 9), the stone of three steps before each menorah, the menorot one amah west of the tables
           { t: "מנורת משה ועשר המנורות", view: "menorot",
-            info: "הפסוק: 'ואת המנרות חמש מימין וחמש משמאול לפני הדביר זהב סגור' (מלכים א ז, מט; דברי הימים ב ד, ז).\nמקומן: לפי מנחות צח: ורש״י — 'של משה באמצע, חמשה מימינה, וחמשה משמאלה', וכולן בדרום ההיכל, בחצי הפנימי. לרבי — מנורת משה בראש שתי השורות של חמש, ראשה מול האוויר שביניהן ('כתלמיד היושב לפני רבו', מנחות צט.); לר׳ אלעזר בר׳ שמעון — שתי אמות ומחצה מכותל צפון (תוספות מנחות צח:), וארכו לאורך הבית (מאירי יומא נא:).\nצורתן: גובה המנורה שלוש אמות — 'גובהה של מנורה שמנה עשר טפחים' (מנחות כח:) — וכל אחת עם כל גביעיה, כפתוריה ופרחיה כמנורת המשכן (שמות כה, לא–לו): 'הרגלים והפרח שלשה טפחים, וטפחיים חלק, וטפח שבו גביע וכפתור ופרח, וטפחיים חלק, וטפח כפתור. ושני קנים יוצאין ממנו, אחד אילך ואחד אילך, ונמשכין ועולין כנגד גובהה של מנורה' — וכן השניים הבאים — 'נשתיירו שם שלשה טפחים שבהן שלשה גביעין וכפתור ופרח'; 'ונמצאו גביעין עשרים ושנים, כפתורים אחד עשר, פרחים תשעה' (מנחות כח:). הפרח שבקנה האמצעי למטה — רש״י (שמות כה, לה): 'הרגלים והפרח שלשה טפחים – הוא הפרח האמור בירך, שנאמר עד ירכה עד פרחה'; והפרח שבכל קנה — 'כפתר ופרח. היה לכל קנה וקנה' (רש״י כה, לג); הקנים נמשכים ועולים ישר, כציור הספר.\nהאבן: לפני כל מנורה אבן של שלוש מעלות — 'ואבן היתה לפני המנורה ובה שלש מעלות, שעליה הכהן עומד ומטיב את הנרות' (משנה תמיד ג, ט; רמב״ם בית הבחירה ג, יא) — מלשון 'העלאה' שבתורה: רש״י (במדבר ח, ב): 'ועוד דרשו רבותינו מכאן שמעלה היתה לפני המנורה, שעליה הכהן עומד ומטיב (ספרי)'; ברטנורא: 'ובה שלש מעלות. כנגד שלש העלאות שכתובות במנורה, בהעלתך את הנרות, והעלה את נרתיה, להעלת נר תמיד' — השלישית בתצוה (שמות כז, כ). צד האבן — מעשי למלך (על הרמב״ם ג, יא), לנרות מזרח ומערב: 'א\"כ אבן זה לצד צפון הי' עומד דמנורה בדרום ושולחן בצפון ע\"כ אבן זה הי' עומד בצפון המנורה'; ובשם היעב\"ץ שם, לנרות צפון ודרום: 'א\"כ אבן זו לצד מערב המנורה עומדת'.\nרלב״ג: המנורות משוכות מערבה מן השולחנות — 'הנה מפני שהשולחנות הם גם כן לפני הדביר ולא זכר זה אלא במנורות ידענו שהמנורות יותר קרובות מקדש הקדשים מהשולחנות' (מלכים א ז, מט), וכציור הספר.\nבמודל: **האבן לרבי צפונית למנורה (וכציור הספר), לר׳ אלעזר בר׳ שמעון מערבית לה**. השיעור שהמנורות משוכות, אמה אחת, מידות האבן וצורת העיטורים — בחירת מודל.",
-            refs: [["מעשי למלך ג, יא", { book: 4304, index: 89 }], ["רלב״ג ז, מט", { book: 3645, index: 312 }], ["מלכים א ז, מט", V(10, 7, 49)], ["דברי הימים ב ד, ז", V(39, 4, 7)], ["מנחות צח:", P(131, "צח:")], ["מנחות צט.", P(131, "צט.")], ["מנחות כח:", P(131, "כח:")], ["שמות כה, לא", V(2, 25, 31)], ["רש״י שמות כה, לה", V(2, 25, 35)], ["משנה תמיד ג, ט", MN(88, 3, 9)], ["רמב״ם בית הבחירה ג, יא", RB(3, 11)], ["ג, י", RB(3, 10)], ["רש״י במדבר ח, ב", { book: 3693, index: 382 }], ["שמות כז, כ", V(2, 27, 20)], ["יומא לג:", P(107, "לג:")]] },
+            info: "הפסוק: 'ואת המנרות חמש מימין וחמש משמאול לפני הדביר זהב סגור' (מלכים א ז, מט; דברי הימים ב ד, ז).\nמקומן: לפי מנחות צח: ורש״י — 'של משה באמצע, חמשה מימינה, וחמשה משמאלה', וכולן בדרום ההיכל, בחצי הפנימי. לרבי — מנורת משה בראש שתי השורות של חמש, ראשה מול האוויר שביניהן ('כתלמיד היושב לפני רבו', מנחות צט.); לר׳ אלעזר בר׳ שמעון — שתי אמות ומחצה מכותל צפון (תוספות מנחות צח:), וארכו לאורך הבית (מאירי יומא נא:).\nצורתן: גובה המנורה שלוש אמות — 'גובהה של מנורה שמנה עשר טפחים' (מנחות כח:) — וכל אחת עם כל גביעיה, כפתוריה ופרחיה כמנורת המשכן (שמות כה, לא–לו): 'הרגלים והפרח שלשה טפחים, וטפחיים חלק, וטפח שבו גביע וכפתור ופרח, וטפחיים חלק, וטפח כפתור. ושני קנים יוצאין ממנו, אחד אילך ואחד אילך, ונמשכין ועולין כנגד גובהה של מנורה' — וכן השניים הבאים — 'נשתיירו שם שלשה טפחים שבהן שלשה גביעין וכפתור ופרח'; 'ונמצאו גביעין עשרים ושנים, כפתורים אחד עשר, פרחים תשעה' (מנחות כח:). הפרח שבקנה האמצעי למטה — רש״י (שמות כה, לה): 'הרגלים והפרח שלשה טפחים – הוא הפרח האמור בירך, שנאמר עד ירכה עד פרחה'; והפרח שבכל קנה — 'כפתר ופרח. היה לכל קנה וקנה' (רש״י כה, לג); הקנים נמשכים ועולים ישר, כציור הספר.\nהאבן: לפני כל מנורה אבן של שלוש מעלות — 'ואבן היתה לפני המנורה ובה שלש מעלות, שעליה הכהן עומד ומטיב את הנרות' (משנה תמיד ג, ט; רמב״ם בית הבחירה ג, יא) — מלשון 'העלאה' שבתורה: רש״י (במדבר ח, ב): 'ועוד דרשו רבותינו מכאן שמעלה היתה לפני המנורה, שעליה הכהן עומד ומטיב (ספרי)'; ברטנורא: 'ובה שלש מעלות. כנגד שלש העלאות שכתובות במנורה, בהעלתך את הנרות, והעלה את נרתיה, להעלת נר תמיד' — השלישית בתצוה (שמות כז, כ). צד האבן — מעשי למלך (על הרמב״ם ג, יא), לנרות מזרח ומערב: 'א\"כ אבן זה לצד צפון הי' עומד דמנורה בדרום ושולחן בצפון ע\"כ אבן זה הי' עומד בצפון המנורה'; ובשם היעב\"ץ שם, לנרות צפון ודרום: 'א\"כ אבן זו לצד מערב המנורה עומדת'.\nרלב״ג: המנורות משוכות מערבה מן השולחנות — 'הנה מפני שהשולחנות הם גם כן לפני הדביר ולא זכר זה אלא במנורות ידענו שהמנורות יותר קרובות מקדש הקדשים מהשולחנות' (מלכים א ז, מט), וכציור הספר.\nפי הנרות: לרבי, שהנרות ממזרח למערב (ברירת המחדל) — כציור הרמב״ם בפירוש המשנה (תמיד ג, ט): ״ופיות כל הנרות לצד מערב זה לאחור זה״. לר׳ אלעזר בר׳ שמעון, שהנרות מצפון לדרום — ״מלמד שהיו מצדדין פניהם כלפי נר אמצעי״ (מנחות צח:), ורש״י שם: ״אמצעי שפי הפתילה כלפי מערב ושאר הפתילות מצודדות פיהן כלפי האמצעי״. צורת פי הנר — בחירת מודל.\nבמודל: **האבן לרבי צפונית למנורה (וכציור הספר), לר׳ אלעזר בר׳ שמעון מערבית לה**. השיעור שהמנורות משוכות, אמה אחת, מידות האבן וצורת העיטורים — בחירת מודל.",
+            refs: [["מעשי למלך ג, יא", { book: 4304, index: 89 }], ["רלב״ג ז, מט", { book: 3645, index: 312 }], ["מלכים א ז, מט", V(10, 7, 49)], ["דברי הימים ב ד, ז", V(39, 4, 7)], ["פירוש המשניות לרמב״ם תמיד ג, ט", { book: 575, index: 40 }], ["רש״י מנחות צח:", { book: 2186, index: 4687 }], ["מנחות צח:", P(131, "צח:")], ["מנחות צט.", P(131, "צט.")], ["מנחות כח:", P(131, "כח:")], ["שמות כה, לא", V(2, 25, 31)], ["רש״י שמות כה, לה", V(2, 25, 35)], ["משנה תמיד ג, ט", MN(88, 3, 9)], ["רמב״ם בית הבחירה ג, יא", RB(3, 11)], ["ג, י", RB(3, 10)], ["רש״י במדבר ח, ב", { book: 3693, index: 382 }], ["שמות כז, כ", V(2, 27, 20)], ["יומא לג:", P(107, "לג:")]] },
           // 1.0.1-K (K.4; the user: "שלחנות, חייבים תיקון משמעותי"): the tables rebuilt - the row (flyPoints.shulchanot) and Moses' table close.
           // 1.0.1-L (L.46, the user: "למיטב ידיעתי הם היו כשלחן משה"; L.70): all ten in the FORM of Moses' table; Moses' table at the rows' head
           // for Rabbi per Menachot 99a (the user: "כגמרא, בראש השורות"), in the middle of the columns for R. Elazar b. R. Shimon
           { t: "שולחן משה ועשרה השולחנות", view: "shulchanot",
-            info: "הפסוק: 'ויעש שלחנות עשרה וינח בהיכל חמשה מימין וחמשה משמאול' (דברי הימים ב ד, ח; מלכים א ז, מח).\nמקומם: לפי מנחות צח: — 'של משה באמצע, חמשה מימינו, וחמשה משמאלו' (רש״י: 'חמשה מימינו - בדרומו וחמשה משמאלו בצפונו וכולן בצפון ההיכל'). לרבי (מזרח ומערב) הגמרא (צט.) עצמה דוחה אמצע ממש — אין מקום לשתי שורות ושולחן ביניהן ברוחב עשר אמות — ומשיבה: 'מי סברת שלחן דמשה בהדייהו הוה יתיב? לא, דמידלי ליה, ומנח ליה, ומיתתי להו לדידהו פורתא, כתלמיד היושב לפני רבו' (רש״י: 'משוך לצד מערב וראשו מכוון כנגד אויר שבין שתי השורות'). לר׳ אלעזר בר׳ שמעון (צפון ודרום) — 'בשלמא למאן דאמר צפון ודרום, שפיר': שולחן משה בין שני הטורים ובאמצע אורכם.\nבמודל, כגמרא: **שולחן משה בראש שתי השורות של חמש**, ראשו מול האוויר שביניהן. כל אחד מעשרת השולחנות בתבנית שולחן משה — הסניפין, הקנים והבזיכין על כולם (כציור הספר) — 'אמתים ארכו ואמה רחבו ואמה וחצי קמתו' (שמות כה, כג), ומסגרת טפח עם זר זהב (כה, כד–כה); מידות שולחנות שלמה אינן בפסוקים — בחירת מודל.\nהלחם — שתי מערכות של שש חלות (ויקרא כד, ו) — על שולחן משה תמיד, ועל עשרת השולחנות רק לרבי אלעזר בן שמוע (מנחות צט.: 'על כולם היו מסדרין'); לתנא קמא הם עומדים בלא לחם (טבלת 'שיטות ומחלוקות'). ראו 'שולחן משה מקרוב'.",
+            info: "הפסוק: 'ויעש שלחנות עשרה וינח בהיכל חמשה מימין וחמשה משמאול' (דברי הימים ב ד, ח; מלכים א ז, מח).\nמקומם: לפי מנחות צח: — 'של משה באמצע, חמשה מימינו, וחמשה משמאלו' (רש״י: 'חמשה מימינו - בדרומו וחמשה משמאלו בצפונו וכולן בצפון ההיכל'). לרבי (מזרח ומערב) הגמרא (צט.) עצמה דוחה אמצע ממש — אין מקום לשתי שורות ושולחן ביניהן ברוחב עשר אמות — ומשיבה: 'מי סברת שלחן דמשה בהדייהו הוה יתיב? לא, דמידלי ליה, ומנח ליה, ומיתתי להו לדידהו פורתא, כתלמיד היושב לפני רבו' (רש״י: 'משוך לצד מערב וראשו מכוון כנגד אויר שבין שתי השורות'). לר׳ אלעזר בר׳ שמעון (צפון ודרום) — 'בשלמא למאן דאמר צפון ודרום, שפיר': שולחן משה בין שני הטורים ובאמצע אורכם.\nבמודל, כגמרא: **שולחן משה בראש שתי השורות של חמש**, ראשו מול האוויר שביניהן. כל אחד מעשרת השולחנות בתבנית שולחן משה — הסניפין, הקנים והבזיכין על כולם (כציור הספר) — 'אמתים ארכו ואמה רחבו ואמה וחצי קמתו' (שמות כה, כג), ומסגרת טפח עם זר זהב (כה, כד–כה); מידות שולחנות שלמה אינן בפסוקים — בחירת מודל.\nהלחם — שתי מערכות של שש חלות (ויקרא כד, ו) — על שולחן משה תמיד, ועל עשרת השולחנות רק לרבי אלעזר בן שמוע (מנחות צט.: 'על כולם היו מסדרין'); לתנא קמא הם עומדים בלא לחם (בתפריט, תחת ״שיטות ומחלוקות״). ראו 'שולחן משה מקרוב'.",
             refs: [["דברי הימים ב ד, ח", V(39, 4, 8)], ["מלכים א ז, מח", V(10, 7, 48)], ["שמות כה, כג", V(2, 25, 23)], ["מנחות צח:", P(131, "צח:")], ["מנחות צט.", P(131, "צט.")], ["ויקרא כד, ו", V(3, 24, 6)]] },
           { t: "שולחן משה מקרוב — הלחם, הסניפין והקנים", view: "shulchanMoshe",
-            info: "השולחן — 'אמתים ארכו ואמה רחבו ואמה וחצי קמתו' (שמות כה, כג; רש״י: 'גבה רגליו עם עבי השלחן'), ו'מסגרת טפח סביב' עם 'זר זהב' (כה, כד–כה); רש״י מביא שתי דעות במסגרת, והספר מצייר אותה מתחת לדף — 'ודף השלחן שוכב על אותה מסגרת'.\nהלחם — 'שתים מערכות שש המערכת' (ויקרא כד, ו); 'לחם הפנים, ארכן עשרה ורחבן חמשה, וקרנותיו שבע אצבעות' (משנה מנחות יא, ד), 'כמין תיבה פרוצה' (מנחות צד:). רבי מאיר (משנה יא, ה): 'השלחן ארכו שנים עשר ורחבו ששה... נותן ארכו כנגד רחבו של שלחן, וכופל טפחים מכאן וטפחים מכאן וטפחים רוח באמצע'; ושם אבא שאול: 'שם היו נותנין שני בזיכי לבונה של לחם הפנים'.\nהסניפין והקנים: 'ארבעה סניפין של זהב היו שם, מפצלין מראשיהן... שנים לסדר זה ושנים לסדר זה. ועשרים ושמנה קנים, כחצי קנה חלול' (משנה יא, ו). רש״י: הסניפין 'עומדין בארץ וגבוהים עד למעלה מן השלחן הרבה, כנגד גבה מערכת הלחם, ומפצלים חמשה פצולים' (רש״י שמות כה, כט). הקנים שלושה תחת כל חלה ושניים תחת העליונה — 'התחתונה אינה צריכה כל עיקר' (מנחות צז.).\nבמודל: צורת הסניפין, הבזיכין והקנים — כציור הספר, בחירת מודל; **כל אחד מעשרת השולחנות בתבנית זו** (הלחם — לפי השורה 'הדלקת המנורות וסידור הלחם'). המבט לאורך השולחן מקצהו.",
+            info: "השולחן — 'אמתים ארכו ואמה רחבו ואמה וחצי קמתו' (שמות כה, כג; רש״י: 'גבה רגליו עם עבי השלחן'), ו'מסגרת טפח סביב' עם 'זר זהב' (כה, כד–כה); רש״י מביא שתי דעות במסגרת, והספר מצייר אותה מתחת לדף — 'ודף השלחן שוכב על אותה מסגרת'.\nהלחם — 'שתים מערכות שש המערכת' (ויקרא כד, ו); 'לחם הפנים, ארכן עשרה ורחבן חמשה, וקרנותיו שבע אצבעות' (משנה מנחות יא, ד), צורתו — במחלוקת: 'רבי חנינא אמר: כמין תיבה פרוצה. רבי יוחנן אמר: כמין ספינה רוקדת' (מנחות צד:; המתג 'צורת לחם הפנים'). רבי מאיר (משנה יא, ה): 'השלחן ארכו שנים עשר ורחבו ששה... נותן ארכו כנגד רחבו של שלחן, וכופל טפחים מכאן וטפחים מכאן וטפחים רוח באמצע' (ולרבי יהודה שם: 'השלחן, ארכו עשרה, ורחבו חמשה... וכופל טפחים ומחצה מכאן וטפחים ומחצה מכאן, נמצא ארכו ממלא כל רחבו של שלחן'); ושם אבא שאול: 'שם היו נותנין שני בזיכי לבונה של לחם הפנים'.\nהסניפין והקנים: 'ארבעה סניפין של זהב היו שם, מפצלין מראשיהן... שנים לסדר זה ושנים לסדר זה. ועשרים ושמנה קנים, כחצי קנה חלול' (משנה יא, ו). רש״י: הסניפין 'עומדין בארץ וגבוהים עד למעלה מן השלחן הרבה, כנגד גבה מערכת הלחם, ומפצלים חמשה פצולים' (רש״י שמות כה, כט); ובגמרא: 'לדברי האומר כמין ספינה רוקדת — סניפין על גבי שלחן מונחין, לדברי האומר כמין תיבה פרוצה — סניפין על גבי קרקע מונחין' (מנחות צד:). הקנים שלושה תחת כל חלה ושניים תחת העליונה — 'התחתונה אינה צריכה כל עיקר' (מנחות צז.).\nבמודל: צורת החלות ומקום הסניפין — לפי המתג 'צורת לחם הפנים' (ברירת המחדל: רבי יוחנן — ספינה רוקדת, והסניפין על השולחן); צורת הסניפין, הבזיכין והקנים — כציור הספר, בחירת מודל; **כל אחד מעשרת השולחנות בתבנית זו** (הלחם — לפי המתג 'הדלקת המנורות וסידור הלחם'). המבט לאורך השולחן מקצהו.",
             refs: [["שמות כה, כג", V(2, 25, 23)], ["כה, כה", V(2, 25, 25)], ["כה, כט", V(2, 25, 29)], ["ויקרא כד, ו", V(3, 24, 6)], ["משנה מנחות יא, ד", MN(81, 11, 4)], ["יא, ה", MN(81, 11, 5)], ["יא, ו", MN(81, 11, 6)], ["מנחות צד:", P(131, "צד:")], ["מנחות צז.", P(131, "צז.")]] },
           // 1.0.1-K (K.4 / K.5): the golden altar (flyPoints.incenseAltar follows the kodesh layout), its smoke and its layers. 1.0.1-L (L.13 the
           // height ONE amah, the horns within it; L.52 / L.69 the place: the sources in interior.md ANSWERS, the user's decision "יותר קרוב
@@ -3285,7 +3365,7 @@ body.tm-measuring canvas{cursor:crosshair}
             // 1.3.7: the button "שכבות מזבח הזהב" merged into this one (UI_MERGE) - its feature opens from here: the layers for 15 seconds
             feature: { key: "incenseAltar.layers", isOn: () => !!(ctx.shared.incenseAltar && ctx.shared.incenseAltar.layers && ctx.shared.incenseAltar.layers.on),
               on: () => feat.altarLayers(), off: () => { const a = ctx.shared.incenseAltar; if (a && a.layers && typeof a.layers.set === "function") a.layers.set(false); } },
-            info: "הפסוקים: 'ויצף מזבח ארז' (מלכים א ו, כ) — רש״י: 'הוא מזבח הקטרת'; 'וכל המזבח אשר לדביר צפה זהב' (ו, כב); 'את מזבח הזהב' (ז, מח).\nהמפרשים: מצודת דוד (ו, כ) — 'ועשאו מאבנים, וארז ממעל, ועל הארז צפהו זהב'; רלב״ג (ו, כב) — 'צפה מזבח הקטרת באבנים וצפהו עצי ארז כמו שעשה בקירות הבית... ואחר כן צפה אותם זהב'; רד״ק — 'ואפשר שהיה מאבנים'.\nמידתו — 'אמה על אמה' (רמב״ם בית הבחירה ג, יז) ו'אמתים קמתו' (שמות ל, ב; מ־1.2.8 — עד אז אמה, בחירת מודל): 'ממנו קרנתיו' — הקרנות בתוך האמתיים, וזר הזהב סביב גגו (ל, ג; רש״י: 'סימן הוא לכתר כהנה') — בחירת מודל.\nמקומו: במשכן נמסר מרחק — רש״י (שמות כו, לה): 'המזבח והשלחן והמנורה משוכים מן הפתח לצד מערב עשר אמות'; ברייתא דמלאכת המשכן: 'מן הקרשים שבמערב עד הפרוכת עשר אמות, מן הפרוכת עד השלחן חמש אמות, מן השלחן עד מזבח הזהב חמש אמות, ממזבח הזהב עד העמודים שבמזרח עשר אמות'. בבית לא נמסרה מידה במספרים: בין השולחן למנורה, מחצי הבית ולפנים ומשוך קמעא כלפי חוץ — 'וכי עייל להיכל — במזבח פגע ברישא... מזבח ממוצע ועומד באמצע ומשוך כלפי חוץ קימעא' (יומא לג:; רש״י: 'כלפי חוץ - כלפי מזרח לצד פתח ההיכל'); הרמב״ם: 'והוא נתון בהיכל מכון בין הצפון לדרום משוך בין השלחן והמנורה לחוץ. ושלשתן היו מנחין משליש ההיכל ולפנים כנגד הפרכת' (רמב״ם ג, יז). ולמה 'המזבח אשר לדביר'? רד״ק (ו, כב): 'סמך המזבח לדביר ואף על פי שלא היה בתוכו אלא בהיכל... ומזבח הקטרת ממוצע ביניהם ומשוך קמעא כלפי חוץ וזה מכוון כנגד פתח הדביר'.\nבמודל: **על ציר הבית, מיד מזרחית לשורות השולחנות והמנורות** (לרבי אמה מקצה השורות, לר׳ אלעזר בר׳ שמעון שלושת רבעי אמה — בחירת מודל). עליו גחלים, ועשן הקטורת עולה ישר עד התקרה — 'מתמר ועולה כמקל' (יומא לח.), 'עד שמגיע לשמי קורה' (יומא נג.), 'כתימרות עשן' (שיר השירים ג, ו; רש״י: 'על שם ענן הקטרת שהיה מתמר מעל מזבח הפנימי'); מוצג תמיד, כי הקטירו בכל בוקר ובין הערביים (שמות ל, ז–ח); עוביו — בחירת מודל. 'הצג את שכבות המזבח' שלפניו מראה את האבן, הארז והזהב.",
+            info: "הפסוקים: 'ויצף מזבח ארז' (מלכים א ו, כ) — רש״י: 'הוא מזבח הקטרת'; 'וכל המזבח אשר לדביר צפה זהב' (ו, כב); 'את מזבח הזהב' (ז, מח).\nהמפרשים: מצודת דוד (ו, כ) — 'ועשאו מאבנים, וארז ממעל, ועל הארז צפהו זהב'; רלב״ג (ו, כב) — 'צפה מזבח הקטרת באבנים וצפהו עצי ארז כמו שעשה בקירות הבית... ואחר כן צפה אותם זהב'; רד״ק — 'ואפשר שהיה מאבנים'.\nמידתו — 'אמה על אמה' (רמב״ם בית הבחירה ג, יז) ו'אמתים קמתו' (שמות ל, ב): 'ממנו קרנתיו' — הקרנות בתוך האמתיים, וזר הזהב סביב גגו (ל, ג; רש״י: 'סימן הוא לכתר כהנה') — בחירת מודל.\nמקומו: במשכן נמסר מרחק — רש״י (שמות כו, לה): 'המזבח והשלחן והמנורה משוכים מן הפתח לצד מערב עשר אמות'; ברייתא דמלאכת המשכן: 'מן הקרשים שבמערב עד הפרוכת עשר אמות, מן הפרוכת עד השלחן חמש אמות, מן השלחן עד מזבח הזהב חמש אמות, ממזבח הזהב עד העמודים שבמזרח עשר אמות'. בבית לא נמסרה מידה במספרים: בין השולחן למנורה, מחצי הבית ולפנים ומשוך קמעא כלפי חוץ — 'וכי עייל להיכל — במזבח פגע ברישא... מזבח ממוצע ועומד באמצע ומשוך כלפי חוץ קימעא' (יומא לג:; רש״י: 'כלפי חוץ - כלפי מזרח לצד פתח ההיכל'); הרמב״ם: 'והוא נתון בהיכל מכון בין הצפון לדרום משוך בין השלחן והמנורה לחוץ. ושלשתן היו מנחין משליש ההיכל ולפנים כנגד הפרכת' (רמב״ם ג, יז). ולמה 'המזבח אשר לדביר'? רד״ק (ו, כב): 'סמך המזבח לדביר ואף על פי שלא היה בתוכו אלא בהיכל... ומזבח הקטרת ממוצע ביניהם ומשוך קמעא כלפי חוץ וזה מכוון כנגד פתח הדביר'.\nבמודל: **על ציר הבית, מיד מזרחית לשורות השולחנות והמנורות** (לרבי אמה מקצה השורות, לר׳ אלעזר בר׳ שמעון שלושת רבעי אמה — בחירת מודל). עליו גחלים, ועשן הקטורת עולה ישר עד התקרה — 'מתמר ועולה כמקל' (יומא לח.), 'עד שמגיע לשמי קורה' (יומא נג.), 'כתימרות עשן' (שיר השירים ג, ו; רש״י: 'על שם ענן הקטרת שהיה מתמר מעל מזבח הפנימי'); מוצג תמיד, כי הקטירו בכל בוקר ובין הערביים (שמות ל, ז–ח); עוביו — בחירת מודל. 'הצג את שכבות המזבח' שלפניו מראה את האבן, הארז והזהב.",
             refs: [["רש״י שמות כו, לה", { book: 3692, index: 1890 }], ["ברייתא דמלאכת המשכן א, יט", { book: 240, index: 2844 }], ["מלכים א ו, כ", V(10, 6, 20)], ["ו, כב", V(10, 6, 22)], ["רד״ק ו, כב", V(10, 6, 22)], ["ז, מח", V(10, 7, 48)], ["רמב״ם בית הבחירה ג, יז", RB(3, 17)], ["שמות ל, ב", V(2, 30, 2)], ["ל, ג", V(2, 30, 3)], ["ל, ז", V(2, 30, 7)], ["יומא לג:", P(107, "לג:")], ["מנחות צח:", P(131, "צח:")], ["יומא לח.", P(107, "לח.")], ["יומא נג.", P(107, "נג.")], ["שיר השירים ג, ו", V(31, 3, 6)]] },
           { t: "שכבות מזבח הזהב — אבן, ארז וזהב", view: "incenseAltar",
             feature: { key: "incenseAltar.layers", isOn: () => !!(ctx.shared.incenseAltar && ctx.shared.incenseAltar.layers && ctx.shared.incenseAltar.layers.on),
@@ -3322,7 +3402,7 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "קודש הקדשים — הדביר", view: "kodeshHakodashim", key: "kodeshHakodashim",
             tourThen: [{ cam: [-45.3, 17.5, 0], tg: [-58, 20, 0] }] },   // TOUR_FIX_137: from its doorway, facing the ark   // 1.1.0: was the grid's view
           { t: "הכרובים", view: "cherubim",
-            info: "הפסוק: 'ויעש בדביר שני כרובים עצי שמן עשר אמות קומתו' (מלכים א ו, כג–כח): כנף חמש אמות, 'עשר אמות מקצות כנפיו ועד קצות כנפיו', 'ותגע כנף האחד בקיר וכנף הכרוב השני נגעת בקיר השני וכנפיהם אל תוך הבית נגעת כנף אל כנף' (ו, כז), ומצופים זהב (ו, כח). 'מעשה צעצעים' (דברי הימים ב ג, י) — רש״י: 'תבנית ילדים וילדות עשה לכרובים, כרביא'; 'והם עמדים על רגליהם ופניהם לבית' (ג, יג).\nהכנפיים: פרושות במישור אחד מאוזן, שוכבות, סוכה על הארון — 'כי הכרובים פרשים כנפים אל מקום הארון ויסכו הכרבים על הארון ועל בדיו מלמעלה' (ח, ז); רש״י (דברי הימים ב ג, יג): 'והיו כנפי הכרובים מטין מן הכותל וסוככין על הכפרת ועל הארון בכנפיהם' — ובמודל מתחת לראשים (בחירת מודל), קצותיהן נוגעות בקירות וזו בזו. ואילו כרובי הכפורת שעל הארון — כנפיהם עולות מן הכתפיים מעל ראשיהם ונמשכות בקשת עד אמצע הכפורת, וקצותיהן נוגעים זה בזה (הנגיעה — כציור הספר): 'והיו הכרבים פרשי כנפים למעלה סככים בכנפיהם על הכפרת' (שמות כה, כ), רש״י: 'שלא תעשה כנפיהם שוכבים אלא פרושים וגבוהים למעלה אצל ראשיהם, שיהא עשרה טפחים בחלל שבין הכנפים לכפרת' (סוכה ה:).\nהפנים — פני ילד: 'דמות פרצוף תינוק להם' (רש״י שמות כה, יח), 'מאי כרוב? אמר רבי אבהו: כרביא, שכן בבבל קורין לינוקא רביא' (חגיגה יג:) — ראש סגלגל עם סנטר ולחיים, אף ישר, עיניים שקדיות בעפעפיים, פה קטן סגור וקו שיער, כולו זהב, כציור הספר.\nחז״ל: 'כרובים — בנס הן עומדין' (בבא בתרא צט.; רש״י ו, כד: 'וגוף הכרובים אינו מן המדה ועומד בנס'); ושם מקשה אביי: 'ודלמא בולטין כתרנגולין הוו קיימי' — גופם תחת כנפיהם (רשב״ם), וכך רד״ק (ו, כז): 'גופות הכרובים תחת הכנפים הם ואין צריך להיותם עומדת בנס' — וכך נבנה המודל.\nבמודל, כציור הספר: **דמות גבוהה וחלקה של זהב, לבושה עד הקרקע, בלי ידיים** (אין להן זכר בפסוקים).\nבקצרה — פניהם, שלוש דעות בטבלת 'שיטות ומחלוקות': רש״י (ג, יג) — ראשם כפוף ופונה זה אל זה; רד״ק ומצודות — לבית, מזרחה; בבא בתרא צט. — 'ומצודדים פניהם כתלמיד הנפטר מרבו'.",
+            info: "הפסוק: 'ויעש בדביר שני כרובים עצי שמן עשר אמות קומתו' (מלכים א ו, כג–כח): כנף חמש אמות, 'עשר אמות מקצות כנפיו ועד קצות כנפיו', 'ותגע כנף האחד בקיר וכנף הכרוב השני נגעת בקיר השני וכנפיהם אל תוך הבית נגעת כנף אל כנף' (ו, כז), ומצופים זהב (ו, כח). 'מעשה צעצעים' (דברי הימים ב ג, י) — רש״י: 'תבנית ילדים וילדות עשה לכרובים, כרביא'; 'והם עמדים על רגליהם ופניהם לבית' (ג, יג).\nהכנפיים: פרושות במישור אחד מאוזן, שוכבות, סוכה על הארון — 'כי הכרובים פרשים כנפים אל מקום הארון ויסכו הכרבים על הארון ועל בדיו מלמעלה' (ח, ז); רש״י (דברי הימים ב ג, יג): 'והיו כנפי הכרובים מטין מן הכותל וסוככין על הכפרת ועל הארון בכנפיהם' — ובמודל מתחת לראשים (בחירת מודל), קצותיהן נוגעות בקירות וזו בזו. ואילו כרובי הכפורת שעל הארון — כנפיהם עולות מן הכתפיים מעל ראשיהם ונמשכות בקשת עד אמצע הכפורת, וקצותיהן נוגעים זה בזה (הנגיעה — כציור הספר): 'והיו הכרבים פרשי כנפים למעלה סככים בכנפיהם על הכפרת' (שמות כה, כ), רש״י: 'שלא תעשה כנפיהם שוכבים אלא פרושים וגבוהים למעלה אצל ראשיהם, שיהא עשרה טפחים בחלל שבין הכנפים לכפרת' (סוכה ה:).\nהפנים — פני ילד: 'דמות פרצוף תינוק להם' (רש״י שמות כה, יח), 'מאי כרוב? אמר רבי אבהו: כרביא, שכן בבבל קורין לינוקא רביא' (חגיגה יג:) — ראש סגלגל עם סנטר ולחיים, אף ישר, עיניים שקדיות בעפעפיים, פה קטן סגור וקו שיער, כולו זהב, כציור הספר.\nחז״ל: 'כרובים — בנס הן עומדין' (בבא בתרא צט.; רש״י ו, כד: 'וגוף הכרובים אינו מן המדה ועומד בנס'); ושם מקשה אביי: 'ודלמא בולטין כתרנגולין הוו קיימי' — גופם תחת כנפיהם (רשב״ם), וכך רד״ק (ו, כז): 'גופות הכרובים תחת הכנפים הם ואין צריך להיותם עומדת בנס' — וכך נבנה המודל.\nבמודל, כציור הספר: **דמות גבוהה וחלקה של זהב, לבושה עד הקרקע, בלי ידיים** (אין להן זכר בפסוקים).\nבקצרה — פניהם, שלוש דעות בתפריט, תחת ״שיטות ומחלוקות״: רש״י (ג, יג) — ראשם כפוף ופונה זה אל זה; רד״ק ומצודות — לבית, מזרחה; בבא בתרא צט. — 'ומצודדים פניהם כתלמיד הנפטר מרבו'.",
             refs: [["מלכים א ו, כג", V(10, 6, 23)], ["ו, כד", V(10, 6, 24)], ["ו, כז", V(10, 6, 27)], ["ו, כח", V(10, 6, 28)], ["ח, ז", V(10, 8, 7)], ["דברי הימים ב ג, י", V(39, 3, 10)], ["ג, יג", V(39, 3, 13)], ["שמות כה, יח", V(2, 25, 18)], ["שמות כה, כ", V(2, 25, 20)], ["סוכה ה:", P(108, "ה:")], ["בבא בתרא צט.", P(124, "צט.")], ["מגילה י:", P(112, "י:")], ["חגיגה יג:", P(114, "יג:")]] },
           { t: "הארון ובדיו", tg: () => [arkX() + 2, 14, 0], cam: () => [arkX() + 9.5, 18, 4], // the ark at x -58.5, the staffs east of it
             info: "הפסוק: 'ויבאו הכהנים את ארון ברית ה׳ אל מקומו אל דביר הבית אל קדש הקדשים אל תחת כנפי הכרובים' (מלכים א ח, ו).\nהבדים ארוכים וראשיהם נראים מן הקודש — 'ויארכו הבדים ויראו ראשי הבדים מן הקדש על פני הדביר ולא יראו החוצה' (ח, ח): דוחקים בפרוכת ובולטים ממנה, 'ונראין כשני דדי אשה' (יומא נד.).\nרש״י (ו, כג): **הארון מונח ארכו לרוחב הבית ובדיו מזרח ומערב** (יומא נד.).\nבמודל: האבן במערב קודש הקדשים ועליה הארון (רמב״ם בית הבחירה ד, א); חמש אמות מקיר המערב — בחירת מודל.\n" + UI_BARAITA.a,
@@ -3336,7 +3416,7 @@ body.tm-measuring canvas{cursor:crosshair}
             refs: [["משנה יומא ה, ב", MN(55, 5, 2)], ["יומא נג:", P(107, "נג:")], ["יומא נד.", P(107, "נד.")], ["רמב״ם בית הבחירה ד, א", RB(4, 1)]] },
           // 1.2.2 (the scan): the gold-lined room over the devir (50-heichal.js sec. 8: the devir's ceiling at 20, the room y 33..42) had no button
           { t: "עליית קודש הקדשים — מעל הדביר", tg: [-60, 36, -3], cam: [-47, 38, 6],
-            info: "מעל הדביר חדר ריק מצופה זהב: 'ועשרים אמה קומתו' (מלכים א ו, כ) — רש״י: 'ועשרים אמה קומתו. כלומר, עלית של בית קדשי הקדשים, נמוכה משל היכל' — תקרת הדביר בגובה עשרים, ומעליה עד תקרת ההיכל עלייה; 'והעליות חפה זהב' (דברי הימים ב ג, ט).\nבקצרה — גובה קודש הקדשים (בטבלת השיטות, בשורה 'גובה קודש הקדשים'): לרש״י — עשרים אמה, ועלייתו מעליו (**ברירת המחדל**); לגמרא (בבא בתרא צח:: 'כי קא חשיב – משפת כרובים ולמעלה') ולתוספות — שלושים אמה, כהיכל, ואין שם עלייה נמוכה; לרד״ק — שלושים, ועשר האמות העליונות מחופות אבן יקרה. בבית שני היו לולים פתוחים מן העלייה אל הדביר, ובהם שלשלו את האומנים בתיבות לתיקונו (מדות ד, ה; פסחים כו.).\nבמודל: חדר סגור, לצפייה; הכניסה אליו אינה מתוארת בכתוב.",
+            info: "מעל הדביר חדר ריק מצופה זהב: 'ועשרים אמה קומתו' (מלכים א ו, כ) — רש״י: 'ועשרים אמה קומתו. כלומר, עלית של בית קדשי הקדשים, נמוכה משל היכל' — תקרת הדביר בגובה עשרים, ומעליה עד תקרת ההיכל עלייה; 'והעליות חפה זהב' (דברי הימים ב ג, ט).\nבקצרה — גובה קודש הקדשים (בתפריט, תחת ״שיטות ומחלוקות״, במתג 'גובה קודש הקדשים'): לרש״י — עשרים אמה, ועלייתו מעליו (**ברירת המחדל**); לגמרא (בבא בתרא צח:: 'כי קא חשיב – משפת כרובים ולמעלה') ולתוספות — שלושים אמה, כהיכל, ואין שם עלייה נמוכה; לרד״ק — שלושים, ועשר האמות העליונות מחופות אבן יקרה. בבית שני היו לולים פתוחים מן העלייה אל הדביר, ובהם שלשלו את האומנים בתיבות לתיקונו (מדות ד, ה; פסחים כו.).\nבמודל: חדר סגור, לצפייה; הכניסה אליו אינה מתוארת בכתוב.",
             refs: [["מלכים א ו, כ", V(10, 6, 20)], ["רש״י ו, כ", { book: 3673, index: 262 }], ["דברי הימים ב ג, ט", V(39, 3, 9)], ["בבא בתרא צח:", { book: 124, index: 2324 }], ["תוספות בבא בתרא צח:", { book: 1923, index: 1051 }], ["רד״ק ו, כ", { book: 3540, index: 369 }], ["מדות ד, ה", MI(4, 5)]] },
         ]],
         ["בית שלמה", [
@@ -3346,40 +3426,44 @@ body.tm-measuring canvas{cursor:crosshair}
           // 1.0.1-L (L.20; palace.md): THREE readings - Rashi (the book), Malbim and Ralbag, Metzudat David; Rashi 7:2-7:6 quoted in the
           // library's spelling (לארך, כלן, מחפין, קרוי, הספון, לרחב - the K texts had the plene forms)
           { t: "בית יער הלבנון", tg: [103, 5, 520], cam: [225, 70, 650], layer: "palace",
-            info: "הפסוק: 'ויבן את בית יער הלבנון מאה אמה ארכו וחמשים אמה רחבו ושלשים אמה קומתו על ארבעה טורי עמודי ארזים וכרתות ארזים על העמודים' (מלכים א ז, ב–ה). **שלוש קריאות במודל** (טבלת 'שיטות ומחלוקות').\nלרש״י, כפי שמצייר הספר (ברירת המחדל): 'לארך הבית היה טור עמודים בקרקע, והכרותות מעמוד לעמוד' (ז, ב); עליהן רצפת הקומה העליונה, שכתליה ארוגים מעמודים — 'כלן פתחים וחלונות' (ז, ג), 'ומחפין היו הפתחים בנסרים דקין' (ז, ה); מעליהם ארבעים וחמישה נסרי הספון, חמישה עשר לכל חלל (ז, ג); ובסוף הבית קרוי שני של נסרים קטנים על מרישין קטנים, 'שלשה מרישין זה אצל (צריך לומר: לסוף) זה' (ז, ד).\nלמלבי״ם ולרלב״ג — הטורים לרוחב הבית: 'העמודים היו נתונים לרוחב הבית וחולקים את אורך הבית לג' חלקים' (מלבי״ם ז, ב), 'חמשה עשר עמודים היו בטור האחד' (רלב״ג ז, ג), כתלים לאורכו ובהם חלונות 'מכוונים נגד חלונות של צד הארך השני' (מלבי״ם ז, ד), והארבעים וחמישה הם לרלב״ג הכרותות שעל העמודים.\nלמצודת דוד — אף הוא טורים לרוחב, 'אבל לאורך הבית היה כתלים ממש, כדרך הבנין' (ז, ב), ועל הכרותות 'השכיבו צלעות ונסרים... ועל הצלעות ההם הניחו לוחות ארז, להיות לתקרה' (ז, ג) — 45 לוחות, 'ל״ג אמות ושליש אמה' על 'ג׳ אמות ושליש אמה'; שלוש שורות חלונות 'מכוונות זו מול זו' (ז, ד), ושלושה פתחים מרובעים בכל כותל ארוך 'וכל השלשה היו זה מול זה' (ז, ה).\nבתוכו מאתיים צינה ושלוש מאות מגן זהב (י, טז–יז) וכלי זהב סגור (י, כא). מספרי המודל — בלוח 'השלמות'.",
+            info: "הפסוק: 'ויבן את בית יער הלבנון מאה אמה ארכו וחמשים אמה רחבו ושלשים אמה קומתו על ארבעה טורי עמודי ארזים וכרתות ארזים על העמודים' (מלכים א ז, ב–ה). **שלוש שיטות במודל** (בתפריט, תחת ״שיטות ומחלוקות״).\nלרש״י, כפי שמצייר הספר (ברירת המחדל): 'לארך הבית היה טור עמודים בקרקע, והכרותות מעמוד לעמוד' (ז, ב); עליהן רצפת הקומה העליונה, שכתליה ארוגים מעמודים — 'כלן פתחים וחלונות' (ז, ג), 'ומחפין היו הפתחים בנסרים דקין' (ז, ה); מעליהם ארבעים וחמישה נסרי הספון, חמישה עשר לכל חלל (ז, ג); ובסוף הבית קרוי שני של נסרים קטנים על מרישין קטנים, 'שלשה מרישין זה אצל (צריך לומר: לסוף) זה' (ז, ד).\nלמלבי״ם ולרלב״ג — הטורים לרוחב הבית: 'העמודים היו נתונים לרוחב הבית וחולקים את אורך הבית לג' חלקים' (מלבי״ם ז, ב), 'חמשה עשר עמודים היו בטור האחד' (רלב״ג ז, ג), כתלים לאורכו ובהם חלונות 'מכוונים נגד חלונות של צד הארך השני' (מלבי״ם ז, ד), והארבעים וחמישה הם לרלב״ג הכרותות שעל העמודים.\nלמצודת דוד — אף הוא טורים לרוחב, 'אבל לאורך הבית היה כתלים ממש, כדרך הבנין' (ז, ב), ועל הכרותות 'השכיבו צלעות ונסרים... ועל הצלעות ההם הניחו לוחות ארז, להיות לתקרה' (ז, ג) — 45 לוחות, 'ל״ג אמות ושליש אמה' על 'ג׳ אמות ושליש אמה'; שלוש שורות חלונות 'מכוונות זו מול זו' (ז, ד), ושלושה פתחים מרובעים בכל כותל ארוך 'וכל השלשה היו זה מול זה' (ז, ה).\nבתוכו מאתיים צינה ושלוש מאות מגן זהב (י, טז–יז) וכלי זהב סגור (י, כא). מספרי המודל — בלוח 'השלמות'.",
             refs: [["מלכים א ז, ב", V(10, 7, 2)], ["ז, ג", V(10, 7, 3)], ["ז, ד", V(10, 7, 4)], ["ז, ה", V(10, 7, 5)], ["ז, ו", V(10, 7, 6)], ["רש״י ז, ג", V(10, 7, 3)], ["מצודת דוד ז, ב", V(10, 7, 2)], ["מלבי״ם ז, ב", V(10, 7, 2)], ["רלב״ג ז, ג", V(10, 7, 3)], ["י, טז", V(10, 10, 16)]] },
           { t: "פנים בית יער הלבנון — המגינים, הצינות והכלים", view: "forestInside", layer: "palace",   // follows the reading (60-palace.js forestHouse.set)
-            info: (PN.shields || "הפסוק: מאתיים צינה ושלוש מאות מגן של זהב שחוט, 'ויתנם המלך בית יער הלבנון' (מלכים א י, טז–יז), וכלי זהב סגור (י, כא).") + "\nבמודל: המבט מתוך הבית — בקריאת רש״י לאורך האולם האמצעי של הקומה העליונה, כציור הספר (שם המגינים בקומה העליונה); בקריאות מלבי״ם ורלב״ג ומצודת דוד — לרוחב החלל האמצעי, בין טורי העמודים. 'וכל כלי בית יער הלבנון זהב סגור' (י, כא).",
+            info: (PN.shields || "הפסוק: מאתיים צינה ושלוש מאות מגן של זהב שחוט, 'ויתנם המלך בית יער הלבנון' (מלכים א י, טז–יז), וכלי זהב סגור (י, כא).") + "\nבמודל: המבט מתוך הבית — בשיטת רש״י לאורך האולם האמצעי של הקומה העליונה, כציור הספר (שם המגינים בקומה העליונה); בשיטות מלבי״ם ורלב״ג ומצודת דוד — לרוחב החלל האמצעי, בין טורי העמודים. 'וכל כלי בית יער הלבנון זהב סגור' (י, כא).",
             refs: [["מלכים א י, טז", V(10, 10, 16)], ["י, יז", V(10, 10, 17)], ["י, כא", V(10, 10, 21)]] },
           // 1.0.1-K review (palace-courts-5): "הסר את הנסרים" removes only the 45 boards and the thin boards (60-palace.js); in Rashi's
           // reading that shows the עבים (7:6), the small beams with their ledges (7:4) and the upper storey - his כרותות (7:2) lie under the
           // upper floor; in the second reading it removes the boards and the stone roof and shows the כרותות on the pillars (Ralbag 7:3).
           // The 1.0.1-K text "הכרותות = מרישים (רד״ק; רש״י ז, ו)" mixed Radak's כרותות with Rashi's עבים; 7:4 quoted as printed in the DB
           { t: "קירוי בית יער הלבנון — הכרותות, 45 הנסרים והנסרים הדקים", view: "forestRoof", layer: "palace",
-            info: "הפסוקים: 'וספן בארז ממעל על הצלעות אשר על העמודים ארבעים וחמשה חמשה עשר הטור' (מלכים א ז, ג), 'ושקפים שלשה טורים ומחזה אל מחזה שלש פעמים' (ז, ד).\nרש״י: 'ארבעים וחמשה נסרים היו הספון, שלשה טורי נסרים... חמשה עשר נסרים הטור... ארכן לרחב שבין טור לטור, ורחבן לארך הבית', ועוד: 'כי רחב של חמשה עשר נסרים, לא קרה את הבית בכל ארכו... ועשה אצלו לקרות הבית קרוי של נסרים קטנים, נתונים על מרישין קטנים... שלשה מרישין זה אצל (צריך לומר: לסוף) זה, ושקופין משני צדיהן, כעין משקוף שהדלת שוקף בו'. לרש״י הכרותות הן הקורות שעל העמודים התחתונים — 'והכרותות מעמוד לעמוד' (ז, ב) — ועליהן, כציור הספר, רצפת הקומה העליונה; והעב — באולם העמודים בלבד, ואינו נראה (ז, ו). לרד״ק הכרותות עצמן 'הנקראים מרישי׳ בדברי רז״ל' (ז, ב).\nבמודל, כציור הספר: כרותה אחת מעמוד לעמוד, זו בסוף זו; **הנסרים הגדולים חמש אמות רוחב כל אחד** (שבעים וחמש מתוך המאה); ובשאר הבית שתים עשרה שורות של מרישים קטנים, מריש אחד לכל חלל, 'קצה מול קצה'.\nהכפתור 'הסר את הנסרים' שעל הגג מסיר את 45 הנסרים ואת הנסרים הדקים, ונראים מתחתם המרישין הקטנים ושקופיהם והקומה העליונה; הכרותות נשארות מתחת לרצפתה. בקריאת מלבי״ם ורלב״ג (טבלת 'שיטות ומחלוקות') הוא מסיר את 45 הלוחות ואת גג האבן, ונראות הכרותות שעל העמודים — 'והם כרותות הארזים אשר על העמודים שהיו ארבעים וחמשה' (רלב״ג ז, ג); בקריאת מצודת דוד — את 45 לוחות הארז של התקרה, ונראות הצלעות שעל הכרותות: 'השכיבו צלעות ונסרים, להיות מחיצות הבית ממעל, ועל הצלעות ההם הניחו לוחות ארז, להיות לתקרה' (מצודת דוד ז, ג). עובי הנסרים ורוחבם — בחירת מודל.",
+            info: "הפסוקים: 'וספן בארז ממעל על הצלעות אשר על העמודים ארבעים וחמשה חמשה עשר הטור' (מלכים א ז, ג), 'ושקפים שלשה טורים ומחזה אל מחזה שלש פעמים' (ז, ד).\nרש״י: 'ארבעים וחמשה נסרים היו הספון, שלשה טורי נסרים... חמשה עשר נסרים הטור... ארכן לרחב שבין טור לטור, ורחבן לארך הבית', ועוד: 'כי רחב של חמשה עשר נסרים, לא קרה את הבית בכל ארכו... ועשה אצלו לקרות הבית קרוי של נסרים קטנים, נתונים על מרישין קטנים... שלשה מרישין זה אצל (צריך לומר: לסוף) זה, ושקופין משני צדיהן, כעין משקוף שהדלת שוקף בו'. לרש״י הכרותות הן הקורות שעל העמודים התחתונים — 'והכרותות מעמוד לעמוד' (ז, ב) — ועליהן, כציור הספר, רצפת הקומה העליונה; והעב — באולם העמודים בלבד, ואינו נראה (ז, ו). לרד״ק הכרותות עצמן 'הנקראים מרישי׳ בדברי רז״ל' (ז, ב).\nבמודל, כציור הספר: כרותה אחת מעמוד לעמוד, זו בסוף זו; **הנסרים הגדולים חמש אמות רוחב כל אחד** (שבעים וחמש מתוך המאה); ובשאר הבית שתים עשרה שורות של מרישים קטנים, מריש אחד לכל חלל, 'קצה מול קצה'.\nהכפתור 'הסר את הנסרים' שעל הגג מסיר את 45 הנסרים ואת הנסרים הדקים, ונראים מתחתם המרישין הקטנים ושקופיהם והקומה העליונה; הכרותות נשארות מתחת לרצפתה. בשיטת מלבי״ם ורלב״ג (בתפריט, תחת ״שיטות ומחלוקות״) הוא מסיר את 45 הלוחות ואת גג האבן, ונראות הכרותות שעל העמודים — 'והם כרותות הארזים אשר על העמודים שהיו ארבעים וחמשה' (רלב״ג ז, ג); בשיטת מצודת דוד — את 45 לוחות הארז של התקרה, ונראות הצלעות שעל הכרותות: 'השכיבו צלעות ונסרים, להיות מחיצות הבית ממעל, ועל הצלעות ההם הניחו לוחות ארז, להיות לתקרה' (מצודת דוד ז, ג). עובי הנסרים ורוחבם — בחירת מודל.",
             refs: [["מלכים א ז, ג", V(10, 7, 3)], ["ז, ד", V(10, 7, 4)], ["רש״י ז, ב", V(10, 7, 2)], ["רש״י ז, ד", V(10, 7, 4)], ["רש״י ז, ו", V(10, 7, 6)], ["רד״ק ז, ב", V(10, 7, 2)], ["רלב״ג ז, ג", V(10, 7, 3)], ["מצודת דוד ז, ג", V(10, 7, 3)]] },
           // 1.0.1-L (L.48, the user: "עיין בספר ולפי"ז תבין את העב"; verify-palace Follow-ups §2): the two 7:6 places fly to the palace module's
           // fly points forestAv / forestAlam, which it re-aims per reading (no hard-coded cameras: under "mzd" the K cameras showed the house)
           { t: "העמודים והעב — 'ועמדים ועב על פניהם'", view: "forestAv", layer: "palace",
-            info: "הפסוק: 'ואולם על פניהם ועמדים ועב על פניהם' (מלכים א ז, ו).\nרש״י: 'אולם גבוה עשה על כל הבית'; 'ועל כרותות ארזים שעל העמודים התחתונים, הציב על (צריך לומר: עוד) עמודים אחרים, ומרישין מעמוד לעמוד, העמודים לארג בהן צלעות מזה לזה, והעבים לקרוי העליה, עב היא מריש, כמו ששנינו והעבים אלו המרישין'. בסוף הגג, במקום שלא כיסו 45 הנסרים, אין עבים, והכל דק: 'נתונים על מרישין קטנים... מטור כרותות ארזים אל טור, שלשה מרישין זה אצל (צריך לומר: לסוף) זה, ושקופין משני צדיהן' (רש״י ז, ד).\nמלבי״ם ורלב״ג: 'לפני הבית והאולם היה עוד אולם ולפני האולם השני היו עמודים ועב על פניהם היינו מריש שהוא עץ עב' (מלבי״ם ז, ו) — שורת עמודים לפני האולם השני ועליהם המריש.\nמצודת דוד: 'לפני פתחי האולם הזה, עמדו עמודים תקועים בארץ, וממעל להם עץ עב לחברם יחד' (ז, ו).\nבמודל, כרש״י: 'ועמדים' — עמודי קירות הקומה העליונה; 'ועב' — באולם העמודים בלבד, ואינו נראה במודל. המבט הולך אחרי הקריאה שנבחרה בטבלת 'שיטות ומחלוקות'; מידות המרישים — בחירת מודל.",
+            info: "הפסוק: 'ואולם על פניהם ועמדים ועב על פניהם' (מלכים א ז, ו).\nרש״י: 'אולם גבוה עשה על כל הבית'; 'ועל כרותות ארזים שעל העמודים התחתונים, הציב על (צריך לומר: עוד) עמודים אחרים, ומרישין מעמוד לעמוד, העמודים לארג בהן צלעות מזה לזה, והעבים לקרוי העליה, עב היא מריש, כמו ששנינו והעבים אלו המרישין'. בסוף הגג, במקום שלא כיסו 45 הנסרים, אין עבים, והכל דק: 'נתונים על מרישין קטנים... מטור כרותות ארזים אל טור, שלשה מרישין זה אצל (צריך לומר: לסוף) זה, ושקופין משני צדיהן' (רש״י ז, ד).\nמלבי״ם ורלב״ג: 'לפני הבית והאולם היה עוד אולם ולפני האולם השני היו עמודים ועב על פניהם היינו מריש שהוא עץ עב' (מלבי״ם ז, ו) — שורת עמודים לפני האולם השני ועליהם המריש.\nמצודת דוד: 'לפני פתחי האולם הזה, עמדו עמודים תקועים בארץ, וממעל להם עץ עב לחברם יחד' (ז, ו).\nבמודל, כרש״י: 'ועמדים' — עמודי קירות הקומה העליונה; 'ועב' — באולם העמודים בלבד, ואינו נראה במודל. המבט הולך אחרי השיטה שנבחרה בתפריט, תחת ״שיטות ומחלוקות״; מידות המרישים — בחירת מודל.",
             refs: [["מלכים א ז, ו", V(10, 7, 6)], ["רש״י ז, ו", V(10, 7, 6)], ["רש״י ז, ד", V(10, 7, 4)], ["מלבי״ם ז, ו", V(10, 7, 6)], ["מצודת דוד ז, ו", V(10, 7, 6)]] },
           { t: "אולם העמודים", view: "forestAlam", layer: "palace",
-            info: "הפסוק: 'ואת אולם העמודים עשה חמשים אמה ארכו ושלשים אמה רחבו ואולם על פניהם ועמדים ועב על פניהם' (מלכים א ז, ו).\nרש״י: 'אולם עשה לפני העמודים האלה, מבוא לבית, חמשים אמה ארכו, לרחבו של בית שהיה חמשים אמה, ושלשים רחבו לפני ארך משך הבית' — במודל, כציור הספר, **אולם כניסה נמוך בקצה הבית**, ולפניו 'אולם על פניהם — אולם גבוה'; גובה שני האולמות ומידות האולם הגבוה — בחירת מודל.\nמלבי״ם ורלב״ג: אולם העמודים גבוה כעמודים — 'גבהו כגבהם' (רלב״ג ז, ו) — טורי עמודי ארז בתוכו, ולפניו אולם שני, ולפניו 'עמודים ועב על פניהם, היינו מריש שהוא עץ עב' (מלבי״ם); המבט מתוכו.\nמצודת דוד: 'עשה אולם עומד על עמודי ארזים... נסמך לבית היער לפני פתחים, וכדרך בית שער, ועמד ארכו לאורך הבית, להיות מול כל שלשת הפתחים' (ז, ו) — אולם לאורך צלעו הארוכה של הבית, מול שלושת פתחיו.\nבמודל: המבט הולך אחרי הקריאה שנבחרה. על 'ועמדים ועב על פניהם' — בהמשך הכרטיס.",
+            info: "הפסוק: 'ואת אולם העמודים עשה חמשים אמה ארכו ושלשים אמה רחבו ואולם על פניהם ועמדים ועב על פניהם' (מלכים א ז, ו).\nרש״י: 'אולם עשה לפני העמודים האלה, מבוא לבית, חמשים אמה ארכו, לרחבו של בית שהיה חמשים אמה, ושלשים רחבו לפני ארך משך הבית' — במודל, כציור הספר, **אולם כניסה נמוך בקצה הבית**, ולפניו 'אולם על פניהם — אולם גבוה'; גובה שני האולמות ומידות האולם הגבוה — בחירת מודל.\nמלבי״ם ורלב״ג: אולם העמודים גבוה כעמודים — 'גבהו כגבהם' (רלב״ג ז, ו) — טורי עמודי ארז בתוכו, ולפניו אולם שני, ולפניו 'עמודים ועב על פניהם, היינו מריש שהוא עץ עב' (מלבי״ם); המבט מתוכו.\nמצודת דוד: 'עשה אולם עומד על עמודי ארזים... נסמך לבית היער לפני פתחים, וכדרך בית שער, ועמד ארכו לאורך הבית, להיות מול כל שלשת הפתחים' (ז, ו) — אולם לאורך צלעו הארוכה של הבית, מול שלושת פתחיו.\nבמודל: המבט הולך אחרי השיטה שנבחרה. על 'ועמדים ועב על פניהם' — בהמשך הכרטיס.",
             refs: [["מלכים א ז, ו", V(10, 7, 6)], ["רש״י ז, ו", V(10, 7, 6)], ["רלב״ג ז, ו", V(10, 7, 6)], ["מלבי״ם ז, ו", V(10, 7, 6)], ["מצודת דוד ז, ו", V(10, 7, 6)]] },
           // 1.0.1-K (K.6): inside the throne hall (flyPoints.throne) and the king's house (flyPoints.kingsHouse); the garden. 1.0.1-L (L.57, L.78,
           // L.81; palace.md / palace-2.md): the throne per Kings in four midrashic versions (the row "כסא שלמה — לפי איזה מדרש"), its own
           // place, and the king's ascent (an animation with its own duration - exempt from the 15-s rule)
           { t: "אולם הכסא ואולם המשפט", view: "throneHall", layer: "palace",
-            info: "הפסוק: 'ואולם הכסא אשר ישפט שם אלם המשפט עשה וספון בארז מהקרקע עד הקרקע' (מלכים א ז, ז) — אולם שבו כיסא המלך למשפט, ורצפתו ארז מקיר לקיר (רש״י, רד״ק). מצודות ומלבי״ם: אולם המשפט לפני אולם הכסא.\nבתוכו כסא שלמה (י, יח–כ) — ראו 'כסא שלמה' ו'עליית המלך לכסא', והשורה 'כסא שלמה — לפי איזה מדרש' בטבלת 'שיטות ומחלוקות'.\nבמודל: הכפתור 'הסר את גגות אולם הכסא' שעל הגג מראה אותו מלמעלה.",
+            info: "הפסוק: 'ואולם הכסא אשר ישפט שם אלם המשפט עשה וספון בארז מהקרקע עד הקרקע' (מלכים א ז, ז) — אולם שבו כיסא המלך למשפט, ורצפתו ארז מקיר לקיר (רש״י, רד״ק). מצודות ומלבי״ם: אולם המשפט לפני אולם הכסא.\nבתוכו כסא שלמה (י, יח–כ) — ראו 'כסא שלמה' ו'עליית המלך לכסא', והמתג 'כסא שלמה — לפי איזה מדרש' בתפריט, תחת ״שיטות ומחלוקות״.\nבמודל: הכפתור 'הסר את גגות אולם הכסא' שעל הגג מראה אותו מלמעלה.",
             refs: [["מלכים א ז, ז", V(10, 7, 7)], ["י, יח", V(10, 10, 18)], ["י, יט", V(10, 10, 19)], ["י, כ", V(10, 10, 20)], ["דברי הימים ב ט, יח", V(39, 9, 18)]] },
           { t: "כסא שלמה", view: "throne", layer: "palace",
-            info: (PN.throne || "הפסוק (מלכים א י, יח–כ; דברי הימים ב ט, יז–יט): 'ויעש המלך כסא שן גדול ויצפהו זהב מופז. שש מעלות לכסה וראש עגל לכסה מאחריו וידת מזה ומזה אל מקום השבת ושנים אריות עמדים אצל הידות. ושנים עשר אריים עמדים שם על שש המעלות מזה ומזה לא נעשה כן לכל ממלכות'.\nבמודל: המידות — בחירת מודל.") + (PN.throneVersions ? "\n**ארבע גרסאות במודל** — הפסוקים ומפרשיהם בלבד (ברירת המחדל), תרגום שני, אסתר רבה עם פנים אחרים ואבא גוריון, ובית המדרש ב — בשורה 'כסא שלמה — לפי איזה מדרש' בטבלת 'שיטות ומחלוקות'; עליית המלך אל הכסא — בכפתור שעל הכסא ובמקום 'עליית המלך לכסא'." : ""),
+            info: (PN.throne || "הפסוק (מלכים א י, יח–כ; דברי הימים ב ט, יז–יט): 'ויעש המלך כסא שן גדול ויצפהו זהב מופז. שש מעלות לכסה וראש עגל לכסה מאחריו וידת מזה ומזה אל מקום השבת ושנים אריות עמדים אצל הידות. ושנים עשר אריים עמדים שם על שש המעלות מזה ומזה לא נעשה כן לכל ממלכות'.\nבמודל: המידות — בחירת מודל.") + (PN.throneVersions ? "\n**ארבע גרסאות במודל** — הפסוקים ומפרשיהם בלבד (ברירת המחדל), תרגום שני, אסתר רבה עם פנים אחרים ואבא גוריון, ובית המדרש ב — במתג 'כסא שלמה — לפי איזה מדרש' בתפריט, תחת ״שיטות ומחלוקות״; עליית המלך אל הכסא — בכפתור שעל הכסא ובמקום 'עליית המלך לכסא'." : ""),
             refs: TH_REFS.pesukim },
           { t: "עליית המלך לכסא", view: "throneSteps", layer: "palace",
             feature: { key: "throne.ascent", timed: false, isOn: () => !!(ctx.shared.throne && ctx.shared.throne.ascent && ctx.shared.throne.ascent.running),
-              on: () => { const tv = ctx.shared.throneVersion, a = ctx.shared.throne && ctx.shared.throne.ascent; if (tv && typeof tv.set === "function" && tv.current === "pesukim") { tv.set("estherRabbah"); if (throneRow) throneRow.mark("estherRabbah"); } if (a && typeof a.start === "function" && !a.running) a.start(); },
-              off: () => { const a = ctx.shared.throne && ctx.shared.throne.ascent; if (a && typeof a.reset === "function") a.reset(); else if (a && typeof a.stop === "function") a.stop(); } },
-            info: (PN.throneAscent ? PN.throneAscent.replace("המנגנון — בועה למצגת:", "המנגנון:").replace("בלי דמות המלך — מקומו ניכר ממה שהכסא עושה", "במודל צללית בלבד, בלי דמות המלך") :"עליית המלך אל הכסא (במודל צללית בלבד, בלי דמות המלך): בכל מעלה חוזר גלגל המנגנון שבצד המעלה, והארי פושט את ידו והנשר את כנפו לקראת העולה, זה אחר זה; בראש — על פי המדרש של הגרסה שנבחרה. 'שש מעלות לכסה' (מלכים א י, יט).") + "\nבמודל: הכפתור מפעיל את ההדגמה לפי הגרסה שנבחרה בטבלת 'שיטות ומחלוקות'; **בגרסת הפסוקים אין מנגנון ואין עלייה**, ולכן הוא עובר תחילה לגרסת אסתר רבה. היא נמשכת עד סופה ואינה נסגרת לבד; 'עצור את העלייה' שעל הכסא מחזיר הכל למקומו.",
+              on: () => { const tv = ctx.shared.throneVersion, a = ctx.shared.throne && ctx.shared.throne.ascent; if (tv && typeof tv.set === "function" && tv.current === "pesukim") { tv.set("estherRabbah"); if (throneRow) throneRow.mark("estherRabbah"); ctx.shared.throneAuto = true; } if (a && typeof a.start === "function" && !a.running) a.start(); },
+              off: () => { const a = ctx.shared.throne && ctx.shared.throne.ascent; if (a && typeof a.reset === "function") a.reset(); else if (a && typeof a.stop === "function") a.stop(); },
+              // THRONE_BACK_211 (the function review, F2-05): the place itself moved the row "כסא שלמה" from the verses to a midrash (the
+              // verses have no ascent) - and left it there: every later place showed the midrash's throne, which the reader never chose.
+              // When the place is left, the reading goes back - unless the reader picked a reading himself meanwhile (the row's onPick).
+              leave: () => { const tv = ctx.shared.throneVersion; if (ctx.shared.throneAuto && tv && typeof tv.set === "function" && tv.current === "estherRabbah") { tv.set("pesukim"); if (throneRow) throneRow.mark("pesukim"); } ctx.shared.throneAuto = false; } },
+            info: (PN.throneAscent ? PN.throneAscent :"עליית המלך אל הכסא (המלך בלבוש מלכות): בכל מעלה חוזר גלגל המנגנון שבצד המעלה, והארי פושט את ידו והנשר את כנפו לקראת העולה, זה אחר זה; בראש — על פי המדרש של הגרסה שנבחרה. 'שש מעלות לכסה' (מלכים א י, יט).") + "\nבמודל: הכפתור מפעיל את ההדגמה לפי הגרסה שנבחרה בתפריט, תחת ״שיטות ומחלוקות״; **בגרסת הפסוקים אין מנגנון ואין עלייה**, ולכן הוא עובר תחילה לגרסת אסתר רבה. היא נמשכת עד סופה ואינה נסגרת לבד; 'עצור את העלייה' שעל הכסא מחזיר הכל למקומו.",
             refs: [["מלכים א י, יט", V(10, 10, 19)], ["י, כ", V(10, 10, 20)], ["דברי הימים ב ט, יח", V(39, 9, 18)], ["מדרש אבא גוריון א", { book: 274, index: 6 }], ["אסתר רבה א, יב", { book: 264, index: 25 }], ["פנים אחרים נוסח ב", { book: 274, index: 116 }], ["תרגום שני לאסתר א, ב", { book: 3237, index: 13 }], ["בית המדרש ב (דמות כסא שלמה)", { book: 7924, index: 8 }], ["בן יהוידע על סנהדרין קו:", { book: 2546, index: 778 }], ["סנהדרין קו:", { book: 125, index: 4140 }]] },
           // 1.0.1-L (L.33, the user: "בית המלך היה בחצר אחרת לגמרי! ולא בתוך חצר בית יער הלבנון"; "בית בת פרעה בתוך חצר בית יער הלבנון"; L.22
           // "בלי בריכה" - palace.md): the king's own walled court, the garden without the pool, בית בת פרעה in the great court
@@ -3428,7 +3512,7 @@ body.tm-measuring canvas{cursor:crosshair}
           info: "בפסוקים: רוחב התאים וגובהם (מלכים א ו, ו; ו, י), המגרעות, הפתח בכתף הימנית והלולים (ו, ח).\nבחירות מודל: קורות הארז של התקרות ושל הגג אמה עוביין, זו בצד זו, ולכן גג התאים בגובה שלושים; קורות הרצפה כלות בפני כותל התא מבפנים, כציור הספר; הפתח החיצוני " + nf(yDoor[0]) + " על " + nf(yDoor[1]) + ", פתחי המחיצות שתיים על ארבע והפתחים שבתקרות שתיים על שתיים; הלולים — עמוד ובו עשרים וארבע מעלות סביבו מגובה 12 עד 24; ואין מעקה על הגג (כציור הספר).\nחתך היציע — בקצהו המזרחי של התא האמצעי שבדרום — הוא כלי צפייה בלבד; הצבעים והמקרא שעליו — בחירת מודל.",
           refs: [["מלכים א ו, ו", V(10, 6, 6)], ["ו, ח", V(10, 6, 8)], ["ו, י", V(10, 6, 10)]] },
         { t: "גובה האולם", view: "heichalFront",
-          info: "במלכים אין גובה לאולם. 'והגובה מאה ועשרים' (דברי הימים ב ג, ד) נאמר על האולם.\nבקצרה — המחלוקת: רד״ק — האולם לבדו 120 (דעתו העיקרית); רש״י — שלושים עד התקרה ועוד תשעים אמה של עליות.\nבמודל: **אולם בגובה הבית, שלושים**, והעליות בשורה 'גובה הבית' שבטבלת 'שיטות ומחלוקות' — בחירת מודל.",
+          info: "במלכים אין גובה לאולם. 'והגובה מאה ועשרים' (דברי הימים ב ג, ד) נאמר על האולם.\nבקצרה — המחלוקת: רד״ק — האולם לבדו 120 (דעתו העיקרית); רש״י — שלושים עד התקרה ועוד תשעים אמה של עליות.\nבמודל: **אולם בגובה הבית, שלושים**, והעליות במתג 'גובה הבית' שבתפריט, תחת ״שיטות ומחלוקות״ — בחירת מודל.",
           refs: [["דברי הימים ב ג, ד", V(39, 3, 4)], ["מלכים א ו, ג", V(10, 6, 3)]] },
         { t: "פתחי ההיכל והדביר (מידות)", view: "heichalDoor",
           info: "מידות הפתחים אינן בשום מקור.\nבמודל: פתח ההיכל עשר על עשרים (כיחס פתח ההיכל של בית שני, מדות ד, א); פתח הדביר שש על שתים עשרה — רחב ממרווח בדי הארון כדי ששני הבדים ידחקו בפרוכת (רש״י ו, כג; ח, ח). פתח האולם, עשר על עשרים ושתיים — בחירת מודל — ובו שתי דלתות ארז פתוחות (דברי הימים ב כט, ז); ראש הפתח קשת (רש״י ז, ה: 'ולא עשויין כפה כעין פתחי אולם'), לוח אחד לכל דלת וצירי נחושת — בחירת מודל; הפרוכת שהמאירי מזכיר (יומא נד.) לא נבנתה.",
@@ -3452,10 +3536,10 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["מלכים א ז, כה", V(10, 7, 25)], ["דברי הימים ב ד, ד", V(39, 4, 4)]] },
         // review UI-H2-7: the Sea's switch is a row of the opinions table now
         { t: "מקום הים (רש״י / רד״ק)", cam: uiSeaCam, tg: uiSeaTg,
-          info: "הפסוק: 'ואת הים נתן מכתף הבית הימנית קדמה ממול נגב' (מלכים א ז, לט).\nרש״י: 'משוך מצד דרום לצד צפון, וזה קדמה מול נגב, מקצוע מזרחית צפונית, כנגד האויר שבין כתל צפוני של בית לצד כתל העזרה'.\nבקצרה — המחלוקת: מצודת דוד — 'משוך כלפי מקצוע מזרחית דרומית שבעזרת כהנים'; רד״ק — 'נתן הים בעזרה לצד דרום משוך כלפי מזרח'; רלב״ג — 'הים היה לפאת מזרחי דרומי שבחצר הכהנים'; רש״י (דברי הימים ב ד, י) — 'רחק אותו מן המזרח מן כנגד הפתח לדרומה של עזרה, לפי שאין כבוד ונאה שיהו מטבילין כנגד פתח האולם'.\nבמודל: שני המקומות — בוחרים בשורה 'מקום הים' שבטבלת 'שיטות ומחלוקות'; **ברירת המחדל: רש״י**, כציור הספר ומפתו — בקרן המזרחית הצפונית, ממזרח לצפון בית המטבחים, מול הננסין — ממזרח להם. המקורות אומרים 'מקצוע' ולא מרחק: ציר הים " + nf(courtE - seaXm) + " אמות מן הכתלים, ונשאר מעבר סביב ראשי הבקר ובינם לבין לשכת הגזית — בחירת מודל.",
+          info: "הפסוק: 'ואת הים נתן מכתף הבית הימנית קדמה ממול נגב' (מלכים א ז, לט).\nרש״י: 'משוך מצד דרום לצד צפון, וזה קדמה מול נגב, מקצוע מזרחית צפונית, כנגד האויר שבין כתל צפוני של בית לצד כתל העזרה'.\nבקצרה — המחלוקת: מצודת דוד — 'משוך כלפי מקצוע מזרחית דרומית שבעזרת כהנים'; רד״ק — 'נתן הים בעזרה לצד דרום משוך כלפי מזרח'; רלב״ג — 'הים היה לפאת מזרחי דרומי שבחצר הכהנים'; רש״י (דברי הימים ב ד, י) — 'רחק אותו מן המזרח מן כנגד הפתח לדרומה של עזרה, לפי שאין כבוד ונאה שיהו מטבילין כנגד פתח האולם'.\nבמודל: שני המקומות — בוחרים במתג 'מקום הים' שבתפריט, תחת ״שיטות ומחלוקות״; **ברירת המחדל: רש״י**, כציור הספר ומפתו — בקרן המזרחית הצפונית, ממזרח לצפון בית המטבחים, מול הננסין — ממזרח להם. המקורות אומרים 'מקצוע' ולא מרחק: ציר הים " + nf(courtE - seaXm) + " אמות מן הכתלים, ונשאר מעבר סביב ראשי הבקר ובינם לבין לשכת הגזית — בחירת מודל.",
           refs: [["מלכים א ז, לט", V(10, 7, 39)], ["דברי הימים ב ד, י", V(39, 4, 10)]] },
         { t: "העליות (רש״י דה״י ג, ד)", view: "aliyot", layer: "aliyot",
-          info: "הפסוק: 'והגובה מאה ועשרים' (דברי הימים ב ג, ד).\nרש״י: שלושים אמה עד תקרת העלייה הראשונה, 'ומעליה לעליה עד גג העליון תשעים אמות'. רד״ק (כדעה שנייה): 'ג' עליות גבהן תשעים אמה'. בבא בתרא ג. משווה את גובה הבית (שלושים) לבית שני ואינה מזכירה 120.\nבמודל: מספר הקומות וחלוקתן — בחירת מודל (השורה 'גובה הבית' בטבלת 'שיטות ומחלוקות').",
+          info: "הפסוק: 'והגובה מאה ועשרים' (דברי הימים ב ג, ד).\nרש״י: שלושים אמה עד תקרת העלייה הראשונה, 'ומעליה לעליה עד גג העליון תשעים אמות'. רד״ק (כדעה שנייה): 'ג' עליות גבהן תשעים אמה'. בבא בתרא ג. משווה את גובה הבית (שלושים) לבית שני ואינה מזכירה 120.\nבמודל: מספר הקומות וחלוקתן — בחירת מודל (המתג 'גובה הבית' בתפריט, תחת ״שיטות ומחלוקות״).",
           refs: [["דברי הימים ב ג, ד", V(39, 3, 4)], ["בבא בתרא ג.", P(124, "ג.")]] },
         { t: "בית החליפות (רש״י יומא לו.)", tg: [18, 20, 33], cam: [70, 40, 70],
           info: "רש״י (יומא לו.): 'בית החליפות' — האולם היה רחב מן ההיכל חמש עשרה אמה מכל צד, ובשני הצדדים גנזו שם את הסכינים (חליפות). רש״י בסנהדרין ק. מונה כך גם בבית ראשון.\nבמודל: גוש האולם נמשך חמש עשרה אמה מעבר לגוף הבית עם התאים, ולכן חזיתו " + nf(2 * ulamHalf) + " אמות; הפתח מן האולם אל כל כנף (שלוש על שבע) והחלונות לסכינים — בחירת מודל.",
@@ -3505,7 +3589,7 @@ body.tm-measuring canvas{cursor:crosshair}
           info: "העמודים עומדים בתוך האולם, מימין ומשמאל לפתח ההיכל — רש״י (מלכים א ז, טו: 'שהעמיד באולם'), רד״ק ומצודות על דברי הימים ב ג, טו; מלבי״ם לבדו מעמידם בחוץ.\nרש״י (ירמיהו נב, כג): 'העמידם שלמה באולם סמוך לכותל ההיכל, והכותל מכסה ארבע רמונים מכל טור' — ולכן הם צמודים ככל האפשר.\nבמודל: מרכזיהם " + nf(pil.x - houseE) + " אמות לפני כותל ההיכל ו־" + nf(pil.z) + " אמות מן הציר לכל צד, והכותרת שתי מאיות אמה בלבד מקירות הצד של האולם וממזוזות פתח ההיכל. לגעת בכותל לא יכלו — בין מזוזת פתח ההיכל לכותל הצדדי של האולם יש ארבע אמות בלבד, והכותרת רחבה כחמש אמות ושלושה חומשים. בחירת מודל.",
           refs: [["רש״י מלכים א ז, טו", V(10, 7, 15)], ["רש״י ירמיהו נב, כג", V(13, 52, 23)], ["דברי הימים ב ג, טו", V(39, 3, 15)], ["מלכים א ז, כא", V(10, 7, 21)]] },
         { t: "צורת כותרות יכין ובועז (רש״י ז, יח, כציור הספר)", view: "yachinBoazCapital",
-          info: "הפסוקים נותנים את גובה העמוד והכותרת, השבכה, השושן ומאתיים רימונים.\nבמודל — הצורה כרש״י (ז, טז–יח) וכציור הספר: העמוד חלול, ארבע אמות עוביו, תחוב בכותרת שתי אמות (**סך הכל עשרים ואחת**); הכותרת שני אגנים — הגולה התחתונה מצוירת שושנים, הבטן ועליה שני טורי רימונים על שרשרות, השבכה ככיפה קלועה, וכותרת קטנה של אמה בראשה.\nבקצרה — המחלוקות: רש״י (ז, טז, ממשנת ארבעים ותשע מידות; וכן רד״ק ומצודות) מביא ששתי האמות התחתונות 'היו שוות לעמוד, שלא היו בהן צורה' — הספר והמודל עושים אותן אגן מצויר, כרש״י ז, יח. רד״ק ומצודות תוחבים את העמוד בכותרת חצי אמה בלבד (עשרים ושתיים וחצי). מלבי״ם מעמיד את העמודים בחוץ, וקריאתו לכותרת — בשורה 'כותרות יכין ובועז' בטבלת 'שיטות ומחלוקות' (צורת הרשת, הרימונים והציור בחירת מודל; בקריאה זו העמודים עומדים לפני האולם (ז, כא), והשושן מצויר על חזיתו). רלב״ג — עמודים קטנים עולים מן השבכה.\nמידות הקימורים, גודל הרימונים והשושנים ומספר השושנים — בחירת מודל.",
+          info: "הפסוקים נותנים את גובה העמוד והכותרת, השבכה, השושן ומאתיים רימונים.\nבמודל — הצורה כרש״י (ז, טז–יח) וכציור הספר: העמוד חלול, ארבע אמות עוביו, תחוב בכותרת שתי אמות (**סך הכל עשרים ואחת**); הכותרת שני אגנים — הגולה התחתונה מצוירת שושנים, הבטן ועליה שני טורי רימונים על שרשרות, השבכה ככיפה קלועה, וכותרת קטנה של אמה בראשה.\nבקצרה — המחלוקות: רש״י (ז, טז, ממשנת ארבעים ותשע מידות; וכן רד״ק ומצודות) מביא ששתי האמות התחתונות 'היו שוות לעמוד, שלא היו בהן צורה' — הספר והמודל עושים אותן אגן מצויר, כרש״י ז, יח. רד״ק ומצודות תוחבים את העמוד בכותרת חצי אמה בלבד (עשרים ושתיים וחצי). מלבי״ם מעמיד את העמודים בחוץ, ושיטתו לכותרת — במתג 'כותרות יכין ובועז' בתפריט, תחת ״שיטות ומחלוקות״ (צורת הרשת, הרימונים והציור בחירת מודל; בשיטה זו העמודים עומדים לפני האולם (ז, כא), והשושן מצויר על חזיתו). רלב״ג — עמודים קטנים עולים מן השבכה.\nמידות הקימורים, גודל הרימונים והשושנים ומספר השושנים — בחירת מודל.",
           refs: [["מלכים א ז, טו", V(10, 7, 15)], ["ז, טז", V(10, 7, 16)], ["ז, יח", V(10, 7, 18)], ["ז, כ", V(10, 7, 20)], ["ירמיהו נב, כא", V(13, 52, 21)]] },
         { t: "חלוני ההיכל: שישה בכל צד", tg: [-35, 34, 14.5], cam: [-20, 40, 52], // 50-heichal.js WIN_X: 6 per side along the kodesh, on the house wall above the chambers' roof (the user's sheet, item 16)
           info: "הפסוק: 'ויעש לבית חלוני שקפים אטמים' (מלכים א ו, ד) — בפסוק אין מספר ואין מקום. צורתם רחבה מבחוץ וצרה מבפנים (רש״י; מנחות פו:).\nבמודל: **שישה חלונות בכל צד**, צפון ודרום, לאורך ההיכל בלבד, ברצועה שמעל גג היציע (מלבי״ם); אין חלונות בדביר ובכותל המערב. המספר והמקום — בחירת מודל.",
@@ -3531,11 +3615,11 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["רש״י שמות כה, לב", { book: 3692, index: 1793 }], ["רש״י שמות כה, לג", { book: 3692, index: 1795 }], ["רמב״ם ג, ב", { book: 337, index: 44 }], ["מעשי למלך ג, יא", { book: 4304, index: 89 }], ["רלב״ג ז, מט", { book: 3645, index: 312 }], ["יומא לג:", P(107, "לג:")], ["מנחות כח:", P(131, "כח:")], ["מנחות צח:", P(131, "צח:")], ["משנה תמיד ג, ט", MN(88, 3, 9)], ["רמב״ם בית הבחירה ג, י", RB(3, 10)], ["ג, יא", RB(3, 11)]] },
         // 1.0.1-K (K.4 / K.5): the golden altar
         { t: "מזבח הזהב — גובהו, מקומו, קרנותיו, שכבותיו ועשן הקטורת", view: "incenseAltar",
-          info: "מזבח הקטורת של שלמה הוא 'אמה על אמה' (רמב״ם בית הבחירה ג, יז); גובהו בפסוקי מלכים אינו נתון.\nבמודל: כמזבח משה — 'ואמתים קמתו' (שמות ל, ב; מ־1.2.8; עד אז אמה — בחירת מודל) — ו'ממנו קרנתיו': הקרנות בתוך האמתיים, טפח גובהן; זר הזהב (ל, ג) מעקה סביב גגו, טפח מתחת לראשי הקרנות — בחירת מודל.\nמקומו: על ציר הבית, מיד מזרחית לשורות השולחנות והמנורות — בחירת מודל; במקורות: בין השולחן למנורה, מחצי הבית ולפנים ומשוך קמעא כלפי חוץ (יומא לג:; מנחות צח:; רמב״ם שם), ובבית לא נמסרה מידה במספרים (במשכן: עשר אמות מן הפתח — רש״י שמות כו, לה) — הרווח מן השורות (אמה לרבי, שלושת רבעי אמה לר׳ אלעזר בר׳ שמעון) בחירת מודל.\nשכבותיו — אבן, ארז וזהב (מצודת דוד ו, כ; רלב״ג ו, כב) — בכפתור 'הצג את שכבות המזבח'. עשן הקטורת — עמוד ישר עד התקרה מעל שבע גחלים (יומא לח.; נג.) — מוצג תמיד (שמות ל, ז–ח); עוביו וצבעו — בחירת מודל.",
+          info: "מזבח הקטורת של שלמה הוא 'אמה על אמה' (רמב״ם בית הבחירה ג, יז); גובהו בפסוקי מלכים אינו נתון.\nבמודל: כמזבח משה — 'ואמתים קמתו' (שמות ל, ב) — ו'ממנו קרנתיו': הקרנות בתוך האמתיים, טפח גובהן; זר הזהב (ל, ג) מעקה סביב גגו, טפח מתחת לראשי הקרנות — בחירת מודל.\nמקומו: על ציר הבית, מיד מזרחית לשורות השולחנות והמנורות — בחירת מודל; במקורות: בין השולחן למנורה, מחצי הבית ולפנים ומשוך קמעא כלפי חוץ (יומא לג:; מנחות צח:; רמב״ם שם), ובבית לא נמסרה מידה במספרים (במשכן: עשר אמות מן הפתח — רש״י שמות כו, לה) — הרווח מן השורות (אמה לרבי, שלושת רבעי אמה לר׳ אלעזר בר׳ שמעון) בחירת מודל.\nשכבותיו — אבן, ארז וזהב (מצודת דוד ו, כ; רלב״ג ו, כב) — בכפתור 'הצג את שכבות המזבח'. עשן הקטורת — עמוד ישר עד התקרה מעל שבע גחלים (יומא לח.; נג.) — מוצג תמיד (שמות ל, ז–ח); עוביו וצבעו — בחירת מודל.",
           refs: [["רש״י שמות כו, לה", { book: 3692, index: 1890 }], ["רמב״ם בית הבחירה ג, יז", RB(3, 17)], ["שמות ל, ב", V(2, 30, 2)], ["שמות ל, ז", V(2, 30, 7)], ["יומא לג:", P(107, "לג:")], ["מנחות צח:", P(131, "צח:")], ["יומא לח.", P(107, "לח.")]] },
         // 1.0.1-K (K.4): the parochet
         { t: "הפרוכת — נשרים לצד ההיכל ואריות לצד הדביר", view: "parochet",
-          info: "רש״י: 'ארי מצד זה ונשר מצד זה' (רש״י שמות כו, א) — ואיזה צד לאיזו דמות אינו נאמר.\nבמודל: **הנשרים לצד ההיכל והאריות לצד הדביר**, והאריות מהלכים מימין לשמאל, והנשרים ראשם לימין הצופה — בחירת מודל. האריג — תכלת, ארגמן, תולעת ושש — וסידור הדמויות בשורות, כציור הספר (חזרה כל ארבע אמות), וצורת הנשר והארי — בחירת מודל. הפרוכת תלויה בשתי קריאות פתח הדביר.",
+          info: "רש״י: 'ארי מצד זה ונשר מצד זה' (רש״י שמות כו, א) — ואיזה צד לאיזו דמות אינו נאמר.\nבמודל: **הנשרים לצד ההיכל והאריות לצד הדביר**, והאריות מהלכים מימין לשמאל, והנשרים ראשם לימין הצופה — בחירת מודל. האריג — תכלת, ארגמן, תולעת ושש — וסידור הדמויות בשורות, כציור הספר (חזרה כל ארבע אמות), וצורת הנשר והארי — בחירת מודל. הפרוכת תלויה בשתי שיטות פתח הדביר.",
           refs: [["שמות כו, א", V(2, 26, 1)], ["שמות כו, לא", V(2, 26, 31)], ["דברי הימים ב ג, יד", V(39, 3, 14)]] },
         // review Q2-3 / Q2-4: the Gemara's wording ("בנס הן עומדין", Abaye's challenge, "ומצודדים")
         { t: "גוף הכרובים — 'בנס הן עומדין' (בבא בתרא צט.)", view: "cherubim",
@@ -3543,7 +3627,7 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["בבא בתרא צט.", P(124, "צט.")], ["מגילה י:", P(112, "י:")], ["רש״י מלכים א ו, כד", V(10, 6, 24)], ["רש״י דברי הימים ב ג, יא", V(39, 3, 11)], ["רד״ק מלכים א ו, כז", V(10, 6, 27)]] },
         // 1.0.1-K (K.4 / K.5 after the book p07L; the user: "את הכרובים עשית בצורה לא צנועה... לא מבואר שהיו להם ידיים")
         { t: "תבנית הכרובים ופניהם", view: "cherubim",
-          info: "הפסוקים נותנים גובה עשר אמות, כנפיים של חמש, עמידה על הרגליים ו'פניהם לבית'; 'מעשה צעצעים' — תבנית ילדים (רש״י דברי הימים ב ג, י; 'כרביא', חגיגה יג:).\nבמודל — תבנית הדמות כציור הספר: דמות גבוהה וחלקה, לבושה ארוכה עד הקרקע בקפלים, בלי ידיים (אין להן זכר בפסוקים), ראש קטן ופני ילד, וכנפיים חלקות, כל כנף גוף אחד, היוצאות מן הכתפיים ושוכבות במישור מאוזן אחד מתחת לראשים, סוכה על הארון ('ויסכו הכרבים על הארון ועל בדיו מלמעלה', מלכים א ח, ז) — בחירת מודל. פני הילד: ראש סגלגל עם סנטר ולחיים, אף ישר, עיניים שקדיות בעפעפיים, פה קטן סגור וקו שיער — הכל זהב, כציור הספר.\nכרובי הכפורת שעל הארון — כנפיהם עולות מן הכתפיים מעל ראשיהם ונמשכות בקשת עד אמצע הכפורת, וקצותיהן נוגעים זה בזה (הנגיעה — כציור הספר): 'פרשי כנפים למעלה' (שמות כה, כ), רש״י: 'שלא תעשה כנפיהם שוכבים אלא פרושים וגבוהים למעלה אצל ראשיהם, שיהא עשרה טפחים בחלל שבין הכנפים לכפרת'. צורת הכנף ותווי הפנים — בחירת מודל.\nבקצרה — פניהם, שלוש דעות בטבלת 'שיטות ומחלוקות': רש״י (ג, יג) — ראשם כפוף ופונה זה אל זה; רד״ק ומצודות — פניהם לבית, מזרחה; בבא בתרא צט. — 'ומצודדים פניהם כתלמיד הנפטר מרבו'. **ברירת המחדל — רש״י.**",
+          info: "הפסוקים נותנים גובה עשר אמות, כנפיים של חמש, עמידה על הרגליים ו'פניהם לבית'; 'מעשה צעצעים' — תבנית ילדים (רש״י דברי הימים ב ג, י; 'כרביא', חגיגה יג:).\nבמודל — תבנית הדמות כציור הספר: דמות גבוהה וחלקה, לבושה ארוכה עד הקרקע בקפלים, בלי ידיים (אין להן זכר בפסוקים), ראש קטן ופני ילד, וכנפיים חלקות, כל כנף גוף אחד, היוצאות מן הכתפיים ושוכבות במישור מאוזן אחד מתחת לראשים, סוכה על הארון ('ויסכו הכרבים על הארון ועל בדיו מלמעלה', מלכים א ח, ז) — בחירת מודל. פני הילד: ראש סגלגל עם סנטר ולחיים, אף ישר, עיניים שקדיות בעפעפיים, פה קטן סגור וקו שיער — הכל זהב, כציור הספר.\nכרובי הכפורת שעל הארון — כנפיהם עולות מן הכתפיים מעל ראשיהם ונמשכות בקשת עד אמצע הכפורת, וקצותיהן נוגעים זה בזה (הנגיעה — כציור הספר): 'פרשי כנפים למעלה' (שמות כה, כ), רש״י: 'שלא תעשה כנפיהם שוכבים אלא פרושים וגבוהים למעלה אצל ראשיהם, שיהא עשרה טפחים בחלל שבין הכנפים לכפרת'. צורת הכנף ותווי הפנים — בחירת מודל.\nבקצרה — פניהם, שלוש דעות בתפריט, תחת ״שיטות ומחלוקות״: רש״י (ג, יג) — ראשם כפוף ופונה זה אל זה; רד״ק ומצודות — פניהם לבית, מזרחה; בבא בתרא צט. — 'ומצודדים פניהם כתלמיד הנפטר מרבו'. **ברירת המחדל — רש״י.**",
           refs: [["דברי הימים ב ג, י", V(39, 3, 10)], ["ג, יג", V(39, 3, 13)], ["חגיגה יג:", P(114, "יג:")], ["בבא בתרא צט.", P(124, "צט.")]] },
         { t: "פתח הדביר — שני ביאורי רש״י ל'מזוזות חמישית'", view: "devirDoor",
           info: "רש״י (מלכים א ו, לא) מביא שני ביאורים:\n(א) 'ואני אומר, מזוזות חמישית, חמשה צלעות היו למזוזות, ולא היתה מרבעת, ואינו מדבר לא במפתן ולא במשקוף' — **ברירת המחדל**: מזוזות מחומשות, צלע אחת כעובי הכותל והקודקוד אל הפתח, ומעליהן משקוף זהב בחתך המזוזות, כציור הספר (רד״ק: 'האיל הוא הסף העליון... וכן האיל'; רלב״ג: 'שהאיל והוא הסף אשר על הפתח'; מלבי״ם: 'האיל ר״ל המשקוף' — בחירת מודל).\n(ב) 'המפתן האחד והמזוזות מכאן ומכאן שתים הרי שלש, והמשקוף שעליו עשוי כשתים — כזה, כך שמעתי' — מפתן, שתי מזוזות מרובעות ומשקוף משתי קורות המוטות זו על זו כשער הטדי (מדות ב, ג); צורת הציור האבוד 'כזה' היא בחירת מודל.\nבמודל: רוחב הפתח שש אמות וגובהו שתים עשרה — בחירת מודל (רחב ממרווח בדי הארון, רש״י ו, כג).",
@@ -3552,13 +3636,13 @@ body.tm-measuring canvas{cursor:crosshair}
           info: "אמה טרקסין (יומא נא:; רש״י מלכים א ו, טז).\nבמודל: **שלושה חלקים מלאים** — שני עמודי הכותל שמצדי פתח הדביר (לכל ביאור של רש״י עמודים משלו, כי קצותיהם הולכים אחרי המזוזות) והחלק שמעל הפתח עד תקרת ההיכל, 18 אמות (מגובה 12 עד 30), ודוגמת הגילוף נמשכת ביניהם. כך החלק שמעל הפתח נראה בבירור משני הצדדים.",
           refs: [["מלכים א ו, טז", V(10, 6, 16)], ["יומא נא:", P(107, "נא:")], ["בבא בתרא ג.", P(124, "ג.")]] },
         // 1.0.1-K (K.6; review Q2-5): the model numbers of the readings of בית יער הלבנון, Ralbag credited only with what is his. 1.0.1-L (L.20, L.48; palace.md): three readings
-        { t: "בית יער הלבנון — שלוש קריאות (רש״י / מלבי״ם ורלב״ג / מצודת דוד)", view: "forestUpper", layer: "palace",
-          info: "מלכים א ז, ב–ו אינו אומר לאן פונים טורי העמודים, מהם 'הצלעות', מהם 'השקופים' ומהם 'עמודים ועב'. **שלוש קריאות במודל**, רש״י כברירת מחדל (טבלת 'שיטות ומחלוקות').\nבחירות מודל בקריאת רש״י, כציור הספר: עשרים ותשעה עמודים בטור, שתיים על שתיים, צפופים; הקומה התחתונה עשר אמות והעליונה שמונה עשרה וחצי (עם הכרותות והרצפה — שלושים); ארבעים ושמונה קורות בכל קיר עליון ומקום הפתחים והחלונות; הנסרים הגדולים חמש אמות רוחבם (שבעים וחמש מתוך המאה); שתים עשרה שורות מרישין קטנים (רוחב 0.4, עובי 0.3) ושישה עשר נסרים דקים לכל חלל; כותלי אבן בקצוות, כבספר; אולם העמודים נמוך, שתים עשרה אמה, והאולם הגבוה שלפניו חמישים על חמש עשרה וגובהו ארבעים.\nבקריאת מלבי״ם ורלב״ג: עובי הכתלים שלוש, מקום החלונות והפתחים, לוח הגג מאבן, האולם השני (חמישים על עשר) ושורת העמודים שלפניו.\nבקריאת מצודת דוד: אולם העמודים בצד המזרחי, חמישה עשר עמודים בטור (עמוד תחת כל לוח), גובה העמודים עשרים ושש, מידות הכרותות והצלעות, מקום הפתחים (באמצע ועשרים ואחת אמה לכל צד, כדי שיעמדו שלושתם מול האולם), שתים עשרה חלונות בכל שורה, גובה האולם שש עשרה וחצי ושורת העמודים והעב (חמישה עמודים בגובה עשר).\nצורת המגינים והכלים ומקומם — כציור הספר ('להמחשה בלבד'), בחירת מודל.",
+        { t: "בית יער הלבנון — שלוש שיטות (רש״י / מלבי״ם ורלב״ג / מצודת דוד)", view: "forestUpper", layer: "palace",
+          info: "מלכים א ז, ב–ו אינו אומר לאן פונים טורי העמודים, מהם 'הצלעות', מהם 'השקופים' ומהם 'עמודים ועב'. **שלוש שיטות במודל**, רש״י כברירת מחדל (בתפריט, תחת ״שיטות ומחלוקות״).\nבחירות מודל בשיטת רש״י, כציור הספר: עשרים ותשעה עמודים בטור, שתיים על שתיים, צפופים; הקומה התחתונה עשר אמות והעליונה שמונה עשרה וחצי (עם הכרותות והרצפה — שלושים); ארבעים ושמונה קורות בכל קיר עליון ומקום הפתחים והחלונות; הנסרים הגדולים חמש אמות רוחבם (שבעים וחמש מתוך המאה); שתים עשרה שורות מרישין קטנים (רוחב 0.4, עובי 0.3) ושישה עשר נסרים דקים לכל חלל; כותלי אבן בקצוות, כבספר; אולם העמודים נמוך, שתים עשרה אמה, והאולם הגבוה שלפניו חמישים על חמש עשרה וגובהו ארבעים.\nבשיטת מלבי״ם ורלב״ג: עובי הכתלים שלוש, מקום החלונות והפתחים, לוח הגג מאבן, האולם השני (חמישים על עשר) ושורת העמודים שלפניו.\nבשיטת מצודת דוד: אולם העמודים בצד המזרחי, חמישה עשר עמודים בטור (עמוד תחת כל לוח), גובה העמודים עשרים ושש, מידות הכרותות והצלעות, מקום הפתחים (באמצע ועשרים ואחת אמה לכל צד, כדי שיעמדו שלושתם מול האולם), שתים עשרה חלונות בכל שורה, גובה האולם שש עשרה וחצי ושורת העמודים והעב (חמישה עמודים בגובה עשר).\nצורת המגינים והכלים ומקומם — כציור הספר ('להמחשה בלבד'), בחירת מודל.",
           refs: [["מלכים א ז, ב", V(10, 7, 2)], ["ז, ג", V(10, 7, 3)], ["ז, ד", V(10, 7, 4)], ["ז, ו", V(10, 7, 6)], ["רש״י ז, ו", V(10, 7, 6)], ["מלבי״ם ז, ב", V(10, 7, 2)], ["רלב״ג ז, ג", V(10, 7, 3)], ["מצודת דוד ז, ב", V(10, 7, 2)]] },
         // 1.0.1-K review (palace-courts-5): what the button removes and what each reading then shows (60-palace.js: rashiBoards45 +
         // rashiThinBoards; metzudotBoards45 + the roof slab and its two fascia beams)
         { t: "הסרת הנסרים — כלי צפייה בלבד", view: "forestRoof", layer: "palace",
-          info: "הכפתור 'הסר את הנסרים' שעל גג בית יער הלבנון הוא **כלי צפייה בלבד, לא חלק מן הבניין** (כמו 'פתח את הבית' ו'פתח את האולם'), והמבט עצמו אינו מסיר דבר.\nבקריאת רש״י (ברירת המחדל): הוא מסיר את 45 נסרי הסיפון ואת הנסרים הדקים (מלכים א ז, ג–ד עם רש״י), ונראים מתחתם המרישין הקטנים ושקופיהם (רש״י ז, ד) והקומה העליונה; הכרותות, 'מעמוד לעמוד' על העמודים התחתונים (רש״י ז, ב), נשארות מתחת לרצפת הקומה העליונה.\nבקריאת מלבי״ם ורלב״ג: הוא מסיר את 45 הלוחות ואת גג האבן, ונראות הכרותות שעל העמודים — 'והם כרותות הארזים אשר על העמודים שהיו ארבעים וחמשה' (רלב״ג ז, ג).\nבקריאת מצודת דוד: את 45 לוחות הארז, ונראות הצלעות והכרותות (מצודת דוד ז, ג). מה מוסר בכל קריאה — בחירת מודל.",
+          info: "הכפתור 'הסר את הנסרים' שעל גג בית יער הלבנון הוא **כלי צפייה בלבד, לא חלק מן הבניין** (כמו 'פתח את הבית' ו'פתח את האולם'), והמבט עצמו אינו מסיר דבר.\nבשיטת רש״י (ברירת המחדל): הוא מסיר את 45 נסרי הסיפון ואת הנסרים הדקים (מלכים א ז, ג–ד עם רש״י), ונראים מתחתם המרישין הקטנים ושקופיהם (רש״י ז, ד) והקומה העליונה; הכרותות, 'מעמוד לעמוד' על העמודים התחתונים (רש״י ז, ב), נשארות מתחת לרצפת הקומה העליונה.\nבשיטת מלבי״ם ורלב״ג: הוא מסיר את 45 הלוחות ואת גג האבן, ונראות הכרותות שעל העמודים — 'והם כרותות הארזים אשר על העמודים שהיו ארבעים וחמשה' (רלב״ג ז, ג).\nבשיטת מצודת דוד: את 45 לוחות הארז, ונראות הצלעות והכרותות (מצודת דוד ז, ג). מה מוסר בכל שיטה — בחירת מודל.",
           refs: [["מלכים א ז, ג", V(10, 7, 3)], ["ז, ד", V(10, 7, 4)], ["רש״י ז, ב", V(10, 7, 2)], ["רש״י ז, ו", V(10, 7, 6)], ["רלב״ג ז, ג", V(10, 7, 3)]] },
         // 1.0.1-K (K.6): the king's house, the garden, the throne
         { t: "בית המלך והגן — ריהוט ומידות", view: "kingsHouse", layer: "palace",
@@ -3570,7 +3654,7 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["מלכים א ז, ח", V(10, 7, 8)], ["ז, יב", V(10, 7, 12)], ["מלכים א י, ה", V(10, 10, 5)], ["דברי הימים ב ח, יא", V(39, 8, 11)]] },
         // 1.0.1-L (L.57, L.78-L.81; palace-2.md): the throne's versions and what is only text
         { t: "כסא שלמה — הגרסאות", view: "throne", layer: "palace",
-          info: "הפסוקים (מלכים א י, יח–כ; דברי הימים ב ט, יז–יט) נותנים כסא שן מצופה זהב, שש מעלות, ראש עגול, ידות, שני אריות אצל הידות ושנים עשר על המעלות; רש״י מפנה: 'וכל צורת הכסא מפרשת באגדת מגלת אסתר'.\nכל השאר מן המדרשים, והמודל מציג כל מדרש בגרסה משלו — השורה 'כסא שלמה — לפי איזה מדרש': הפסוקים ומפרשיהם (ברירת המחדל, בלי מנגנון ובלי עלייה); תרגום שני לאסתר; אסתר רבה עם פנים אחרים ואבא גוריון; ובית המדרש ב.\nבחירות מודל: מידות הכסא וצורת כל החיות (גופים פשוטים, כאמה אורכם), הכבש (שש על שלוש), סוכת הגפנים, מקום העמודים והתמרים, הארון ליד המושב, מקום התנין, צבעי האבנים, זמני העלייה והרעש; 'הארי של שמאל' — המזרחי (המלך פניו לדרום).\nבטקסט בלבד: בנות הים, שבעים ושניים האריות והנשרים של תרגום שני (בנויים שנים עשר ושנים עשר), האבות והחסידים שעל המנורה, פנים המנגנון, והכרוז שעל המעלות; **והמלך עצמו אינו בנוי** — מקומו בעלייה ניכר ממה שהכסא עושה.\nועוד: 'ראש עגול' למצודת דוד ולאברבנאל — כיפה מלמעלה ('כעין כיפת כובע', 'שהיה מכסה מלמעלה') — לא נבנה. המנגנון: בן יהוידע על סנהדרין קו: — ראו 'עליית המלך לכסא'.",
+          info: "הפסוקים (מלכים א י, יח–כ; דברי הימים ב ט, יז–יט) נותנים כסא שן מצופה זהב, שש מעלות, ראש עגול, ידות, שני אריות אצל הידות ושנים עשר על המעלות; רש״י מפנה: 'וכל צורת הכסא מפרשת באגדת מגלת אסתר'.\nכל השאר מן המדרשים, והמודל מציג כל מדרש בגרסה משלו — המתג 'כסא שלמה — לפי איזה מדרש': הפסוקים ומפרשיהם (ברירת המחדל, בלי מנגנון ובלי עלייה); תרגום שני לאסתר; אסתר רבה עם פנים אחרים ואבא גוריון; ובית המדרש ב.\nבחירות מודל: מידות הכסא וצורת כל החיות (גופים פשוטים, כאמה אורכם), הכבש (שש על שלוש), סוכת הגפנים, מקום העמודים והתמרים, הארון ליד המושב, מקום התנין, צבעי האבנים, זמני העלייה והרעש; 'הארי של שמאל' — המזרחי (המלך פניו לדרום).\nבטקסט בלבד: בנות הים, שבעים ושניים האריות והנשרים של תרגום שני (בנויים שנים עשר ושנים עשר), האבות והחסידים שעל המנורה, פנים המנגנון, והכרוז שעל המעלות; **והמלך עצמו אינו בנוי** — מקומו בעלייה ניכר ממה שהכסא עושה.\nועוד: 'ראש עגול' למצודת דוד ולאברבנאל — כיפה מלמעלה ('כעין כיפת כובע', 'שהיה מכסה מלמעלה') — לא נבנה. המנגנון: בן יהוידע על סנהדרין קו: — ראו 'עליית המלך לכסא'.",
           refs: TH_REFS.pesukim.concat(TH_REFS.estherRabbah.slice(0, 3), TH_REFS.targumSheni.slice(0, 1), TH_REFS.beitHamidrash.slice(0, 1)) },
         // 1.0.1-K (integration): the marble floor of the inner court
         { t: "רצפת השיש בחצר הכהנים", tg: [64, 6.1, -42], cam: [86, 14, -30],
@@ -3578,7 +3662,7 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["דברי הימים א כט, ב", V(38, 29, 2)]] },
         // 1.0.1-K (K.6.5): לשכת הגזית - all Second-Temple sources
         { t: "לשכת הגזית — מקורות מבית שני", view: "lishkatHaGazit",
-          info: "כל מקורות לשכת הגזית — יומא (יט.; כה.), הרמב״ם (בית הבחירה ה, יז), משנת מדות (ה, ד), משנת סנהדרין (א, ו; ד, ג) ומשנת תמיד — מדברים בבית שני; בספר מלכים אין זכר ללשכה (לבית ראשון: רש״י דברי הימים ב לד, כב; מהרש״א בבא בתרא צא:).\nלכן היא כולה **בחירת מודל**: בצפון כיומא (יט.) וכרמב״ם (בית הבחירה ה, יז) — ולא כמשנת מדות הנדפסת (ה, ד: 'שבדרום') — בחלקו המזרחי של החומה מול המזבח, בין השער הצפוני לים; לאורך החומה, כעשרים וארבע על תשע עשרה וגובהה עשרים ושתיים, כתלי גזית ('והיתה עשויה גזית לכבודם של הסנהדרין' — תוספות יום טוב), רצפתה כולה בגובה החצר ('שהלשכה היתה קרקעיתה שוה' — שם), וקומה מוגבהת על הגג ('כמין בסילקי גדולה'; רש״י: 'בית גבוה שעל עלייה'), שני פתחים — ומן הפתח החיצון שתים עשרה מעלות אל החצר הגדולה — ושבעים ואחד מושבים בשורה אחת, כחצי גורן, בחצי החול שבמערב (כמאירי); מקום הפייס אינו מצויר בבית ראשון. שלוש שורות התלמידים (סנהדרין ד, ד) — לפני הדיינים, לפי רש״י או יד רמה (בטבלת השיטות), ושני הסופרים עומדים לפניהם.",
+          info: "כל מקורות לשכת הגזית — יומא (יט.; כה.), הרמב״ם (בית הבחירה ה, יז), משנת מדות (ה, ד), משנת סנהדרין (א, ו; ד, ג) ומשנת תמיד — מדברים בבית שני; בספר מלכים אין זכר ללשכה (לבית ראשון: רש״י דברי הימים ב לד, כב; מהרש״א בבא בתרא צא:).\nלכן היא כולה **בחירת מודל**: בצפון כיומא (יט.) וכרמב״ם (בית הבחירה ה, יז) — ולא כמשנת מדות הנדפסת (ה, ד: 'שבדרום') — בחלקו המזרחי של החומה מול המזבח, בין השער הצפוני לים; לאורך החומה, כעשרים וארבע על תשע עשרה וגובהה עשרים ושתיים, כתלי גזית ('והיתה עשויה גזית לכבודם של הסנהדרין' — תוספות יום טוב), רצפתה כולה בגובה החצר ('שהלשכה היתה קרקעיתה שוה' — שם), וקומה מוגבהת על הגג ('כמין בסילקי גדולה'; רש״י: 'בית גבוה שעל עלייה'), שני פתחים — ומן הפתח החיצון שתים עשרה מעלות אל החצר הגדולה — ושבעים ואחד מושבים בשורה אחת, כחצי גורן, בחצי החול שבמערב (כמאירי); מקום הפייס אינו מצויר בבית ראשון. שלוש שורות התלמידים (סנהדרין ד, ד) — לפני הדיינים, לפי רש״י או יד רמה (בתפריט, תחת ״שיטות ומחלוקות״), ושני הסופרים עומדים לפניהם.",
           refs: [["יומא יט.", P(107, "יט.")], ["רמב״ם בית הבחירה ה, יז", RB(5, 17)], ["מדות ה, ד", MI(5, 4)], ["יומא כה.", P(107, "כה.")], ["תוספות יום טוב מדות ה, ד", { book: 948, index: 208 }]] },
         // 1.0.1-L (L.68; courts-2.md FOR-UI §2): the slaughter place, a Second Temple completion
         { t: "בית המטבחים — הטבעות, השולחנות והננסין (מקורות מבית שני)", view: "slaughterPlace",
@@ -3586,7 +3670,7 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["מדות ג, ה", MI(3, 5)], ["מדות ה, ב", MI(5, 2)], ["משנה שקלים ו, ד", MN(54, 6, 4)], ["משנה תמיד ד, א", MN(88, 4, 1)], ["סוטה מח.", P(119, "מח.")], ["רמב״ם בית הבחירה ה, יג", RB(5, 13)], ["צורת בית המקדש להתפארת ישראל", { book: 6029, index: 99 }]] },
         // 1.0.1-L (L.72; heichal-door.md): the two tables in the ulam
         { t: "שני השולחנות שבאולם — צורתם ומקומם", view: "ulamTables",
-          info: "במודל: שני שולחנות פשוטים במידת שולחן לחם הפנים, שתי אמות על אמה וגובה אמה וחצי (שמות כה, כג) — דף, ארבע רגליים ומסגרת — בחירת מודל.\nמקומם: בתוך האולם, משני צדי המעבר לפני פתח ההיכל — 'אצל פתח ההיכל' (רש״י מנחות צט.). הצד — **הכסף (למשנה: השיש) בצפון והזהב בדרום** — בחירת מודל על פי 'המכניסים עומדים בצפון, ופניהם לדרום. המוציאין עומדים בדרום, ופניהם לצפון' (משנה מנחות יא, ז). מוסתרים כברירת מחדל; בוחרים בשורה 'שני השולחנות שבאולם'.",
+          info: "במודל: שני שולחנות פשוטים במידת שולחן לחם הפנים, שתי אמות על אמה וגובה אמה וחצי (שמות כה, כג) — דף, ארבע רגליים ומסגרת — בחירת מודל.\nמקומם: בתוך האולם, משני צדי המעבר לפני פתח ההיכל — 'אצל פתח ההיכל' (רש״י מנחות צט.). הצד — **הכסף (למשנה: השיש) בצפון והזהב בדרום** — בחירת מודל על פי 'המכניסים עומדים בצפון, ופניהם לדרום. המוציאין עומדים בדרום, ופניהם לצפון' (משנה מנחות יא, ז). מוסתרים כברירת מחדל; בוחרים במתג 'שני השולחנות שבאולם'.",
           refs: [["מנחות צט.", P(131, "צט.")], ["משנה מנחות יא, ז", MN(81, 11, 7)], ["שמות כה, כג", V(2, 25, 23)]] }
       ];
       PLACES.push(["השלמות מחז״ל ובחירות מודל", EXTRAS]);
@@ -3640,8 +3724,8 @@ body.tm-measuring canvas{cursor:crosshair}
           let at = gM[1].findIndex((it) => it.t === "היסוד, הסובב וחוט הסיקרא");
           if (at < 0) at = gM[1].findIndex((it) => it.t === "מזבח הנחושת");
           gM[1].splice(at >= 0 ? at + 1 : gM[1].length, 0, { t: "מידות המזבח — קווי האמות", view: fpOk("mizbeachMeasures"),
-            feature: { key: "altarMeasures", isOn: () => AMs.get(), on: () => AMs.set(true), off: () => AMs.set(false) },
-            info: String(AMs.info || "") + "\nבמודל: הקווים מוצגים לחמש עשרה שניות; הקריאה נבחרת בשורה ״מידות המזבח״ שבטבלת השיטות (ובכרטיס זה).",
+            feature: { key: "altarMeasures", timed: false, isOn: () => AMs.get(), on: () => AMs.set(true), off: () => AMs.set(false) },   // MEASURES_211: while the place shows
+            info: String(AMs.info || "") + "\nבמודל: קו לכל מידה, בגובהו ובצבע משלו, ולצד המזבח לוחית לכל קו במסגרת בצבעו — זו מעל זו, כסדר המדרגות. הקווים מוצגים כל זמן שהמקום הזה מוצג; השיטה נבחרת במתג ״מידות המזבח״ שבתפריט, תחת ״שיטות ומחלוקות״ (ובכרטיס זה).",
             refs: Array.isArray(AMs.refs) ? AMs.refs : [] });
         }
         // 1.3.3 (the user: "לסמן בלבד את מקום הלויים"): the Levites' place east of the altar, a marking on the floor - ctx.shared.leviimPlace
@@ -3664,7 +3748,7 @@ body.tm-measuring canvas{cursor:crosshair}
             info: "לשון המשנה (סוכה ד, ט): ״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם. רבי יהודה אומר, של סיד היו, אלא שהיו משחרין פניהם מפני היין. ומנקבין כמין שני חטמין דקין, אחד מעבה ואחד דק, כדי שיהו שניהם כלין בבת אחת. מערבי של מים, מזרחי של יין״.\n"
               + "ברטנורא (סוכה ד, ט): ״הספלים היו נתונים אצל הקרן סמוכים זה לזה, זה לפני זה, אחד לצד מערב ואחד לפנים ממנו, דהינו למזרח״.\n"
               + "תפארת ישראל (סוכה ד, ט): ״ופנה לשמאלו דסמוך לקרן דרומית מערבית היו הספלין שבהן מנסכין״.\n"
-              + "בקצרה — המחלוקת: צורת הנקבים. לרש״י ולברטנורא — חוטם יוצא מכל ספל, והנסכים יורדים על גג המזבח, ומשם בנקב שבמזבח לשיתין. לתוספות — הנקבים בתחתית הספלים, והנסכים יורדים מהם ישר לשיתין. הפירוט — בשורה ״ספלי הניסוך״ שבטבלת השיטות.\n"
+              + "בקצרה — המחלוקת: צורת הנקבים. לרש״י ולברטנורא — חוטם יוצא מכל ספל, והנסכים יורדים על גג המזבח, ומשם בנקב שבמזבח לשיתין. לתוספות — הנקבים בתחתית הספלים, והנסכים יורדים מהם ישר לשיתין. הפירוט — במתג ״ספלי הניסוך״ שבתפריט, תחת ״שיטות ומחלוקות״.\n"
               + "במודל: המשנה מתארת את בית שני, והספלים נבנו כאן כהשלמה מן המשנה, כמו השיתין שלידם. שני ספלי כסף בראש המזבח, ליד הקרן הדרומית־מערבית: המערבי למים והמזרחי ליין. גודלם ומקומם המדויק — בחירת מודל.",
             refs: [["משנה סוכה ד, ט", { book: 56, index: 48 }], ["ברטנורא סוכה ד, ט", { book: 588, index: 227 }], ["תפארת ישראל סוכה ד, ט", { book: 772, index: 477 }], ["רש״י סוכה מח:", { book: 2163, index: 2274 }], ["תוספות סוכה מח:", { book: 1903, index: 504 }], ["סוכה מח:", ui_P(108, "מח:")]] });
         }
@@ -3687,7 +3771,7 @@ body.tm-measuring canvas{cursor:crosshair}
       if (ctx.shared.arkGates && typeof ctx.shared.arkGates.demo === "function") {
         const gA2 = PLACES.find((g) => g[0] === "הבית מבפנים");
         if (gA2) gA2[1].push({ t: "הכנסת הארון — ״דבקו שערים״ (הדגמה)", action: () => ctx.shared.arkGates.demo(),
-          info: "הגמרא (שבת ל.): ״כשבנה שלמה את בית המקדש, ביקש להכניס ארון לבית קדשי הקדשים. דבקו שערים זה בזה. אמר שלמה עשרים וארבעה רננות, ולא נענה. פתח ואמר: ׳שאו שערים ראשיכם והנשאו פתחי עולם ויבא מלך הכבוד׳. רהטו בתריה למיבלעיה, אמרו: ׳מי הוא זה מלך הכבוד׳. אמר להו: ׳ה׳ עזוז וגבור׳. חזר ואמר: ׳שאו שערים ראשיכם ושאו פתחי עולם ויבא מלך הכבוד מי הוא זה מלך הכבוד ה׳ צבאות הוא מלך הכבוד סלה׳, ולא נענה. כיון שאמר: ׳ה׳ אלהים אל תשב פני משיחך זכרה לחסדי דוד עבדך׳, מיד נענה״.\n**רש״י** (שם): ״דבקו שערים — של בית קדשי הקדשים״; ״כ״ד רננות — רנה תפילה תחינה כתובים בתפילת שלמה עד כ״ד״; ״רהטו שערים בתריה למבלעיה — סברי דעל עצמו אמר מלך הכבוד״. ״שאו שערים״ — תהלים כד, ז–י.\n**הפסוקים:** ״ויבאו הכהנים את ארון ברית ה׳ אל מקומו אל דביר הבית אל קדש הקדשים אל תחת כנפי הכרובים״ (מלכים א ח, ו); ״ויארכו הבדים ויראו ראשי הבדים מן הקדש על פני הדביר ולא יראו החוצה״ (ח, ח); ״ויהי בצאת הכהנים מן הקדש והענן מלא את בית ה׳״ (ח, י).\n**הנושאים:** ״ומנא לן דבארבעה הוו דרו להו? דכתיב ׳ונסעו הקהתים׳ – תרי, ׳נשאי המקדש׳ – נמי תרי״, ושנים מהלכים בין הבדים: ״תרי גברי באמתא ופלגא לא מסתגי להו״ (מנחות צח:).\n**שלמה:** ״כי עשה שלמה כיור נחשת ויתנהו בתוך העזרה חמש אמות ארכו וחמש אמות רחבו ואמות שלוש קומתו ויעמד עליו ויברך על ברכיו נגד כל קהל ישראל ויפרש כפיו השמימה״ (דברי הימים ב ו, יג). מקומו — כרלב״ג (מלכים א ח, כב): ״אחשוב שהיה עומד בעזרה גדולה שהיא עזרת ישראל... והבאור הראשון הוא יותר נכון״; ורש״י (דברי הימים ב ד, ט): ״והעזרה הגדולה. זו עזרת ישראל״. צורתו ומידתו — כמלבי״ם (דברי הימים ב ו, יג): ״ומ״ש חמש אמות ארכו היינו מן האמצע, כי היה למעלה עגול ולמטה מרובע, והיה המרובע נחלק לשתים, ממקום שבא העגול עד קצהו, והיו חמש אמות לכל צד״ — עשר על עשר. ואינו אחת המכונות: המכונה ״ארבע באמה ארך... וארבע באמה רחבה״ (מלכים א ז, כז), והן עמדו ״על כתף הבית״ (ז, לט). כורע כל התפילה: ״המלך — כיון שכרע שוב אינו זוקף, שנאמר ׳ויהי ככלות שלמה להתפלל וגו׳ קם מלפני מזבח ה׳ מכרע על ברכיו׳״ (ברכות לד:); הרלב״ג (מלכים א ח, נד): ״שהמלך כרע על ברכיו מהתחלת תפלתו עד כלותו אותם״.\n**בקצרה —** האברבנאל (מלכים א ח, כב): ״שבא בחצר הכהנים לפני מזבח הנחשת״ — ולא בעזרת ישראל.\n**במודל:** הזמנים, מקומות המבט, אורך הבדים בשעת הנשיאה, מקום הכיור — בחצר החיצונה, מול השער המזרחי של החצר הפנימית, ליד ״העמוד״ של המלך (מלכים ב כג, ג; ורש״י בדברי הימים ב כג, יג מדמה אותו לכיור הזה), גובה החלק המרובע והחלק העגול, צורת הענן ובגדי המלך (״בלבוש מלכות תכלת וחור ועטרת זהב גדולה ותכריך בוץ וארגמן״, אסתר ח, טו) — בחירת דגם. כלי ההיכל אינם מוצגים בזמן ההדגמה, כי הם עומדים בדרך הארון; הפרוכת אינה תלויה בזמן ההדגמה, וחוזרת בסופה. אם קודש הקדשים מכוסה בענן — לפני ההדגמה תופיע השאלה הרגילה.",
+          info: "הגמרא (שבת ל.): ״כשבנה שלמה את בית המקדש, ביקש להכניס ארון לבית קדשי הקדשים. דבקו שערים זה בזה. אמר שלמה עשרים וארבעה רננות, ולא נענה. פתח ואמר: ׳שאו שערים ראשיכם והנשאו פתחי עולם ויבא מלך הכבוד׳. רהטו בתריה למיבלעיה, אמרו: ׳מי הוא זה מלך הכבוד׳. אמר להו: ׳ה׳ עזוז וגבור׳. חזר ואמר: ׳שאו שערים ראשיכם ושאו פתחי עולם ויבא מלך הכבוד מי הוא זה מלך הכבוד ה׳ צבאות הוא מלך הכבוד סלה׳, ולא נענה. כיון שאמר: ׳ה׳ אלהים אל תשב פני משיחך זכרה לחסדי דוד עבדך׳, מיד נענה״.\n**רש״י** (שם): ״דבקו שערים — של בית קדשי הקדשים״; ״כ״ד רננות — רנה תפילה תחינה כתובים בתפילת שלמה עד כ״ד״; ״רהטו שערים בתריה למבלעיה — סברי דעל עצמו אמר מלך הכבוד״. ״שאו שערים״ — תהלים כד, ז–י.\n**הפסוקים:** ״ויבאו הכהנים את ארון ברית ה׳ אל מקומו אל דביר הבית אל קדש הקדשים אל תחת כנפי הכרובים״ (מלכים א ח, ו); ״ויארכו הבדים ויראו ראשי הבדים מן הקדש על פני הדביר ולא יראו החוצה״ (ח, ח); ״ויהי בצאת הכהנים מן הקדש והענן מלא את בית ה׳״ (ח, י).\n**הנושאים:** ״ומנא לן דבארבעה הוו דרו להו? דכתיב ׳ונסעו הקהתים׳ – תרי, ׳נשאי המקדש׳ – נמי תרי״, ושנים מהלכים בין הבדים: ״תרי גברי באמתא ופלגא לא מסתגי להו״ (מנחות צח:).\n**שלמה:** ״כי עשה שלמה כיור נחשת ויתנהו בתוך העזרה חמש אמות ארכו וחמש אמות רחבו ואמות שלוש קומתו ויעמד עליו ויברך על ברכיו נגד כל קהל ישראל ויפרש כפיו השמימה״ (דברי הימים ב ו, יג). מקומו — כרלב״ג (מלכים א ח, כב): ״אחשוב שהיה עומד בעזרה גדולה שהיא עזרת ישראל... והבאור הראשון הוא יותר נכון״; ורש״י (דברי הימים ב ד, ט): ״והעזרה הגדולה. זו עזרת ישראל״. צורתו ומידתו — כמלבי״ם (דברי הימים ב ו, יג): ״ומ״ש חמש אמות ארכו היינו מן האמצע, כי היה למעלה עגול ולמטה מרובע, והיה המרובע נחלק לשתים, ממקום שבא העגול עד קצהו, והיו חמש אמות לכל צד״ — עשר על עשר. ואינו אחת המכונות: המכונה ״ארבע באמה ארך... וארבע באמה רחבה״ (מלכים א ז, כז), והן עמדו ״על כתף הבית״ (ז, לט). כורע כל התפילה: ״המלך — כיון שכרע שוב אינו זוקף, שנאמר ׳ויהי ככלות שלמה להתפלל וגו׳ קם מלפני מזבח ה׳ מכרע על ברכיו׳״ (ברכות לד:); הרלב״ג (מלכים א ח, נד): ״שהמלך כרע על ברכיו מהתחלת תפלתו עד כלותו אותם״.\n**בקצרה —** האברבנאל (מלכים א ח, כב): ״שבא בחצר הכהנים לפני מזבח הנחשת״ — ולא בעזרת ישראל.\n**במודל:** הזמנים, מקומות המבט, אורך הבדים בשעת הנשיאה, מקום הכיור — בחצר החיצונה, מול השער המזרחי של החצר הפנימית, ליד ״העמוד״ של המלך (מלכים ב כג, ג; ורש״י בדברי הימים ב כג, יג מדמה אותו לכיור הזה), גובה החלק המרובע והחלק העגול, צורת הענן ובגדי המלך (״בלבוש מלכות תכלת וחור ועטרת זהב גדולה ותכריך בוץ וארגמן״, אסתר ח, טו) — בחירת מודל. כלי ההיכל אינם מוצגים בזמן ההדגמה, כי הם עומדים בדרך הארון; הפרוכת אינה תלויה בזמן ההדגמה, וחוזרת בסופה. אם קודש הקדשים מכוסה בענן — לפני ההדגמה תופיע השאלה הרגילה.",
           refs: [["שבת ל.", { book: 104, index: 624 }], ["רש״י שבת ל.", { book: 2156, index: 1417 }], ["תהלים כד, ז–י", { book: 28, index: 346 }], ["מלכים א ח, ו", V(10, 8, 6)], ["ח, ח", V(10, 8, 8)], ["ח, י", V(10, 8, 10)], ["ח, נד", V(10, 8, 54)],
             ["דברי הימים ב ו, יג", V(39, 6, 13)], ["ו, מב", V(39, 6, 42)], ["מנחות צח:", { book: 131, index: 3502 }], ["ברכות לד:", { book: 103, index: 1647 }], ["אברבנאל מלכים א ח, כב", { book: 3574, index: 484 }], ["רלב״ג מלכים א ח, כב", { book: 3645, index: 350 }], ["רש״י דברי הימים ב ד, ט", { book: 3662, index: 141 }], ["רש״י דברי הימים ב כג, יג", { book: 3662, index: 709 }], ["מלכים א ז, כז", { book: 10, index: 251 }], ["ז, לט", { book: 10, index: 263 }],
             ["רלב״ג מלכים א ח, נד", { book: 3645, index: 386 }], ["מלבי״ם דברי הימים ב ו, יג", { book: 3364, index: 147 }]] });
@@ -3752,7 +3836,7 @@ body.tm-measuring canvas{cursor:crosshair}
         "גובה חומות החצרות (20 אמה)": "הר הבית והחצר הגדולה",
         "מקום הכיורות והים": "עשר המכונות והכיורות",
         "הדגמת המכונה — המסלול והמים": "המכונות מקרוב",
-        "בית יער הלבנון — שלוש קריאות (רש״י / מלבי״ם ורלב״ג / מצודת דוד)": "בית יער הלבנון",
+        "בית יער הלבנון — שלוש שיטות (רש״י / מלבי״ם ורלב״ג / מצודת דוד)": "בית יער הלבנון",
         "הכבשים הקטנים — השלמה מן הגמרא": "הכבש"
       };
       // 1.1.0: "העליות" is a subject of the house, not a completion: it moves after "גג הבית ותקרותיו"
@@ -3778,7 +3862,7 @@ body.tm-measuring canvas{cursor:crosshair}
           // house's door, the laver and the bases in the south-west, the pillars; the house from outside - the ulam, its tables, the
           // wickets of its wings, the house, its roofs, the devir from behind and the lul; inside - from the door westward, each thing
           // where the eye passes it (the sotah's slab by the door, the golden altar before the tables' rows), and the floor's slope last
-          "המזבח וכלי הנחושת": ["מזבח הנחושת", "מידות המזבח", "היסוד, הסובב וחוט הסיקרא", "השיתין", "ספלי הניסוך", "הכבש", "מקום הלויים המשוררים", "הים של שלמה",
+          "המזבח וכלי הנחושת": ["מזבח הנחושת", "מידות המזבח", "היסוד, הסובב וחוט הסיקרא", "השיתין", "ספלי הניסוך", "הכבש", "עולים במזרח ויורדים במערב — הכבש", "מקום הלויים המשוררים", "הים של שלמה",
             "שנים עשר הבקר", "קו ציר הבית", "מפתח ההיכל אל המזבח", "כיור משה", "עשר המכונות והכיורות", "המכונות מקרוב", "יכין ובועז — מבט מפתח האולם",
             "יכין — מבעד לפתח", "בועז — מבעד לפתח", "בועז — מרחוק", "כותרת העמוד", "כלי הבית"],
           "הבית מבחוץ": ["האולם ובית החליפות", "פתח האולם ודלתותיו", "שולחנות האולם", "פשפשי בית החליפות", "הבית (בית ה׳)", "חלוני שקופים אטומים", "בית דילפא",
@@ -3795,7 +3879,7 @@ body.tm-measuring canvas{cursor:crosshair}
             "בית החליפות", "גובה האולם", "עובי הקירות", "חלוני ההיכל", "פריסת העליות", "38 תאים", "קורות היציע", "פתיחת הבית, התאים והאולם",
             "פתחי ההיכל והדביר", "דוגמת הגילופים", "שכבות הקיר והרצפה — תצוגה", "מזבח הזהב — גובהו", "השולחנות — מידותיהם", "המנורות — משיכתן",
             "הפרוכת — נשרים", "פתח הדביר — שני ביאורי", "אמה טרקסין — שלושה חלקים", "גוף הכרובים", "תבנית הכרובים", "מקום בית שלמה",
-            "בית יער הלבנון — שלוש קריאות", "הסרת הנסרים", "כסא שלמה — הגרסאות", "החצר האחרת ובית בת פרעה", "בית המלך והגן"]
+            "בית יער הלבנון — שלוש שיטות", "הסרת הנסרים", "כסא שלמה — הגרסאות", "החצר האחרת ובית בת פרעה", "בית המלך והגן"]
         };
         for (const g of PLACES) {
           const want = ORDER[g[0]];
@@ -3847,7 +3931,11 @@ body.tm-measuring canvas{cursor:crosshair}
           if (tx && parts.indexOf(tx) < 0) parts.push((d.t ? d.t + ": " : "") + tx);
           for (const r of uiItemRefs(d)) if (!seen.has(r[0])) { seen.add(r[0]); refs.push(r); }
         }
-        return { text: parts.filter(Boolean).join("\n\n"), refs };
+        // DEDUPE_211 (the understandability review, U-53): each of the joined texts came with the "בקצרה" block of the card's switches -
+        // the card of "שולחן משה מקרוב" showed it twice. A paragraph that already stands in the card is not repeated.
+        const seenP = new Set(), outP = [];
+        for (const par of parts.filter(Boolean).join("\n\n").split("\n")) { const k = par.trim(); if (k.length > 40 && seenP.has(k)) continue; if (k) seenP.add(k); outP.push(par); }
+        return { text: outP.join("\n").replace(/\n{3,}/g, "\n\n"), refs };
       };
       // 1.0.1-L (the contract with 75-tour.js): every place button in the panel's order, for ctx.ui.places()
       const placeList = [];
@@ -3900,6 +3988,9 @@ body.tm-measuring canvas{cursor:crosshair}
               const tgt = fp0 ? fp0.target : typeof it.tg === "function" ? it.tg() : it.tg;
               // 1.0.1-K: no automatic removal - a place only flies (and, when it is one, shows its own model feature)
               if (pos && tgt) fly(pos, tgt);
+              // PLACE_NOFADE_211 (the user, 15.11.2026, of the place "בר שורא": "לא מציג כלום" - the wall it stands by was see-through):
+              // a place whose subject is a wall itself holds the fading while it shows (ctx.shared.fadeHold, as the readings' rows)
+              if (pos && tgt && it.noFade && ctx.shared.fadeHold) { try { ctx.shared.fadeHold.set(tgt); } catch (_) {} }
             } catch (_) {
             }
             // 1.0.1-L (L.34): the explanation in the floating card beside the panel, at this button's height; the panel's lists stay where they are
@@ -4021,7 +4112,7 @@ body.tm-measuring canvas{cursor:crosshair}
         cardSide = 1;
         ui_fillSrc(cardTitle, String((spr.userData.label && spr.userData.label.text) || "") + (t.title ? " — " + t.title : ""));   // a bare measure gets its meaning
         const rs = t.key ? ui_REFS[t.key] || [] : t.refs || [];
-        ui_fillRich(cardBody, t.key ? ui_INFO[t.key] || "" : t.text || "", srcLinker(rs));   // 1.0.2 (A): the brackets open their sources; 1.3.3: rich
+        ui_fillRich(cardBody, t.key ? ui_INFO[t.key] || "" : t.text || "", srcLinker(rs), 1700);   // 1.0.2 (A): the brackets open their sources; 1.3.3: rich; FOLD_211
         cardRefs.textContent = "";
         if (rs.length) {
           cardRefs.appendChild(document.createTextNode("למקור: "));
@@ -4251,7 +4342,7 @@ body.tm-measuring canvas{cursor:crosshair}
           ["רבובה", { p: "הכבש" }],
           ["תקרת הגבים", { p: "גג הבית ותקרותיו" }],
           ["קו ציר הבית", { p: "קו ציר הבית — כנגד פתח ההיכל, ומקום המזבח" }],
-          ["האולם לשיטת הרמב", { info: "לשיטת הרמב״ם (הלכות בית הבחירה ד), כפי שביארו הכסף משנה ותוספות יום טוב (מדות ד, ז): **בליטת האולם נמשכת בצפון ובדרום לכל אורך הבית**, 'עד מקצוע המערבית', ולא רק בחזית; בצד מערב אין בליטה (הלכות בית הבחירה ד, ד).\nבמודל: ברירת המחדל כרש״י (יומא לו.) — הבליטה בחזית בלבד, 'בית החליפות'. בוחרים בטבלת 'שיטות ומחלוקות'.",
+          ["האולם לשיטת הרמב", { info: "לשיטת הרמב״ם (הלכות בית הבחירה ד), כפי שביארו הכסף משנה ותוספות יום טוב (מדות ד, ז): **בליטת האולם נמשכת בצפון ובדרום לכל אורך הבית**, 'עד מקצוע המערבית', ולא רק בחזית; בצד מערב אין בליטה (הלכות בית הבחירה ד, ד).\nבמודל: ברירת המחדל כרש״י (יומא לו.) — הבליטה בחזית בלבד, 'בית החליפות'. בוחרים בתפריט, תחת ״שיטות ומחלוקות״.",
             refs: [["רמב״ם בית הבחירה פרק ד", RB(4, 0)], ["מדות ד, ז", MI(4, 7)], ["יומא לו.", P(107, "לו.")]] }],
           ["המעלות מבית המלך", { p: "המעלות מבית המלך אל בית ה׳" }],
           ["בית יער הלבנון", { p: "בית יער הלבנון" }],
@@ -4403,7 +4494,7 @@ body.tm-measuring canvas{cursor:crosshair}
       const secOps = document.createElement("details");
       secOps.className = "tm-pl tm-ops-det";
       const opsSum = document.createElement("summary");
-      opsSum.textContent = "שיטות ומחלוקות — בחירת הקריאה";
+      opsSum.textContent = "שיטות ומחלוקות — בחירת השיטה";
       secOps.appendChild(opsSum);
       const opsNote = document.createElement("div");
       opsNote.className = "s";
@@ -4426,7 +4517,7 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["מלכים א ו, ב", V(10, 6, 2)], ["דברי הימים ב ג, ד", V(39, 3, 4)], ["רש״י שם", V(39, 3, 4)], ["בבא בתרא ג.", P(124, "ג.")]],
           options: [
             ["base", "שלושים אמה", "הפסוק: 'ושלשים אמה קומתו' (מלכים א ו, ב) — גובה הבית שלושים אמה; בבא בתרא ג. משווה את גובה הבית לבית שני ואינה מזכירה מאה ועשרים.\nבמודל: זה המודל הבסיסי — **הבית והאולם בגובה שלושים**."],
-            ["aliyot", "מאה ועשרים — עם העליות", "הפסוק: 'והגובה מאה ועשרים' (דברי הימים ב ג, ד).\nרש״י: שלושים אמה עד תקרת העלייה הראשונה 'ומעליה לעליה עד גג העליון תשעים אמות'. רד״ק (כדעה שנייה): 'ג' עליות גבהן תשעים אמה'.\nבמודל: **שתי עליות, זו על גב זו, על הבית ועל האולם עד 120 אמה** (כאיור הספר); כל עלייה סגורה בשלוש השכבות — גבים, בית דילפא ושדרות בארזים. מעל קודש הקדשים הכול נמוך בעשר אמות — 'עליית בית קודש הקדשים היתה נמוכה משל היכל י' אמות' (מצודת דוד ו, כ ע״פ רש״י; בשתי הקריאות האחרות שבשורה 'גובה קודש הקדשים' העליות שוות): העלייה הראשונה שמעליו עומדת על תקרת הדביר עצמה (גבים, בית דילפא ושדרות, 32–36), רצפתה ותקרתה נמוכות בעשר, והגג מדורג. חלוקת הגובה — בחירת מודל."]
+            ["aliyot", "מאה ועשרים — עם העליות", "הפסוק: 'והגובה מאה ועשרים' (דברי הימים ב ג, ד).\nרש״י: שלושים אמה עד תקרת העלייה הראשונה 'ומעליה לעליה עד גג העליון תשעים אמות'. רד״ק (כדעה שנייה): 'ג' עליות גבהן תשעים אמה'.\nבמודל: **שתי עליות, זו על גב זו, על הבית ועל האולם עד 120 אמה** (כאיור הספר); כל עלייה סגורה בשלוש השכבות — גבים, בית דילפא ושדרות בארזים. מעל קודש הקדשים הכול נמוך בעשר אמות — 'עליית בית קודש הקדשים היתה נמוכה משל היכל י' אמות' (מצודת דוד ו, כ ע״פ רש״י; בשתי השיטות האחרות שבמתג 'גובה קודש הקדשים' העליות שוות): העלייה הראשונה שמעליו עומדת על תקרת הדביר עצמה (גבים, בית דילפא ושדרות, 32–36), רצפתה ותקרתה נמוכות בעשר, והגג מדורג. חלוקת הגובה — בחירת מודל."]
           ],
           current: ctx.layers.aliyot && ctx.layers.aliyot.visible ? "aliyot" : "base",
           onPick: (k) => setLayer("aliyot", k === "aliyot"),
@@ -4497,7 +4588,7 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["מלכים א ז, טו", V(10, 7, 15)], ["ז, יט", V(10, 7, 19)], ["ז, כב", V(10, 7, 22)], ["מלבי״ם ז, יז", V(10, 7, 17)], ["מלבי״ם ז, יט", V(10, 7, 19)], ["מלבי״ם ז, כ", V(10, 7, 20)]],
           options: [
             ["rashi", "רש״י", (placeItemByT["כותרת העמוד — שבכה, רימונים ושושנים"] || {}).info || "רש״י (ז, יח): 'כמין שני אגנים' — כציור הספר. ברירת המחדל."],
-            ["malbim", "מלבי״ם", "מלבי״ם: הכותרת יושבת על ראש העמוד ו'נחלק לשתי גולות' (ז, טז) — התחתונה שתי אמות, העליונה שלוש 'ככובע על ראש העמוד' (ז, כ); 'חציו העליון היה מכוסה בשבכה שהוא לבוש ממעשה רשת, ארוג מנחושת, ותחת השבכה היה גדילים מעשה שרשרות, והיו שבעה שרשרות לכל כותרת... ובסוף השרשרות היו תלוים שני טורי רמונים שהיה ראשם תלוי בשרשרות וסופם מכסה את הגולה התחתונה' (ז, יז), 'מאה רמונים בכל טור' (ז, כ).\nראש העמוד עצמו 'נעשה בראשו כמעשה שושן' (ז, כב; ז, טו: 'הקיש בקורנס ועשה על שפת כל א' מעשה שושן ונתארך חצי אמה'); ופסוק יט — כותרת מצוירת: 'שהיה שושן מצויר על כותל האולם במקום שהגיעו לשם ראשי העמודים היינו י״ח אמות בגובה הכותל של האולם והיה ארכו ורחבו וגבהו של הכותרת המצויר בכותל ד' אמות'.\nבמודל, בקריאה זו: **העמודים עומדים לפני האולם** — 'שהקים אותם לפני האולם וסמוך לו' (ז, כא) — והשושן מצויר על חזית האולם לצד הפתח, בגובה ראשי העמודים. צורת הרשת, הרמונים והציור, ובסיסי האבן שהעמודים עומדים עליהם מעל המעלות כדי שראשיהם יגיעו לשמונה עשרה אמה בכותל האולם — בחירת מודל."]
+            ["malbim", "מלבי״ם", "מלבי״ם: הכותרת יושבת על ראש העמוד ו'נחלק לשתי גולות' (ז, טז) — התחתונה שתי אמות, העליונה שלוש 'ככובע על ראש העמוד' (ז, כ); 'חציו העליון היה מכוסה בשבכה שהוא לבוש ממעשה רשת, ארוג מנחושת, ותחת השבכה היה גדילים מעשה שרשרות, והיו שבעה שרשרות לכל כותרת... ובסוף השרשרות היו תלוים שני טורי רמונים שהיה ראשם תלוי בשרשרות וסופם מכסה את הגולה התחתונה' (ז, יז), 'מאה רמונים בכל טור' (ז, כ).\nראש העמוד עצמו 'נעשה בראשו כמעשה שושן' (ז, כב; ז, טו: 'הקיש בקורנס ועשה על שפת כל א' מעשה שושן ונתארך חצי אמה'); ופסוק יט — כותרת מצוירת: 'שהיה שושן מצויר על כותל האולם במקום שהגיעו לשם ראשי העמודים היינו י״ח אמות בגובה הכותל של האולם והיה ארכו ורחבו וגבהו של הכותרת המצויר בכותל ד' אמות'.\nבמודל, בשיטה זו: **העמודים עומדים לפני האולם** — 'שהקים אותם לפני האולם וסמוך לו' (ז, כא) — והשושן מצויר על חזית האולם לצד הפתח, בגובה ראשי העמודים. צורת הרשת, הרמונים והציור, ובסיסי האבן שהעמודים עומדים עליהם מעל המעלות כדי שראשיהם יגיעו לשמונה עשרה אמה בכותל האולם — בחירת מודל."]
           ],
           current: pcap && pcap.current || "rashi",
           onPick: (k) => { if (pcap && typeof pcap.set === "function") pcap.set(k); },
@@ -4521,6 +4612,27 @@ body.tm-measuring canvas{cursor:crosshair}
           fly: () => flyView("ulamTables"),
           disabled: !(utab && typeof utab.set === "function")
         });
+        // SHOWBREAD_SHAPE_211 (1.4.4; the user, 15.11.2026 08:38: "א: כן ברירת מחדל כר״י"): the loaves' shape on every table - ctx.shared.breadShape
+        // (55-interior.js int_boatLoaf / int_breadShape): R. Yochanan's boat (the default; the posts on the table) or R. Chanina's open box (the posts on the floor)
+        {
+          const bsh = ctx.shared.breadShape;
+          const BR = [["מנחות צד:", { book: 131, index: 3364 }], ["מנחות צד: (הסניפין)", { book: 131, index: 3369 }], ["מנחות צה.", { book: 131, index: 3372 }],
+            ["מנחות צה. (תניא כמאן)", { book: 131, index: 3373 }], ["רש״י מנחות צד: (תיבה)", { book: 2186, index: 4469 }], ["רש״י מנחות צד: (ספינה)", { book: 2186, index: 4470 }],
+            ["רש״י מנחות צה.", { book: 2186, index: 4490 }], ["כסף משנה תמידין ה, ט", { book: 4261, index: 187 }], ["לחם משנה תמידין ה, ט", { book: 4030, index: 95 }]];
+          opRow({
+            id: "breadShape", short: "צורת לחם הפנים", cardFly: true, chips: { boat: "רבי יוחנן", box: "רבי חנינא" },
+            cap: "צורת לחם הפנים",
+            refs: BR,
+            options: [
+              ["boat", "רבי יוחנן — כמין ספינה רוקדת", "הגמרא (מנחות צד:): 'רבי חנינא אמר: כמין תיבה פרוצה. רבי יוחנן אמר: כמין ספינה רוקדת'.\nרש״י: 'אין לה שוליים אלא מלמעלה רחבה ומלמטה כלה והולכת עד כאצבע... וב׳ ראשיה חדין והולכין וגבוהין למעלה'. ופיה — 'אימא: ופיה דומה כמין טבלא מרובעת' (מנחות צה.); רש״י: 'השוליים עשויין כספינה'.\nהסניפין: 'לדברי האומר כמין ספינה רוקדת — סניפין על גבי שלחן מונחין' (מנחות צד:). 'תניא כמאן דאמר כמין ספינה רוקדת, דתניא: ארבעה סניפין של זהב היו שם... שסומכין בהן את הלחם, שהוא דומה כמין ספינה רוקדת' (מנחות צה.).\nבמודל (ברירת המחדל): כל חלה — פיה מרובע, דפנותיה משתפעות עד שוליים צרים כאצבע, ושני ראשיה משופעים ועולים; הסניפין עומדים על השולחן, והקנים תחת השוליים. מידות השיפוע והעלייה — בחירת מודל."],
+              ["box", "רבי חנינא — כמין תיבה פרוצה", "הגמרא (מנחות צד:): 'רבי חנינא אמר: כמין תיבה פרוצה'. רש״י: 'שניטל כיסויה ושתי דופנותיה זו כנגד זו כך הלחם היו לו ב׳ דפנות ושוליים רחבים'.\nהסניפין: 'לדברי האומר כמין תיבה פרוצה — סניפין על גבי קרקע מונחין' (מנחות צד:).\nהרמב״ם כתב 'כל חלה מהן מרובעת' — כסף משנה: 'משמע שפסק כר׳ חנינא וצריך טעם למה דהא בגמרא קאמר דתניא כוותיה דר״י', ויישב: 'ואפשר שטעמו משום דר' חנינא עדיף מר״י וקשיש מיניה'; לחם משנה: 'נראה דפסק כמ״ד כמין תיבה פרוצה... וצ״ע'.\nבמודל: כל חלה — שוליים רחבים ושתי דפנות זקופות, וקרנותיה כפופות פנימה; הסניפין עומדים על הרצפה."]
+            ],
+            current: bsh && bsh.mode || "boat",
+            onPick: (k) => { if (bsh && typeof bsh.set === "function") bsh.set(k); },
+            fly: () => flyView("shulchanMoshe"),
+            disabled: !(bsh && typeof bsh.set === "function")
+          });
+        }
         // 1.0.2 (item 8, the user: "מצוין"): the look of the bronze altar - ctx.shared.altarLook (40-altar.js): stone (the default; Deut 27:6, the
         // Rambam Beit HaBechira 1:13) or Abarbanel on I Kings 8:64, "מצופה נחשת". The words and the sources are the module's; no contract, no row.
         {
@@ -4664,8 +4776,8 @@ body.tm-measuring canvas{cursor:crosshair}
               cap: "המערכות ביום הכיפורים",
               refs: [["יומא ד, ו", { book: 55, index: 36 }], ["יומא מה.", { book: 107, index: 1139 }], ["רש״י יומא מה.", { book: 2157, index: 1728 }]],
               options: [
-                ["daily", "בכל יום", "במודל: בכל יום — כמניין התנא שנבחר בשורה ״מניין המערכות״: רבי יוסי שלוש, רבי יהודה שתיים, רבי מאיר ארבע (יומא ד, ו).", null],
-                ["yk", "יום הכיפורים — מערכה נוספת", "לשון המשנה (יומא ד, ו): ״בכל יום היו שם ארבע מערכות, והיום חמש, דברי רבי מאיר. רבי יוסי אומר, בכל יום שלש, והיום ארבע. רבי יהודה אומר, בכל יום שתים, והיום שלש״.\nבכל השיטות ביום הכיפורים מוסיפים מערכה אחת: לרבי יהודה שלוש, לרבי יוסי ארבע, לרבי מאיר חמש. ובברייתא (יומא מה.): ״ואחת שמוסיפין בו ביום״. רש״י (יומא מה.): ״ליטול ממנה גחלים לקטורת של לפני ולפנים״.\nבמודל: המערכה הנוספת נוספת על מניין התנא שנבחר בשורה ״מניין המערכות״, בצפון־מזרח הגג; מקומה וגודלה — בחירת מודל.", null]
+                ["daily", "בכל יום", "במודל: בכל יום — כמניין התנא שנבחר במתג ״מניין המערכות״: רבי יוסי שלוש, רבי יהודה שתיים, רבי מאיר ארבע (יומא ד, ו).", null],
+                ["yk", "יום הכיפורים — מערכה נוספת", "לשון המשנה (יומא ד, ו): ״בכל יום היו שם ארבע מערכות, והיום חמש, דברי רבי מאיר. רבי יוסי אומר, בכל יום שלש, והיום ארבע. רבי יהודה אומר, בכל יום שתים, והיום שלש״.\nבכל השיטות ביום הכיפורים מוסיפים מערכה אחת: לרבי יהודה שלוש, לרבי יוסי ארבע, לרבי מאיר חמש. ובברייתא (יומא מה.): ״ואחת שמוסיפין בו ביום״. רש״י (יומא מה.): ״ליטול ממנה גחלים לקטורת של לפני ולפנים״.\nבמודל: המערכה הנוספת נוספת על מניין התנא שנבחר במתג ״מניין המערכות״, בצפון־מזרח הגג; מקומה וגודלה — בחירת מודל.", null]
               ],
               current: "daily",
               onPick: (k) => { mc.set(mc.count || 3, k === "yk"); },
@@ -4692,7 +4804,10 @@ body.tm-measuring canvas{cursor:crosshair}
               onPick: (k) => {
                 ay.set(k);
                 const AMs = ctx.shared.altarMeasures;
-                if (AMs && typeof AMs.set === "function") autoOff.run({ key: "altarMeasures", isOn: () => AMs.get(), on: () => AMs.set(true), off: () => AMs.set(false) });
+                if (AMs && typeof AMs.set === "function") {   // MEASURES_211: the frames stay while the reading shows (no 15 seconds), and go when another place or row comes
+                  const FM = { key: "altarMeasures", timed: false, isOn: () => AMs.get(), on: () => AMs.set(true), off: () => AMs.set(false) };
+                  try { const was = !!FM.isOn(); autoOff.run(FM); if (!was) leaveFeat = FM; } catch (_) {}
+                }
               },
               fly: () => flyView(ctx.shared.flyPoints && ctx.shared.flyPoints.mizbeachMeasures ? "mizbeachMeasures" : "mizbeach")
             });
@@ -4752,11 +4867,36 @@ body.tm-measuring canvas{cursor:crosshair}
               options: al.keys.map((k) => [k, String(al.names[k] || k), String(al.info[k] || ""), null]),
               current: al.current || "meir",
               onPick: (k) => { al.set(k); },
-              fly: () => flyView(ctx.shared.flyPoints && ctx.shared.flyPoints.arkInside ? "arkInside" : "kodeshHakodashim")
+              // NOTE 11 (the function review, F2-04): both chips flew to one eye over the closed cover - R. Meir's scroll is inside the
+              // ark, R. Yehuda's chest stood at the picture's top edge. Now the row opens the ark for its while (as a chamber's place opens
+              // its roof) and looks from a little further east and higher, the chest beside the ark inside the frame
+              fly: () => { try { if (typeof openPill20 === "function") openPill20("arkInside"); } catch (_) {} if (ctx.shared.flyPoints && ctx.shared.flyPoints.arkInside) fly([-53.8, 18.6, 2.2], [-58.3, 12.8, 0.1]); else flyView("kodeshHakodashim"); }
             });
           }
         }
         // 3. the place of the Sea (I Kings 7:39)
+        // YEHOYADA_ONE_211 (the sources review, S4-18; the user, 15.11.2026 18:12 "להוסיף מתג לרשי", 18:21 "2. ארון יהיודע"): the Malbim's two
+        // chests (the default, as until now) or Rashi's one. Rashi (II Chr 24:8; 3662:739-740; II Kings 12:10; 3680:446) does not say in
+        // one place where the one chest stood - each verse has its own word. The user decided (15.11.2026 23:23, "ארון יהוידע לרשי תעשה איפה
+        // שהתקלין חדתין של המלבים"): Rashi's one chest stands where the Malbim's chest for the new coins stands - by the altar, as the verse
+        // in Kings and Rashi there. The option "בשער" was taken out (20-mount.js still knows the mode "gate"; nothing picks it).
+        {
+          const yh = ctx.shared.yehoyada;
+          const RQ = "רש״י (דברי הימים ב כד, ח): ״ויעשו ארון אחד. ובמלכים כתיב ויקב חור בדלתו; על ידי אותו חור היו זורקין בארון ההקדשות ולא לפתוח הדלת, פן יבא רמאי ויגנוב ממנו״ — הארון שבדברי הימים הוא הארון שבמלכים.\nמקומו: בדברי הימים — ״ויתנהו בשער בית ה׳ חוצה״, ורש״י: ״כדי שיוכלו לבא אליו כל נדיב לב לתת בו את תרומת ה׳״; ובמלכים (ב יב, י) — ״ויתן אתו אצל המזבח מימין בבוא איש בית ה׳״, ורש״י: ״אצל המזבח. בעזרה״. איך מתיישבים שני המקומות בארון אחד — רש״י לא פירש שם.\n";
+          opRow({
+            id: "yehoyadaChests", short: "ארון יהוידע",
+            cap: "ארון יהוידע — שניים או אחד",
+            refs: [["מלכים ב יב, י", V(11, 12, 10)], ["דברי הימים ב כד, ח", V(39, 24, 8)], ["רש״י דברי הימים ב כד, ח", { book: 3662, index: 739 }], ["רש״י מלכים ב יב, י", { book: 3680, index: 446 }], ["מלבי״ם מלכים ב יב, י", { book: 3379, index: 449 }], ["מלבי״ם דברי הימים ב כד, ח", { book: 3364, index: 652 }]],
+            options: [
+              ["two", "מלבי״ם — שני ארונות", "המלבי״ם: שני ארונות היו — האחד שבמלכים (ב יב, י), ״ויתן אתו אצל המזבח מימין בבוא איש בית ה׳״, והאחר שבדברי הימים (ב כד, ח), ״ויתנהו בשער בית ה׳ חוצה״. לשונו — בכרטיסי שני המקומות, ״ארון יהוידע אצל המזבח״ ו״ארון יהוידע שבשער״.\nבמודל — ברירת המחדל: שני הארונות. הם מוצגים כשבוחרים באחד משני המקומות, או בכפתור שעל המודל; צורת הארון ומקומו המדויק — בחירת מודל."],
+              ["altar", "רש״י — ארון אחד, אצל המזבח", RQ + "במודל, באפשרות זו: ארון אחד, אצל המזבח, בעזרה — כלשון מלכים (ב יב, י), ורש״י שם: ״אצל המזבח. בעזרה״. הוא עומד במקום שבו עומד, לשיטת המלבי״ם, הארון ״לתקלין חדתין״. ההכרעה כלשון מלכים, ולא כלשון דברי הימים — בחירת מודל."]
+            ],
+            current: "two",
+            onPick: (k) => { if (yh && typeof yh.setMode === "function") { yh.setMode(k); yh.set(true); } },
+            fly: (k) => { try { if (k === "altar") fly([80.5, 12.5, 1.5], [70, 6.7, -8]); else { const t = oci("ארון", OCI_FB.aron), c = ociCam("ארון", OCI_FB.aron, 14); fly(c, t); } } catch (_) {} },
+            disabled: !(yh && typeof yh.setMode === "function")
+          });
+        }
         seaRow = opRow({
           id: "seaPlacement", short: "מקום הים", cardFly: true, chips: { rashi: "רש״י: מזרחית צפונית", radak: "רד״ק ומצודות: מזרחית דרומית" },
           cap: "מקום הים",
@@ -4837,17 +4977,18 @@ body.tm-measuring canvas{cursor:crosshair}
         {
           const sl = ctx.shared.slaughterLayout, slNames = (sl && sl.names) || {};
           opRow({
-            id: "slaughterLayout", short: "בית המטבחים", chips: { book: "כציור הספר", meiri: "המאירי", oneRow: "ראבי״ה והגר״א" },
+            id: "slaughterLayout", short: "בית המטבחים", chips: { book: "כציור הספר", meiri: "המאירי", raavyah: "הראבי״ה", gra: "הגר״א" },   // SLAUGHTER_SPLIT_211: the Ra'avyah's and the Gra's readings apart (one option, "oneRow", until 1.4.3)
             cap: "בית המטבחים",
             refs: [["מדות ג, ה", ui_MI(3, 5)]],
             options: [
               ["book", slNames.book || "כציור הספר — חתיכת ארז על כל עמוד", "ברטנורא: על כל עמוד חתיכת ארז — 'ורביעין של ארז. חתיכות מרבעות של ארז היו על העמודים' (ברטנורא מדות ג, ה), ובה האונקליות.\nבמודל: **שתי שורות**, כציור הספר — 'בד׳ שורות מצפון לדרום, וכל שורה של ב’ ב'' (צורת בית המקדש לתפארת ישראל).", [["ברטנורא מדות ג, ה", { book: 643, index: 146 }], ["צורת בית המקדש", { book: 6029, index: 99 }]]],
               ["meiri", slNames.meiri || "המאירי — קורות מעמוד לעמוד", "המאירי: 'רביעים של ארז ר”ל כעין קורות קצרות באים מעמוד לעמוד', ושלושת הסדרים: 'ר”ל על כל אחד מן הרביעים והם בשני הצדדים ושטח התחתון' (מאירי על מדות ג, ה). וכן 'קורות של ארז. על גביהן. מזו לזו' (קובץ שיטות קמאי על תמיד).\nבמודל: הקורות לאורך שתי השורות — בחירת מודל.", [["מאירי על מדות ג, ה", { book: 6033, index: 50 }], ["קובץ שיטות קמאי על תמיד", { book: 7582, index: 1040 }]]],
-              ["oneRow", slNames.oneRow || "ראבי״ה והגר״א — שורה אחת", "הראבי״ה: 'ונראה שלא היו העמודים וכן השלחנות. מסודרים זה אצל זה. ארבע שורות של ב' ב' מסודרין זה אחר זה. כזה. אלא כל דממזרח למערב עמודים ח'. שלחנות שמנה' (ראבי״ה בתוספות יום טוב מדות ג, ה).\nהגר״א: 'כי שמונה ננסין היו. נמצא היו ז' אוירים וכנגד כל אויר היה שולחן הרי ז' שולחנות ושולחן הח' הי' עמוד אצל הננס שבקצה מבחוץ' (ביאור הגר״א מדות ה, ב).\nבמודל: **שבעה שולחנות בין העמודים, והשמיני בקצה המזרחי**; המרחקים וגודל השולחנות — בחירת מודל.", [["תוספות יום טוב מדות ג, ה", { book: 948, index: 133 }], ["ביאור הגר״א מדות", { book: 7509, index: 67 }]]]
+              ["raavyah", slNames.raavyah || "הראבי״ה — שורה אחת ממזרח למערב, והשולחנות לפניה", "הראבי״ה: 'ונראה שלא היו העמודים וכן השלחנות. מסודרים זה אצל זה. ארבע שורות של ב' ב' מסודרין זה אחר זה. כזה. אלא כל דממזרח למערב עמודים ח'. שלחנות שמנה' (ראבי״ה בתוספות יום טוב מדות ג, ה).\nהרש״ש: 'להראבי״ה משמע דהעמודים הי' בסדר אחד ממזרח למערב וכן השלחנות לפניהם' (רש״ש מדות ג, ה).\nבמודל: **שמונה העמודים בשורה אחת ממזרח למערב, ושמונה השולחנות בשורה משלהם לפניהם** — ארבע אמות מן הטבעות וארבע מן העמודים ('מן הטבעות לשלחנות ארבע, מן השלחנות ולננסין ארבע', מדות ה, ב). המרחק שבין עמוד לעמוד וגודל השולחנות — בחירת מודל.", [["תוספות יום טוב מדות ג, ה", { book: 948, index: 133 }], ["רש״ש מדות ג, ה", { book: 750, index: 51 }], ["מדות ה, ב", { book: 89, index: 37 }]]],
+              ["gra", slNames.gra || "הגר״א — שורה אחת מצפון לדרום, שולחן בין עמוד לעמוד", "הגר״א: 'כי שמונה ננסין היו. נמצא היו ז' אוירים וכנגד כל אויר היה שולחן הרי ז' שולחנות ושולחן הח' הי' עמוד אצל הננס שבקצה מבחוץ ואות' השולחן היה ד' אמות וכל השולחנות היו עומדים בשורה אחת... הרי מן מקום שהתחילו השולחנות עד שהתחילו הננסין ד' אמות דהיינו כאורך השולחן' (ביאור הגר״א מדות ה, ב).\nבמודל: **שורה אחת מצפון לדרום** — תחילה, לצד הטבעות, השולחן השמיני, שאורכו ארבע אמות; ואחריו עמוד, שולחן, עמוד — עד שמונה אמות מכותל העזרה ('מן הננסין לכתל העזרה שמנה אמות', מדות ה, ב). במודל זה נותרו לשורה תשע אמות וחצי, ולכן העמודים דקים והשולחנות שביניהם קצרים; והיא עומדת ממערב ללשכת הגזית. מקום השורה, רוחב השולחנות והצד שבו האונקליות — בחירת מודל.", [["ביאור הגר״א מדות", { book: 7509, index: 67 }], ["מדות ה, ב", { book: 89, index: 37 }]]]
             ],
             current: sl && sl.current || "book",
             onPick: (k) => { if (sl && typeof sl.set === "function") sl.set(k); if (typeof ctx.shared.onkliot === "function") ctx.shared.onkliot(true, true); },   // 1.3.4: the hooks lit
-            fly: () => { flyView("slaughterPlaceClose"); },
+            fly: () => { if (sl && sl.current === "gra") fly([30, 16, -50], [46.5, 8.2, -53]); else flyView("slaughterPlaceClose"); },   // SLAUGHTER_SPLIT_211: the Gra's row runs north-south, west of the hall of hewn stone - from the west
             disabled: !(sl && typeof sl.set === "function")
           });
         }
@@ -4898,7 +5039,7 @@ body.tm-measuring canvas{cursor:crosshair}
             refs: [["מדות ב, ה", MI(2, 5)], ["פירוש המשניות לרמב״ם מדות ב, ה", { book: 573, index: 25 }], ["פסקי הרי״ד סוכה נג.", { book: 7576, index: 355 }], ["רבינו יהונתן סוכה נא:", { book: 7576, index: 353 }], ["המאירי מדות ב, ה", { book: 6033, index: 35 }]],
             options: [
               ["rambam", "הרמב״ם — כל מעלה חצי עיגול, לפני השער", ES_M + "הרמב״ם (פירוש המשניות, מדות ב, ה): 'שמעלות עזרת נשים לא היו ארוכים כשאר המעלות כמו שהוא מפורסם היום מצורת המדרגות אלא היתה כל מעלה כמו חצי עגולה עד שתהא כל מעלה חצי גורן כזה' (הציור שבמקום זה אינו בנוסח שבספרייה), 'ולפיכך היתה צורת המעלה כמי שלקח קצת אצטבא ונתן אותה על המעלה עד שמשלים צורת הסולם וזה אי אפשר לציירו בפשוט אבל יובן בקירוב'.\nבמודל (**ברירת המחדל**): שש מעלות לפני השער המזרחי של חצר הכהנים — שישה חצאי עיגולים, כל אחד מונח על זה שמתחתיו; העליון הוא הקטן, וכל מעלה שמתחתיו רחבה ממנו בחצי אמה. רדיוס המעלה העליונה חמש אמות ומחצה — רוחב השער וחצי אמה מכל צד — ושל התחתונה שמונה. הדברים נאמרו על מעלות בית שני; המעלות בבית ראשון, מספרן, צורתן ומידותיהן — בחירת מודל."],
-              ["rid", "הרי״ד ורבינו יהונתן — מעלות ארוכות", ES_M + "פסקי הרי״ד (סוכה נג.): 'וכל מעלה היתה גבוהה חצי אמה ורחבה חצי אמה כדתנן במידות... ואורך המעלה היה קל\"ה אמה כרוחב העזרה מכותל לכותל'. רבינו יהונתן מלוניל (סוכה נא:): 'אורך המעלה כרוחב העזרה, ורוחב המעלה חצי אמה ורומה חצי אמה'.\nהמאירי (מדות ב, ה): 'מוקפות כחצי גורן, שהתחתונה קצרה, והשניה עודפת לה משני קצותיה, וכן שלישית לשניה'.\nהרי״ד ורבינו יהונתן כתבו את אורך המעלות ולא את צורתן; המאירי כתב את צורתן ולא את אורכן. בקריאה זו הן מצוירות יחד.\nבמודל: שש מעלות ישרות לאורך פני חצר הכהנים, בין שתי הלשכות המערביות של החצר החיצונה — העליונה מאה ושלוש עשרה אמה. התחתונה היא הקצרה, וכל מעלה שמעליה עודפת עליה משני קצותיה; קצות המעלות על קשת — כחצי גורן. הדברים נאמרו על מעלות בית שני; המעלות בבית ראשון, מספרן, צורתן ואורכן — בחירת מודל."]
+              ["rid", "הרי״ד ורבינו יהונתן — מעלות ארוכות", ES_M + "פסקי הרי״ד (סוכה נג.): 'וכל מעלה היתה גבוהה חצי אמה ורחבה חצי אמה כדתנן במידות... ואורך המעלה היה קל\"ה אמה כרוחב העזרה מכותל לכותל'. רבינו יהונתן מלוניל (סוכה נא:): 'אורך המעלה כרוחב העזרה, ורוחב המעלה חצי אמה ורומה חצי אמה'.\nהמאירי (מדות ב, ה): 'מוקפות כחצי גורן, שהתחתונה קצרה, והשניה עודפת לה משני קצותיה, וכן שלישית לשניה'.\nהרי״ד ורבינו יהונתן כתבו את אורך המעלות ולא את צורתן; המאירי כתב את צורתן ולא את אורכן. בשיטה זו הן מצוירות יחד.\nבמודל: שש מעלות ישרות לאורך פני חצר הכהנים, בין שתי הלשכות המערביות של החצר החיצונה — העליונה מאה ושלוש עשרה אמה. התחתונה היא הקצרה, וכל מעלה שמעליה עודפת עליה משני קצותיה; קצות המעלות על קשת — כחצי גורן. הדברים נאמרו על מעלות בית שני; המעלות בבית ראשון, מספרן, צורתן ואורכן — בחירת מודל."]
             ],
             current: ctx.shared.eastSteps.mode,
             onPick: (k) => { ctx.shared.eastSteps.set(k); },
@@ -4916,9 +5057,9 @@ body.tm-measuring canvas{cursor:crosshair}
             cap: "גובה קודש הקדשים",
             refs: [["מלכים א ו, ב", V(10, 6, 2)], ["ו, כ", V(10, 6, 20)], ["רש״י ו, כ", { book: 3673, index: 262 }], ["מצודת דוד ו, כ", { book: 3345, index: 458 }], ["בבא בתרא צח:", { book: 124, index: 2324 }], ["תוספות בבא בתרא צח:", { book: 1923, index: 1051 }], ["רד״ק ו, כ", { book: 3540, index: 369 }], ["לחם שמים יומא ה, א", { book: 1094, index: 219 }]],
             options: [
-              ["rashi", "רש״י — עשרים אמה, ועלייתו נמוכה משל ההיכל", DH_V + "רש״י (ו, כ): 'ועשרים אמה קומתו. כלומר, עלית של בית קדשי הקדשים, נמוכה משל היכל'. מצודת דוד: 'כי ההיכל לבד היתה שלשים אמה, אבל עליית בית קודש הקדשים היתה נמוכה משל היכל י׳ אמות'.\nהיעב״ץ (לחם שמים, יומא ה, א) מקיים את דברי רש״י: 'הרי בבירור שדעתו ז״ל שזהו תכלית גובה העלייה. וכן להיכל תכלית גבהו עם עלייתו שלשים אמה. ואין עוד בגובה ההיכל והדביר בבנין בית ראשון'.\nבמודל (**ברירת המחדל**): תקרת קודש הקדשים בגובה עשרים אמה, ומעליה עלייתו — חדר מצופה זהב ('והעליות חפה זהב', דברי הימים ב ג, ט) — עד תקרת הבית. בקריאת 'מאה ועשרים' שבשורה 'גובה הבית', עליות קודש הקדשים נמוכות בעשר אמות מעליות ההיכל."],
-              ["tosafot", "הגמרא והתוספות — שלושים אמה, כהיכל", DH_V + "הגמרא (בבא בתרא צח:): 'רבי חנינא נפק לקרייתא, רמו ליה קראי אהדדי... אמר להו: כי קא חשיב – משפת כרובים ולמעלה'. התוספות שם: 'בפירוש מקרא פרש״י דתקרה דעליית היכל היתה גבוהה משל קדשי הקדשים עשר אמות ולא עיין כאן'. וכן הביא מצודת דוד (ו, כ): 'ורבותינו ז״ל אמרו (בבבא בתרא צח ב): שחושב כאן משפת כרובים ולמעלה, שהיו קומתן י׳ אמות'.\nבמודל: קודש הקדשים שלושים אמה, כהיכל; תקרתו בגובה תקרת ההיכל, ואין תקרה בגובה עשרים. כתליו מצופים זהב עד התקרה ('ואת כל הבית צפה זהב עד תם כל הבית', ו, כב). בקריאת 'מאה ועשרים' עליות קודש הקדשים שוות לעליות ההיכל. גם עשר האמות העליונות מצוירות כעשרים שתחתיהן — אותם כרובים, תמרות ופטורי ציצים, עד התקרה."],
-              ["radak", "רד״ק — שלושים אמה; עשר העליונות אבן יקרה", DH_V + "רד״ק (ו, כ): 'ואם נאמר שהדביר היה שפל מן ההיכל הלא כשאמר מדת הבית ששים ארכו הדביר בכלל וגם כן כשאמר ושלשים אמה קומתו הדביר בכלל ויש מפרשים מה שאמר ועשרים אמה קומתו מה שהיה מצופה זהב... כי עשרים אמה בגובה צפה הקירות זהב והעשר אמות העליונות צפה באבן יקרה בלשם שבו ושוהם וספיר ודומיהם מן האבנים הטובות וזהו שאמר בדברי הימים ויצף את הבית אבן יקרה וזה לתפארת... וזהו הפירוש הנכון'.\nבמודל: קודש הקדשים שלושים אמה; עשרים האמות התחתונות של כתליו מצופות זהב, ועשר העליונות מחופות אבן יקרה — לוחות גדולים ומלוטשים של אבנים טובות, כחיפוי של קיר (לא אבנים משובצות). גוני האבנים, גודל הלוחות וסידורם — בחירת מודל. בקריאת 'מאה ועשרים' עליות קודש הקדשים שוות לעליות ההיכל."]
+              ["rashi", "רש״י — עשרים אמה, ועלייתו נמוכה משל ההיכל", DH_V + "רש״י (ו, כ): 'ועשרים אמה קומתו. כלומר, עלית של בית קדשי הקדשים, נמוכה משל היכל'. מצודת דוד: 'כי ההיכל לבד היתה שלשים אמה, אבל עליית בית קודש הקדשים היתה נמוכה משל היכל י׳ אמות'.\nהיעב״ץ (לחם שמים, יומא ה, א) מקיים את דברי רש״י: 'הרי בבירור שדעתו ז״ל שזהו תכלית גובה העלייה. וכן להיכל תכלית גבהו עם עלייתו שלשים אמה. ואין עוד בגובה ההיכל והדביר בבנין בית ראשון'.\nבמודל (**ברירת המחדל**): תקרת קודש הקדשים בגובה עשרים אמה, ומעליה עלייתו — חדר מצופה זהב ('והעליות חפה זהב', דברי הימים ב ג, ט) — עד תקרת הבית. בשיטת 'מאה ועשרים' שבמתג 'גובה הבית', עליות קודש הקדשים נמוכות בעשר אמות מעליות ההיכל."],
+              ["tosafot", "הגמרא והתוספות — שלושים אמה, כהיכל", DH_V + "הגמרא (בבא בתרא צח:): 'רבי חנינא נפק לקרייתא, רמו ליה קראי אהדדי... אמר להו: כי קא חשיב – משפת כרובים ולמעלה'. התוספות שם: 'בפירוש מקרא פרש״י דתקרה דעליית היכל היתה גבוהה משל קדשי הקדשים עשר אמות ולא עיין כאן'. וכן הביא מצודת דוד (ו, כ): 'ורבותינו ז״ל אמרו (בבבא בתרא צח ב): שחושב כאן משפת כרובים ולמעלה, שהיו קומתן י׳ אמות'.\nבמודל: קודש הקדשים שלושים אמה, כהיכל; תקרתו בגובה תקרת ההיכל, ואין תקרה בגובה עשרים. כתליו מצופים זהב עד התקרה ('ואת כל הבית צפה זהב עד תם כל הבית', ו, כב). בשיטת 'מאה ועשרים' עליות קודש הקדשים שוות לעליות ההיכל. גם עשר האמות העליונות מצוירות כעשרים שתחתיהן — אותם כרובים, תמרות ופטורי ציצים, עד התקרה."],
+              ["radak", "רד״ק — שלושים אמה; עשר העליונות אבן יקרה", DH_V + "רד״ק (ו, כ): 'ואם נאמר שהדביר היה שפל מן ההיכל הלא כשאמר מדת הבית ששים ארכו הדביר בכלל וגם כן כשאמר ושלשים אמה קומתו הדביר בכלל ויש מפרשים מה שאמר ועשרים אמה קומתו מה שהיה מצופה זהב... כי עשרים אמה בגובה צפה הקירות זהב והעשר אמות העליונות צפה באבן יקרה בלשם שבו ושוהם וספיר ודומיהם מן האבנים הטובות וזהו שאמר בדברי הימים ויצף את הבית אבן יקרה וזה לתפארת... וזהו הפירוש הנכון'.\nבמודל: קודש הקדשים שלושים אמה; עשרים האמות התחתונות של כתליו מצופות זהב, ועשר העליונות מחופות אבן יקרה — לוחות גדולים ומלוטשים של אבנים טובות, כחיפוי של קיר (לא אבנים משובצות). גוני האבנים, גודל הלוחות וסידורם — בחירת מודל. בשיטת 'מאה ועשרים' עליות קודש הקדשים שוות לעליות ההיכל."]
             ],
             current: ctx.shared.devirHeight.mode,
             onPick: (k) => { ctx.shared.devirHeight.set(k); },
@@ -4952,7 +5093,7 @@ body.tm-measuring canvas{cursor:crosshair}
           // 1.0.1-L: the user: the midrash's name on screen is "בית המדרש ב" (a source's link may keep the book's title), whatever the module's list says
           options: ["pesukim", "targumSheni", "estherRabbah", "beitHamidrash"].map((k) => [k, k === "beitHamidrash" ? "בית המדרש ב" : tvNames[k] || k, tvNotes[k] || "", TH_REFS[k]]),
           current: tver && tver.current || "pesukim",
-          onPick: (k) => { setLayer("palace", true); if (tver && typeof tver.set === "function") tver.set(k); },
+          onPick: (k) => { ctx.shared.throneAuto = false; setLayer("palace", true); if (tver && typeof tver.set === "function") tver.set(k); },   // THRONE_BACK_211: the reader's own choice stays
           fly: () => { setLayer("palace", true); flyView("throne"); },
           disabled: !(tver && typeof tver.set === "function")
         });
@@ -4963,8 +5104,8 @@ body.tm-measuring canvas{cursor:crosshair}
       // (and of the presentation of the readings, 75-tour.js, which goes by this order) does not jump back and forth. A row that is not
       // in the list keeps its place after the listed ones.
       {
-        const WANT = ["lesserPlace", "eastSteps", "seaPlacement", "sanhedrinRows", "slaughterLayout", "altarPlace", "altarRTam", "altarYose", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps",
-          "aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling", "potot", "kodeshLayout", "kodeshOpinion", "devirDoor", "devirHeight", "cherubPose", "arkLayout",
+        const WANT = ["lesserPlace", "eastSteps", "yehoyadaChests", "seaPlacement", "sanhedrinRows", "slaughterLayout", "altarPlace", "altarRTam", "altarYose", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps",
+          "aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling", "potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout",
           "forestHouse", "throneVersion"];
         const at = (r) => { const i = WANT.indexOf(r.id); return i < 0 ? WANT.length : i; };
         const sorted = OPS.map((r, i) => [r, i]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map((q) => q[0]);
@@ -5002,6 +5143,90 @@ body.tm-measuring canvas{cursor:crosshair}
       if (ctx.camInside && typeof ctx.camInside.set === "function") {
         toggleRow("מעבר דרך קירות (שקופים)", !ctx.camInside.get(), (on) => ctx.camInside.set(!on));
       }
+      // STONE_211 (the user, 14.11.2026: "יש דרך לעשות את כל החומות והלשכות בצבע אבן עתיקה"; then: "לא צריך מתג לגוון האבן - אפשר לעשות
+      // זאת מתג רק בצורה של אלו" - a row here, by "תוויות"; then, 23:15: "את כלל החומות בגוון אבן עתיקה (גם הלשכות, רק לא האולם, היכל,
+      // קה״ק ותאים)"): the stone of ALL the walls and the chambers in a warm, aged hue - on by default; off: the light stone as before.
+      // The Temple's own building (the ulam, the heichal, the Holy of Holies, the cells) keeps its light stone: its pieces that share
+      // the walls' materials get an untinted twin. The walls' own clones (the fading walls of 10-core.js) are found by their texture.
+      // A view setting only, not a reading (the marble of Herod's building is the opinions' row "בניין הורדוס")
+      {
+        const MM = ctx.M || {}, TT = ctx.THREE;
+        const BASES = ["stone", "stoneLight", "stoneSmooth"].map((k) => MM[k]).filter(Boolean);
+        if (BASES.length && TT && ctx.scene) {
+          const TINT = new TT.Color(0xe8d3aa);
+          const orig = new Map(BASES.map((m) => [m, m.color.clone()]));   // a base material -> its own colour
+          const tinted = new Map(BASES.map((m) => [m, m.color.clone().multiply(TINT)]));
+          const aged = new Map();    // every tinted material -> the colour it goes back to
+          const fresh = new Map();   // a base material -> its untinted twin, for the Temple's building
+          const src = (t) => t && (t.source || t.image || t);
+          const baseOf = (m) => { if (orig.has(m)) return m; if (!m.map) return null; for (const b of BASES) if (b.map && (b.map === m.map || src(b.map) === src(m.map))) return b; return null; };
+          const near = (p, q) => Math.abs(p.r - q.r) + Math.abs(p.g - q.g) + Math.abs(p.b - q.b) < 0.02;
+          const inTemple = (o) => { for (let p = o; p; p = p.parent) if (/^(heichal|interior|ulamCourses|house-)/.test(p.name || "")) return true; return false; };
+          let on = true;
+          const notStone = new WeakSet(), done = new WeakMap();   // materials that are not the walls' stone; a mesh -> the material it had when scanned
+          const scan = () => {
+            ctx.scene.traverse((o) => {
+              if (!o.isMesh || o.isSprite) return;
+              const arr = Array.isArray(o.material);
+              if (!arr && done.get(o) === o.material) return;
+              const ms = arr ? o.material : [o.material];
+              let temple = null;
+              for (let i = 0; i < ms.length; i++) {
+                const m = ms[i];
+                if (!m || !m.color || notStone.has(m) || (m.userData && m.userData.tmFresh)) continue;
+                const isBase = orig.has(m);
+                if (!isBase && aged.has(m)) continue;
+                const b = isBase ? m : baseOf(m);
+                if (!b) { notStone.add(m); continue; }
+                if (temple === null) temple = inTemple(o);
+                if (temple) {
+                  if (isBase) {   // the building shares the walls' material: its untinted twin
+                    let f = fresh.get(b);
+                    if (!f) { f = b.clone(); f.color.copy(orig.get(b)); f.userData.tmFresh = true; fresh.set(b, f); }
+                    if (arr) o.material[i] = f; else o.material = f;
+                  } else { if (near(m.color, tinted.get(b))) m.color.copy(orig.get(b)); m.userData.tmFresh = true; }   // its own clone stays light
+                  continue;
+                }
+                if (!isBase && !near(m.color, orig.get(b)) && !near(m.color, tinted.get(b))) { notStone.add(m); continue; }   // a clone with a colour of its own
+                aged.set(m, orig.get(b));
+              }
+              if (!arr) done.set(o, o.material);
+            });
+          };
+          const apply = () => { for (const [m, c] of aged) { m.color.copy(c); if (on) m.color.multiply(TINT); } };
+          const setAged = (v) => { on = !!v; scan(); apply(); };
+          setAged(true);
+          toggleRow("גוון אבן עתיקה", true, setAged);
+          ctx.shared.stoneAged = { set: setAged, isOn: () => on, count: () => aged.size };
+          setInterval(() => { const n = aged.size; scan(); if (aged.size !== n) apply(); }, 2500);   // pieces built or re-clad later
+        }
+      }
+      // SOUND_211 (the user, 15.11.2026: sounds in the demonstrations - and a way to silence them): the row "קולות בהדגמות", on by
+      // default; off - no demonstration makes a sound (ctx.shared.soundOff: every sound maker asks it) and what sounds now stops
+      // (ctx.shared.soundStops). Kept between visits (localStorage "tm.sound.off", one key for both houses)
+      {
+        let off = false;
+        try { off = localStorage.getItem("tm.sound.off") === "1"; } catch (_) {}
+        ctx.shared.soundOff = off;
+        const inpS = toggleRow("קולות בהדגמות", !off, (on) => {
+          ctx.shared.soundOff = !on;
+          try { localStorage.setItem("tm.sound.off", on ? "0" : "1"); } catch (_) {}
+          if (!on) { for (const f of (Array.isArray(ctx.shared.soundStops) ? ctx.shared.soundStops : [])) { try { f(); } catch (_) {} } }
+        });
+        // SOUND_SYNC_211 (the function review, F2-09): the key was read once, at load - with both houses open, silencing one left the
+        // other sounding. Now each house reads it again when the other writes it ("storage") and when it is shown again.
+        const syncS = () => {
+          let o = false;
+          try { o = localStorage.getItem("tm.sound.off") === "1"; } catch (_) { return; }
+          if (o === !!ctx.shared.soundOff) return;
+          ctx.shared.soundOff = o;
+          if (inpS) inpS.checked = !o;
+          if (o) { for (const f of (Array.isArray(ctx.shared.soundStops) ? ctx.shared.soundStops : [])) { try { f(); } catch (_) {} } }
+        };
+        window.addEventListener("storage", (e) => { if (!e || e.key == null || e.key === "tm.sound.off") syncS(); });
+        window.addEventListener("focus", syncS);
+        document.addEventListener("visibilitychange", syncS);
+      }
       // ===== layers =====
       const secLay = document.createElement("div");
       secLay.className = "sec";
@@ -5015,7 +5240,7 @@ body.tm-measuring canvas{cursor:crosshair}
       }
       const units = document.createElement("div");
       units.id = "tm-units";
-      units.textContent = "המידות באמות. יחידה אחת במודל = אמה אחת. לחיצה על מבט, מקום או שיטה פותחת את ההסבר ומקורותיו בכרטיס ליד הלוח (✕ או Esc סוגר). מה שאינו בפסוקים מסומן בהסברים ובלוח 'השלמות'; המחלוקות — בטבלת 'שיטות ומחלוקות'.";
+      units.textContent = "המידות באמות. יחידה אחת במודל = אמה אחת. לחיצה על מבט, מקום או שיטה פותחת את ההסבר ומקורותיו בכרטיס ליד התפריט (✕ או Esc סוגר). מה שאינו בפסוקים מסומן בהסברים ובלוח ״השלמות״; המחלוקות — בתפריט, תחת ״שיטות ומחלוקות״.";
       panel.appendChild(units);
       const foot = document.createElement("div");
       foot.id = "tm-foot";
@@ -5024,6 +5249,14 @@ body.tm-measuring canvas{cursor:crosshair}
       foot.style.cursor = "pointer";
       foot.addEventListener("click", () => { const b = document.getElementById("tm-help-btn"); if (b) b.click(); });
       panel.appendChild(foot);
+      // NEWS_WIN_211: the way back to the list of this version - the top bar's button goes once the list was seen (1.1.0, the user)
+      {
+        const fn = document.createElement("div");
+        fn.id = "tm-foot-news";
+        fn.textContent = "מה חדש בגרסה זו";
+        fn.addEventListener("click", () => { try { const o = document.getElementById("tm-news"); if (o) o.remove(); else if (ctx.ui && ctx.ui.news) ctx.ui.news.show(); } catch (_) {} });
+        panel.appendChild(fn);
+      }
       // 1.1.0: the top bar's buttons are children of #tm-topbtns in index.html's header, in a flex row, ordered by `order`
       // (presentation 10, navigation help 20, print 30, report 40, what's new 50). Each gets an inline SVG icon (ui_topIcon) and its
       // label in a span.lbl (hidden in a narrow window: index.html). No measuring, no polling: the row lays itself out.
@@ -5093,36 +5326,47 @@ body.tm-measuring canvas{cursor:crosshair}
           }
           box.appendChild(ul);
         };
-        sec("עכבר", [
-          "גרירה עם הכפתור השמאלי — סיבוב המבט.",
-          "גלגלת — התקרבות והתרחקות (זום).",
-          "גרירה עם הכפתור הימני — הזזת התמונה הצידה.",
-          "[[Shift]] + גלגלת — הגבהה והנמכה של גובה העין."
+        // HELP_211: the navigation help in plain words (the user: "בשפה יותר ברורה גם לכאלו שלא מבינים במחשב")
+        sec("עם עכבר", [
+          "להסתובב סביב המקום: לחץ על הכפתור השמאלי של העכבר, החזק אותו, והזז את העכבר.",
+          "להתקרב או להתרחק: גלגל את הגלגלת שבאמצע העכבר. המודל מתקרב בדיוק למקום שעליו עומד הסמן — זכוכית המגדלת.",
+          "אפשר גם בלי גלגלת: העמד את זכוכית המגדלת על מקום ולחץ [[Enter]] — המודל מתקרב אליו. [[Shift]] + [[Enter]] — מתרחק. לחיצה כפולה בעכבר עושה כמו [[Enter]].",
+          "להזיז את התמונה הצידה: לחץ על הכפתור הימני של העכבר, החזק אותו, והזז את העכבר.",
+          "לקרוא הסבר על מקום: לחץ על השם שכתוב עליו במודל. כשהסמן נעשה יד — אפשר ללחוץ."
         ]);
-        sec("משטח מגע (לפטופ)", [
-          "גרירה באצבע אחת — סיבוב.",
-          "שתי אצבעות: צביטה או החלקה למעלה ולמטה — זום.",
-          "אם הגלגלת גוללת את הדף במקום לזום: לחץ פעם אחת על המודל (שיקבל את המיקוד), והחזק את הסמן מעל המודל ולא מעל הלוח."
+        sec("במחשב נייד (משטח מגע)", [
+          "להסתובב: לחץ על המשטח, החזק, וגרור את האצבע (או: הקש פעמיים, ובפעם השנייה השאר את האצבע על המשטח וגרור).",
+          "להתקרב: שים שתי אצבעות על המשטח והרחק אותן זו מזו, או החלק את שתיהן יחד למעלה.",
+          "אם במקום להתקרב הדף כולו זז: לחץ פעם אחת על המודל, ונסה שוב כשהסמן עומד על המודל."
         ]);
-        sec("מסך מגע", [
-          "אצבע אחת — סיבוב. צביטה — זום. שתי אצבעות יחד — הזזה."
+        sec("בטלפון או בטאבלט (מסך מגע)", [
+          "אצבע אחת — מסובבת. שתי אצבעות שנפתחות — מקרבות. שתי אצבעות שזזות יחד — מזיזות את התמונה."
         ]);
-        sec("מקלדת — הליכה", [
-          "[[↑]] [[↓]] — הליכה קדימה ואחורה, לכיוון המבט (בתוך הבית: כמי שמטייל בו).",
-          "[[←]] [[→]] — פנייה ימינה ושמאלה (בחוץ: סיבוב סביב היעד).",
-          "[[PageUp]] [[PageDown]] — הגבהה והנמכה של גובה העין.",
-          "[[Shift]] + [[↑]] [[↓]] — הטיית המבט למעלה ולמטה.",
-          "[[+]] [[−]] — זום. [[Esc]] — סגירת כרטיס הסבר.",
-          "🚶 מצב הליכה (בתיבת הניווט): העין בגובה אדם; העכבר לבדו מסובב את המבט ([[Esc]] משחרר אותו), [[W]] [[S]] [[A]] [[D]] (או ו ד ש ג, או החצים) — הליכה ותזוזה הצידה."
+        sec("עם המקלדת", [
+          "[[↑]] — ללכת קדימה. [[↓]] — ללכת אחורה.",
+          "[[←]] [[→]] — לפנות שמאלה וימינה.",
+          "[[PageUp]] — לעלות. [[PageDown]] — לרדת.",
+          "[[+]] [[−]] — להתקרב ולהתרחק. [[Esc]] — לסגור כרטיס הסבר."
         ]);
-        sec("חתך חי", [
-          "״חתך״ בתיבת הניווט — מישור חיתוך דרך המודל: כל מה שמדרום לו (בציר צפון–דרום) או ממזרח לו (בציר מזרח–מערב) נחתך, ורואים את הפנים כבחתך אדריכלי. המישור מתחיל במקום שאליו מביטים; המחוון מזיז אותו עד 80 אמה לכל צד, והכפתור שלידו מחליף ציר. ״↺ החזר הכל״ מכבה אותו. פני החתך אינם ממולאים — בחירת מודל."
+        sec("התפריט שבצד", [
+          "בתפריט רשומים כל המקומות. לחיצה על שם — מעבירה אל המקום ופותחת עליו הסבר.",
+          "שורת החיפוש שבראש התפריט: כתוב מילה, ויופיעו המקומות שמתאימים לה.",
+          "״שיטות ומחלוקות״: כאן בוחרים איך לצייר דבר שנחלקו בו. לחיצה על שיטה — משנה את המודל מיד.",
+          "״מה חדש בגרסה זו״, בסוף התפריט — פותח שוב את רשימת החידושים."
         ]);
-        sec("בתוך הבית", [
-          "באולם או בהיכל, כשהמבט רחוק — גרירה מסובבת את המבט במקום, כמי שעומד ומביט סביבו; הגלגלת מתקדמת קדימה ואחורה.",
-          "אחרי מעבר לכלי קרוב (המנורות, השולחנות, הכרובים) הגרירה מסובבת סביב הכלי. העין נשארת בתוך החדר: כדי לראות את הכלי מאחור — התקרב אליו בגלגלת וגרור סביבו.",
-          "״מעבר דרך קירות״ (בלוח, תצוגה) מרשה לעין לצאת מן החדר; הקירות נעשים שקופים בדרך.",
-          "אין עצירות: כל מיצג נראה מכל גובה ומכל מרחק. ״↺ החזר הכל״ בתחתית הלוח מחזיר את המבט הראשון ואת כל המתגים."
+        sec("הדגמות", [
+          "כפתור של הדגמה מפעיל סרטון בתוך המודל.",
+          "לחיצה על המודל בזמן הדגמה — עוצרת אותה. ״המשך״ — ממשיך מאותו רגע. ״עצור״ — מפסיק."
+        ]);
+        sec("כלים נוספים", [
+          "המצפן (בפינה התחתונה): החץ האדום מראה לאן הצפון. לחיצה על אחת האותיות — מפנה את המבט לכיוון שלה.",
+          "🚶 מצב הליכה: העין בגובה אדם, כאילו אתה הולך במקום. החצים במקלדת — הליכה. [[Esc]] — יציאה.",
+          "״חתך״: חותך את הבניין כמו בשרטוט, כדי לראות מה בפנים. הפס שלידו מזיז את מקום החתך.",
+          "בתוך ההיכל: כשאתה רחוק — הגרירה מסובבת את המבט סביבך. ליד כלי — הגרירה מסתובבת סביב הכלי.",
+          "״מעבר דרך קירות״ (בתפריט, תחת ״תצוגה״) — מרשה לעבור דרך קירות; הם נעשים שקופים בדרך.",
+          "״טשטוש חומות״ (בשורת הכפתורים שבתחתית המסך): חומה שמסתירה את מה שמביטים בו נעשית שקופה למחצה. ״מרחק טשטוש״ — עד איזה מרחק מן העין.",
+          "״↺ החזר הכל״ — מופיע בשורת הכפתורים שבתחתית המסך אחרי שפתחת משהו במודל (גג, קיר, חתך). לחיצה עליו סוגרת את כל מה שנפתח. את השיטות שבחרת הוא אינו משנה.",
+          "בסרגל העליון: ״מצגת״ — סיור מודרך, שלב אחר שלב. ״הדפסה״ — מדפיסה את התמונה ואת כרטיס ההסבר. ״דיווח״ — לשלוח הערה או תיקון."
         ]);
         const bb = document.createElement("div");
         bb.className = "b";
@@ -6190,7 +6434,7 @@ body.tm-measuring canvas{cursor:crosshair}
           });
           return oTargets;
         };
-        const occluded = (a) => {
+        const occluded = (a, wallsToo) => {
           const cam = ctx.camera.position;
           oDir.set(a[0] - cam.x, a[1] - cam.y, a[2] - cam.z);
           const L = oDir.length();
@@ -6202,6 +6446,10 @@ body.tm-measuring canvas{cursor:crosshair}
             const o = hh.object;
             if (!visUp(o)) continue;
             const m = Array.isArray(o.material) ? o.material[0] : o.material;
+            // PILL_HOME_211: a wall that the fade shows see-through still hides the pill behind it (the user: the ulam's and the cloud's
+            // pills "יצאו החוצה סתם" in the view of the Nikanor gate) - unless the pill is switched on (wallsToo = false: it must stay
+            // within reach, to be switched off); glass and water never hid a pill
+            if (m && m.visible !== false && m.transparent && m.opacity <= 0.5 && wallsToo && (o.userData.fade || o.userData.tmPass)) return true;
             if (m && (m.visible === false || (m.transparent && m.opacity <= 0.5))) continue;
             return true;
           }
@@ -6226,6 +6474,12 @@ body.tm-measuring canvas{cursor:crosshair}
             if (S && typeof S.at === "function" && typeof S.hw === "number" && a[0] <= S.x0 && a[0] >= S.x1 && Math.abs(a[2]) <= S.hw && a[1] <= S.floor + 13) a = [a[0], a[1] + S.at(a[0]), a[2]];
           }
           const cam = ctx.camera;
+          // PILL_HOME_211 (the user's picture of "לשכת הכלים": the great gate's pill hung in the air over a section that had cut the
+          // gate away): a pill whose place is in the half that the live section removes is not shown
+          try {
+            const SC = ctx.shared.section;
+            if (SC && SC.on && typeof SC.v === "number") { const ai = SC.axis === "x" ? 0 : SC.axis === "y" ? 1 : 2; if (a[ai] > SC.v) return null; }
+          } catch (_) {}
           pv.set(a[0], a[1], a[2]);
           if (pv.distanceTo(cam.position) > (typeof b.maxDist === "number" ? b.maxDist : 150)) return null;
           pc.copy(pv).applyMatrix4(cam.matrixWorldInverse);
@@ -6234,7 +6488,9 @@ body.tm-measuring canvas{cursor:crosshair}
           if (Math.abs(pv.x) > 0.96 || Math.abs(pv.y) > 0.94) return null;   // outside the view
           if (b.occlude !== false) {
             if (force || st.occ == null || frameNo - st.occAt >= 6) {
-              st.occ = occluded(a);
+              let isOn = false;
+              try { isOn = !!b.get(); } catch (_) { isOn = false; }
+              st.occ = occluded(a, !isOn);   // PILL_HOME_211
               st.occAt = frameNo;
             }
             if (st.occ) return null;
@@ -6245,6 +6501,7 @@ body.tm-measuring canvas{cursor:crosshair}
         };
         const resetAll = () => {
           autoOff.flush();   // 1.0.1-L (L.27): what a place switched on goes back now (the tables of the ulam have no pill), and no timer stays
+          try { placeLeave({}); } catch (_) {}   // VIEW_LEAVE_211: and the place's own layer or untimed feature
           for (const b of MB.slice()) {
             try {
               if (b && typeof b.get === "function" && typeof b.set === "function" && b.get()) b.set(false);
@@ -6276,7 +6533,7 @@ body.tm-measuring canvas{cursor:crosshair}
             freeRects.length = 0;
             for (const id of ["tm-panel", "tm-xcard"]) {
               const e = document.getElementById(id);
-              if (!e || e.offsetParent === null) continue;
+              if (!e) continue;   // PILL_HOME_211: (the panel and the card are position: fixed - their offsetParent is always null, so this test used to skip them both and no pill was ever moved)
               const cs = getComputedStyle(e);
               if (cs.display === "none" || cs.visibility === "hidden" || +cs.opacity === 0) continue;
               const r = e.getBoundingClientRect();
@@ -6299,7 +6556,33 @@ body.tm-measuring canvas{cursor:crosshair}
         };
         let anyOnShown = null;
         const rects = [];   // the screen rectangles of the pills placed in this frame (a pool, reused every frame)
-        let topBarH = 56, topBarAt = -1e9;
+        let topBarH = 56, topBarAt = -1e9, navR = null;
+        // CARD_PILLS_211: the chips at the card's foot for the pills that the card hides (rebuilt only when the list changes)
+        let cardPillsKey = "";
+        const cardPills = (list) => {
+          const card = document.getElementById("tm-xcard");
+          const shown = !!card && card.style.display !== "none" && card.offsetParent !== undefined && getComputedStyle(card).display !== "none";
+          const key = shown ? list.map((b) => b.id + ":" + (b.label || "")).join("|") : "";
+          if (key === cardPillsKey) return;
+          cardPillsKey = key;
+          let host = card ? card.querySelector("#tm-card-pills") : null;
+          if (!key) { if (host) host.style.display = "none"; return; }
+          if (!host) { host = document.createElement("div"); host.id = "tm-card-pills"; host.style.cssText = "padding:4px 10px 8px;border-top:1px solid rgba(201,168,76,.25)"; card.appendChild(host); }
+          host.innerHTML = "";
+          host.style.display = "";
+          const t = document.createElement("div");
+          t.textContent = "כפתורים שעל המודל, שהכרטיס מסתיר:";
+          t.style.cssText = "font-size:12px;opacity:.8;margin:2px 0 4px";
+          host.appendChild(t);
+          for (const b of list) {
+            const bt = document.createElement("button");
+            bt.type = "button";
+            bt.className = "tm-more";
+            bt.textContent = "▶ " + String(b.label || b.id || "");
+            bt.onclick = (e) => { e.stopPropagation(); try { b.set(!b.get()); } catch (_) {} cardPillsKey = ""; };
+            host.appendChild(bt);
+          }
+        };
         const frame = (force) => {
           const cam = ctx.camera;
           cam.updateMatrixWorld();
@@ -6307,8 +6590,11 @@ body.tm-measuring canvas{cursor:crosshair}
           if (frameNo - topBarAt > 30) {   // the bar's height (56 / 44 px by the width), measured now and then
             topBarAt = frameNo;
             try { const tb = document.getElementById("tm-topbar"); if (tb) topBarH = tb.offsetHeight || topBarH; } catch (_) {}
+            // PILL_NAV_211 (the function review, F2-07): the navigation row's rectangle, measured with the bar
+            try { const nv = document.getElementById("tm-nav"), r = nv && getComputedStyle(nv).display !== "none" ? nv.getBoundingClientRect() : null; navR = r && r.width > 20 ? { l: r.left, r: r.right, t: r.top } : null; } catch (_) { navR = null; }
           }
           let nPlaced = 0;
+          const hidCard = [];   // CARD_PILLS_211: the pills hidden under the card or the panel in this frame
           let anyOn = false;
           for (const b of MB) {
             if (!b || typeof b.get !== "function") continue;
@@ -6353,9 +6639,21 @@ body.tm-measuring canvas{cursor:crosshair}
             let x = p[0];
             let y = p[1];
             x = pillFreeX(x, y, w, h);   // PILL_FREE_210
+            // PILL_HOME_211 (the user, 15.11.2026: "כל כפתורי הפתיחה, כגון הסר ענן, פתח את האולם, יצאו החוצה סתם" - a pill moved from under
+            // the card floated beside it, over a part of the model that is not its own): a pill whose own place is under the card or the
+            // panel is NOT shown (folding the card or turning the view brings it back at its place). One that is switched on still moves
+            // aside, so that it can be switched off.
+            if (x !== p[0] && !on) {
+              hidCard.push(b);   // CARD_PILLS_211
+              st.disp = "none";
+              st.el.style.display = "none";
+              continue;
+            }
             // 1.2.3 (the user: "הכפתור של הבאת המכונה מוסתר עם הסרגל - צריך להזיז אותו"): never under the top bar - a pill whose anchor projects
             // behind the bar is held just below it
             if (y - h / 2 < topBarH + 6) y = topBarH + 6 + h / 2;
+            // PILL_NAV_211: in a low window "הצג מה שבתוך הארון" was drawn under the navigation row and could not be pressed
+            if (navR && x + w / 2 > navR.l && x - w / 2 < navR.r && y + h / 2 > navR.t - 4) y = navR.t - 4 - h / 2;
             // push down below any pill already placed that it overlaps (in registration order)
             for (let k = 0; k < 8; k++) {
               let hit = null;
@@ -6394,6 +6692,8 @@ body.tm-measuring canvas{cursor:crosshair}
             }
           }
           if ((ctx.shared.section && ctx.shared.section.on) || (ctx.shared.walkMode && ctx.shared.walkMode.on)) anyOn = true;   // 1.2.9
+          if (typeof leaveFeat !== "undefined" && (leaveFeat || leaveLayer)) anyOn = true;   // VIEW_LEAVE_211
+          try { cardPills(hidCard); } catch (_) {}   // CARD_PILLS_211
           if (anyOn !== anyOnShown) {
             anyOnShown = anyOn;
             resetAllBtn.style.display = anyOn ? "inline-block" : "none";
@@ -6434,8 +6734,8 @@ body.tm-measuring canvas{cursor:crosshair}
       {
         const shortOf = (rows) => {
           const line = (r) => r.options.map((o) => String(o[1]).replace(/[.;:\s]+$/, "") + (o[0] === r.cur ? " (ברירת המחדל)" : "")).join("; ") + ".";
-          if (rows.length === 1) return "בקצרה — השיטות בכרטיס זה (״" + rows[0].cap + "״; הפירוט — במתגים שבכרטיס ובטבלת ״שיטות ומחלוקות״): " + line(rows[0]);
-          return "בקצרה — השיטות בכרטיס זה (הפירוט — במתגים שבכרטיס ובטבלת ״שיטות ומחלוקות״):\n" + rows.map((r) => "• **" + r.cap + ":** " + line(r)).join("\n");
+          if (rows.length === 1) return "בקצרה — השיטות בכרטיס זה (״" + rows[0].cap + "״; הפירוט — במתגים שבכרטיס ובתפריט, תחת ״שיטות ומחלוקות״): " + line(rows[0]);
+          return "בקצרה — השיטות בכרטיס זה (הפירוט — במתגים שבכרטיס ובתפריט, תחת ״שיטות ומחלוקות״):\n" + rows.map((r) => "• **" + r.cap + ":** " + line(r)).join("\n");
         };
         const withShort = (text, rows) => {
           const t = String(text || "");
@@ -6695,9 +6995,24 @@ body.tm-measuring canvas{cursor:crosshair}
           ok.className = "y";
           ok.textContent = "סגירה";
           bb.appendChild(ok);
+          // NEWS_WIN_211 (the reviews, U-19 / F2-03; the user, 15.11.2026 18:39: "20. א"): the list was 3.4 screens long in its box and
+          // "סגירה" stood only at its very end, under the window's edge. Now only the list scrolls: the title (with a ✕) and "סגירה"
+          // always show. Enter - this release's own key for coming closer - no longer closes the window (Esc and a click beside it do).
+          const tx = document.createElement("span");
+          tx.textContent = t.textContent;
+          const xb = document.createElement("button");
+          xb.type = "button";
+          xb.className = "x";
+          xb.textContent = "✕";
+          xb.title = "סגירה";
+          t.textContent = "";
+          t.appendChild(tx);
+          t.appendChild(xb);
+          box.tabIndex = -1;
           box.appendChild(t);
           box.appendChild(ul);
           box.appendChild(bb);
+          xb.addEventListener("click", () => dlg.remove());
           dlg.appendChild(box);
           document.body.appendChild(dlg);
           const close = () => dlg.remove();
@@ -6705,11 +7020,12 @@ body.tm-measuring canvas{cursor:crosshair}
           dlg.addEventListener("click", (e) => { if (e.target === dlg) close(); });
           dlg.addEventListener("keydown", (e) => {
             e.stopPropagation();
-            if (e.key === "Escape" || e.key === "Esc" || e.key === "Enter") close();
+            if (e.key === "Enter") { e.preventDefault(); return; }   // NEWS_WIN_211
+            if (e.key === "Escape" || e.key === "Esc") close();
           });
           dlg.addEventListener("keyup", (e) => e.stopPropagation());
           dlg.style.display = "flex";
-          try { ok.focus({ preventScroll: true }); } catch (_) {}
+          try { box.focus({ preventScroll: true }); } catch (_) {}   // NEWS_WIN_211: not the button - Enter would press it
           markSeen(ver);
         };
         // ready = the loading view gone, no presentation running, no other window of the plugin open

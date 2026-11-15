@@ -389,8 +389,60 @@
     }, true);
     const brows = () => [-1, 1].map((sd) => shade(at(rot(sph(0.027, 0.0058, 0.009, 6, 3), 0, 0, -sd * 0.05), sd * EYE[0], 0.051, 0.1262), 0.72));
     const stache = () => [-1, 1].map((sd) => shade(at(rot(sph(0.037, 0.0125, 0.016, 5, 3), 0, 0, -sd * 0.4), sd * 0.027, -0.066, 0.127), 1));
-    const hairCap = (young) => [shade(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 10, 2, 0, TAU, 0, young ? 1.08 : 0.8), 0.92), shade(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 8, 3, Math.PI + 0.3, Math.PI - 0.6, 1.08, 1.4), 0.9)];
+    // PEOPLE_KIT_211C (the user, 15.11.2026 03:15: "יש בעיה עם שער שלהם הוא לא מקיף את כל הראש"): until now the hair was a crown
+    // under the kippah and a band on the BACK half of the head only - the temples and the top of the forehead were bare. Now it
+    // goes ROUND the whole head: a fringe under the kippah's front edge, down before the ears to the beard's upper edge (a young
+    // man's: to where his peyot hang), over the ears, and behind them down to the nape. hairLow: the hair's lower edge at `a`
+    // radians from the middle of the face; hairRing: the band itself, from y0 (under the kippah) down to that edge
+    const hairLow = (a, young) => {
+      const side = young ? 0.004 : -0.106 + 0.124 * Math.pow(Math.min(1, a / 1.4), 1.3);
+      if (a < 1.05) return side + (0.09 - side) * (1 - sstep(0.68, 1.05, a));
+      if (a < 1.6) return side + (0.036 - side) * sstep(1.4, 1.47, a);
+      return 0.036 - 0.186 * sstep(1.74, 2.05, a);   // behind the ears: down into the neck
+    };
+    // the rows: from the lower edge up to just under the kippah's rim (yR: the rim is tilted, higher over the forehead), and `hid`
+    // more rows, hidden, up under the kippah. At the rim and above it the hair is thin, close on the skin, so that it does not
+    // come out through the kippah's few faces; the band's corners stand over the head's own (28 round over its 14; the plain
+    // figure's 10, half a step aside, over its 10), so that no corner of the head comes out through the hair
+    const hairRing = (young, nu, nv, hid) => surf(nu, nv, (u, v, o) => {
+      const j = Math.round(v * nv), m = nv - hid, ph = (u * 2 - 1) * Math.PI + (hid ? 0 : Math.PI / nu), pw = ph > Math.PI ? ph - TAU : ph;
+      const yL = hairLow(Math.abs(pw), young), yR = 0.0907 + 0.0178 * Math.cos(ph), w = 1 - Math.min(1, j / m);
+      const y = j > m ? yR + (j - m) / hid * (0.128 - yR) : yL + (1 - w) * (yR - yL);
+      const r = headR(ph, y) + (j > m ? 0.002 + 0.0015 * (j - m) : j === m ? (hid ? 0.002 : 0.004) : 0.0078 - 0.0118 * w * w * w * w);   // its lower edge sinks into the skin
+      o.x = Math.sin(ph) * r;
+      o.y = y;
+      o.z = Math.cos(ph) * r;
+      o.c = 0.9 + 0.05 * Math.sin(13 * ph + 2 * v);
+    });
+    const hairCap = (young) => [shade(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 10, 2, 0, TAU, 0, 0.8), 0.92), hairRing(young, 28, 7, 2)];
     const peyot = () => [-1, 1].flatMap((sd) => [shade(at(sph(0.013, 0.062, 0.016, 5, 4), sd * 0.122, -0.04, 0.05), 0.95), shade(at(sph(0.016, 0.016, 0.016, 5, 3), sd * 0.124, -0.102, 0.054), 1)]);
+    // PEOPLE_KIT_211 (the user, 15.11.2026: "כל הפועלים הם כהנים בכל הלשכות"): kind "kohen" - the white robe (o.robe), the hat instead of
+    // the kippah, and the sash in its three colours, its two ends hanging in front (the lottery's priest in fewer faces)
+    // PEOPLE_KIT_211C: the hat is the lottery priests' migba'at (the Second House's 55-payis.js, PAYIS_FIGURE4D - the shape the
+    // user settled there: "tall, a smooth egg rounded at its head", close on the head, down to just above the ears at the sides
+    // and behind), in fewer faces, the bands of its cloth only a soft shade. Kind "levi" (the user, 03:16: "לווים לא היו בבגדי
+    // כהונה"): the plain robe in the colour given (o.robe) and the plain cap - no hat, no sash
+    const HATLOW = [[0, 0.136], [0.03, 0.143], [0.1, 0.149], [0.22, 0.161], [0.36, 0.171]];
+    const hatK = (ws, hs) => at(surf(ws || 32, hs || 14, (u, v, o) => {
+      const a = u * TAU + Math.PI, R = v < 0.36 ? spl(HATLOW, v) : 0.171 * Math.sqrt(Math.max(0, 1 - Math.pow((v - 0.36) / 0.64, 2.3)));
+      const on = ws ? 0 : sstep(0.13, 0.17, v) * (1 - sstep(0.9, 0.99, v)), f = ((4 * (u - 1.15 * v)) % 1 + 1) % 1;
+      const edge = Math.exp(-(1 - f) / 0.09), line = ws ? 0 : Math.exp(-Math.pow((v - 0.14) / 0.02, 2)), saw = f < 0.9 ? 0.5 - f / 0.9 : (f - 0.9) / 0.1 - 0.5;
+      const r = R + on * 0.0075 * saw - 0.003 * line;
+      o.x = r * Math.sin(a);
+      o.y = v * 0.335 - 0.034 * sstep(0.15, 0.6, 0.5 - 0.5 * Math.cos(a)) * Math.pow(1 - v, 3);
+      o.z = r * Math.cos(a) * 1.06;
+      o.c = (1 - on * (0.3 * edge + 0.05 * f)) * (1 - 0.22 * line);
+    }), 0, 0.06, 0);
+    const SASH_C = [new Color(0x3d62ab), new Color(0x8e1f34), new Color(0xc5432b)];
+    const sashK = (yo) => {
+      const out = SASH_C.map((col, k) => tint(surf(14, 1, (u, v, o) => {
+        const y = 1.27 + k * 0.034 + v * 0.034, a = u * TAU + Math.PI;
+        o.x = spl(bX, y) * 1.035 * Math.sin(a); o.y = y + yo; o.z = spl(bZ, y) * 1.035 * Math.cos(a); o.c = 1;
+      }), col));
+      out.push(tint(at(new BoxGeometry(0.045, 0.4, 0.014), 0.035, 1.08 + yo, spl(bZ, 1.1) * 1.07), SASH_C[0]));
+      out.push(tint(at(new BoxGeometry(0.045, 0.34, 0.014), -0.03, 1.11 + yo, spl(bZ, 1.1) * 1.08), SASH_C[1]));
+      return out;
+    };
     const kippah = (ws, hs) => shade(at(rot(sph(HR[0] * 1.09, HR[1] * 1.09, HR[2] * 1.09, ws || 10, hs || 3, 0, TAU, 0, 0.99), -0.14), 0, 0.002, -0.004), 0.45);
     // ---------- the body: the robe's breadth and depth at each height of a standing man (the priest's table); a sitting man is
     // the table from OFF up, with the lap before it
@@ -433,8 +485,12 @@
       return skinPart(q);
     };
     const cache = {};
-    const build = (pose, L, kind) => {
-      const key = pose + "|" + L.toFixed(3) + "|" + kind;
+    // PEOPLE_KIT_211: `robe` - the robe's own colour (the cap and the far figure go with it); a standing figure holds the tablet
+    // and the pen only when it is a scribe (kind "worker": the same body, its two hands before it)
+    const clothOf = {};
+    const clothMat = (robe) => (robe == null ? mCloth : clothOf[robe] || (clothOf[robe] = (() => { const m = mCloth.clone(); m.color.setHex(robe); return m; })()));
+    const build = (pose, L, kind, robeCol) => {
+      const key = pose + "|" + L.toFixed(3) + "|" + kind + "|" + (robeCol == null ? "" : robeCol);
       if (cache[key]) return cache[key];
       const seated = pose !== "stand", HY = HEAD_Y - (seated ? OFF : 0), SY = 1.728 - (seated ? OFF : 0), cloth = [], skin = [];
       const headT = (q) => at(q, 0, HY, 0);
@@ -459,11 +515,12 @@
       }
       if (pose === "bench") cloth.push(lapBench(L));
       else if (pose === "ground") cloth.push(shade(at(sph(0.3, 0.115, 0.24, 10, 4), 0, 0.075, 0.17), 0.8));         // the robe over the crossed legs
-      else {
+      else if (kind === "scribe") {
         skin.push(shade(flatUV(at(rot(new BoxGeometry(0.21, 0.016, 0.27), -0.5), 0.01, 1.455, 0.37), 0.92, 0.86), 1));   // the scribe's tablet ("וכותבין", Sanhedrin 4:3)
         cloth.push(shade(limb([-0.07, 1.5, 0.36], [-0.11, 1.6, 0.33], 0.006, 0.004, 5), 0.5));                          // and his pen
       }
-      cloth.push(headT(kippah()));
+      cloth.push(headT(kind === "kohen" ? hatK() : kippah(14, 3)));
+      if (kind === "kohen") for (const q of sashK(seated ? -OFF : 0)) cloth.push(q);
       for (const q of headParts()) skin.push(headT(q));
       skin.push(skinPart(at(new CylinderGeometry(0.066, 0.072, 0.1, 8, 1, true), 0, HY - 0.15, 0)));
       const base = () => brows().concat(hairCap(kind === "student")).map(headT);
@@ -485,21 +542,23 @@
         mc.push(shade(limb(E, W, 0.058, 0.048, 5), 0.9));
         ms.push(skinPart(at(sph(0.032, 0.016, 0.05, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.05)));
       }
-      if (pose === "stand") ms.push(shade(flatUV(at(rot(new BoxGeometry(0.21, 0.016, 0.27), -0.5), 0.01, 1.455, 0.37), 0.92, 0.86), 1));
-      mc.push(headT(kippah(8, 2)));
+      if (pose === "stand" && kind === "scribe") ms.push(shade(flatUV(at(rot(new BoxGeometry(0.21, 0.016, 0.27), -0.5), 0.01, 1.455, 0.37), 0.92, 0.86), 1));
+      mc.push(headT(kind === "kohen" ? hatK(8, 4) : kippah(10, 2)));
+      if (kind === "kohen") mc.push(sashK(seated ? -OFF : 0)[1]);
       {
         const k = new SphereGeometry(1, 10, 6), p = k.attributes.position;
         for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), j = y < 0 ? y * y : 0; p.setXYZ(i, x * HR[0] * (1 - 0.2 * j), y * HR[1], z * HR[2] * (1 - 0.1 * j)); }
         k.computeVertexNormals();
         ms.push(headT(shade(k, 1)));
       }
+      mh.push(headT(hairRing(kind === "student", 10, 3, 0)));   // PEOPLE_KIT_211C: the hair round the head, in a few faces
       if (kind === "student") {
-        mh.push(headT(shade(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 8, 2, 0, TAU, 0, 1.08), 0.92)));
+        mh.push(headT(shade(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 8, 2, 0, TAU, 0, 0.8), 0.92)));
         for (const sd of [-1, 1]) mh.push(headT(shade(at(sph(0.015, 0.07, 0.018, 4, 3), sd * 0.123, -0.05, 0.05), 0.95)));
       } else mh.push(headT(beard(0.2, 2.2, 8, 3)));
       const mid = { cloth: mergeGeometries(mc), skin: mergeGeometries(ms), hair: mergeGeometries(mh) };
       // from afar: the robe, the head and the kippah, plain
-      const cR = new Color(0x26262c), cS = new Color(0xcfa07a), cK = new Color(0x121215), far = [];
+      const cR = robeCol == null ? new Color(0x26262c) : new Color(robeCol).multiplyScalar(0.9), cS = new Color(0xcfa07a), cK = robeCol == null ? new Color(0x121215) : new Color(robeCol).multiplyScalar(0.97), far = [];
       if (!seated) far.push(tint(at(new CylinderGeometry(0.17, 0.21, 1.8, 6), 0, 1.0, 0), cR));
       else {
         far.push(tint(at(new CylinderGeometry(0.16, 0.2, 0.9, 6), 0, 0.45, 0), cR));
@@ -514,11 +573,11 @@
     };
     const LOD = [], m4 = new Matrix4(), qt = new Quaternion(), sc = new Vector3(), ps = new Vector3(), up = new Vector3(0, 1, 0), c3 = new Color(), wp = new Vector3();
     const crowd = (parent, pts, o) => {
-      const n = pts.length, L = o.pose === "bench" ? o.seat / o.s : 0, G = build(o.pose, L, o.kind);
+      const n = pts.length, L = o.pose === "bench" ? o.seat / o.s : 0, G = build(o.pose, L, o.kind, o.robe), mCl0 = clothMat(o.robe);
       const near = new Group(), mid = new Group(), far = new Group(), anchor = new Group();
       const mk = (g, m) => { const im = new InstancedMesh(g, m, n); im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; if (o.name) im.name = o.name; return im; };   // (PEOPLE_KIT_205: no figure casts a shadow)
-      const cloth = mk(G.cloth, mCloth), skin = mk(G.skin, mSkin), hairs = G.hair.map((g) => mk(g, mHair)), cnt = hairs.map(() => 0), fm = mk(G.far, mFar);
-      const mCl = mk(G.mid.cloth, mCloth), mSk = mk(G.mid.skin, mSkin), mHr = mk(G.mid.hair, mHair);
+      const cloth = mk(G.cloth, mCl0), skin = mk(G.skin, mSkin), hairs = G.hair.map((g) => mk(g, mHair)), cnt = hairs.map(() => 0), fm = mk(G.far, mFar);
+      const mCl = mk(G.mid.cloth, mCl0), mSk = mk(G.mid.skin, mSkin), mHr = mk(G.mid.hair, mHair);
       let ax = 0, az = 0;
       for (const p of pts) { ax += p[0] / n; az += p[1] / n; }
       let R = 0;
@@ -647,7 +706,12 @@
       band(xi - 1, xi, -zi + 1, -CRT_GATE_W / 2 - 1.6);
       band(xi - 1, xi, CRT_GATE_W / 2 + 1.6, zi - 1);
       band(-xi, -xi + 1, -zi + 1, zi - 1);
-      lbl("בר שורא — חומה קטנה לפנים מן החומה (רש״י פסחים פו.)", xi - 1.5, AZ + 3.2, 38, 2);
+      // BARSHURA_VIEW_211 (the user, 15.11.2026: "לא מציג כלום"): the label five amot off the wall (at one and a half its far end went
+      // into the wall and was cut), and the band can be LIT - ctx.shared.barShura = { on, get(), set(v) }: a warm glow of the band's own
+      // stone all round the court, switched on by the place for its 15 seconds (70-ui.js), so that the eye finds the strip at the
+      // wall's foot
+      lbl("בר שורא — חומה קטנה לפנים מן החומה (רש״י פסחים פו.)", xi - 5, AZ + 3.4, 38, 2);
+      ctx.shared.barShura = { on: false, get() { return this.on; }, set(v) { this.on = !!v; bm.emissive.setHex(this.on ? 0xd08a10 : 0x000000); bm.emissiveIntensity = this.on ? 1 : 0; bm.needsUpdate = true; } };
     }
 
     // ---------- 7 gates (Middot 1:4 convention): square 10 x 20 openings, flat stone lintels (no arches), bronze doors (II Chr 4:9) ----------
@@ -1073,7 +1137,7 @@
       const mat4 = new Matrix4();
       // 1.0.1-L (A5, A6): what differs between the layouts stands in a group of its own; the rings are common to the three
       const layG = {};
-      for (const key of ["book", "meiri", "oneRow"]) {
+      for (const key of ["book", "meiri", "raavyah", "gra"]) {
         layG[key] = new Group();
         layG[key].name = "slaughterLayout-" + key;
         layG[key].visible = key === "book";
@@ -1125,8 +1189,15 @@
       const hookGeo = mergeGeometries(hookParts);
       // 1.3.4 (the user, 10.11.2026: "תוסיף כפתור לאונקליות"; as the Second Temple plugin 1.9.2): every hooks' instance has a twin in a
       // floating colour, lit by the button "האונקליות" (below) for 15 s
-      const glowM = new MeshBasicMaterial({ color: 0xffc23a, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false });
+      // ONK_MARK_211 (the user, 15.11.2026, of the Second Temple plugin's hooks: "צבע האונקליות לא השתנה" - the marking painted them
+      // gold-yellow): the marking in the iron's own tones - a slow glint between dark iron and bright steel - in both plugins
+      const glowM = new MeshBasicMaterial({ color: 0xdfe6ee, transparent: true, opacity: 0.97, depthTest: false, depthWrite: false });
       const glows = [], m4g = new Matrix4();
+      ctx.animated.push(() => {
+        if (!glows.length || !glows.some((tw) => tw.visible)) return;
+        const v = 0.14 + 0.76 * (0.5 + 0.5 * Math.sin(performance.now() * 0.0055));
+        glowM.color.setRGB(v * 0.92, v * 0.96, v);
+      });
       const twin = (im) => {
         const tw = new InstancedMesh(im.geometry, glowM, im.count);
         for (let i = 0; i < im.count; i++) { im.getMatrixAt(i, m4g); tw.setMatrixAt(i, m4g); }
@@ -1160,25 +1231,57 @@
         parts.push(new CylinderGeometry(hr, hr, tipL, 8).rotateX(Math.PI / 2).translate(0, by - rodL + 0.02, tipL / 2));
         twin(inst(mergeGeometries(parts), ironSl, beamHookAt, "slaughterHooks-meiri", false, layG.meiri));
       }
-      // 1.0.1-L (A5, A6): the Ra'avyah's and the Gra's layout - one east-west row, a table in each gap and the eighth beyond the east end
+      // SLAUGHTER_SPLIT_211 (the user, 14-15.11.2026: the option "ראבי״ה והגר״א — שורה אחת" joined two readings that are not one; his
+      // answers: split them; the Gra's row - "צפון דרום"). As the Second Temple plugin's (its 40-altar.js). Until 1.4.3 one layout
+      // ("oneRow": eight pillars east-west, a table in each gap and the eighth beyond the east end) stood for both.
+      // "raavyah" - the Ra'avyah in Tosafot Yom Tov, Middot 3:5 (book 948, line 133): "אלא כל דממזרח למערב עמודים ח'. שלחנות שמנה";
+      //   the Rashash there (book 750, line 51): "להראבי"ה משמע דהעמודים הי' בסדר אחד ממזרח למערב וכן השלחנות לפניהם". Eight pillars
+      //   in one east-west row and the eight tables in a row of their own before them, toward the rings: four amot from the rings'
+      //   place (it ends at SL.ringsZ1) and four from the pillars (Middot 5:2 "מן הטבעות לשלחנות ארבע, מן השלחנות ולננסין ארבע").
+      // "gra" - the Gra on Middot 5:2 (book 7509, line 67): "נמצא היו ז' אוירים וכנגד כל אויר היה שולחן הרי ז' שולחנות ושולחן הח'
+      //   הי' עמוד אצל הננס שבקצה מבחוץ ואות' השולחן היה ד' אמות וכל השולחנות היו עומדים בשורה אחת ... הרי מן מקום שהתחילו השולחנות
+      //   עד שהתחילו הננסין ד' אמות דהיינו כאורך השולחן". ONE ROW NORTH-SOUTH: four amot from the rings the eighth table, four amot
+      //   long; then pillar, table, pillar ... the last pillar's north face eight amot from the court's wall (5:2). In this model
+      //   that leaves nine and a half amot for the eight pillars and the seven tables (the rings' place ends three amot further north
+      //   than in the Second Temple model) - slim pillars, half an amah, and short tables.
+      // MODEL CHOICES: the rows' place across the court, the tables' breadth and the short tables' length, the Gra's hooks' faces
+      // (east and west - the faces the tables leave free).
       {
-        const R = CRT_SLAUGHTER_ROW, tw2 = R.tableW, td2 = R.tableD;
-        const rowAt = R.cols.map((x) => [x, AZ, R.z]);
+        const R = CRT_SLAUGHTER_ROW, tw2 = R.tableW, td2 = R.tableD, TZ = SL.ringsZ1 - 4 - td2 / 2, PZ = SL.ringsZ1 - 4 - td2 - 4 - SL.pillarW / 2;   // -47 and -52.5
+        const rowAt = R.cols.map((x) => [x, AZ, PZ]);
         const t2 = [H2.uvWorldBox(new BoxGeometry(tw2, slab, td2), tw2, slab, td2).translate(0, th - slab / 2, 0)];
         for (const sx of [-1, 1]) for (const sz of [-1, 1]) t2.push(H2.uvWorldBox(new BoxGeometry(legW, th - slab, legW), legW, th - slab, legW).translate(sx * (tw2 / 2 - legW / 2 - 0.05), (th - slab) / 2, sz * (td2 / 2 - legW / 2 - 0.1)));
-        const rowTables = [];
-        for (let i = 0; i + 1 < R.cols.length; i++) rowTables.push([(R.cols[i] + R.cols[i + 1]) / 2, AZ, R.z]);
-        rowTables.push([R.tableExtraX, AZ, R.z]);
-        inst(mergeGeometries(t2), M2.marble, rowTables, "slaughterTables-oneRow", true, layG.oneRow);
-        inst(H2.uvWorldBox(new BoxGeometry(SL.pillarW, SL.pillarH, SL.pillarW), SL.pillarW, SL.pillarH, SL.pillarW).translate(0, SL.pillarH / 2, 0), M2.stoneSmooth, rowAt, "slaughterPillars-oneRow", true, layG.oneRow);
-        inst(H2.uvWorldBox(new BoxGeometry(SL.postW, SL.postH, SL.postW), SL.postW, SL.postH, SL.postW).translate(0, SL.pillarH + SL.postH / 2, 0), M2.cedar, rowAt, "slaughterPosts-oneRow", true, layG.oneRow);
-        twin(inst(hookGeo, ironSl, rowAt, "slaughterHooks-oneRow", false, layG.oneRow));
+        inst(mergeGeometries(t2), M2.marble, R.cols.map((x) => [x, AZ, TZ]), "slaughterTables-raavyah", true, layG.raavyah);
+        inst(H2.uvWorldBox(new BoxGeometry(SL.pillarW, SL.pillarH, SL.pillarW), SL.pillarW, SL.pillarH, SL.pillarW).translate(0, SL.pillarH / 2, 0), M2.stoneSmooth, rowAt, "slaughterPillars-raavyah", true, layG.raavyah);
+        inst(H2.uvWorldBox(new BoxGeometry(SL.postW, SL.postH, SL.postW), SL.postW, SL.postH, SL.postW).translate(0, SL.pillarH + SL.postH / 2, 0), M2.cedar, rowAt, "slaughterPosts-raavyah", true, layG.raavyah);
+        twin(inst(hookGeo, ironSl, rowAt, "slaughterHooks-raavyah", false, layG.raavyah));
+      }
+      {
+        // the row stands WEST of the hall of hewn stone (x 46.5; the hall's west face is at x 48, its south face at z -58): on the
+        // altar's axis it would run into the hall, eight amot short of the court's wall
+        const PW = 0.4, GXG = Math.min(scx, CRT_GAZIT.x0 - 1.5), Z0 = SL.ringsZ1 - 4, ZP0 = Z0 - 4 - PW / 2, ZP1 = CO.azN + 8 + PW / 2, STEP = (ZP0 - ZP1) / 7;   // the eighth table -46..-50; the pillars' centres -50.2 .. -59.3
+        const colAt = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [GXG, AZ, ZP0 - i * STEP]);
+        inst(H2.uvWorldBox(new BoxGeometry(PW + 0.1, SL.pillarH, PW + 0.1), PW + 0.1, SL.pillarH, PW + 0.1).translate(0, SL.pillarH / 2, 0), M2.stoneSmooth, colAt, "slaughterPillars-gra", true, layG.gra);
+        inst(H2.uvWorldBox(new BoxGeometry(PW, SL.postH, PW), PW, SL.postH, PW).translate(0, SL.pillarH + SL.postH / 2, 0), M2.cedar, colAt, "slaughterPosts-gra", true, layG.gra);
+        const ew = [];
+        for (const dx of [-1, 1]) for (const hy of SL.hookY) {
+          ew.push(new CylinderGeometry(hr, hr, rodL, 8).rotateZ(Math.PI / 2).translate(dx * (PW / 2 + rodL / 2 - 0.02), hy, 0));
+          ew.push(new CylinderGeometry(hr, hr, tipL, 8).translate(dx * (PW / 2 + rodL - 0.02), hy + tipL / 2 - hr, 0));
+        }
+        twin(inst(mergeGeometries(ew), ironSl, colAt, "slaughterHooks-gra", false, layG.gra));
+        const tl = Math.max(0.45, STEP - (PW + 0.1) - 0.08), thS = 1.0;
+        const small = [H2.uvWorldBox(new BoxGeometry(1.2, 0.2, tl), 1.2, 0.2, tl).translate(0, thS - 0.1, 0)];
+        for (const sx of [-1, 1]) for (const sz of [-1, 1]) small.push(H2.uvWorldBox(new BoxGeometry(0.12, thS - 0.2, 0.12), 0.12, thS - 0.2, 0.12).translate(sx * 0.5, (thS - 0.2) / 2, sz * (tl / 2 - 0.07)));
+        inst(mergeGeometries(small), M2.marble, [0, 1, 2, 3, 4, 5, 6].map((i) => [GXG, AZ, ZP0 - (i + 0.5) * STEP]), "slaughterTables-gra", true, layG.gra);
+        const big = [H2.uvWorldBox(new BoxGeometry(1.2, slab, 4), 1.2, slab, 4).translate(0, th - slab / 2, 0)];
+        for (const sx of [-1, 1]) for (const sz of [-1, 0, 1]) big.push(H2.uvWorldBox(new BoxGeometry(legW, th - slab, legW), legW, th - slab, legW).translate(sx * 0.45, (th - slab) / 2, sz * 1.8));
+        inst(mergeGeometries(big), M2.marble, [[GXG, AZ, Z0 - 2]], "slaughterTable8-gra", true, layG.gra);
       }
       // the switch (1.0.1-L, A5, A6): the UI's opinion row sets it; default "book"
       ctx.shared.slaughterLayout = {
         current: "book",
-        keys: ["book", "meiri", "oneRow"],
-        names: { book: "כציור הספר — חתיכת ארז על כל עמוד", meiri: "המאירי — קורות מעמוד לעמוד", oneRow: "ראבי״ה והגר״א — שורה אחת" },
+        keys: ["book", "meiri", "raavyah", "gra"],
+        names: { book: "כציור הספר — חתיכת ארז על כל עמוד", meiri: "המאירי — קורות מעמוד לעמוד", raavyah: "הראבי״ה — שורה אחת ממזרח למערב, והשולחנות לפניה", gra: "הגר״א — שורה אחת מצפון לדרום, שולחן בין עמוד לעמוד" },
         set(key) {
           if (!layG[key]) return this.current;
           this.current = key;
@@ -1201,13 +1304,14 @@
           glowSet(on !== false);
           if (!ON.on) return;
           const fly = ctx.ui && typeof ctx.ui.fly === "function" ? ctx.ui.fly : typeof ctx.flyTo === "function" ? ctx.flyTo : null;
-          if (fly && !noFly) fly([scx, AZ + 10.5, -36.5], [scx, AZ + 2.5, -53.5]);   // from the south, over the tables: all the pillars
+          // from the south, over the tables: all the pillars (SLAUGHTER_SPLIT_211: the Gra's row, which runs north-south, from the west)
+          if (fly && !noFly) { if (ctx.shared.slaughterLayout.current === "gra") fly([CRT_GAZIT.x0 - 18, AZ + 10, -50], [CRT_GAZIT.x0 - 1.5, AZ + 2.2, -53]); else fly([scx, AZ + 10.5, -36.5], [scx, AZ + 2.5, -53.5]); }
           ON.timer = setTimeout(() => glowSet(false), 15000);
         };
         ctx.shared.modelButtons = ctx.shared.modelButtons || [];
         ctx.shared.modelButtons.push({
           id: "crt-onkliot", label: "האונקליות", labelOn: "כבה את הסימון", maxDist: 70,
-          title: "״ואנקליות של ברזל היו קבועין בהם, ושלשה סדרים היו לכל אחד ואחד, שבהם תולין״ (מדות ג, ה) — המבט מתקרב, והאונקליות מסומנות בצבע צף ל־15 שניות, בשיטה שנבחרה בשורה ״בית המטבחים״.",
+          title: "״ואנקליות של ברזל היו קבועין בהם, ושלשה סדרים היו לכל אחד ואחד, שבהם תולין״ (מדות ג, ה) — המבט מתקרב, והאונקליות מסומנות בצבע צף ל־15 שניות, בשיטה שנבחרה במתג ״בית המטבחים״.",
           anchor: () => {
             const p = ctx.camera && ctx.camera.position;
             return p && p.x > SL.x0 - 30 && p.x < SL.x1 + 50 && p.z < 10 && p.z > -100 && p.y < AZ + 70 ? [SL.pillarCols[SL.pillarCols.length - 1] + 1.6, AZ + 4.9, -53.5] : null;

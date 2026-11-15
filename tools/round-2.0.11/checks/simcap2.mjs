@@ -1,0 +1,11 @@
+import { open } from '../../fs/h.mjs';
+const [,, dir, prefix] = process.argv;
+const P = await open(dir, { dsf: 1, vw: 1000, vh: 640 }); const pg = P.page;
+await P.settle(30000, 3);
+await pg.evaluate(() => { const S = window.__ctx.shared.simchaDemo; S.start(); const c = window.__ctx; c.camera.position.set(215, 60, 80); c.controls.target.set(161, 30, 0); c.controls.update(); });
+await pg.waitForTimeout(5000);
+await pg.evaluate(() => { const c = window.__ctx; c.camera.position.set(215, 60, 80); c.controls.target.set(161, 30, 0); c.controls.update(); });
+await pg.waitForTimeout(600);
+await P.rshot(prefix + 'a.png');
+console.log(JSON.stringify(await pg.evaluate(() => [0, 1, 2].map((i) => window.__ctx.layers['simchaCap' + i].visible))));
+await P.close(); process.exit(0);

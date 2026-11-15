@@ -682,9 +682,9 @@
   // 1.0.1-L (the user: "הוספת רעש, בעדי שקר?"): the witnesses' noise, generated (no files; the plugin is offline): a low rumble of wheels (brown noise through a low-pass, swelling) and lions' roars (falling sawtooth
   // through a low-pass), moderate volume (peak gain 0.22). The context is made on the first play, which comes from a click; anything missing or refused leaves it silent. muted: the pill "השתק את הרעש"
   const pal_witSound = {
-    muted: false, ac: null, nodes: null,
+    muted: false, ac: null, nodes: null, off: null,   // SOUND_211: off() - the settings' row "קולות בהדגמות" (set where the ctx is)
     start() {
-      if (this.muted || this.nodes) return;
+      if (this.muted || this.nodes || (this.off && this.off())) return;
       try {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) return;
@@ -866,6 +866,117 @@
     return { rollers: f.geo(), parchment: new BoxGeometry(0.42, 0.11, 0.3) };
   }
   // the crown ("ועטרה של זהב"): a lathed band, open, with eight points on its rim, its bottom at y 0
+  // ===== KING_211 (the user, 15.11.2026 00:53, of the one who climbs the throne: royal dress - tekhelet, argaman, gold - on a real
+  // figure): THE KING ON HIS THRONE'S STEPS - the king of "דבקו שערים" (58-ark.js ark_kingFig: the priests' body and face, a dark beard,
+  // "בלבוש מלכות תכלת וחור... ותכריך בוץ וארגמן", Esther 8:15), here STANDING, his two hands a little out from his sides - on the limbs
+  // that the creatures stretch to him ("והמלך נשען עליהם") - and SEATED, his hands before him (the scroll is given into them). No
+  // crown of his own: the midrashim bring it to his head after he sits. As tall as the silhouette he replaces (its shoulders 3 amot
+  // up; a model choice, as were its measures). PAL_KING: his measures in amot, for the scripts (the shoulders that the eagles seize,
+  // the head's top for the crown, the hands). seatH - the seat's height over the floor before it (the shins' length).
+  const PAL_KING = { S: 1.72, SH_S: 2.97, SH_H: 1.29, SH_X: 0.43, HEAD: 2.17, HAND_X: 0.78, HAND_Y: 1.78, HAND_Z: -0.88 };
+  // KING_LEAN_211 (2.0.2 / 1.4.4; the user, 15.11.2026 08:35: "עשית את המלך נשען?"): "והמלך נשען עליהם" - at each step he LEANS on
+  // the paw and the wing: the arms' pose upright (the hands a little out from his sides) and leaning ([shoulder x, abduct, elbow] as
+  // ark_setArm: the arms forward and out, the elbows bent), and the body's forward bend from the feet (radians). PAL_KING.HAND_X /
+  // HAND_Y / HAND_Z - where his hands are WHEN HE LEANS (measured on the figure, relative to his feet, -z forward): the limbs reach
+  // there. The pose and the bend: model choices.
+  const PAL_KING_REST = [0.0, 0.22, -0.12], PAL_KING_BENT = [-0.1, 0.3, -0.7], PAL_KING_LEAN = 0.15;   // measured (qa/r211/leans.mjs): the leaning palms at (±0.78, 1.78, -0.88) from his feet
+  function pal_kingFig(GOLD, seatH) {
+    const K = ark_kit(), KG = ark_kitArms(), FS = K.FS, KS = PAL_KING.S / FS, HIP = 0.98;
+    const { mRobeK, mMantle, mHairK } = ark_kingMats();
+    const mRobe2 = mRobeK.clone();
+    mRobe2.side = DoubleSide;
+    const sp = (tab, y) => K.spl(tab, y), legN = Math.max(0.3, seatH / PAL_KING.S);
+    const mk = (seated) => {
+      const g = new Group(), S = new Group(), U = new Group();
+      g.scale.setScalar(KS);
+      S.scale.setScalar(FS);
+      g.add(S);
+      U.position.y = seated ? -HIP : 0;   // what stands above the hips
+      S.add(U);
+      const add = (par, geo, mat) => { const m = new Mesh(geo, mat); m.castShadow = true; m.userData.noPick = true; par.add(m); return m; };
+      if (!seated) add(S, K.gRobeBody, mRobeK);
+      else {
+        // the robe of a seated man: the body from the seat up, the lap over the thighs, and down over the shins to the feet
+        add(S, K.surf(36, 16, (u, v, o) => {
+          const a = u * K.TAU + Math.PI, ys = HIP + 0.02 + v * (1.9 - HIP - 0.02), sit = Math.pow(1 - v, 3);
+          o.x = (sp(K.bX, ys) + 0.04 * sit) * Math.sin(a);
+          o.z = (sp(K.bZ, ys) + 0.035 * sit) * Math.cos(a);
+          o.y = ys - HIP;
+          o.tv = ys / 1.4;
+        }), mRobe2);
+        add(S, K.surf(28, 14, (u, v, o) => {
+          const a = u * K.TAU, end = Math.pow(Math.max(0, (v - 0.78) / 0.22), 2);
+          o.x = -(0.215 - 0.03 * end) * Math.sin(a) * (1 + 0.05 * Math.cos(2 * a));
+          o.y = 0.112 + 0.108 * (1 - 0.3 * end) * Math.cos(a);
+          o.z = -0.06 + v * 0.56;
+          o.c = 0.93 + 0.07 * Math.cos(a);
+          o.tv = v * 0.4;
+        }), mRobe2);
+        add(S, K.surf(28, 10, (u, v, o) => {
+          const a = u * K.TAU, fl = 0.025 * v;
+          o.x = -(0.2 + fl) * Math.sin(a);
+          o.z = 0.425 + 0.05 * v + (0.1 + 0.5 * fl) * Math.cos(a);
+          o.y = 0.2 - v * (0.2 + legN - 0.03);
+          o.c = 0.94 + 0.06 * Math.cos(5 * a + 1);
+          o.tv = 0.4 + v * 0.5;
+        }), mRobe2);
+      }
+      // the mantle: from the shoulders round the back, to the floor (standing) or to the seat, spread on it (seated)
+      add(S, K.surf(30, 26, (u, v, o) => {
+        const a = Math.PI + (u - 0.5) * 2.3, low = Math.pow(1 - v, 2), fold = Math.sin(9 * a + 1.3) * (1 - v) * 0.027;
+        const y = seated ? HIP - 0.05 + v * (1.79 - HIP + 0.05) : 0.07 + v * (1.79 - 0.07), yb = Math.max(seated ? HIP : 0.1, y);
+        o.x = (sp(K.bX, yb) + 0.036 + (seated ? 0.12 : 0.05) * low + fold) * Math.sin(a);
+        o.z = (sp(K.bZ, yb) + 0.042 + (seated ? 0.17 : 0.1) * low + fold) * Math.cos(a);
+        o.y = seated ? Math.max(0.012, y - HIP) : y;
+        o.c = 0.88 + 0.12 * Math.sin(9 * a + 1.3);
+        o.tu = u;
+        o.tv = v;
+      }, true), mMantle);
+      add(U, KG.neck, K.mSkin);
+      add(U, K.gSash, GOLD);
+      const collar = add(U, new TorusGeometry(0.112, 0.02, 8, 28), GOLD);
+      collar.rotation.x = Math.PI / 2;
+      collar.scale.set(1, 0.84, 1);
+      collar.position.y = 1.855;
+      const hg = K.headOn(U, K.HEAD_Y, mHairK, 2);
+      hg.add(ark_kingKippah(GOLD));   // KING_KIPPAH_211 (the user: "אתה לא יכול לצייר לי מלך בלי כיפה")
+      hg.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+      const sy = KG.P.sy - (seated ? HIP * FS : 0), ARMS = [];
+      for (const side of [1, -1]) {
+        const sh = new Group();
+        sh.position.set(side * KG.P.sx, sy, 0);
+        g.add(sh);
+        add(sh, KG.upP, mRobeK);
+        const el = new Group();
+        el.position.y = -KG.P.up;
+        sh.add(el);
+        add(el, KG.foP, mRobeK);
+        const cuff = add(el, new TorusGeometry(0.068, 0.012, 6, 18), GOLD);
+        cuff.rotation.x = Math.PI / 2;
+        cuff.position.y = -KG.P.fo + 0.03;
+        add(el, KG.handP[side], K.mSkin).name = "palKingHand" + (side > 0 ? "R" : "L");
+        ark_setArm({ sh, el }, seated ? [-0.35, 0.1, -1.25] : PAL_KING_REST, side);
+        ARMS.push({ sh, el, side });
+      }
+      for (const side of [1, -1]) {   // the feet, under the hem
+        const f = add(g, KG.foot[side], K.mSkin);
+        f.position.set(side * 0.1 * FS, seated ? -legN * FS : 0, seated ? 0.47 * FS : 0);
+      }
+      if (!seated) g.rotation.y = Math.PI;   // he climbs with his face to the seat (-z); seated, his face is to the hall
+      // KING_LEAN_211: lean.set(v), v 0..1 - from standing upright, the hands a little out from his sides, to LEANING on the creatures'
+      // limbs: the body bent forward from the feet (rotation about the world x after the turn: forward is -z), the arms out and bent
+      if (!seated) g.userData.lean = {
+        v: 0,
+        set(v) {
+          this.v = v;
+          g.rotation.x = -PAL_KING_LEAN * v;
+          for (const A of ARMS) ark_setArm(A, PAL_KING_REST.map((r, i) => r + (PAL_KING_BENT[i] - r) * v), A.side);
+        }
+      };
+      return g;
+    };
+    return { stand: mk(false), seat: mk(true) };
+  }
   function pal_crownGeo() {
     const f = pal_fig();
     f.add(new LatheGeometry([[0.17, 0], [0.205, 0], [0.205, 0.16], [0.185, 0.16], [0.17, 0.02], [0.17, 0]].map(([r, y]) => new Vector2(r, y)), 24));
@@ -1923,17 +2034,25 @@
       for (const e of [-1, 1]) silH.rod(0.2, 0.17, e * 0.26, 0.28, 0.05, e * 0.26, 0.28, 1.0, 10).rod(0.17, 0.2, e * 0.26, 0.28, 1.0, e * 0.26, -0.55, 1.12, 10).rod(0.12, 0.1, e * 0.42, 1.68, 0, e * 0.36, 0.72, 0.72, 8);
       const sil = new Group();
       sil.name = "throneClimber";
-      const silStand = new Mesh(silS.geo(), silMat), silSeat = new Mesh(silH.geo(), silMat);
+      // KING_211: the king himself (pal_kingFig) stands in the silhouette's two places - built the first time an ascent shows him; if
+      // the priests' kit cannot be built, the silhouette as before
+      const silStand = new Group(), silSeat = new Group();
       silStand.name = "throneSilhouette"; silSeat.name = "throneSilhouetteSeated";
-      silStand.renderOrder = silSeat.renderOrder = 5;
       silSeat.visible = false;
       sil.add(silStand, silSeat);
+      let kingBuilt = false;
+      const kingEnsure = () => {
+        if (kingBuilt) return;
+        kingBuilt = true;
+        try { const KF = pal_kingFig(vesselGold, sTop - (top + DH)); silStand.add(KF.stand); silSeat.add(KF.seat); }
+        catch (_) { const a = new Mesh(silS.geo(), silMat), b = new Mesh(silH.geo(), silMat); a.renderOrder = b.renderOrder = 5; silStand.add(a); silSeat.add(b); }
+      };
       sil.visible = false;
       midr.add(sil);
-      const FOOT_Z = 0.2, HAND_Y = 1.5, silAt = (k) => [X, stepY(k), stepZ(k) + FOOT_Z], handAt = (k) => [X, stepY(k) + HAND_Y, stepZ(k) + FOOT_Z];   // the hand: the very middle of the step, where he stands
+      const FOOT_Z = 0.2, HAND_Y = PAL_KING.HAND_Y, HAND_X = PAL_KING.HAND_X, silAt = (k) => [X, stepY(k), stepZ(k) + FOOT_Z], HAND_Z = PAL_KING.HAND_Z, handAt = (k) => [X, stepY(k) + HAND_Y, stepZ(k) + FOOT_Z + HAND_Z];   // the hand: the very middle of the step, where he stands
       const silStart = [X, YT + 0.25, zF + 1.2], silFront = [X, top + DH, zD + 1.25], silSeated = [X, sTop, zHead];
       // the scroll's end per version: on the knees or in the hands
-      const SCR_KNEES = [X, sTop + 0.52, zHead + 0.72], SCR_HANDS = [X, sTop + 0.82, zHead + 0.74];
+      const SCR_KNEES = [X, sTop + 0.46, zHead + 0.66], SCR_HANDS = [X, sTop + 0.8, zHead + 0.88];   // KING_211: the king's own knees and hands
       const mkSpray = (grp, n, x, y, z, dx, dz) => {
         const geo = new BufferGeometry();
         const pos = new Float32Array(n * 3);
@@ -1995,8 +2114,14 @@
         reachTo(part, a, b, p) { return { a, b, f: (u) => part.reach(u, p[0], p[1], p[2]) }; },        // the limb goes out to the world point p
         reachBack(part, a, b, p) { return { a, b, f: (u) => part.reach(1 - u, p[0], p[1], p[2]) }; },  // and returns
         follow(part, obj, dy, a, b) { return { a, b, f: () => part.reach(1, obj.position.x, obj.position.y + dy, obj.position.z) }; },   // stays on a moving object
+        // KING_211: the king's hand on the limb's own side - the figure that stretches it stands east or west of the middle
+        sideOf(part) { let o = part.inner; for (let i = 0; i < 2 && o.parent; i++) o = o.parent; return o.position.x < X ? -1 : 1; },
+        handOf(part, p) { return [p[0] + T.sideOf(part) * HAND_X, p[1], p[2]]; },
+        followHand(part, obj, a, b) { const s = T.sideOf(part); return { a, b, f: () => part.reach(1, obj.position.x + s * HAND_X, obj.position.y + HAND_Y, obj.position.z + HAND_Z) }; },
+        // KING_LEAN_211: the standing king leans (v 0 -> 1) or straightens (1 -> 0); before he is built nothing to do
+        lean(a, b, up) { return { a, b, f: (u) => { const L = silStand.children[0] && silStand.children[0].userData.lean; if (L) L.set(up ? u : 1 - u); } }; },
         tablet(fig, a, b, up) { return { a, b, f: (u) => fig.tablet.set(up ? u : 1 - u) }; },
-        silOn(a, b) { return { a, b, f: (u) => { sil.visible = u > 0 && u < 1; } }; },
+        silOn(a, b) { return { a, b, f: (u) => { sil.visible = u > 0 && u < 1; if (sil.visible) kingEnsure(); } }; },
         // from the front of the seat onto it: f(0) leaves the position to the climb's moves
         sit(a, b) { return { a, b, f: (u) => { silSeat.visible = u > 0; silStand.visible = !(u > 0); if (u > 0) sil.position.set(silFront[0] + (silSeated[0] - silFront[0]) * u, silFront[1] + (silSeated[1] - silFront[1]) * u, silFront[2] + (silSeated[2] - silFront[2]) * u); } }; },
         spray(sp, a, b) { return { a, b, f: (u, t) => { if (u > 0 && u < 1) { sp.pts.visible = true; sp.tick(t); } else sp.pts.visible = false; } }; },
@@ -2161,7 +2286,7 @@
         { const held = new Mesh(beastGeo("eagle"), gold); held.position.set(0.3, -0.02, 0); held.scale.setScalar(0.35); held.castShadow = true; held.name = "throneHeldEagle"; d.dove.add(held); }
         put(grp, pal_vineVaultGeo(24, 3.3, 613.1, 616.7, 5.4), gold, X, top, 0, 0, 1, "throneVines");
         d.greatEagle = eagleAt(grp, X + 1.9, top, 613.1, -HP, 1.2, "throneGreatEagle");
-        d.crownHome = [X + 1.9, top, 613.75]; d.crownHead = [X, sTop + 2.4, zHead];   // 1.0.1-L: at the great eagle's feet, no stand (the midrash has none); on the head's very place (throne.head)
+        d.crownHome = [X + 1.9, top, 613.75]; d.crownHead = [X, sTop + PAL_KING.HEAD - 0.1, zHead];   // KING_211: on the king's head (the silhouette's: sTop + 2.4)   // 1.0.1-L: at the great eagle's feet, no stand (the midrash has none); on the head's very place (throne.head)
         d.crown = put(grp, pal_crownGeo(), vesselGold, d.crownHome[0], d.crownHome[1], d.crownHome[2], 0, 1, "throneCrown");
         const sprW = mkSpray(grp, 50, X - 2.75, top + 0.63, 615.75, 0.35, 1), sprE = mkSpray(grp, 50, X + 2.75, top + 0.63, 615.75, -0.35, 1);
 
@@ -2184,8 +2309,9 @@
         for (let k = 1; k <= 6; k++) tr.push(T.glow(k, (k - 1) * SP, k < 6 ? k * SP : tSeize + 2.1));
         for (let k = 1; k <= 5; k++) {
           const a = (k - 1) * SP, h = handAt(k), next = handAt(k + 1);
-          for (const p of BL[k]) tr.push(T.reachTo(p, a + 0.9, a + 3, h), T.follow(p, sil, HAND_Y, a + 4, a + 5.2), T.reachBack(p, a + 5.2, a + 6, next));
+          for (const p of BL[k]) tr.push(T.reachTo(p, a + 0.9, a + 3, T.handOf(p, h)), T.followHand(p, sil, a + 4, a + 5.2), T.reachBack(p, a + 5.2, a + 6, T.handOf(p, next)));   // KING_211
           tr.push(T.move(sil, silAt(k), silAt(k + 1), a + 4, a + 5.2, 0.3));
+          tr.push(T.lean(a + 2.5, a + 3.2, true), T.lean(a + 5.2, a + 5.9, false));   // KING_LEAN_211: he leans on them as they come, and is raised leaning
         }
         const E6W = d.eagles[10], E6E = d.eagles[11];
         // the awe (T.bow): the standing lions and eagles of the step he stands on (they stretch nothing here) - on the sixth the lions only
@@ -2193,7 +2319,7 @@
           const a = (k - 1) * SP, li = (k - 1) * 2, e0 = k === 1 ? 0.3 : 0.9, e1 = k < 6 ? a + 3.9 : tSeize + 2;
           for (const fg of k < 6 ? [d.lions[li], d.lions[li + 1], d.eagles[li], d.eagles[li + 1]] : [d.lions[li], d.lions[li + 1]]) tr.push(T.bow(fg.body, a + e0, e1));
         }
-        const SH_S = 3.02, SH_H = 1.74, SH_X = 0.5;   // the silhouette's shoulders: their height standing / seated, half their breadth
+        const SH_S = PAL_KING.SH_S, SH_H = PAL_KING.SH_H, SH_X = PAL_KING.SH_X;   // KING_211: the king's shoulders - their height standing / seated, half their breadth
         const p6 = silAt(6);
         const overW = [X - SH_X, p6[1] + SH_S + 1.6, p6[2]], overE = [X + SH_X, p6[1] + SH_S + 1.6, p6[2]];
         const onW = [X - SH_X, p6[1] + SH_S, p6[2]], onE = [X + SH_X, p6[1] + SH_S, p6[2]];
@@ -2274,7 +2400,7 @@
         // שרביט הזהב מאחוריו, ויונה נתונה בראשו ועטרה של זהב בפיה, כדי שיהא המלך יושב בשבת ועטרה של זהב נוגע ואינו נוגע" - they stay there
         // 1.0.1-L: the crown stays at the height of the head, on a short link under the beak, and the sceptre's end with the dove stands above it (level with it, the crown hid the dove from the hall)
         // 1.0.1-L (A27): the crown on the very place of the head (throne.head, y sTop + 2.4, z zHead)
-        const crY = sTop + 2.4, scY = crY + 0.2, scZ = zD - 0.95, dvZ = zD - 0.32;
+        const crY = sTop + PAL_KING.HEAD - 0.07, scY = crY + 0.2, scZ = zD - 0.95, dvZ = zD - 0.32;   // KING_211: "נוגע ואינו נוגע" - at the king's head
         const sc = pal_fig();
         sc.rod(0.07, 0.07, X, top + DH, scZ, X, scY, scZ, 10).rod(0.06, 0.06, X, scY, scZ, X, scY, dvZ + 0.06, 10).ell(0.09, 0.09, 0.09, X, scY, scZ, 0, 0, 0, 8, 6);
         sc.rod(0.014, 0.014, X, scY + 0.3, dvZ + 0.232, X, crY + 0.16, dvZ + 0.232, 5);   // the link from the beak's tip (the dove's scale 1: y 0.245, x 0.232) to the crown's rim
@@ -2303,7 +2429,8 @@
           const a = (k - 1) * SP, sp = d.stepParts[k], h = handAt(k);
           // 1.0.1-L (the user: "הידים ... צריכות להיות לפני עליית הצללית ולא לאחריה"): the wheel and the limbs first, then the climb on them
           tr.push(T.gear(k, a, a + 2.1), T.glow(k, a, a + SP), T.move(sil, k === 1 ? silStart : silAt(k - 1), silAt(k), a + 2.8, a + 3.8, 0.3));
-          tr.push(T.reachTo(sp.paw, a, a + 2.6, h), T.reachTo(sp.wing, a, a + 2.6, h), T.reachBack(sp.paw, a + 4.8, a + 6, h), T.reachBack(sp.wing, a + 4.8, a + 6, h));
+          tr.push(T.reachTo(sp.paw, a, a + 2.6, T.handOf(sp.paw, h)), T.reachTo(sp.wing, a, a + 2.6, T.handOf(sp.wing, h)), T.reachBack(sp.paw, a + 4.8, a + 6, T.handOf(sp.paw, h)), T.reachBack(sp.wing, a + 4.8, a + 6, T.handOf(sp.wing, h)));   // KING_211
+          tr.push(T.lean(a + 3.3, a + 3.9, true), T.lean(a + 4.6, a + 5.3, false));   // KING_LEAN_211: he comes up leaning on them, and straightens as they go back
           // 1.3.7, the awe (T.bow): the step's figures that stretch nothing - the outer lion and eagle and the lying pair - while he stands there
           const li = (k - 1) * 2;
           for (const l of [d.lions[li], d.lions[li + 1]]) if (!l.paw) tr.push(T.bow(l.body, a + 2.9, a + 5.7));
@@ -2387,7 +2514,7 @@
         const armL = lionAt(grp, X + 2.75, top, zD + 0.5, -HP, 0.72, -1);
         d.armLions = [lionAt(grp, X - 2.75, top, zD + 0.5, -HP, 0.72), armL];
         pillarsAt(grp, 2.75, zD + 0.5, top + 1.17 * 0.72, 2.9);
-        d.crownHome = [X + 3.45, top + 0.75, 615.6]; d.crownHead = [X, sTop + 2.4, zHead];   // on a low stand within reach of the east arm lion's left paw (model choice)
+        d.crownHome = [X + 3.45, top + 0.75, 615.6]; d.crownHead = [X, sTop + PAL_KING.HEAD - 0.1, zHead];   // KING_211   // on a low stand within reach of the east arm lion's left paw (model choice)
         d.crown = put(grp, pal_crownGeo(), vesselGold, d.crownHome[0], d.crownHome[1], d.crownHome[2], 0, 1, "throneCrown");
         H.box(grp, 0.5, 0.75, 0.5, gold, X + 3.45, top, 615.6).name = "throneCrownStand";
         d.beasts = pairsAt(grp, [["ox", "lion"], ["wolf", "lamb"], ["leopard", "kid"], ["bear", "deer"], ["eagle", "bird"]]);
@@ -2423,7 +2550,8 @@
           const a = (k - 1) * SP, f = d.stepFigs[k], odd = k % 2 === 1, D = odd ? f.lE : f.lW, h = handAt(k);
           tr.push(T.move(sil, k === 1 ? silStart : silAt(k - 1), silAt(k), a + 5.5, a + 6.4, 0.3), T.glow(k, a, a + SP));   // 1.0.1-L: the climb comes after the tablets and the limbs
           for (const l of [f.lE, f.lW]) tr.push(T.tablet(l, a, a + 1, true), T.reachTo(l.paw, a, a + 1, l.tablet.hand), T.tablet(l, a + 3.2, a + 4, false), T.reachBack(l.paw, a + 3.2, a + 4, l.tablet.hand));
-          tr.push(T.gear(k, a + 4, a + 6), T.reachTo(D.paw, a + 4, a + 5.4, h), T.reachTo(f.wing, a + 4, a + 5.4, h), T.reachBack(D.paw, a + 6.4, a + 7, h), T.reachBack(f.wing, a + 6.4, a + 7, h));
+          tr.push(T.gear(k, a + 4, a + 6), T.reachTo(D.paw, a + 4, a + 5.4, T.handOf(D.paw, h)), T.reachTo(f.wing, a + 4, a + 5.4, T.handOf(f.wing, h)), T.reachBack(D.paw, k < 6 ? a + 7.3 : a + 6.6, k < 6 ? a + 8 : a + 7, T.handOf(D.paw, h)), T.reachBack(f.wing, k < 6 ? a + 7.3 : a + 6.6, k < 6 ? a + 8 : a + 7, T.handOf(f.wing, h)));   // KING_211 (KING_LEAN_211: they stay under his hands a while; on the sixth the wheel comes)
+          tr.push(T.lean(a + 5.6, a + 6.2, true), k < 6 ? T.lean(a + 7.2, a + 7.8, false) : T.lean(a + 6.5, a + 7, false));   // KING_LEAN_211: he comes up leaning on them, stands leaning, and straightens
           // 1.3.7, the awe (T.bow): the eagle that stretches no wing and the lying pair of the step, as he comes up to it
           { const li = (k - 1) * 2, eO = d.eagles[li].L === f.wing || d.eagles[li].R === f.wing ? d.eagles[li + 1] : d.eagles[li];
             tr.push(T.bow(eO.body, a + 5.2, a + 7));
@@ -2466,6 +2594,8 @@
       };
 
       // ---- the switch, the ascent and the witnesses' scene (ctx.shared.throneVersion / ctx.shared.throne, section 12) ----
+      pal_witSound.off = () => !!(ctx.shared && ctx.shared.soundOff);                                      // SOUND_211
+      (ctx.shared.soundStops || (ctx.shared.soundStops = [])).push(() => pal_witSound.stop());
       const stopAll = () => {
         pal_witSound.stop();
         if (anim.tracks) resetTracks(anim.tracks, anim.states);
@@ -3417,6 +3547,7 @@
     // not apply to a pill); at the end of a script everything returns to rest by itself
     if (thrAPI) {
       ctx.shared.throneVersion = thrAPI.throneVersion;
+      ctx.shared.__palKingFig = pal_kingFig;   // KING_LEAN_211: for measuring the leaning hands (QA)
       ctx.shared.throne = Object.assign({}, thrAPI.shared, { ascent: thrAPI.ascent, witnesses: thrAPI.witnesses, script: thrAPI.script, witnessScript: thrAPI.witnessScript, versions: thrAPI.throneVersion.keys.slice(), names: thrAPI.VNAMES });
       const thrFly = (key) => {
         const f = ctx.shared.flyPoints && ctx.shared.flyPoints[key];
@@ -3432,7 +3563,7 @@
           pause: () => thrAPI.witnesses.pause(), resume: () => thrAPI.witnesses.resume(), paused: () => thrAPI.witnesses.paused, restart: () => thrAPI.witnesses.start() });
       ctx.shared.modelButtons.push({
         id: "palaceThroneAscent", label: "הצג את עליית המלך לכסא", labelOn: "עצור את העלייה", maxDist: 150, layer: "palace",
-        title: "מציג את עליית המלך לכסא (בצללית בלבד) לפי המדרש שנבחר בטבלת השיטות: בכל מעלה חוזר גלגל המנגנון — ״חוזר הגלגל בתוך המגנון״ (מדרש אבא גוריון) — והארי פושט את ידו והנשר את כנפו לקראת העולה, ״והארי, פושט את ידו של ימין, והנשר גפו של שמאל... והנשר פושט גפו של ימין, והארי ידו של שמאל״ (אבא גוריון; אסתר רבה א, יב ״עלה במעלה הראשונה והארי פושט לו יד, ובשניה נשר פושט לו יד״); ובסוף יונת הזהב פותחת את הארון ומביאה את ספר התורה אל חיקו של המלך — ״ויונה של זהב יורדת מן העמוד במנגנין, ופותחת הארון ולוקחת ס״ת, ונותנת לתוך ידו של מלך״ (פנים אחרים). לתרגום שני: השור מרים אותו ממעלה למעלה, הנשרים מושיבים אותו, הנשר הגדול מניח את הכתר, והאריות מזלפים בשמים. בסוף הכל חוזר למנוחה.",
+        title: "מציג את עליית המלך לכסא (המלך בלבוש מלכות) לפי המדרש שנבחר בתפריט, תחת ״שיטות ומחלוקות״: בכל מעלה חוזר גלגל המנגנון — ״חוזר הגלגל בתוך המגנון״ (מדרש אבא גוריון) — והארי פושט את ידו והנשר את כנפו לקראת העולה, ״והארי, פושט את ידו של ימין, והנשר גפו של שמאל... והנשר פושט גפו של ימין, והארי ידו של שמאל״ (אבא גוריון; אסתר רבה א, יב ״עלה במעלה הראשונה והארי פושט לו יד, ובשניה נשר פושט לו יד״); ובסוף יונת הזהב פותחת את הארון ומביאה את ספר התורה אל ידו של המלך — ״ויונה של זהב יורדת מן העמוד במנגנין, ופותחת הארון ולוקחת ס״ת, ונותנת לתוך ידו של מלך״ (פנים אחרים). לתרגום שני: בכל מעלה שתי החיות שבה פושטות לו יד (בראשונה השור והארי), הנשרים מושיבים אותו, הנשר הגדול מניח את הכתר, והאריות מזלפים בשמים. בסוף הכל חוזר למנוחה.",
         anchor: () => (thrAPI.throneVersion.current === "pesukim" ? null : A1),
         get: () => thrAPI.ascent.running,
         set: (on) => { if (on) { if (thrAPI.ascent.start()) thrFly("throneSteps"); } else thrAPI.ascent.reset(); }
@@ -3454,14 +3585,14 @@
     }
     // what each variant shows and which numbers are model choices (Hebrew; the integrator puts it in the UI and in DEV_NOTES)
     // (1.0.1-K review, palace-courts-6: the windows now quote Metzudat David's own words on 7:4, "מכוונות זו מול זו")
-    ctx.shared.forestHouseNotes = "בית יער הלבנון (מלכים א ז, ב–ו) מוצג בשלוש קריאות, ועוברים ביניהן בטבלת השיטות.\nלשיטת רש״י (ברירת המחדל), כפי שמצייר אותה הספר ׳מקרא מפורש׳: ארבעה טורי עמודי ארזים צפופים לאורך הבית (״לארך הבית היה טור עמודים בקרקע, והכרותות מעמוד לעמוד״ — רש״י ז, ב), על כל טור כרותות מעמוד לעמוד, ועליהן רצפת הקומה העליונה (״גג הקומה התחתונה, שהוא רצפת הקומה העליונה״ — מקרא מפורש). הקומה העליונה — ״ועמדים״: עמודים נוספים שמהם נארגו קירותיה, ״כלן פתחים וחלונות״ מרובעים ומחופים נסרים דקים (רש״י ז, ג; ז, ה; ז, ו); עליהם ארבעים וחמישה נסרי הספון, חמישה עשר לכל חלל, ארכם לרחב שבין טור לטור ורחבם לארך הבית. ומכיוון שלא כיסו את מאה האמות — בסוף הבית קירוי שני, והכל דק: ״קרוי של נסרים קטנים, נתונים על מרישין קטנים״ — מטור לטור, ״שלשה מרישין זה אצל (צריך לומר: לסוף) זה״ (מריש אחד לכל חלל, קצה מול קצה), ״ושקופין משני צדיהן״ (רש״י ז, ד), והנסרים מונחים עליהם כציור הספר. העב — באולם העמודים בלבד (״ועמדים ועב על פניהם״, ז, ו), ואינו נראה במודל. אולם העמודים — ״מבוא לבית״ נמוך לפני הבית, ו״אולם על פניהם״ — ״אולם גבוה עשה על כל הבית״ (רש״י ז, ו) — בניין גבוה לפני אולם העמודים, כציור הספר.\nלשיטת מלבי״ם ורלב״ג: ״העמודים היו נתונים לרוחב הבית וחולקים את אורך הבית לג׳ חלקים״ (מלבי״ם ז, ב); ״משני צדדי האורך היה בנין של אבני גזית״ ובו שלושה טורי חלונות, ״חלונות של צד הארך מזה מכוונים נגד חלונות של צד הארך השני״ (מלבי״ם ז, ד); ״הפתחים היו בצד רוחב הבית״, שלושה בכל טור (מלבי״ם ז, ה); חמישה עשר נסרים לכל שליש (מלבי״ם ז, ג). לרלב״ג — חמישה עשר עמודים בטור, והארבעים וחמישה הם ״כרותות הארזים אשר על העמודים״ (רלב״ג ז, ג), ואולם העמודים ״גבהו כגבהם״ (רלב״ג ז, ו); ״לפני הבית והאולם היה עוד אולם ולפני האולם השני היו עמודים ועב על פניהם היינו מריש שהוא עץ עב״ (מלבי״ם ז, ו).\nלשיטת מצודת דוד: ״והשורות ההם עמדו לרוחב הבית... אבל לאורך הבית היה כתלים ממש, כדרך הבנין״ (ז, ב); על כל טור כרותה — ״השכיבו על העמודים ההם, לחברם יחד״ (ז, ב); ועליהם ״השכיבו צלעות ונסרים... ועל הצלעות ההם הניחו לוחות ארז, להיות לתקרה״ — ארבעים וחמישה לוחות, ״אורך כל לוח ל״ג אמות ושליש אמה... והיה רוחב כל לוח ג׳ אמות ושליש אמה״ (ז, ג); בכתלי האורך שלוש שורות חלונות ״זה למעלה מזה״, ״מכוונות זו מול זו״ (ז, ד); בכל כותל שלושה פתחים מרובעים — ״בכל חלק שבחלק העמודים, פתח אחד מזה, ופתח אחד מזה״ — ועל כל פתח ״חלון הקטן העשוי ממעל להפתח״ (ז, ה); אולם העמודים ״עומד על עמודי ארזים״, ״נסמך לבית היער לפני פתחים, וכדרך בית שער, ועמד ארכו לאורך הבית, להיות מול כל שלשת הפתחים״, ולפני פתחיו ״עמודים תקועים בארץ, וממעל להם עץ עב לחברם יחד״ (ז, ו).\nבכל הקריאות: מאתיים צינה ושלוש מאות מגן זהב (מלכים א י, טז–יז; רש״י: ״צנה — מקפת את האדם משלשה רוחותיו״) וכלי זהב סגור (י, כא) על שולחנות.\nבחירות מודל בקריאת רש״י: 29 עמודים בטור (2 על 2), גובה הקומה התחתונה 10 והעליונה 18.5 (עם הכרותות והרצפה — 30), 48 קורות בכל קיר עליון, מקום הפתחים והחלונות ומידותיהם, רוחב הנסרים הגדולים 5 אמות (75 מתוך 100), ארבע שורות מרישין קטנים לרוחב הבית (שלושה בכל שורה, זה לסוף זה; רוחב 0.4, עובי 0.3), ועליהם הנסרים הדקים לאורך הבית, ממריש למריש — שלושה בכל טור, רוחב 2.5, בהירים — כציור הספר ורש״י ז, ד, כותלי האבן בקצוות (כציור הספר), גובה אולם העמודים 12 ומידות האולם הגבוה (50 על 15, גובה 40).\nבחירות מודל בקריאת מלבי״ם ורלב״ג: עובי הכתלים 3, מקום החלונות והפתחים, לוח הגג מאבן, מידות האולם השני (50 על 10) ושורת העמודים.\nבחירות מודל בקריאת מצודת דוד: אולם העמודים בצד המזרחי, חמישה עשר עמודים בטור (עמוד תחת כל לוח), גובה העמודים 26 ומידות הכרותות והצלעות (הצלעות מטור לטור על העמודים), מקום הפתחים (באמצע ו־21 אמה לכל צד, כדי שיעמדו שלושתם מול האולם) ומידותיהם, 12 חלונות בכל שורה, גובה האולם 16.5 ושורת העמודים והעב (5 עמודים בגובה 10).\nצורת המגינים והכלים ומקומם — להמחשה. בכל הקריאות אפשר להסיר את הנסרים והגג (כפתור על המבנה) ולראות את המרישים, העמודים והאולמות.";
+    ctx.shared.forestHouseNotes = "בית יער הלבנון (מלכים א ז, ב–ו) מוצג בשלוש שיטות, ועוברים ביניהן בתפריט, תחת ״שיטות ומחלוקות״.\nלשיטת רש״י (ברירת המחדל), כפי שמצייר אותה הספר ׳מקרא מפורש׳: ארבעה טורי עמודי ארזים צפופים לאורך הבית (״לארך הבית היה טור עמודים בקרקע, והכרותות מעמוד לעמוד״ — רש״י ז, ב), על כל טור כרותות מעמוד לעמוד, ועליהן רצפת הקומה העליונה (״גג הקומה התחתונה, שהוא רצפת הקומה העליונה״ — מקרא מפורש). הקומה העליונה — ״ועמדים״: עמודים נוספים שמהם נארגו קירותיה, ״כלן פתחים וחלונות״ מרובעים ומחופים נסרים דקים (רש״י ז, ג; ז, ה; ז, ו); עליהם ארבעים וחמישה נסרי הספון, חמישה עשר לכל חלל, ארכם לרחב שבין טור לטור ורחבם לארך הבית. ומכיוון שלא כיסו את מאה האמות — בסוף הבית קירוי שני, והכל דק: ״קרוי של נסרים קטנים, נתונים על מרישין קטנים״ — מטור לטור, ״שלשה מרישין זה אצל (צריך לומר: לסוף) זה״ (מריש אחד לכל חלל, קצה מול קצה), ״ושקופין משני צדיהן״ (רש״י ז, ד), והנסרים מונחים עליהם כציור הספר. העב — באולם העמודים בלבד (״ועמדים ועב על פניהם״, ז, ו), ואינו נראה במודל. אולם העמודים — ״מבוא לבית״ נמוך לפני הבית, ו״אולם על פניהם״ — ״אולם גבוה עשה על כל הבית״ (רש״י ז, ו) — בניין גבוה לפני אולם העמודים, כציור הספר.\nלשיטת מלבי״ם ורלב״ג: ״העמודים היו נתונים לרוחב הבית וחולקים את אורך הבית לג׳ חלקים״ (מלבי״ם ז, ב); ״משני צדדי האורך היה בנין של אבני גזית״ ובו שלושה טורי חלונות, ״חלונות של צד הארך מזה מכוונים נגד חלונות של צד הארך השני״ (מלבי״ם ז, ד); ״הפתחים היו בצד רוחב הבית״, שלושה בכל טור (מלבי״ם ז, ה); חמישה עשר נסרים לכל שליש (מלבי״ם ז, ג). לרלב״ג — חמישה עשר עמודים בטור, והארבעים וחמישה הם ״כרותות הארזים אשר על העמודים״ (רלב״ג ז, ג), ואולם העמודים ״גבהו כגבהם״ (רלב״ג ז, ו); ״לפני הבית והאולם היה עוד אולם ולפני האולם השני היו עמודים ועב על פניהם היינו מריש שהוא עץ עב״ (מלבי״ם ז, ו).\nלשיטת מצודת דוד: ״והשורות ההם עמדו לרוחב הבית... אבל לאורך הבית היה כתלים ממש, כדרך הבנין״ (ז, ב); על כל טור כרותה — ״השכיבו על העמודים ההם, לחברם יחד״ (ז, ב); ועליהם ״השכיבו צלעות ונסרים... ועל הצלעות ההם הניחו לוחות ארז, להיות לתקרה״ — ארבעים וחמישה לוחות, ״אורך כל לוח ל״ג אמות ושליש אמה... והיה רוחב כל לוח ג׳ אמות ושליש אמה״ (ז, ג); בכתלי האורך שלוש שורות חלונות ״זה למעלה מזה״, ״מכוונות זו מול זו״ (ז, ד); בכל כותל שלושה פתחים מרובעים — ״בכל חלק שבחלק העמודים, פתח אחד מזה, ופתח אחד מזה״ — ועל כל פתח ״חלון הקטן העשוי ממעל להפתח״ (ז, ה); אולם העמודים ״עומד על עמודי ארזים״, ״נסמך לבית היער לפני פתחים, וכדרך בית שער, ועמד ארכו לאורך הבית, להיות מול כל שלשת הפתחים״, ולפני פתחיו ״עמודים תקועים בארץ, וממעל להם עץ עב לחברם יחד״ (ז, ו).\nבכל השיטות: מאתיים צינה ושלוש מאות מגן זהב (מלכים א י, טז–יז; רש״י: ״צנה — מקפת את האדם משלשה רוחותיו״) וכלי זהב סגור (י, כא) על שולחנות.\nבחירות מודל בשיטת רש״י: 29 עמודים בטור (2 על 2), גובה הקומה התחתונה 10 והעליונה 18.5 (עם הכרותות והרצפה — 30), 48 קורות בכל קיר עליון, מקום הפתחים והחלונות ומידותיהם, רוחב הנסרים הגדולים 5 אמות (75 מתוך 100), ארבע שורות מרישין קטנים לרוחב הבית (שלושה בכל שורה, זה לסוף זה; רוחב 0.4, עובי 0.3), ועליהם הנסרים הדקים לאורך הבית, ממריש למריש — שלושה בכל טור, רוחב 2.5, בהירים — כציור הספר ורש״י ז, ד, כותלי האבן בקצוות (כציור הספר), גובה אולם העמודים 12 ומידות האולם הגבוה (50 על 15, גובה 40).\nבחירות מודל בשיטת מלבי״ם ורלב״ג: עובי הכתלים 3, מקום החלונות והפתחים, לוח הגג מאבן, מידות האולם השני (50 על 10) ושורת העמודים.\nבחירות מודל בשיטת מצודת דוד: אולם העמודים בצד המזרחי, חמישה עשר עמודים בטור (עמוד תחת כל לוח), גובה העמודים 26 ומידות הכרותות והצלעות (הצלעות מטור לטור על העמודים), מקום הפתחים (באמצע ו־21 אמה לכל צד, כדי שיעמדו שלושתם מול האולם) ומידותיהם, 12 חלונות בכל שורה, גובה האולם 16.5 ושורת העמודים והעב (5 עמודים בגובה 10).\nצורת המגינים והכלים ומקומם — להמחשה. בכל השיטות אפשר להסיר את הנסרים והגג (כפתור על המבנה) ולראות את המרישים, העמודים והאולמות.";
     ctx.shared.palaceNotes = {
       kingsHouse: "בית המלך: ״וביתו אשר ישב שם חצר האחרת מבית לאולם״ (מלכים א ז, ח) — ״דירה גמורה, לאכל שם ולשכב שם״ (רש״י). הוא עומד בחצר משלו, החצר האחרת, ״לפנים מן אולם של בית יער הלבנון״ (רש״י) — ראו ׳החצר האחרת׳.\nבפסוקים: ״ומאכל שלחנו ומושב עבדיו ומעמד משרתו״ (י, ה; מלבי״ם: ״ומושב עבדיו הם האוכלים על שולחן המלך שהיה מושבם בסדר לפי מדרגתם״); ״וכל כלי משקה המלך שלמה זהב״ (י, כא); ״הנה מטתו שלשלמה״ (שיר השירים ג, ז). הדלת הצפונית אל המעלות — ״דרך מבוא שהכין מביתו לבית המקדש״ (רש״י י, ה).\nבחירות מודל: גודל הבית (80 על 30), ארבעת החדרים (חדר אוכל, אולם כניסה בעמודי ארז, חדר משכב, חדר ישיבה), הריהוט, השטיחים והמנורות, הרצפה והתקרה מארז (ז, ז; ז, יא).",
       // 1.0.1-L (FIXES L.33): the other court as the king's own walled court, and בית בת פרעה outside it (for the UI's places and texts)
       otherCourt: "החצר האחרת — חצר בית המלך: ״וביתו אשר ישב שם חצר האחרת מבית לאולם כמעשה הזה היה״ (מלכים א ז, ח).\nהמפרשים: רש״י — ״מבית לאולם. לפנים מן אולם של בית יער הלבנון״; רד״ק — ״החצר האחרת שהיתה לבית הזה והיא החצר שהיתה מבפנים לאולם״; מצודת דוד — ״אשר עמדה בחצר האחרת, מבפנים לאולם המשפט, בדרך הכניסה מן החוץ אל מקום בתי המלוכה״; רלב״ג — ״הוא החצר האחרת שהיא מבפני׳ לאולם אשר בנה שם ביתו״; מלבי״ם — ״וגם חצר האחרת ר״ל החצר שלפני בית המלך״.\n׳מקרא מפורש׳: ״מאחורי בית יער הלבנון, בתוך חצר אחרת, בנה את ביתו לאכול ולשתות שם״, והספר מצייר אותה חצר מוקפת חומה לעצמה, עומדת לבדה מחוץ לחצר הגדולה.\nבמודל: **החצר האחרת היא חצר נפרדת לגמרי** — חומה משלה, מאחורי בית יער הלבנון ומחוץ לחומת החצר הגדולה, ובין שתי החצרות קרקע פנויה, והמעבר ביניהן בשערים בלבד; בתוכה בית המלך והגן שלפניו. שערה הדרומי מול שער החצר הגדולה ומול הפתח האמצעי שבצפון בית יער הלבנון — החצר לפנים מן האולם (״מבית לאולם״); ושערה הצפוני פתוח אל המעלות העולות לבית ה׳ — ״דרך מבוא שהכין מביתו לבית המקדש, שהיה עולה בו לבית ה׳״ (רש״י י, ה). שתי החומות בנויות ״שלשה טורים גזית וטור כרתת ארזים״ (ז, יב) — ״החומה עשויה שלשה נדבכין של אבנים, ונדבך של עץ עליהם״ (רש״י שם). החצר הגדולה מקיפה את בית יער הלבנון ואולמותיו, את בית בת פרעה ואת אולם הכסא והמשפט.\nבקצרה — המחלוקת: רלב״ג (ז, יב) כתב ״שהחצר הגדולה אשר בה בית המלך״, ומצודת דוד שם: ״אשר היה מסבב כל בתי המלך״ — לדבריהם גם בית המלך בתוך החצר הגדולה; המודל הולך אחר ציור הספר.\nבחירות מודל: מידות החצר (140 על 79.5 אמה), גובה החומה (8) ועוביה (2), השערים, הריצוף, הקרקע הפנויה שבין החצרות (17 אמה) והמעקה הנמוך בשולי המדרגה שמחוץ לשתי החצרות.",
       pharaohDaughter: "בית בת פרעה: ״ובית יעשה לבת פרעה אשר לקח שלמה כאולם הזה״ (מלכים א ז, ח).\nהמפרשים: ״עלה בלבו לעשות בית לבת פרעה״, ״כמעשה אולם הזה״ (רש״י); ״הבית אשר עשה לבת פרעה, היה גם כן כאולם המשפט״ (מצודת דוד); ״שהיה כל קרקעו ספון בארז״ (רלב״ג); ״ואחרי גמר הבנינים התחיל לעשות בית לבת פרעה״ (מלבי״ם).\nביתה לבדו, לא בבית המלך: ״ואת בת פרעה העלה שלמה מעיר דויד לבית אשר בנה לה כי אמר לא תשב אשה לי בבית דויד מלך ישראל״ (דברי הימים ב ח, יא).\nמקומו אינו מפורש — ״לא נתבאר ברש״י היכן מקום בית זה ביחס לבתים האחרים״ (׳מקרא מפורש׳, שמציירו סמוך לבית יער הלבנון).\nבמודל: הבית עומד בחצר בית יער הלבנון — בחצר הגדולה, ממערב לאולם העמודים, מחוץ לחצר האחרת של המלך — ופתחו פונה אל בית יער הלבנון. בחירות מודל: מקומו, מידותיו (30 על 50, גובה 20), הפתח, השטיח והמנורות.",
       garden: "הגן בחצר האחרת, לפני בית המלך (מלבי״ם: ״החצר שלפני בית המלך״): ״עשיתי לי גנות ופרדסים ונטעתי בהם עץ כל פרי״ (קהלת ב, ה).\nבמודל: מקומו בחצר הזו, הערוגות והעצים — בחירת מודל.",
-      throne: "הפסוקים (מלכים א י, יח–כ; דברי הימים ב ט, יז–יט): ״ויעש המלך כסא שן גדול ויצפהו זהב מופז. שש מעלות לכסה וראש עגל לכסה מאחריו וידת מזה ומזה אל מקום השבת ושנים אריות עמדים אצל הידות. ושנים עשר אריים עמדים שם על שש המעלות מזה ומזה״.\nרש״י: ״תקון הכסא היה רחב, והמעלות היו לצד פניו, ולצד רחבה לצד אחריו היה המושב גבוה מן הכסא מקום עגל״; הידות — ״כמין מקלות זהב מפאה לפאה, פשוטין לימין ולשמאל״; ״וכל צורת הכסא מפרשת באגדת מגלת אסתר״ (ובדברי הימים: ״וכל צורת הכסא וצורת החיות שבכסא מפרש בתרגום של מגלת אסתר״).\nמצודת דוד: האריות ״ששה מזה, וששה מזה״. רלב״ג: האריות פונים ״לצד פני הכסא״. מלבי״ם: הגב ״עגול מאחריו כמדת גופו וראשו״, וההדום — ״שהיה הדום הרגל ג״כ מזהב״.\nאברבנאל (י, יח–כ): ״ושהיו ששה מעלות לכסא וראש עגול שהיה מכסה מלמעלה, ואותו ראש היה אחוז מאחרי הכסא, והיו גם כן שתי ידות מפה ומפה לכסא, כמו זרועות להסמך בהם בידים בעת הישיבה, והיו שני אריות בשתי הידות, (כ) ועוד היו בכל מעלה משני צדדיה שני אריות, באופן שהיו שני אריות מלמעלה ושנים עשר אריות בכל המעלות״; ובטעמו: ״והיה ראשו עגול להעיר על השמים... והיו לו שתי ידות, לרמוז שהמשפט יהיה על פי התורה, אם התורה שבכתב ואם התורה שבעל פה, והיו שם אריות, להגיד שנביאי ישראל וחכמיה מפרשי התורה מאריות גברו בחכמתה, והיו לכסא שש מעלות ושני אריות בכל מעלה, להעיר על שנים עשר השבטים״.\nבקצרה — ״ראש עגול״: במודל כרש״י — ״המושב גבוה מן הכסא מקום עגל״ (הבמה העגולה), וגב הכסא עגול בראשו כמלבי״ם וכרלב״ג (״והיה ראש עגול בלוח ההוא באמצעו״; תרגום יונתן ״וריש סגלגל״). מצודת דוד ואברבנאל קוראים אחרת — ״יצא ממעל היושב מכסה עגולה, כעין כיפת כובע״ (מצודת דוד), ״ראש עגול שהיה מכסה מלמעלה״ (אברבנאל) — ולא נבנה.\n״וכבש בזהב לכסא מאחזים״ (דברי הימים ב ט, יח): מצודת דוד — ״קודם שעשו על המעלות היה עשוי כבש מזהב ודרך בו עלה המעלות לשבת על הכסא״ (מצודת ציון: ״עשוי כעין גשר משופע״) — כבש הזהב הנמוך שלפני המעלה הראשונה; רלב״ג — ״שכל מדרגה ומדרגה ממעלות הכסא היו נאחזות לכסא בזהב שהם מצופות בו״; מלבי״ם — ההדום.\nעל פי המדרש, כהפניית רש״י: על כל מעלה שני אריות ושני נשרים — ״אריא לקבל נשרא ונשרא לקבל אריא״ (תרגום שני לאסתר א, ב), ״והארי, פושט את ידו של ימין, והנשר גפו של שמאל... והנשר פושט גפו של ימין, והארי ידו של שמאל״ (מדרש אבא גוריון). באמצע כל מעלה זוג חיות רובצות זו מול זו (תרגום שני): שור וארי, זאב וטלה, נמר וגדי, נשר וטווס, חתול ותרנגול, נץ וציפור (ובאבא גוריון ברביעית ״צבי [וכנגדו] דוב״ ובחמישית ״נשר [וכנגדו] יונה״). המעלות משובצות אבנים טובות ומרגליות, ״לבנות ירקרקות ואדמדמות״ (פנים אחרים). ״שרביט הזהב מאחוריו, ויונה נתונה בראשו ועטרה של זהב בפיה, כדי שיהא המלך יושב בשבת ועטרה של זהב נוגע ואינו נוגע״ (אסתר רבה א, יב, כנוסח הספרייה; וכן במדבר רבה יב, יז: ״שרביט של זהב נתון נתלה מאחריו ויונה בראשו, ועטרה של זהב בפי יונה, ויושב תחתיה בשבת, נוגעת ואינה נוגעת״, ופסיקתא דרב כהנא א, ז: ״שרביט של זהב נתלה לו מאחוריו ויונה בראשו ועטרה של זהב בפי יונה והוא יושב תחתיה בשבת, ונוגעת ואינה נוגעת״). שני כסאות זהב, ״חד לכהנא רבא וחד לסגן כהניא״, ושבעים כסאות לזקני הסנהדרין, ״הוו יתבין מן ימינא דכרסיא ומן סמאליה״ (תרגום שני; ״ושבעים קתידראות היו באולם הכסא״ — ענין כסא שלמה).\nועוד במדרש — הכרוז על כל מעלה: ״לא ירבה לו נשים״, ״לא ירבה לו סוסים״, ״וכסף וזהב לא ירבה לו״, ״לא תטה משפט״, ״לא תכיר פנים״, ״לא תקח שחד״ (אסתר רבה; במדבר רבה; פסיקתא דרב כהנא; ובדברים רבה ה, ו רשימה אחרת) — קול, ולכן רק בכיתובי העלייה (מתנות כהונה: ״ובכל בו מצאתי כי הכתובים הללו היו נרשמים בידי האריות שסביב הכסא וזהו ענין הכרוז״ — כלוחות הכתב שבבית המדרש ב; מהרז״ו: ״יתכן שפי' שנעשה הכסא במלאכת אלהות שהיה הכרוז יוצא מעצמו״).\nבמודל: המנורה, הגפנים, התמרים והטווסים, עמודי השיש, המנגנון, והיונה הפותחת את הארון ונותנת ספר תורה בידי המלך — נבנו בגרסאות של המדרשים. המידות, צורת החיות ומקום הכסאות — בחירת מודל. **הכסא מוצג בארבע גרסאות** — הפסוקים ומפרשיהם (ברירת המחדל), תרגום שני, אסתר רבה עם פנים אחרים ואבא גוריון, ובית המדרש ב — ועוברים ביניהן בטבלת השיטות; ראו ׳כסא שלמה — הגרסאות׳ ו׳עליית המלך לכסא׳.",
+      throne: "הפסוקים (מלכים א י, יח–כ; דברי הימים ב ט, יז–יט): ״ויעש המלך כסא שן גדול ויצפהו זהב מופז. שש מעלות לכסה וראש עגל לכסה מאחריו וידת מזה ומזה אל מקום השבת ושנים אריות עמדים אצל הידות. ושנים עשר אריים עמדים שם על שש המעלות מזה ומזה״.\nרש״י: ״תקון הכסא היה רחב, והמעלות היו לצד פניו, ולצד רחבה לצד אחריו היה המושב גבוה מן הכסא מקום עגל״; הידות — ״כמין מקלות זהב מפאה לפאה, פשוטין לימין ולשמאל״; ״וכל צורת הכסא מפרשת באגדת מגלת אסתר״ (ובדברי הימים: ״וכל צורת הכסא וצורת החיות שבכסא מפרש בתרגום של מגלת אסתר״).\nמצודת דוד: האריות ״ששה מזה, וששה מזה״. רלב״ג: האריות פונים ״לצד פני הכסא״. מלבי״ם: הגב ״עגול מאחריו כמדת גופו וראשו״, וההדום — ״שהיה הדום הרגל ג״כ מזהב״.\nאברבנאל (י, יח–כ): ״ושהיו ששה מעלות לכסא וראש עגול שהיה מכסה מלמעלה, ואותו ראש היה אחוז מאחרי הכסא, והיו גם כן שתי ידות מפה ומפה לכסא, כמו זרועות להסמך בהם בידים בעת הישיבה, והיו שני אריות בשתי הידות, (כ) ועוד היו בכל מעלה משני צדדיה שני אריות, באופן שהיו שני אריות מלמעלה ושנים עשר אריות בכל המעלות״; ובטעמו: ״והיה ראשו עגול להעיר על השמים... והיו לו שתי ידות, לרמוז שהמשפט יהיה על פי התורה, אם התורה שבכתב ואם התורה שבעל פה, והיו שם אריות, להגיד שנביאי ישראל וחכמיה מפרשי התורה מאריות גברו בחכמתה, והיו לכסא שש מעלות ושני אריות בכל מעלה, להעיר על שנים עשר השבטים״.\nבקצרה — ״ראש עגול״: במודל כרש״י — ״המושב גבוה מן הכסא מקום עגל״ (הבמה העגולה), וגב הכסא עגול בראשו כמלבי״ם וכרלב״ג (״והיה ראש עגול בלוח ההוא באמצעו״; תרגום יונתן ״וריש סגלגל״). מצודת דוד ואברבנאל קוראים אחרת — ״יצא ממעל היושב מכסה עגולה, כעין כיפת כובע״ (מצודת דוד), ״ראש עגול שהיה מכסה מלמעלה״ (אברבנאל) — ולא נבנה.\n״וכבש בזהב לכסא מאחזים״ (דברי הימים ב ט, יח): מצודת דוד — ״קודם שעשו על המעלות היה עשוי כבש מזהב ודרך בו עלה המעלות לשבת על הכסא״ (מצודת ציון: ״עשוי כעין גשר משופע״) — כבש הזהב הנמוך שלפני המעלה הראשונה; רלב״ג — ״שכל מדרגה ומדרגה ממעלות הכסא היו נאחזות לכסא בזהב שהם מצופות בו״; מלבי״ם — ההדום.\nעל פי המדרש, כהפניית רש״י: על כל מעלה שני אריות ושני נשרים — ״אריא לקבל נשרא ונשרא לקבל אריא״ (תרגום שני לאסתר א, ב), ״והארי, פושט את ידו של ימין, והנשר גפו של שמאל... והנשר פושט גפו של ימין, והארי ידו של שמאל״ (מדרש אבא גוריון). באמצע כל מעלה זוג חיות רובצות זו מול זו (תרגום שני): שור וארי, זאב וטלה, נמר וגדי, נשר וטווס, חתול ותרנגול, נץ וציפור (ובאבא גוריון ברביעית ״צבי [וכנגדו] דוב״ ובחמישית ״נשר [וכנגדו] יונה״). המעלות משובצות אבנים טובות ומרגליות, ״לבנות ירקרקות ואדמדמות״ (פנים אחרים). ״שרביט הזהב מאחוריו, ויונה נתונה בראשו ועטרה של זהב בפיה, כדי שיהא המלך יושב בשבת ועטרה של זהב נוגע ואינו נוגע״ (אסתר רבה א, יב, כנוסח הספרייה; וכן במדבר רבה יב, יז: ״שרביט של זהב נתון נתלה מאחריו ויונה בראשו, ועטרה של זהב בפי יונה, ויושב תחתיה בשבת, נוגעת ואינה נוגעת״, ופסיקתא דרב כהנא א, ז: ״שרביט של זהב נתלה לו מאחוריו ויונה בראשו ועטרה של זהב בפי יונה והוא יושב תחתיה בשבת, ונוגעת ואינה נוגעת״). שני כסאות זהב, ״חד לכהנא רבא וחד לסגן כהניא״, ושבעים כסאות לזקני הסנהדרין, ״הוו יתבין מן ימינא דכרסיא ומן סמאליה״ (תרגום שני; ״ושבעים קתידראות היו באולם הכסא״ — ענין כסא שלמה).\nועוד במדרש — הכרוז על כל מעלה: ״לא ירבה לו נשים״, ״לא ירבה לו סוסים״, ״וכסף וזהב לא ירבה לו״, ״לא תטה משפט״, ״לא תכיר פנים״, ״לא תקח שחד״ (אסתר רבה; במדבר רבה; פסיקתא דרב כהנא; ובדברים רבה ה, ו רשימה אחרת) — קול, ולכן רק בכיתובי העלייה (מתנות כהונה: ״ובכל בו מצאתי כי הכתובים הללו היו נרשמים בידי האריות שסביב הכסא וזהו ענין הכרוז״ — כלוחות הכתב שבבית המדרש ב; מהרז״ו: ״יתכן שפי' שנעשה הכסא במלאכת אלהות שהיה הכרוז יוצא מעצמו״).\nבמודל: המנורה, הגפנים, התמרים והטווסים, עמודי השיש, המנגנון, והיונה הפותחת את הארון ונותנת ספר תורה בידי המלך — נבנו בגרסאות של המדרשים. המידות, צורת החיות ומקום הכסאות — בחירת מודל. **הכסא מוצג בארבע גרסאות** — הפסוקים ומפרשיהם (ברירת המחדל), תרגום שני, אסתר רבה עם פנים אחרים ואבא גוריון, ובית המדרש ב — ועוברים ביניהן בתפריט, תחת ״שיטות ומחלוקות״; ראו ׳כסא שלמה — הגרסאות׳ ו׳עליית המלך לכסא׳.",
       // 1.0.1-L (FIXES L.81): what each version of the throne shows, with its sources (the UI's opinion row and the places)
       throneVersions: {
         pesukim: "לפי הפסוקים ומפרשיהם בלבד (ברירת המחדל).\nגוף הכסא הרחב ושש המעלות לפניו, המושב הגבוה העגול מאחור (רש״י: ״תקון הכסא היה רחב, והמעלות היו לצד פניו, ולצד רחבה לצד אחריו היה המושב גבוה מן הכסא מקום עגל״), הגב העגול בראשו (מלבי״ם: ״עגול מאחריו כמדת גופו וראשו לסמוך עליו גבו״; רלב״ג: ״והיה ראש עגול בלוח ההוא באמצעו״), הידות — ״כמין מקלות זהב מפאה לפאה, פשוטין לימין ולשמאל״ (רש״י).\nהאריות: שני אריות אצל הידות (רד״ק: ״והיו צורות אריות עומדות אצל הידות״) ושנים עשר אריות על שש המעלות, ״ששה מזה, וששה מזה״ (מצודת דוד), פניהם ״לצד פני הכסא״ (רלב״ג); אברבנאל: ״ועוד היו בכל מעלה משני צדדיה שני אריות, באופן שהיו שני אריות מלמעלה ושנים עשר אריות בכל המעלות״.\nההדום (מלבי״ם על דברי הימים ב ט, יז ״שהיה הדום הרגל ג״כ מזהב״) והכבש — ״קודם שעשו על המעלות היה עשוי כבש מזהב ודרך בו עלה המעלות לשבת על הכסא״ (מצודת דוד שם, יח).\nבמודל: **בלי נשרים, חיות, אבנים, שרביט, כסאות ומנגנון** — אלו מן המדרש, ואינם בגרסה זו; לכן אין בה גם עלייה.",
@@ -3470,9 +3601,9 @@
         beitHamidrash: "לפי בית המדרש ב (ילינק; בספרייה בילקוט מדרשים, בלי מספרי ההערות).\nבמודל: אילני התמרים ״מיפות את הכסא ומרוקמים בבגדי שש״ — שמונה סביבו, כרוכים בבד שש מרוקם, ובראש כל אחד טווס של שן; מספרם, מקומם וגובהם — בחירת מודל.\nהאריות ולוחות הכתב: ״ושנים עשר אריות יש בו, על כל מעלה ומעלה יש בו שני אריות. כיצד, כיון שהמלך שלמה דורס לעלות במעלה ראשונה, היו אריות שבו פורשות למעלה ידיהם וכתב מורשם בידיהם, ולא היה עולה במעלה שניה עד שהיה קורא הכתובים שהיו מורשמין. ומה היה בהן, כשהמלך הופך פניו לצד ימינו היה רואה את הכתב שהיה ביד הארי של ימין, ומה כתוב בו, לא תכירו פנים במשפט (דברים א, יז), והופך פניו לצד שמאלו והיה כתוב בו לא תקח שוחד (שם טז, יט). וכן בכל האריות היה כתוב בהן מענינים אלו של משפט, כגון ודל לא תהדר בריבו (שמות כג, ג)״.\nהאבנים, התמרים והכסאות: ״וכל מעלה ומעלה היתה מכובשת מאבנים טובות ומרגליות, ויש בהן אבנים יקרות לבנות מכורכמות, ויש בהן זכוכית לבן וטובה, ואילני תמרים מיפות את הכסא ומרוקמים בבגדי שש, והיו טווסין של שן מכוונים כנגד כנפי נשרים. ושני עמודים של שש על ראשי האריות, ושני אבנים של זהב היו על שני צידי הכסא, והיו מלאים מכל מיני בשמים. ושתי קתדראות של זהב משני צדי הכסא, אחת לגד הנביא ואחת לנתן הנביא. ושבעים קתדראות של זהב לשבעים זקנים ויושבין בהן. ועל כל קתדרא וקתדרא שני אריות ושני נשרים, ומכוונים אחד כנגד אחד, ועומדין על רגליהן״.\nהזוגות: ״במעלה הראשונה השור כנגד הארי, בשניה הזאב כנגד הטלה, בשלישית נמר כנגד גדי, ברביעית דוב כנגד צבי, בחמישית נשר כנגד [יונה, בששית נץ וכנגדו] צפור״ (במודל: חמישה זוגות, בחמישית נשר וציפור). ועוד: ״תנין של כסף היה טוען גלגל של כסא״; ״ויונה של זהב היתה עומדת בין העמודים ופותחת לו הארון״; ״והארי של שמאל פושט ידו ונוטל העטרה״.\nבמודל: **בדיוק שנים עשר אריות, שניים בכל מעלה, ולוחות הכתב בידיהם** (ועליהם שלושת הפסוקים שבמקור), ולפניהם שנים עשר נשרים; שני האריות שאצל הידות ועל ראשיהם עמודי השיש — המקור אינו מפרש על אילו אריות, וכך עומדת היונה שעל ראש גב הכסא ״בין העמודים״; אבנים לבנות, כרכומיות וזכוכית; שני אילני תמרים עטופים פשתן לבן וטווסי שן עליהם; שני כלי בשמים של זהב; כסאות גד הנביא ונתן הנביא; שבעים כסאות ועל כל אחד שני אריות ושני נשרים קטנים; הארון ליד המושב, בין שני העמודים; העטרה ליד הארי של שמאל; והתנין. צורת החיות ומקומן, ואיזה פסוק על איזה לוח מעבר למעלה הראשונה — בחירת מודל.",
       },
       // 1.0.1-L (FIXES L.78-L.80): the king's ascent, the witnesses' scene and the Ben Yehoyada for the presentation's bubble
-      throneAscent: "עליית המלך לכסא (כפתור על הכסא; המלך מוצג בצללית בלבד, בלי פנים ובלי תווי דמות).\nבכל מעלה חוזר גלגל המנגנון שבצד המעלה — ״חוזר הגלגל בתוך המגנון״ (מדרש אבא גוריון), ״חוזר גלגל של מנגנון״ (פנים אחרים) — והארי פושט את ידו והנשר את כנפו לקראת העולה, לסירוגין: ״והארי, פושט את ידו של ימין, והנשר גפו של שמאל, והמלך נשען עליהם, ועולה למעלה השנייה, עמד על המעלה, וגלגל חוזר, והנשר פושט גפו של ימין, והארי ידו של שמאל, והמלך נשען עליהם ועולה, וכן לכל מעלה ומעלה״ (אבא גוריון); ״עלה במעלה הראשונה והארי פושט לו יד, ובשניה נשר פושט לו יד״ (אסתר רבה א, יב) — ״כל זה נעשה בחכמת ומלאכת המשקולות״ (יפה ענף שם), ״שהיה עשוי בסיגנון שבעלותו שם על מעלה הראשונה הארי פושט לו יד ובשניה נשר עד ו' המעלות״ (עץ יוסף שם), ״היינו מנגנון שלו תחבולות מלאכתו מנהג של מלאכת האופנים והגלגלים שהיו מתגלגלים ופושטים ידיהם והמלך שלמה היה נשען עליהם כשהיה עולה לכסא״ (פירוש שלום ואמת על פנים אחרים).\nבראש הכסא: ״הנשרים פורשים גפיהם, ועולים במנגנין, והיו מכסין למעלה על ראשו של מלך, ויונה של זהב יורדת מן העמוד במנגנין, ופותחת הארון ולוקחת ס״ת, ונותנת לתוך ידו של מלך, לקיים מה שנאמר והיתה עמו וקרא בו כל ימי חייו״ (פנים אחרים); ״ונותנה אותו על ברכיו״ (בית המדרש ב).\nבמודל: במנוחה הדמויות עומדות דום; כשהמלך עומד במעלה, הדמויות שבה שאינן פושטות יד מרכינות מעט את ראשן ורועדות, מפני אימת המלך, ושבות לעמוד (בחירת מודל).\nההושבה על הכסא — בכל מדרש כלשונו: ״והיה טווס של כסף טען במגנון למלך ומושיבו על הכסא״ (אבא גוריון) — במודל טווס הכסף בא תחתיו במעלה השישית, נושא אותו אל המושב ומושיבו; ״תנין של כסף היה טוען גלגל של כסא וכופין למלך שלמה ומושיבין אותו על הכסא״ (בית המדרש ב) — במודל התנין מניע את המנגנון, וגלגל של הכסא עולה תחת רגליו, נושא אותו אל המושב ומושיבו (הגלגל שתחת רגליו ודרכו — בחירת מודל).\nלתרגום שני: ״ומשים ית ריגלא על דרגא קדמיתא תורא דדהבא. פשיט ידיה על דרגא תיניינא ומן תיניינא לתליתאה... ומן שתיתאה נחתין נשרין וחטפין יתיה ומסקין ומותבין יתיה על ריש כורסייה״, ״הוה הדר גישרא רבא ונטיב כיסרא דמלכותא ויהיב ית כיסרא ברישיה דמלכא שלמה ומבתר כן הוה תנינא רבא מפקע במנגנון. והוון אריוון ונשרין סלקין במנגנון ומטללין על ריש מלכא שלמה. ויונא דדהבא הוה נחתא מן עמודא ופתחא ארונא ונסבא סיפרא דאורייתא ויהבה ליה בידוי דמלכא שלמה״, ״והוון אריותא זחלין בוסמנין במסקיה מלכא שלמה למיתב על כורסיה״ — התרגום מזכיר בפירוש את השור שבמעלה הראשונה; במודל, בכל אחת מחמש המעלות התחתונות פושטות יד שתי החיות הרובצות שבה, הטהורה מכאן והטמאה שכנגדה מכאן (בראשונה השור והארי), והמלך עולה ביניהן — בחירת מודל; מן השישית הנשרים יורדים על כתפיו, אוחזים בו, מעלים ומושיבים אותו; הנשר הגדול מניח את הכתר, התנין מרעיש, האריות והנשרים מצלים, היונה מביאה את ספר התורה, והאריות מזלפים בשמים.\nלבית המדרש ב: האריות פורשים את לוחות הכתב, המלך קורא בכל מעלה פסוק — ״על מעלה ראשונה אומר, תורת ה' תמימה, בשניה עדות ה' נאמנה, בשלישית פקודי ה' ישרים, ברביעית מצות ה' ברה, בחמישית יראת ה' טהורה, בששית משפטי ה' אמת״ — ״תנין של כסף היה טוען גלגל של כסא וכופין למלך שלמה ומושיבין אותו על הכסא, ומיד פושטין הנשרים את כנפיהם... ויונה של זהב... ונוטלת ספר תורה ונותנה אותו על ברכיו... והארי של שמאל פושט ידו ונוטל העטרה ונותנה על ראש המלך, והעומדים אומרים, תקום מלכות בית דוד לעולם״.\nעדי שקר (כפתור שני): ״וכד הוון עלין סהדיא דיסהדון קדם מלכא שלמה הוו מנגניא פקעין גלגילא חזרין תורין געיין אריותא נהמין דיבין חטפין אימרין פעיין גימרין בעדן יונקין בכיין שונרין טייסן טווסיין מייללין תרנוגלין מקרקרין בני נצין מחטפין ציפרין מייללין למחטף לבהון דסהדיא דלא יסהדון סהדותא דשיקרא. והוון סהדיא אמרין בלבהון נסהד סהדות דקושטא ואי לא בגינן עלמא מתעקר״ (תרגום שני); ״וכשמעלים את העד לפני שלמה, היו מנגנות פוקעים, גלגלות חוזרים, אריות נוהמין, נשרים פורחין, טווסין רצין, ולמה לחטוף לבם של עדים, בשביל שיעידו אמת״ (פנים אחרים); ״היו הגלגלים של כסא חוזרין, ואריות נוהמין, ונשרים פורחין, וטווסין מצפצפין, וכל כך למה, כדי לחטוף את העדים בלבם כדי להעיד אמת״ (בית המדרש ב).\nהמנגנון — בועה למצגת: בניהו בן יהוידע (הבן איש חי) על סנהדרין קו: (נוסח הספרייה): ״ואני אומר אין מדברים בהלכות מרובות בדבר הנעשה על ידי נס או בשם אך נראה כי מה שנמצא בזמן הזה מגדל פורח באויר שקורין (מרכב אל הוו\"א) העשוי ומתוקן על פי חכמה נפלאה אף על פי שזה נתחדש מכמה שנים הנה בודאי היה מצוי ביד הראשונים קודם זמן דואג ואחיתופל וגם אחריהם ואפשר שהיה גם כן בדורות התנאים אלא שאחר כך נשתכחה חכמה של המגדל הזה וחזר ונתחדש על ידי חכמי אירופא״ — ולכאורה מכאן, שגם מנגנון הכסא פעל בכוח נסתר כעין חשמל.\nבמודל: זמני העלייה והרעש, הגלגלים, הזוהר על המעלה, הצללית, אורך היד והכנף, צורת התנועות והבשמים, ומקום הארון ליד המושב — בחירת מודל. העלייה מוצגת בלי דמות המלך: רק רגל מכוסה עולה מעלה מעלה באמצע, וכל חיה נשארת במקומה ורק ידה או כנפה נמשכת עד אמצע המעלה, ששם המלך נשען עליהן. בעדי השקר נשמע רעש, והכפתור ״השתק את הרעש״ משתיק אותו.",
+      throneAscent: "עליית המלך לכסא (בכפתור שעל הכסא). המלך מצויר בדמות מלאה, בלבוש מלכות — תכלת, ארגמן וזהב — וכיפה לראשו. בכל מעלה הוא נשען בידיו על היד ועל הכנף שהחיות מושיטות לו: גופו נוטה מעט קדימה, ידיו נחות עליהן, ואחר כך הוא מזדקף. דמותו ולבושו — בחירת מודל.\nבכל מעלה חוזר גלגל המנגנון שבצד המעלה — ״חוזר הגלגל בתוך המגנון״ (מדרש אבא גוריון), ״חוזר גלגל של מנגנון״ (פנים אחרים) — והארי פושט את ידו והנשר את כנפו לקראת העולה, לסירוגין: ״והארי, פושט את ידו של ימין, והנשר גפו של שמאל, והמלך נשען עליהם, ועולה למעלה השנייה, עמד על המעלה, וגלגל חוזר, והנשר פושט גפו של ימין, והארי ידו של שמאל, והמלך נשען עליהם ועולה, וכן לכל מעלה ומעלה״ (אבא גוריון); ״עלה במעלה הראשונה והארי פושט לו יד, ובשניה נשר פושט לו יד״ (אסתר רבה א, יב) — ״כל זה נעשה בחכמת ומלאכת המשקולות״ (יפה ענף שם), ״שהיה עשוי בסיגנון שבעלותו שם על מעלה הראשונה הארי פושט לו יד ובשניה נשר עד ו' המעלות״ (עץ יוסף שם), ״היינו מנגנון שלו תחבולות מלאכתו מנהג של מלאכת האופנים והגלגלים שהיו מתגלגלים ופושטים ידיהם והמלך שלמה היה נשען עליהם כשהיה עולה לכסא״ (פירוש שלום ואמת על פנים אחרים).\nבראש הכסא: ״הנשרים פורשים גפיהם, ועולים במנגנין, והיו מכסין למעלה על ראשו של מלך, ויונה של זהב יורדת מן העמוד במנגנין, ופותחת הארון ולוקחת ס״ת, ונותנת לתוך ידו של מלך, לקיים מה שנאמר והיתה עמו וקרא בו כל ימי חייו״ (פנים אחרים); ״ונותנה אותו על ברכיו״ (בית המדרש ב).\nבמודל: במנוחה הדמויות עומדות דום; כשהמלך עומד במעלה, הדמויות שבה שאינן פושטות יד מרכינות מעט את ראשן ורועדות, מפני אימת המלך, ושבות לעמוד (בחירת מודל).\nההושבה על הכסא — בכל מדרש כלשונו: ״והיה טווס של כסף טען במגנון למלך ומושיבו על הכסא״ (אבא גוריון) — במודל טווס הכסף בא תחתיו במעלה השישית, נושא אותו אל המושב ומושיבו; ״תנין של כסף היה טוען גלגל של כסא וכופין למלך שלמה ומושיבין אותו על הכסא״ (בית המדרש ב) — במודל התנין מניע את המנגנון, וגלגל של הכסא עולה תחת רגליו, נושא אותו אל המושב ומושיבו (הגלגל שתחת רגליו ודרכו — בחירת מודל).\nלתרגום שני: ״ומשים ית ריגלא על דרגא קדמיתא תורא דדהבא. פשיט ידיה על דרגא תיניינא ומן תיניינא לתליתאה... ומן שתיתאה נחתין נשרין וחטפין יתיה ומסקין ומותבין יתיה על ריש כורסייה״, ״הוה הדר גישרא רבא ונטיב כיסרא דמלכותא ויהיב ית כיסרא ברישיה דמלכא שלמה ומבתר כן הוה תנינא רבא מפקע במנגנון. והוון אריוון ונשרין סלקין במנגנון ומטללין על ריש מלכא שלמה. ויונא דדהבא הוה נחתא מן עמודא ופתחא ארונא ונסבא סיפרא דאורייתא ויהבה ליה בידוי דמלכא שלמה״, ״והוון אריותא זחלין בוסמנין במסקיה מלכא שלמה למיתב על כורסיה״ — התרגום מזכיר בפירוש את השור שבמעלה הראשונה; במודל, בכל אחת מחמש המעלות התחתונות פושטות יד שתי החיות הרובצות שבה, הטהורה מכאן והטמאה שכנגדה מכאן (בראשונה השור והארי), והמלך עולה ביניהן — בחירת מודל; מן השישית הנשרים יורדים על כתפיו, אוחזים בו, מעלים ומושיבים אותו; הנשר הגדול מניח את הכתר, התנין מרעיש, האריות והנשרים מצלים, היונה מביאה את ספר התורה, והאריות מזלפים בשמים.\nלבית המדרש ב: האריות פורשים את לוחות הכתב, המלך קורא בכל מעלה פסוק — ״על מעלה ראשונה אומר, תורת ה' תמימה, בשניה עדות ה' נאמנה, בשלישית פקודי ה' ישרים, ברביעית מצות ה' ברה, בחמישית יראת ה' טהורה, בששית משפטי ה' אמת״ — ״תנין של כסף היה טוען גלגל של כסא וכופין למלך שלמה ומושיבין אותו על הכסא, ומיד פושטין הנשרים את כנפיהם... ויונה של זהב... ונוטלת ספר תורה ונותנה אותו על ברכיו... והארי של שמאל פושט ידו ונוטל העטרה ונותנה על ראש המלך, והעומדים אומרים, תקום מלכות בית דוד לעולם״.\nעדי שקר (כפתור שני): ״וכד הוון עלין סהדיא דיסהדון קדם מלכא שלמה הוו מנגניא פקעין גלגילא חזרין תורין געיין אריותא נהמין דיבין חטפין אימרין פעיין גימרין בעדן יונקין בכיין שונרין טייסן טווסיין מייללין תרנוגלין מקרקרין בני נצין מחטפין ציפרין מייללין למחטף לבהון דסהדיא דלא יסהדון סהדותא דשיקרא. והוון סהדיא אמרין בלבהון נסהד סהדות דקושטא ואי לא בגינן עלמא מתעקר״ (תרגום שני); ״וכשמעלים את העד לפני שלמה, היו מנגנות פוקעים, גלגלות חוזרים, אריות נוהמין, נשרים פורחין, טווסין רצין, ולמה לחטוף לבם של עדים, בשביל שיעידו אמת״ (פנים אחרים); ״היו הגלגלים של כסא חוזרין, ואריות נוהמין, ונשרים פורחין, וטווסין מצפצפין, וכל כך למה, כדי לחטוף את העדים בלבם כדי להעיד אמת״ (בית המדרש ב).\nהמנגנון: בניהו בן יהוידע (הבן איש חי) על סנהדרין קו: (נוסח הספרייה): ״ואני אומר אין מדברים בהלכות מרובות בדבר הנעשה על ידי נס או בשם אך נראה כי מה שנמצא בזמן הזה מגדל פורח באויר שקורין (מרכב אל הוו\"א) העשוי ומתוקן על פי חכמה נפלאה אף על פי שזה נתחדש מכמה שנים הנה בודאי היה מצוי ביד הראשונים קודם זמן דואג ואחיתופל וגם אחריהם ואפשר שהיה גם כן בדורות התנאים אלא שאחר כך נשתכחה חכמה של המגדל הזה וחזר ונתחדש על ידי חכמי אירופא״ — ולכאורה מכאן, שגם מנגנון הכסא פעל בכוח נסתר כעין חשמל.\nבמודל: זמני העלייה והרעש, הגלגלים, הזוהר על המעלה, אורך היד והכנף, צורת התנועות והבשמים, ומקום הארון ליד המושב — בחירת מודל. כל חיה נשארת במקומה, ורק ידה או כנפה נמשכת עד אמצע המעלה, ששם המלך נשען עליה. בעדי השקר נשמע רעש, והכפתור ״השתק את הרעש״ משתיק אותו.",
       shields: "הפסוק: מאתיים צינה (״מקפת את האדם משלשה רוחותיו״ — רש״י י, טז) ושלוש מאות מגן (״המגן מרוח א׳״ — מלבי״ם) של זהב שחוט, ״ויתנם המלך בית יער הלבנון״ (י, טז–יז), וכלי זהב סגור (י, כא).\nבמודל: **המספרים — מן הפסוק**; צורתם, מידותיהם ומקומם על הקירות — בחירת מודל לפי ציור ׳מקרא מפורש׳ (שם: ״צורת הכלים והמגינים להמחשה בלבד״).",
-      alamAlPeneihem: "הפסוק: ״ואולם על פניהם ועמדים ועב על פניהם״ (מלכים א ז, ו).\nרש״י: ״אולם גבוה עשה על כל הבית״; ועל ״ועמדים ועב על פניהם״: ״ועל כרותות ארזים שעל העמודים התחתונים, הציב על (צריך לומר: עוד) עמודים אחרים, ומרישין מעמוד לעמוד... עב היא מריש״.\nרד״ק: אולם העמודים הוא בית שער שקירויו כמין כיפה, ולפניו עוד עמודים ועב (״עץ עב וגדול הוא הנקרא מריש״).\nרלב״ג: ״ואולם על פניהם״ הוא אולם העמודים עצמו, ״והיו בו עמודים וכרותות ארז עבה היתה על פניהם״.\nמלבי״ם: ״לפני הבית והאולם היה עוד אולם ולפני האולם השני היו עמודים ועב על פניהם היינו מריש שהוא עץ עב״ — כך נבנתה קריאת מלבי״ם ורלב״ג במודל.\nמצודת דוד: אולם העמודים ״נסמך לבית היער לפני פתחים, וכדרך בית שער, ועמד ארכו לאורך הבית, להיות מול כל שלשת הפתחים שבשלשת חלקי הבית״, ו״לפני פתחי האולם הזה, עמדו עמודים תקועים בארץ, וממעל להם עץ עב לחברם יחד... לנוי ולפאר, או להיות כעין מחיצה ולשמירה״ — כך נבנתה קריאתו במודל (הקריאה השלישית).\nבמודל, כציור ׳מקרא מפורש׳ (קריאת רש״י): ״ואולם על פניהם״ — בניין גבוה לפני אולם העמודים; ״ועמדים״ — עמודי קירות הקומה העליונה; ״ועב״ — באולם העמודים בלבד, ואינו נראה במודל; בסוף הגג אין עבים, אלא ״נסרים קטנים, נתונים על מרישין קטנים״ (רש״י ז, ד)."
+      alamAlPeneihem: "הפסוק: ״ואולם על פניהם ועמדים ועב על פניהם״ (מלכים א ז, ו).\nרש״י: ״אולם גבוה עשה על כל הבית״; ועל ״ועמדים ועב על פניהם״: ״ועל כרותות ארזים שעל העמודים התחתונים, הציב על (צריך לומר: עוד) עמודים אחרים, ומרישין מעמוד לעמוד... עב היא מריש״.\nרד״ק: אולם העמודים הוא בית שער שקירויו כמין כיפה, ולפניו עוד עמודים ועב (״עץ עב וגדול הוא הנקרא מריש״).\nרלב״ג: ״ואולם על פניהם״ הוא אולם העמודים עצמו, ״והיו בו עמודים וכרותות ארז עבה היתה על פניהם״.\nמלבי״ם: ״לפני הבית והאולם היה עוד אולם ולפני האולם השני היו עמודים ועב על פניהם היינו מריש שהוא עץ עב״ — כך נבנתה שיטת מלבי״ם ורלב״ג במודל.\nמצודת דוד: אולם העמודים ״נסמך לבית היער לפני פתחים, וכדרך בית שער, ועמד ארכו לאורך הבית, להיות מול כל שלשת הפתחים שבשלשת חלקי הבית״, ו״לפני פתחי האולם הזה, עמדו עמודים תקועים בארץ, וממעל להם עץ עב לחברם יחד... לנוי ולפאר, או להיות כעין מחיצה ולשמירה״ — כך נבנתה שיטתו במודל (השיטה השלישית).\nבמודל, כציור ׳מקרא מפורש׳ (שיטת רש״י): ״ואולם על פניהם״ — בניין גבוה לפני אולם העמודים; ״ועמדים״ — עמודי קירות הקומה העליונה; ״ועב״ — באולם העמודים בלבד, ואינו נראה במודל; בסוף הגג אין עבים, אלא ״נסרים קטנים, נתונים על מרישין קטנים״ (רש״י ז, ד)."
     };
     for (const l of thrInfoLabels) l.info = ctx.shared.palaceNotes.throneVersions.pesukim;
   }

@@ -411,19 +411,29 @@
     ark_setArm(R, ARK_POSE.stand, -1);
     return { g, lean, L, R, fl, fr };
   }
-  // THE KING (the user, 12.11.2026 22:32: "דמות שלמה... תחפש באינטרנט דוד המלך ותעשה כמוהו רק לא גינגי"): as the paintings of King David -
-  // a bearded king, a crown of gold with points, royal garments - on the priests' body (the same head, face and hands); his hair and beard
-  // dark. KNEELING, his palms spread toward heaven: 22:45 ("אז תהפוך") after the commentators - "המלך כיון שכרע שוב אינו זוקף" (Berachot
-  // 34b on I Kings 8:54); Ralbag 8:54 "כרע על ברכיו מהתחלת תפלתו עד כלותו"; Abarbanel 8:22 "שהיה כורע על ברכיו כל זמן התפלה"; the verse
-  // 8:54 "מכרע על ברכיו וכפיו פרשות השמים". The garments: "בלבוש מלכות תכלת וחור ועטרת זהב גדולה ותכריך בוץ וארגמן" (Esther 8:15) - a
-  // robe of tekhelet, a mantle of argaman bordered with gold (model choices: colours, cut, the crown's form). Front +z.
-  function ark_kingFig(M2) {
-    const K = ark_kit(), KG = ark_kitArms(), FS = K.FS, DROP = 0.5;   // kneeling: the body half a figure-unit (0.7 amah) lower, the shins behind
-    const g = new Group();
-    g.name = "arkKing";
-    const S = new Group();
-    S.scale.setScalar(FS);
-    g.add(S);
+  // KING_211: the king's cloths - his robe of tekhelet, his mantle of argaman bordered with gold, his dark hair - made once, for the
+  // kneeling king of "דבקו שערים" (below) and for the king who climbs his throne (60-palace.js pal_kingFig)
+  // KING_KIPPAH_211 (the user, 15.11.2026 08:23: "אתה לא יכול לצייר לי מלך בלי כיפה"): THE KING'S HEAD IS COVERED - a kippah on his hair,
+  // of the mantle's argaman, a thin rim of gold round it (under the crown, where he wears one). Put on the head's own group
+  // (K.headOn's), so it goes with the head. Its form, size and colour - model choices.
+  function ark_kingKippah(GOLD) {
+    const K = ark_kit(), q = 1.17, TH = 1.0, g = new Group();
+    const mk = ark_kingKippah.m || (ark_kingKippah.m = new MeshStandardMaterial({ color: 0x7a2145, roughness: 0.82, side: DoubleSide }));
+    const cap = new Mesh(new SphereGeometry(1, 28, 9, 0, Math.PI * 2, 0, TH), mk);
+    cap.scale.set(K.HR[0] * q, K.HR[1] * q, K.HR[2] * q);
+    const rim = new Mesh(new TorusGeometry(Math.sin(TH), 0.045, 8, 36), GOLD);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = K.HR[1] * q * Math.cos(TH);
+    rim.scale.set(K.HR[0] * q, K.HR[2] * q, K.HR[0] * q * 1.1);   // (the ring lies flat: its own y is the head's z)
+    g.add(cap, rim);
+    g.rotation.x = -0.1;          // a little back on the head, as a kippah lies
+    g.position.set(0, 0.004, -0.006);
+    g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.userData.noPick = true; } });
+    return g;
+  }
+  function ark_kingMats() {
+    if (ark_kingMats.m) return ark_kingMats.m;
+    const K = ark_kit();
     const tRobe = K.cnv(64, 64, 5, 8, (c, w, h) => {
       c.fillStyle = "#2d4d99";
       c.fillRect(0, 0, w, h);
@@ -448,6 +458,22 @@
     });
     const mMantle = K.mat(0xffffff, { map: tMantle, vertexColors: true, roughness: 0.74, side: DoubleSide });
     const mHairK = K.mat(0x2a1c12, { map: K.texHair, vertexColors: true, roughness: 0.95, side: DoubleSide });
+    return (ark_kingMats.m = { mRobeK, mMantle, mHairK });
+  }
+  // THE KING (the user, 12.11.2026 22:32: "דמות שלמה... תחפש באינטרנט דוד המלך ותעשה כמוהו רק לא גינגי"): as the paintings of King David -
+  // a bearded king, a crown of gold with points, royal garments - on the priests' body (the same head, face and hands); his hair and beard
+  // dark. KNEELING, his palms spread toward heaven: 22:45 ("אז תהפוך") after the commentators - "המלך כיון שכרע שוב אינו זוקף" (Berachot
+  // 34b on I Kings 8:54); Ralbag 8:54 "כרע על ברכיו מהתחלת תפלתו עד כלותו"; Abarbanel 8:22 "שהיה כורע על ברכיו כל זמן התפלה"; the verse
+  // 8:54 "מכרע על ברכיו וכפיו פרשות השמים". The garments: "בלבוש מלכות תכלת וחור ועטרת זהב גדולה ותכריך בוץ וארגמן" (Esther 8:15) - a
+  // robe of tekhelet, a mantle of argaman bordered with gold (model choices: colours, cut, the crown's form). Front +z.
+  function ark_kingFig(M2) {
+    const K = ark_kit(), KG = ark_kitArms(), FS = K.FS, DROP = 0.5;   // kneeling: the body half a figure-unit (0.7 amah) lower, the shins behind
+    const g = new Group();
+    g.name = "arkKing";
+    const S = new Group();
+    S.scale.setScalar(FS);
+    g.add(S);
+    const { mRobeK, mMantle, mHairK } = ark_kingMats();
     const GOLD = M2.gold;
     const sp = (tab, y) => K.spl(tab, y);
     // the robe of a kneeling man: above the hips as the priest's kutonet (DROP lower); below them it falls over the thighs to the floor
@@ -502,6 +528,7 @@
     collar.position.y = 1.855;
     U.add(collar);
     const hg = K.headOn(U, K.HEAD_Y, mHairK, 2);
+    hg.add(ark_kingKippah(GOLD));   // KING_KIPPAH_211: under the crown
     const crown = new Group();
     const band = new Mesh(new CylinderGeometry(0.152, 0.145, 0.072, 32, 1, true), GOLD);
     band.position.y = 0.112;
