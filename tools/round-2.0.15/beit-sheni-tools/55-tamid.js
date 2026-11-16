@@ -1,0 +1,2732 @@
+  // ===== 55-tamid.js — "סדר עבודת הבוקר": the morning's service by Masechet Tamid, a demonstration in stages (2.0, 11.11.2026) =====
+  // The user (11.11.2026): "הדלקת הנרות וכל הסדר הידוע של הבוקר... לעשות הדגמה להקרבת קורבן התמיד, לפי הסדר"; "תתחיל דווקא בגדול";
+  // his decisions: the Second Temple only; two orders in one switch - Abaye's (Yoma 33a, "אליבא דאבא שאול"; the default) and the
+  // Rambam's (Temidin uMusafin 6, as the Chachamim); the lamps in two readings in one switch - the Rambam's (the default: the menorah
+  // north-south, Beit HaBechirah 3:12; the middle lamp faces the Holy of Holies and is the western, 3:8; the two left for the second
+  // entry = the middle and the one north of it, the Tiferet Yisrael; lit in the morning, "והדלקת הנרות היא הטבתם", Temidin 3:12) and
+  // Rashi's, the Ra'avad's and the Bartenura's ("אלו אותם אנשים": the menorah east-west as this Tanna, the two eastern by the door, the
+  // western the second from the east, Rashi Shabbat 22b; in the morning left unlit until the evening, the Bartenura); simple figures (the
+  // priests in their four garments); the lamb without its slaughter; sounds; the night turning to dawn. Not yet a part of the plugin's
+  // release: a separate viewing file first (the user: "שלא תצרף לתוסף עד שאגיד לך").
+  // HOW: the stages' words are TAMID_DATA (56-tamid-data.js, generated from the library's texts by tools/tamid_200.py); the presentation
+  // (75-tour.js, mode "tamid") shows each stage as a slide whose timeline it drives: ctx.shared.tamid.seek(stage, sec, order) every
+  // frame. The world is a pure function of the moment: every frame starts from the night and replays every earlier stage to its end and
+  // the current one to its second (SC[id]) - so prev / next / pause / speed just work, in either order. A figure walks from wherever the
+  // earlier stages left it, by the court's ways (route(): a small graph of the doors, the lanes, the ramp and the steps). Nothing is built
+  // before the first use (ensure()). Units: amot; +x east, +z south, y up. Model choices are marked "model choice".
+  // The lamps' reading is a reading of the model as well (the opinions table): the menorah turns east-west in Rashi's reading.
+  async function buildTamid(ctx2) {
+    const DATA = typeof TAMID_DATA !== "undefined" ? TAMID_DATA : null;
+    if (!DATA) return;
+    const F = LV.KOH, MK = 13.5, HEI = LV.HEI, ACX = 55.5, ACZ = -3.5, TOP0 = F + 9;
+    const SH = ctx2.shared;
+    const KID = {};   // KIDDUSH_FOOT_213: the raised leg, the hand's place on the foot, the priest's spots and the stream (below)
+    const fnc = (f) => typeof f === "function";
+    const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+    const lerp = (a, b, u) => a + (b - a) * u;
+    const smooth = (u) => u * u * (3 - 2 * u);
+    const HP = Math.PI / 2;
+    // the altar's place (the opinions table moves `mv` of 40-altar.js along z; all its own coordinates below are in its frame: A(), V3())
+    const altDz = () => { const P = SH.altarPlace; return P && P.dz && P.dz[P.current] != null ? P.dz[P.current] : 12.5; };
+    const topLift = () => (SH.tapuach && SH.tapuach.mode === "raavad" ? 1 : 0);
+    let D = altDz(), TOP = TOP0;
+    const A = (x, lz) => [x, lz + D];
+    const V3 = (x, y, lz) => [x, y, lz + D];
+    // (the methods never use `this`: the tour calls them unbound)
+    const TM = SH.tamid = {
+      order: "abba", lamps: "rambam", belt: "kilayim", mitz: "rashi", ephod: "rashi", active: false, stage: -1, sec: 0, qa: null,
+      readings: () => ({ order: TM.order, lamps: TM.lamps, belt: TM.belt, mitz: TM.mitz, ephod: TM.ephod }),
+      // the priests' belt (Yoma 12b, Ravin: "לא נחלקו אלא באבנטו של כהן הדיוט... שרבי אומר: של כלאים, ורבי אלעזר ברבי שמעון אומר: של
+      // בוץ"; the high priest's in the days of the year "דברי הכל של כלאים") - at once, the stage going on
+      setBelt: (m) => { TM.belt = m === "white" ? "white" : "kilayim"; applyGarb(); return TM.belt; },
+      // the high priest's mitznefet: Rashi's or the Ramban's (buildHP) - at once
+      setMitz: (m) => { TM.mitz = m === "ramban" ? "ramban" : "rashi"; applyGarb(); return TM.mitz; },
+      // the ephod's breadth (the user, 12.11.2026: Rashi and the Rambam): Rashi "רחבו כמדת רחב גבו של אדם ויותר" (28:6), girded round to
+      // the front (28:26); the Rambam "רחבו כרחב גבו של אדם מכתף לכתף" (Klei HaMikdash 9:9) - at once
+      setEphod: (m) => { TM.ephod = m === "rambam" ? "rambam" : "rashi"; applyGarb(); return TM.ephod; },
+      // the opinions table's row "סדר עבודת הבוקר": while the presentation runs, it is built again in the new order at the same stage
+      setOrder: (m) => {
+        const v = m === "rambam" ? "rambam" : "abba";
+        if (v === TM.order) return v;
+        TM.order = v;
+        retour();
+        return v;
+      },
+      // the row "המנורה והנרות בבוקר": the menorah's turning (a reading of the model) and the lamps of the demonstration
+      setLamps: (m) => {
+        TM.lamps = m === "rashi" ? "rashi" : "rambam";
+        applyLampRot();
+        retour();
+        return TM.lamps;
+      },
+      list: (o) => DATA.orders[o || TM.order] || DATA.orders.abba,
+      slides: () => { const o = TM.order; return TM.list(o).map((id, i) => slideOf(id, i, o)); },
+      begin: () => { const PY = SH.payis; if (PY && PY.avnet) TM.belt = PY.avnet === "butz" ? "white" : "kilayim";   // TAMID_FIG_207: the row "אבנטו של כהן הדיוט"
+        ensure(); applyGarb(); TM.active = true; W.group.visible = true; enterWorld(); play(TM.order, 0, 0); return true; },
+      end: () => { if (!TM.active) return; TM.active = false; leaveWorld(); },
+      seek: (i, sec, o) => { if (TM.active) play(o || TM.order, i, sec); },
+      duration: (i, o) => { const st = DATA.stages[TM.list(o)[i]]; return st ? st.dur : 0; },
+      camAt: (i, sec, o) => { const ck = CAMK[TM.list(o)[i]]; return ck ? camKey(ck(o || TM.order), sec) : null; },   // (tests: the moving eye)
+      figAt: (k) => (W && W.figs[k] ? Object.assign({}, W.figs[k].st) : null),   // (tests: where a figure stands)
+      qaClear: (e, t) => {   // TAMID_QA_207 (tests: is the line from the target to the eye free of the model's solids?)
+        const o = new Vector3(t[0], t[1], t[2]), d = new Vector3(e[0] - t[0], e[1] - t[1], e[2] - t[2]), len = d.length();
+        if (len < 1e-3) return null;
+        const rc = TM._rc || (TM._rc = new Raycaster());
+        rc.set(o, d.normalize()); rc.near = 0.4; rc.far = len; rc.camera = ctx2.camera;   // (a sprite asks for the camera)
+        const seen = (x) => { for (let q = x; q; q = q.parent) { if (!q.visible || q === (W && W.group) || q.name === "labels") return false; } return true; };
+        for (const h of rc.intersectObject(ctx2.root, true)) { const m = h.object; if (!m.isMesh || !seen(m)) continue; const mt = Array.isArray(m.material) ? m.material[0] : m.material; if (mt && (mt.transparent && mt.opacity < 0.5)) continue; return [+h.distance.toFixed(2), m.name || (m.parent && m.parent.name) || m.type]; }
+        return null;
+      }
+    };
+    const retour = () => {
+      const T = SH.tour;
+      if (!TM.active || !T || !fnc(T.retamid)) return;
+      try { T.retamid(); } catch (_) {}
+    };
+    const applyLampRot = () => { const m = SH.menorah; if (m && fnc(m.setRot)) m.setRot(TM.lamps === "rashi"); };
+    // ---------------------------------------------------------------- the slides (75-tour.js mode "tamid")
+    // GAZIT_PLACE_211 (found 15.11.2026, while the officers were placed): the hall of hewn stone has stood in the court's north-EAST
+    // since 1.9.5 (30-courts.js: inner x 69..89, z -78..-56; the lottery's place its east half, x 79..89; the door to the court in
+    // the south wall at x 79.75..82.25) - but this demo, written after that, still gathered the priests where the hall had stood
+    // before (x 47..73): in the open court, west of the building. Now: the ring in the hall's east half, as the lots demo's
+    // (55-payis.js: its centre (84, -67)), the way in by the hall's own door, and the lots demo's eye over it.
+    const GZV = [[84.4, 53, -57.5], [84, 16.6, -67.6]];   // the hall of hewn stone from above its south wall (its roof opened)
+    const menView = () => {
+      const m = SH.menorah;
+      if (!m) return [[-31, 27.5, 9], [-37, 26.5, 6.5]];
+      const M = m.MEN;
+      return m.ew ? [[M.x + 4.6, m.FL + 4, M.z - 5.6], [M.x, m.FL + 2.5, M.z]] : [[M.x + 5.2, m.FL + 3.7, M.z - 2.6], [M.x, m.FL + 2.4, M.z]];
+    };
+    const VIEW = {
+      // TAMID_VIEWS_207: the eyes that stood inside a wall in the current model (moked, lot1, patrol, lamb) - from where the place is seen
+      // NIGHT_VIEWS_209: from above the hall itself, north of its gate - the gate's two open leaves (gold, twenty amot high, at
+      // z -57.5..-53.2) stood across the picture of an eye south of them, as two dark slabs; from here the hearth, the elders on the
+      // stone ledges and the four rooms are seen whole
+      moked: () => [[-18, 50.5, -58.6], [-18, 14, -69]],   // MOKED_WIDE_211: higher (44 until 2.0.1) - the house is 32 wide now
+      lot1: (o) => (o === "rambam" ? GZV : [[-18, 50.5, -58.6], [-18, 15, -69]]),
+      patrol: () => CAMK.patrol()[0].slice(1),
+      kiyor: () => [[12, 24.5, 54.5], [22.4, 18.6, 54.8]],
+      terumah: () => [V3(88, 44, 46), V3(56, 21, 18)],
+      tapuach: () => [V3(82, 42, 28), V3(55.5, 25, -3.5)],
+      maarachah: () => [V3(84, 42, 24), V3(60, 26, 0)],
+      maarachah2: () => [V3(30, 40, 30), V3(47, 25.5, 4)],
+      gezirin: () => [V3(84, 42, 20), V3(61.5, 27, 1)],
+      lot2: () => GZV,
+      barkai: () => [[40, 46, -60], [120, 40, -40]],
+      lamb: () => CAMK.lamb()[0].slice(1),   // NIGHT_VIEWS_209: the moving eye (CAMK.lamb)
+      tobeit: () => [[70, 34, -10], [26, 16, -44]],
+      keys: () => [[52, 32, 24], [16, 22, 0]],
+      gate: () => [[34, 30, 12], [1, 26, -7]],
+      inner: () => [[-20, 27.6, 7], [-33.5, 24.4, 0]],
+      lamps5: menView,
+      akedah: () => [[54, 25, -10], [42, 16.5, -25]],
+      dam: () => CAMK.dam()[0].slice(1),
+      evarim: () => [V3(34, 46, 40), V3(50, 18, 32)],
+      shema: () => GZV,
+      lot34: () => GZV,
+      machta: () => [V3(80, 44, 50), V3(52, 22, 20)],
+      magrefa: () => [[106, 40, -30], [40, 18, 0]],
+      teni: () => [[-20, 28, 8], [-33.5, 24, 0]],
+      lamps2: menView,
+      gechalim: () => [[-25, 27.5, 6], [-33.5, 24.5, 0]],
+      ketoret: () => [[-22, 28.5, 8], [-33.5, 25, 0]],
+      // BIRKAT_VIEW_209: the eye stood on the altar's top, in its fire - now in the court between the ulam and the altar, at the south
+      birkat: () => [[34, 27, 20], [20, 20.5, -1]],
+      haalaah: () => [V3(82, 46, 42), V3(57, 24, 8)],
+      mincha: () => [V3(82, 46, 42), V3(57, 24, 8)],
+      nesachim: () => [[64, 64, 48], [60, 18, 8]],
+      shir: () => [[62, 30, 6], [86, 18, 0]],
+      sof: () => [[150, 130, 130], [30, 16, 0]]
+    };
+    // a stage whose eye moves with it: keyframes [sec, pos, target] (smoothed between them), from the slide's own view at 0
+    const CAMK = {
+      // NESACHIM_BOW_209: the libation from above, then - at the bows of the song ("והשתחוו העם", Tamid 7:3) - the priests on the
+      // ulam's steps bowing toward the house, from the court
+      nesachim: () => [[0, [64, 64, 48], [60, 18, 8]], [19.4, [64, 64, 48], [60, 18, 8]], [21.2, [36, 27, 26], [20, 18.5, -3]], [30, [35, 26.5, 24], [20, 18.5, -3]]],
+      // NIGHT_VIEWS_209: the lamb - first from above the hall (as the hall's own eye), the slaughterer going in to the lambs' room
+      // (its south-west room) and out with the lamb; when they reach the gate, a cut to the court, south-east of the gate, where it is
+      // given to drink from the gold cup and examined by the torch's light (12-22.5). A cut, not a flight: every way from above the
+      // hall down to the court passes through the gate's open leaves (gold, twenty amot high)
+      lamb: () => [[0, [-19, 46, -58], [-21.5, 16, -66]], [9.4, [-19, 46, -58], [-21.5, 16, -66]],
+        [9.5, [-3, 29, -37], [-17.5, 15.5, -51]], [24, [-3, 29, -37], [-17.5, 15.5, -51]]],
+      patrol: () => [[0, [-18, 50.5, -58.6], [-18, 15, -68]], [9, [-18, 50.5, -58.6], [-18, 15, -68]],   // NIGHT_VIEWS_209 (the first nine seconds)
+        // (NIGHT_VIEWS_209: up above the hall first - straight on to the high eye, the way passed ten amot over the house's roof)
+        [12, [-18, 150, -60], [-18, 15, -45]],
+        [15, [10, 210, 150], [0, 16, 0]], [23, [10, 210, 150], [0, 16, 0]],
+        [27, [114, 58, 54], [88, 15, 21]], [34, [114, 58, 54], [88, 15, 21]]],
+      dam: () => [[0, V3(52, 30, -40), V3(56, 17, -10)], [4, V3(86, 26, -36), V3(70, 18, -18)], [8, V3(86, 26, -36), V3(70, 18, -18)],
+        [10.5, V3(30, 36, -32), V3(42, 18, 0)], [13, V3(26, 26, 30), V3(40, 18, 12)], [20, V3(26, 26, 30), V3(40, 18, 12)]]
+    };
+    const camKey = (K, sec) => {
+      let j = 0;
+      while (j < K.length - 1 && K[j + 1][0] <= sec) j++;
+      if (j >= K.length - 1) return [K[K.length - 1][1], K[K.length - 1][2]];
+      const a = K[j], b = K[j + 1], u = smooth(clamp((sec - a[0]) / Math.max(0.01, b[0] - a[0]), 0, 1));
+      return [a[1].map((v, k) => lerp(v, b[1][k], u)), a[2].map((v, k) => lerp(v, b[2][k], u))];
+    };
+    const tourHeld = () => { const T = SH.tour; try { return !!(T && T.state && T.state.paused); } catch (_) { return false; } };
+    const viewOf = (id, o) => {
+      D = altDz();
+      const f = VIEW[id], v = f ? f(o) : [[150, 130, 130], [30, 16, 0]];
+      return { pos: v[0].slice(), target: v[1].slice() };
+    };
+    const DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+    const slideOf = (id, i, o) => {
+      const st = DATA.stages[id], R = o === "rambam", n = TM.list(o).length;
+      const verses = st.v.map((x) => [0, x.w, x.lbl]);
+      if (R) for (const x of st.vr || []) verses.push([0, x.w, x.lbl]);
+      const text = st.lamps ? st.lamps[TM.lamps] || st.text : st.text;
+      if (id === "shir") {
+        const d = new Date().getDay();
+        verses.splice(0, verses.length, [0, DATA.shir[d] || DATA.shir[0], "תמיד ז, ד — " + (d === 6 ? "השיר של שבת" : "השיר של יום " + DAYS[d])]);
+      }
+      const caps = (R && st.capsR ? st.capsR : st.caps).map(([t, c]) => ({ t, text: c }));
+      return { kind: "tamid", part: 0, id, order: o, title: st.title, sub: (R ? "סדר הרמב״ם" : "סדר אביי") + " · שלב " + (i + 1) + " מתוך " + n,
+        text, refs: st.refs, verses, go: [viewOf(id, o)], anim: "tamid", stage: i, caps, dur: st.dur };
+    };
+    // ---------------------------------------------------------------- the world (built on its first use)
+    let W = null;
+    const ensure = () => { if (!W) { W = buildWorld(); applyGarb(); } return W; };
+    const applyGarb = () => {
+      if (!W) return;
+      const bm = TM.belt === "white" ? W.MAT.beltW : W.MAT.beltK;
+      const K7 = SH.priestKit, km = K7 ? (TM.belt === "white" ? K7.mSashWhite : K7.mSashDyed) : bm;   // TAMID_FIG_207
+      for (const id in W.figs) { const f = W.figs[id]; if (f.kind === "K" && f.belt) f.belt.material = f.belt.userData.kit ? km : bm; }
+      for (const p of W.piles) p.material = bm;
+      const m = W.hp && W.hp.mitz;
+      if (m) { for (const g of m.rashi) g.visible = TM.mitz !== "ramban"; for (const g of m.ramban) g.visible = TM.mitz === "ramban"; }
+      const e = W.hp && W.hp.ephod;
+      if (e) { e.rashi.visible = TM.ephod !== "rambam"; e.rambam.visible = TM.ephod === "rambam"; }
+    };
+    function buildWorld() {
+      const group = new Group();
+      group.name = "tamid-world";
+      group.visible = false;
+      ctx2.scene.add(group);
+      const altarG = new Group();   // what stands on the altar or by it: moved with it (D) and lifted with the Ra'avad's table
+      group.add(altarG);
+      const std = (color, o = {}) => new MeshStandardMaterial(Object.assign({ color, roughness: 0.85, metalness: 0 }, o));
+      // the tunic's weave (Rambam, Klei HaMikdash 8:16 "בתים בתים... כמו בית הכוסות"): white, a grid of fine lines, four cells to a tile
+      const weave = (() => {
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 64;
+        const c = cv.getContext("2d");
+        c.fillStyle = "#ffffff"; c.fillRect(0, 0, 64, 64);
+        c.fillStyle = "#d3ccba";
+        for (let i = 0; i < 4; i++) { c.fillRect(i * 16, 0, 2, 64); c.fillRect(0, i * 16, 64, 2); }
+        const tx = new CanvasTexture(cv);
+        tx.wrapS = tx.wrapT = RepeatWrapping;
+        tx.colorSpace = SRGBColorSpace;
+        tx.anisotropy = 4;
+        return tx;
+      })();
+      const MAT = {
+        fig: std(0xffffff, { vertexColors: true, roughness: 0.9, map: weave }),
+        skin: std(0xc4946c, { roughness: 0.8 }), cap: std(0x2a2520, { roughness: 1 }),
+        gold: std(0xe6c05a, { metalness: 0.85, roughness: 0.3, emissive: 0x3a2a06, emissiveIntensity: 0.4 }),
+        silver: std(0xd9dee4, { metalness: 0.9, roughness: 0.25, emissive: 0x202428, emissiveIntensity: 0.3 }),
+        bronze: std(0xb7823e, { metalness: 0.8, roughness: 0.35 }), wood: std(0x7c5130, { roughness: 0.95 }),
+        woodNew: std(0xd2a46c, { roughness: 0.9, emissive: 0xff5a10, emissiveIntensity: 0 }),
+        ash: std(0x77726c, { roughness: 1 }), wool: std(0xf1ece0, { roughness: 1 }), woolDark: std(0x8c8072, { roughness: 1 }),
+        portion: std(0xc79a8c, { roughness: 0.85 }), flour: std(0xf8f5ec, { roughness: 1 }), cake: std(0xd8ad62, { roughness: 0.85 }),
+        salt: std(0xffffff, { roughness: 0.6 }), cloth: std(0xfaf8f2, { roughness: 0.95, side: DoubleSide }),
+        blanket: [std(0x5b4637), std(0x46505e), std(0x5e5440), std(0x4b3c3c)], incense: std(0x6a3f22, { roughness: 1 }),
+        ember: new MeshBasicMaterial({ color: 0xff7a26 }), blood: new MeshBasicMaterial({ color: 0x6e0b0b, transparent: true, opacity: 0, depthWrite: false })
+      };
+      // ---- the figures: one body of merged pieces coloured by vertex (the tunic, the belt, the head, the beard, the hat), the arms in two
+      // pieces each and the feet; one material for all - 7 draws a figure. The garments by the Rambam, Klei HaMikdash 8 - 10: the tunic
+      // "משבצת היתה שהיא בתים בתים באריגתה כמו בית הכוסות" (8:16: the weave below, a fine check, white in white) "עד למעלה מן העקב", its
+      // sleeve "עד פס ידו. ורחבו כרחב היד" (8:17); the belt "רחבו כמו שלש אצבעות" (8:19), girded "כנגד אצילי ידיו ומקיפו כרך על כרך עד
+      // שגומר וקושר" (10:1; "על לבביהון", 10:2 - above the elbow of the hanging arm), of wool and linen ("והאבנט לבדו רקום בצמר", 8:1 -
+      // Rebbi) or of linen (Rabbi Elazar b. R. Shimon; Yoma 12b) - TM.belt; its colours by 8:13 (techelet "כעצם שמים", argaman "הצמר הצבוע
+      // אדום", tola'at shani "הצבוע בתולעת", shesh the linen), its threads twined (twine below), no knot shown;
+      // the hat "ובניו צונפין בה ככובע ולפיכך נקראת מגבעת" (8:2), "קושר בה כל ראשו ומעלה הכפלים עליו כעין מגבעת" (the Ramban, Shemot
+      // 28:31, as Rashi's "כמין כפת כובע" for the sons) - wound over the whole head, rising like a hill. The high priest: buildHP below
+      const V2 = (r, y) => new Vector2(r, y);
+      const tint = (geo, hex) => {
+        const c = new Color(hex), n = geo.attributes.position.count, a = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+        geo.setAttribute("color", new BufferAttribute(a, 3));
+        return geo;
+      };
+      // the weave's texture coordinates: the woven linen scaled to the cells; what is not of it takes a point inside a cell (plain)
+      const plain = (geo) => { const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.12, 0.12); return geo; };
+      const uvScale = (geo, fu, fv) => { const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * fu, uv.getY(i) * fv); return geo; };
+      const uvLathe = (geo, fu, fv) => { const uv = geo.attributes.uv, p = geo.attributes.position; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * fu, p.getY(i) * fv); return geo; };
+      // the body (the user, 12.11.2026: "מה עשית בכתפיים?... נראה יותר שמלה"): a man's, not a bell - broad at the shoulders, flat before
+      // and behind (its depth ZS of its breadth - the tunic and all that lies on it), the tunic falling to above the heel ("עד למעלה מן
+      // העקב", 8:17) and the bare feet seen below it
+      const ZS = 0.66;
+      const TUNIC = [V2(0.001, 0.2), V2(0.36, 0.2), V2(0.355, 0.6), V2(0.335, 1.3), V2(0.3, 1.85), V2(0.315, 2.2), V2(0.335, 2.42), V2(0.36, 2.56),
+        V2(0.375, 2.61), V2(0.36, 2.66), V2(0.3, 2.72), V2(0.21, 2.77), V2(0.125, 2.8), V2(0.08, 2.815), V2(0.001, 2.815)];
+      const robeR = (y) => { for (let i = 2; i < TUNIC.length; i++) { const a = TUNIC[i - 1], b = TUNIC[i]; if (y <= b.y) return lerp(a.x, b.x, clamp((y - a.y) / Math.max(1e-6, b.y - a.y), 0, 1)); } return 0.08; };
+      const COL = { linen: 0xf2eee3, hat: 0xf7f4ec, hat2: 0xe9e4d6, shesh: 0xf1ebdc, techelet: 0x2f58a6, argaman: 0x8e1f24, tolaat: 0xc23a30, beltW: 0xe6e0cf,
+        skin: 0xc9a07c, beard: 0x35261b, beardW: 0xf4f2ee, beardG: 0xdcd8d0, beardD: 0xbcb6ac, hair: 0xdedad2, levite: 0xd8cfb7, levCap: 0x2a2520 };
+      // a fabric of twined threads (the user: "חוט מכל מין יחד שזורים... בעצם יוצר עירוב צבעים"; "האבנט לא מספיק שזור"): the threads
+      // across (th pixels each), every thread twined of the kinds - its plies seen as short slanting strokes, each of one kind - the
+      // kinds coming in patches along it (the site's picture 194, "אבנט משש חוטים"; model choice). kinds: [colour, weight]
+      const twine = (w, h, kinds, seed, th = 4, bias = 1.2, patch = 1, chev = false) => {
+        const cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        const c = cv.getContext("2d"), img = c.createImageData(w, h), d = img.data;
+        let sd = seed;
+        const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+        const K = kinds.map(([n, wt]) => [[(n >> 16) & 255, (n >> 8) & 255, n & 255], wt]), GX = 8, GY = 2, grid = K.map(() => Array.from({ length: GX * GY }, rnd));
+        const at = (k, i, j) => grid[k][(((j % GY) + GY) % GY) * GX + (((i % GX) + GX) % GX)];
+        const noise = (k, x, y) => {
+          const gx = (x / w) * GX, gy = (y / h) * GY, i = Math.floor(gx), j = Math.floor(gy), fx = smooth(gx - i), fy = smooth(gy - j);
+          return lerp(lerp(at(k, i, j), at(k, i + 1, j), fx), lerp(at(k, i, j + 1), at(k, i + 1, j + 1), fx), fy);
+        };
+        const hash = (a, b) => { const q = Math.sin(a * 127.1 + b * 311.7 + seed) * 43758.5453; return q - Math.floor(q); };
+        for (let y = 0; y < h; y++) {
+          const t = Math.floor(y / th), fy = ((y % th) + 0.5) / th;
+          for (let x = 0; x < w; x++) {
+            const q = x + (chev && t % 2 ? (1 - fy) : fy) * 4 + t * 1.7, seg = Math.floor(q / 4), ph = (q / 4) % 1;   // AVNET_211: chev - a braid
+            let best = 0, bv = -1;
+            for (let k = 0; k < K.length; k++) { const v = patch * noise(k, x, y) + 0.9 * hash(t * 7 + k, seg) + bias * K[k][1]; if (v > bv) { bv = v; best = k; } }
+            const sh = (0.6 + 0.4 * Math.sin(Math.PI * ph)) * (0.76 + 0.24 * Math.sin(Math.PI * fy)), col = K[best][0], o = (y * w + x) * 4;
+            d[o] = Math.min(255, col[0] * sh); d[o + 1] = Math.min(255, col[1] * sh); d[o + 2] = Math.min(255, col[2] * sh); d[o + 3] = 255;
+          }
+        }
+        c.putImageData(img, 0, 0);
+        return cv;
+      };
+      const texOf = (cv) => { const t = new CanvasTexture(cv); t.wrapS = t.wrapT = RepeatWrapping; t.colorSpace = SRGBColorSpace; t.anisotropy = 8; return t; };
+      // the belt (the user: "יותר מדי הארגמן בולט"; then "לא תיקנת את הצבע... של האבנט"): the techelet the most of it, the white, the two
+      // reds (the Rambam 8:13: argaman "הצמר הצבוע אדום", tola'at shani "הצבוע בתולעת") - as the site's 194
+      // AVNET_211 (the user, 14.11.2026: "אבנט כהן גדול צריך עירוב צבעים יותר טוב", and the picture of the coiled avnet he sent): finer
+      // threads, almost no large patches - every ply its own kind by the weights - in rows leaning one way and the other, as a braid;
+      // from a step away the four kinds melt into one mixed hue
+      MAT.beltK = std(0xffffff, { map: texOf(twine(256, 64, [[COL.techelet, 0.3], [COL.argaman, 0.24], [COL.tolaat, 0.21], [COL.shesh, 0.25]], 777, 3, 0.55, 0.12, true)), roughness: 0.85 });
+      MAT.beltW = std(0xffffff, { map: texOf(twine(256, 64, [[0xf1ece0, 0.5], [0xddd5c2, 0.3], [0xfbf8f1, 0.3]], 99, 3, 0.6, 0.15, true)), roughness: 0.9 });
+      // three fingers a turn (24 to the amah; "רחבו כמו שלש אצבעות", Klei HaMikdash 8:19) - AVNET_211 (the user: "אבנט הכהנים רחב יותר"):
+      // four turns "כרך על גבי כרך", each a little above the last, so that the band is seen broader and thicker than one turn - model choice
+      const BELT_Y = 2.02, BELT_H = 0.19, BELT_TURNS = 4, BELT_BULGE = 0.021;
+      // the belt, its own mesh: wound round "כרך על כרך" (10:1; three turns seen, each a little rounded - model choice), of wool and linen,
+      // every thread the four kinds twined together - Rashi, Yoma 71b: "דיש בו נמי ארבע מינין וכל אחד כפול ששה וכששוזרן יחד הוו להו כ"ד" -
+      // or, for Rabbi Elazar b. R. Shimon, of linen only (TM.belt; the high priest's always of wool and linen: "בשאר ימות השנה — דברי הכל של
+      // כלאים", Yoma 12b). No knot nor ends hanging (the user: "מה הקשר של הסרט באפוד ובאבנט? לא קשור")
+      const beltG = (() => {
+        const r0 = robeR(BELT_Y + BELT_H / 2) + 0.012, prof = [V2(r0 - 0.012, BELT_Y)];
+        for (let k = 0; k <= 48; k++) { const u = k / 48; prof.push(V2(r0 + BELT_BULGE * Math.sqrt(Math.sin(Math.PI * ((u * BELT_TURNS) % 1))), BELT_Y + u * BELT_H)); }   // AVNET_211
+        prof.push(V2(r0 - 0.012, BELT_Y + BELT_H));
+        return uvLathe(new LatheGeometry(prof, 56), 9, 1 / BELT_H).scale(1, 1, ZS);
+      })();
+      // the hat (the user, 12.11.2026: "המגבעת לא מגבעת"; the site's picture 194, "מגבעת שיטה ב", worn in its picture 498): the cloth wound
+      // round the head and on up in slanting turns, each lying over the last, to a tall rounded top - as an egg ("קושר בה כל ראשו ומעלה
+      // הכפלים עליו כעין מגבעת", the Ramban 28:31); set a little back on the head, its front edge above the forehead
+      const HAT = [[0, 0.2], [0.05, 0.208], [0.12, 0.207], [0.2, 0.198], [0.28, 0.181], [0.35, 0.157], [0.41, 0.127], [0.46, 0.092], [0.495, 0.056], [0.515, 0.025], [0.522, 0.001]];
+      const hatR = (y) => { for (let i = 1; i < HAT.length; i++) if (y <= HAT[i][0]) return lerp(HAT[i - 1][1], HAT[i][1], (y - HAT[i - 1][0]) / (HAT[i][0] - HAT[i - 1][0])); return 0.001; };
+      const migbaat = () => {
+        const NR = 80, NY = 52, H = 0.522, pos = [], col = [], uv = [], idx = [];
+        const c0 = new Color(COL.hat), c1 = new Color(COL.hat2).multiplyScalar(0.8);
+        for (let j = 0; j <= NY; j++) {
+          const y = (H * j) / NY, r0 = hatR(y), fade = clamp(y / 0.06, 0, 1) * clamp((H - 0.02 - y) / 0.1, 0, 1);
+          for (let i = 0; i <= NR; i++) {
+            // each turn out where it lies over the one below, in where the next goes over it; the shade under the next one's edge
+            const ph = (i / NR) * Math.PI * 2, t = ((((ph / (Math.PI * 2)) * 10 + y * 10) % 1) + 1) % 1, r = r0 + fade * (0.012 * (1 - t) - 0.004);
+            pos.push(Math.sin(ph) * r * 0.93, y, Math.cos(ph) * r);
+            const cc = c0.clone().lerp(c1, fade * 0.6 * Math.pow(t, 5));
+            col.push(cc.r, cc.g, cc.b);
+            uv.push(0.12, 0.12);
+          }
+        }
+        for (let j = 0; j < NY; j++) for (let i = 0; i < NR; i++) { const a = j * (NR + 1) + i, b = a + NR + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+        const g = new BufferGeometry();
+        g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+        g.setAttribute("color", new Float32BufferAttribute(col, 3));
+        g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+        g.setIndex(idx);
+        g.computeVertexNormals();
+        return [g.rotateX(-0.17).translate(0, 3.08, HZ - 0.012)];
+      };
+      // kind: "K" a priest (the belt of wool and linen), "W" a priest (the belt of linen), "H" the high priest (his hair seen; his
+      // mitznefet apart), "L" a Levite (his own clothes)
+      // folds of hanging cloth on a garment round the y axis: its radius waved round, by the height (amp(y))
+      const folds = (geo, n, amp) => {
+        const p = geo.attributes.position;
+        for (let i = 0; i < p.count; i++) {
+          const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = amp(y);
+          if (!a) continue;
+          const ph = Math.atan2(x, z), k = 1 + a * Math.sin(n * ph + 0.8 * Math.sin(3 * ph + y * 2.1));
+          p.setX(i, x * k); p.setZ(i, z * k);
+        }
+        geo.computeVertexNormals();
+        return geo;
+      };
+      // a geometry mirrored to the other side (x), its faces turned back out
+      const mirrorX = (g) => {
+        const p = g.attributes.position, n = g.attributes.normal;
+        for (let i = 0; i < p.count; i++) { p.setX(i, -p.getX(i)); n.setX(i, -n.getX(i)); }
+        const ix = g.index.array;
+        for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; }
+        return g;
+      };
+      const gs = (a, b, sa, sb) => Math.exp(-(a * a) / (2 * sa * sa) - (b * b) / (2 * sb * sb));
+      // the head (the user: "הפנים... בובתיות"; then "למתוח קצת את הפנים, מדי נמוכות"): an egg taller than it is broad (HD: its half
+      // breadth, height and depth; its middle at y); the nose, the brows, the cheekbones, the lower lip and the chin raised, the eyes set
+      // in, the jaw narrowing (model choice). headDef: a point of the unit sphere to the head's, both in its units; headAt: a point on it
+      // (th round from before, +x the left; ys up) and `off` out from it - the beard and the hair lie on it
+      const HD = { a: 0.158, b: 0.232, c: 0.185, y: 3.0 }, HZ = 0.06;   // HZ: the head's middle before the body's
+      const headDef = (x, y, z) => {
+        if (z > 0) {
+          z += 0.15 * gs(x, y + 0.14, 0.07 + 0.09 * clamp(-(y + 0.02) / 0.3, 0, 1), 0.13) * clamp(1 + (y + 0.3) * 7, 0, 1);   // the nose
+          z -= 0.06 * (gs(x - 0.33, y + 0.02, 0.11, 0.07) + gs(x + 0.33, y + 0.02, 0.11, 0.07));                              // the eyes set in
+          z += 0.035 * gs(0, y - 0.11, 1, 0.06) * (Math.abs(x) < 0.55 ? 1 : 0.4);                                              // the brows
+          z += 0.04 * (gs(x - 0.52, y + 0.2, 0.15, 0.13) + gs(x + 0.52, y + 0.2, 0.15, 0.13));                                // the cheekbones
+          z += 0.03 * gs(x, y + 0.465, 0.15, 0.035);                                                                            // the lower lip
+          z += 0.05 * gs(x, y + 0.78, 0.22, 0.13);                                                                              // the chin
+        }
+        if (y < -0.35) x *= 1 - 0.3 * (-0.35 - y);   // the jaw
+        if (z < 0 && y < -0.3) z *= 1 - 0.38 * smooth(clamp((-0.3 - y) / 0.6, 0, 1));   // the nape, drawn in to the neck
+        return [x, y, z];
+      };
+      const headAt = (th, ys, off) => {
+        const rho = Math.sqrt(Math.max(0, 1 - ys * ys)), [x, y, z] = headDef(rho * Math.sin(th), ys, rho * Math.cos(th));
+        const n = new Vector3(x / HD.a, y / HD.b, z / HD.c).normalize();
+        return new Vector3(x * HD.a, HD.y + y * HD.b, z * HD.c + HZ).addScaledVector(n, off);
+      };
+      // the neckline lower before than behind - the chin over it (model choice): a garment's top dipped before, zs its flattening
+      const neckDip = (geo, zs) => {
+        const p = geo.attributes.position;
+        for (let i = 0; i < p.count; i++) {
+          const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+          if (y <= 2.6 || z <= 0) continue;
+          const r = Math.hypot(x, z / zs), c = r > 1e-4 ? z / zs / r : 0;
+          p.setY(i, y - 0.07 * smooth(clamp((y - 2.6) / 0.22, 0, 1)) * Math.pow(c, 1.5));
+        }
+        geo.computeVertexNormals();
+        return geo;
+      };
+      const bodyGeo = (kind) => {
+        const lev = kind === "L", parts = [];
+        // the tunic, its cloth falling in folds below the belt (the user: "משהו לא חי") - model choice; flat before and behind (ZS)
+        const robe = neckDip(folds(new LatheGeometry(TUNIC, 48), 9, (y) => 0.045 * clamp((2.0 - y) / 1.8, 0, 1)).scale(1, 1, ZS), ZS);
+        parts.push(tint(lev ? plain(robe) : uvLathe(robe, 8, 3.4), lev ? COL.levite : COL.linen));
+        for (const s of [1, -1]) { const dg = new SphereGeometry(1, 16, 10).scale(0.13, 0.05, 0.085).translate(s * 0.36, 2.6, 0); parts.push(tint(lev ? plain(dg) : uvScale(dg, 2, 2), lev ? COL.levite : COL.linen)); }   // the shoulders
+        parts.push(tint(plain(new CylinderGeometry(0.066, 0.078, 0.2, 14, 1, true).rotateX(0.2).translate(0, 2.88, 0.02)), COL.skin));   // the neck
+        if (kind !== "HK") for (const s of [1, -1]) parts.push(tint(plain(new SphereGeometry(1, 10, 8).scale(0.016, 0.046, 0.03).rotateY(s * 0.35).translate(s * 0.162, 2.985, HZ - 0.012)), COL.skin));   // the ears (TAMID_FIG_207: none on HK)
+        if (lev) parts.push(tint(plain(new SphereGeometry(1, 16, 8, 0, Math.PI * 2, 0, HP).scale(0.18, 0.17, 0.2).translate(0, 3.09, HZ)), COL.levCap));
+        else if (kind === "H" || kind === "HK") parts.push(tint(plain(new SphereGeometry(1, 18, 9, 0, Math.PI * 2, 0, 1.0).scale(0.166, 0.246, 0.194).translate(0, 3.0, HZ)), COL.hair));   // his hair, seen between the tzitz and the mitznefet
+        else parts.push(...migbaat());
+        return mergeGeometries(parts);
+      };
+      // the arm: the sleeve from the shoulder (its top round) to the elbow; the forearm, the sleeve's end at the wrist ("עד פס ידו", 8:17)
+      const sleeve = (lev) => mergeGeometries([new CylinderGeometry(0.086, 0.077, 0.62, 16, 1, true).translate(0, -0.31, 0), new SphereGeometry(0.092, 16, 8, 0, Math.PI * 2, 0, HP).scale(1, 0.5, 1)]
+        .map((g) => tint(lev ? plain(g) : uvScale(g, 2, 2), lev ? COL.levite : COL.linen)));
+      // the hand, open (the user: "תפתח להם גם את הידיים"): the palm toward the body, the fingers a little bent, the thumb before; side +1
+      // the left hand, -1 the right (mirrored)
+      const handG = (side) => {
+        const parts = [], Q = new Quaternion(), DN = new Vector3(0, -1, 0);
+        const bone = (r, len, from, dir) => {
+          const g = new CapsuleGeometry(r, len, 3, 8);
+          g.applyQuaternion(Q.setFromUnitVectors(DN, dir));
+          return g.translate(from.x + (dir.x * len) / 2, from.y + (dir.y * len) / 2, from.z + (dir.z * len) / 2);
+        };
+        parts.push(new CylinderGeometry(0.036, 0.04, 0.06, 12).translate(0, -0.585, 0));                    // the wrist
+        parts.push(new SphereGeometry(1, 14, 10).scale(0.021, 0.05, 0.043).translate(-0.004, -0.635, 0.004));   // the palm
+        [[0.031, 0.072, 0.0105], [0.011, 0.08, 0.011], [-0.009, 0.075, 0.0105], [-0.027, 0.06, 0.0092]].forEach(([z, len, r], k) => {   // the fingers
+          const a1 = 0.12 + 0.05 * k, a2 = a1 + 0.38, d1 = new Vector3(-Math.sin(a1), -Math.cos(a1), 0), d2 = new Vector3(-Math.sin(a2), -Math.cos(a2), 0);
+          const p0 = new Vector3(-0.004, -0.675, z * 0.95), p1 = p0.clone().addScaledVector(d1, len * 0.55);
+          parts.push(bone(r, len * 0.55, p0, d1), bone(r * 0.9, len * 0.45, p1, d2));
+        });
+        const t1 = new Vector3(-0.35, -0.62, 0.7).normalize(), t2 = new Vector3(-0.45, -0.85, 0.3).normalize(), t0 = new Vector3(-0.008, -0.61, 0.03);   // the thumb
+        parts.push(bone(0.0125, 0.04, t0, t1), bone(0.011, 0.034, t0.clone().addScaledVector(t1, 0.04), t2));
+        const g = mergeGeometries(parts.map((q) => tint(plain(q), COL.skin)));
+        return side > 0 ? g : mirrorX(g);
+      };
+      const fore = (lev, side) => mergeGeometries([
+        tint(lev ? plain(new CylinderGeometry(0.079, 0.064, 0.56, 16, 1, true)) : uvScale(new CylinderGeometry(0.079, 0.064, 0.56, 16, 1, true), 2, 2), lev ? COL.levite : COL.linen).translate(0, -0.28, 0),
+        tint(lev ? plain(new SphereGeometry(0.08, 14, 8)) : uvScale(new SphereGeometry(0.08, 14, 8), 2, 2), lev ? COL.levite : COL.linen),   // the elbow
+        handG(side)]);
+      const headG = (() => {
+        const g = new SphereGeometry(1, 48, 40), p = g.attributes.position, uv = g.attributes.uv;
+        for (let i = 0; i < p.count; i++) {
+          const [x, y, z] = headDef(p.getX(i), p.getY(i), p.getZ(i));
+          uv.setXY(i, z > -0.05 ? 0.5 + x * 0.5 : 0.015, z > -0.05 ? 0.5 + y * 0.5 : 0.5);
+          p.setXYZ(i, x * HD.a, y * HD.b + HD.y, z * HD.c + HZ);
+        }
+        g.computeVertexNormals();
+        return g;
+      })();
+      // the face painted (projected from before; the back of the head plain skin): the eyes with their lids, the brows' hairs, the
+      // nose's shades, the mouth - the lower lip seen under the moustache (the user: "אין פה")
+      MAT.face = std(0xffffff, { roughness: 0.72, map: (() => {
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 256;
+        const c = cv.getContext("2d");
+        let gr = c.createRadialGradient(128, 128, 20, 128, 140, 150);
+        gr.addColorStop(0, "#dcb38f"); gr.addColorStop(0.6, "#cba17d"); gr.addColorStop(1, "#b98f6c");
+        c.fillStyle = gr; c.fillRect(0, 0, 256, 256);
+        for (const s of [-1, 1]) {   // the cheeks' warmth
+          gr = c.createRadialGradient(128 + s * 60, 160, 2, 128 + s * 60, 160, 32);
+          gr.addColorStop(0, "rgba(205,115,95,0.3)"); gr.addColorStop(1, "rgba(205,115,95,0)");
+          c.fillStyle = gr; c.fillRect(0, 0, 256, 256);
+        }
+        for (const s of [-1, 1]) {   // the eyes
+          const ex = 128 + s * 42, ey = 131;
+          gr = c.createRadialGradient(ex, ey, 2, ex, ey, 22);
+          gr.addColorStop(0, "rgba(95,60,45,0.38)"); gr.addColorStop(1, "rgba(95,60,45,0)");
+          c.fillStyle = gr; c.fillRect(ex - 30, ey - 26, 60, 52);
+          c.fillStyle = "#ece4d8"; c.beginPath(); c.ellipse(ex, ey, 11.5, 4.8, 0, 0, Math.PI * 2); c.fill();
+          c.fillStyle = "#5c412b"; c.beginPath(); c.arc(ex - s, ey + 0.4, 4.4, 0, Math.PI * 2); c.fill();
+          c.fillStyle = "#130c07"; c.beginPath(); c.arc(ex - s, ey + 0.4, 2, 0, Math.PI * 2); c.fill();
+          c.fillStyle = "rgba(255,255,255,0.85)"; c.beginPath(); c.arc(ex - s - 1.3, ey - 1.1, 0.9, 0, Math.PI * 2); c.fill();
+          c.strokeStyle = "#3a271b"; c.lineWidth = 2.4; c.beginPath(); c.ellipse(ex, ey + 1.2, 12.4, 6.4, 0, Math.PI * 1.07, Math.PI * 1.93); c.stroke();
+          c.strokeStyle = "rgba(95,62,46,0.5)"; c.lineWidth = 1; c.beginPath(); c.ellipse(ex, ey - 1, 11.4, 5.4, 0, Math.PI * 0.12, Math.PI * 0.88); c.stroke();
+          c.strokeStyle = "rgba(125,85,64,0.4)"; c.lineWidth = 1; c.beginPath(); c.ellipse(ex, ey - 3.5, 13, 9, 0, Math.PI * 1.12, Math.PI * 1.88); c.stroke();
+        }
+        let sd = 99;
+        const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+        c.lineWidth = 1.3;
+        for (const s of [-1, 1]) for (let k = 0; k < 46; k++) {   // the brows: hairs, grey and white
+          const u = rnd(), x0 = 128 + s * (24 + u * 34), y0 = 116 - Math.sin(u * Math.PI) * 4 + (rnd() - 0.5) * 4;
+          c.strokeStyle = rnd() < 0.55 ? "rgba(232,229,222,0.92)" : "rgba(140,130,120,0.85)";
+          c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + s * (5 + rnd() * 4), y0 - 1.5 - rnd() * 1.5); c.stroke();
+        }
+        for (const s of [-1, 1]) {   // the nose's shades, the nostrils
+          gr = c.createLinearGradient(128 + s * 3, 0, 128 + s * 15, 0);
+          gr.addColorStop(0, "rgba(120,78,58,0)"); gr.addColorStop(1, "rgba(120,78,58,0.3)");
+          c.fillStyle = gr; c.fillRect(Math.min(128 + s * 3, 128 + s * 15), 126, 12, 36);
+          c.fillStyle = "rgba(68,38,28,0.62)"; c.beginPath(); c.ellipse(128 + s * 7, 162, 3.6, 2, s * 0.3, 0, Math.PI * 2); c.fill();
+        }
+        c.strokeStyle = "rgba(120,78,58,0.25)"; c.lineWidth = 1;   // the forehead's lines
+        for (const y of [90, 99]) { c.beginPath(); c.moveTo(96, y); c.quadraticCurveTo(128, y - 4, 160, y); c.stroke(); }
+        // the mouth: the upper lip (mostly under the moustache), the line between, the lower lip with its light
+        c.fillStyle = "#9b5a4d"; c.beginPath(); c.ellipse(128, 180.5, 15, 3.2, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#b06c5e"; c.beginPath(); c.ellipse(128, 187.5, 14.5, 5, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "rgba(255,226,210,0.35)"; c.beginPath(); c.ellipse(127, 186.3, 7, 1.5, 0, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = "#4b231d"; c.lineWidth = 1.7; c.beginPath(); c.moveTo(112.5, 183.2); c.quadraticCurveTo(128, 185.6, 143.5, 183.2); c.stroke();
+        const tx = new CanvasTexture(cv);
+        tx.colorSpace = SRGBColorSpace;
+        tx.anisotropy = 8;
+        return tx;
+      })() });
+      // the beard (the user: "הזקן... לא מחובר לאוזניים, יצוק מדי... אין פה"): of hairs, not a cast - from before the ears (joined there
+      // to the hair) and from under the cheekbones, over the jaw and the chin, from below the lower lip (the mouth seen), hanging to the
+      // upper chest and lying on what is there (env: the least depth before the body at x, y); the moustache over the upper lip; the
+      // hair below the hat round the back of the head, the ears out of it. Locks in all of it; its edges of single hairs (beardTex)
+      const sheet = (rows, uvf) => {
+        const pos = [], uv = [], idx = [], NV = rows.length, NU = rows[0].length;
+        rows.forEach((row, j) => row.forEach((p, i) => { pos.push(p.x, p.y, p.z); uv.push(...uvf(i, j)); }));
+        for (let j = 0; j < NV - 1; j++) for (let i = 0; i < NU - 1; i++) { const a = j * NU + i, b = a + NU; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+        const g = new BufferGeometry();
+        g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+        g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+        g.setIndex(idx);
+        g.computeVertexNormals();
+        return g;
+      };
+      const beardG = (env) => {
+        const geos = [], TH = 1.62, NT = 44, NS = 12, NK = 18;
+        const lock = (th, u) => 0.0055 * Math.sin(th * 21 + 1.7 * Math.sin(th * 6)) * (0.35 + u);
+        const top = (th) => { const a = Math.abs(th); return a > 1.45 ? lerp(0.14, -0.28, smooth(clamp((a - 1.45) / 0.2, 0, 1))) : a > 1.25 ? 0.14 : a > 0.6 ? lerp(-0.3, 0.14, smooth((a - 0.6) / 0.65)) : lerp(-0.54, -0.3, smooth(a / 0.6)); };
+        const jaw = (th) => { const a = Math.abs(th); return a > 1.5 ? -0.45 - (a - 1.5) * 0.8 : lerp(-0.95, -0.45, Math.pow(smooth(a / 1.5), 1.2)); };
+        const rows = [];
+        for (let j = 0; j <= NS; j++) {   // over the face
+          const s = j / NS, row = [];
+          for (let i = 0; i <= NT; i++) {
+            const th = lerp(-TH, TH, i / NT), sb = smooth(clamp((Math.abs(th) - 1.15) / 0.3, 0, 1)) * (1 - s), p = headAt(th, lerp(top(th), jaw(th), s), (lerp(0.005, 0.03, smooth(s)) + lock(th, s)) * (1 - 0.6 * sb)), zmin = env(p.x, p.y);
+            if (zmin > 0 && p.z < zmin + 0.012) p.z = zmin + 0.012;
+            row.push(p);
+          }
+          rows.push(row);
+        }
+        const J = rows[NS];
+        for (let k = 1; k <= NK; k++) {   // hanging below the jaw
+          const u = k / NK, row = [];
+          for (let i = 0; i <= NT; i++) {
+            const th = lerp(-TH, TH, i / NT), q = th / TH, e = Math.sin(q * HP), cq = Math.cos(q * HP);
+            const p = J[i].clone().lerp(new Vector3(0.075 * q, 2.545 + 0.08 * q * q, 0.21 + HZ - 0.06 * q * q), Math.pow(u, 0.9));
+            p.z += 0.04 * Math.sin(Math.PI * u) * cq + lock(th, 1) * cq * 1.2;
+            p.x += 0.03 * Math.sin(Math.PI * u) * e + lock(th, 1) * e * 1.2;
+            const tuck = smooth(clamp((Math.abs(q) - 0.78) / 0.22, 0, 1)) * Math.sin(Math.PI * u);   // its sides drawn back toward the neck
+            p.x = lerp(p.x, Math.sign(q) * 0.085, 0.45 * tuck); p.z = lerp(p.z, HZ + 0.02, 0.5 * tuck);
+            const zmin = env(p.x, p.y);
+            if (zmin > 0 && p.z < zmin + 0.014) p.z = zmin + 0.014;
+            row.push(p);
+          }
+          rows.push(row);
+        }
+        geos.push(sheet(rows, (i, j) => [(i / NT) * 5, j <= NS ? (j / NS) * 0.45 : 0.45 + ((j - NS) / NK) * 0.55]));
+        {   // the moustache: from under the nose over the upper lip, its ends down past the mouth into the beard; its hairs falling
+          const NU = 24, NV = 6, mrows = [];
+          for (let j = 0; j <= NV; j++) {
+            const t = j / NV, row = [];
+            for (let i = 0; i <= NU; i++) {
+              const xs = lerp(-0.36, 0.36, i / NU), a = Math.abs(xs) / 0.36, ys = lerp(-0.285 - 0.1 * a * a, -0.4 - 0.2 * Math.pow(a, 1.6), t);
+              row.push(headAt(Math.asin(clamp(xs / Math.sqrt(1 - ys * ys), -1, 1)), ys, 0.005 + 0.011 * Math.sin(Math.PI * Math.min(1, t * 1.25)) * (1 - 0.4 * a)));
+            }
+            mrows.push(row);
+          }
+          geos.push(sheet(mrows, (i, j) => [(i / NU) * 2.2, 0.62 + (j / NV) * 0.38]));
+        }
+        {   // the hair, below the hat round the back (to the nape) and the sides (to the ears' lobes), the ears out of it
+          const NTh = 34, NSh = 10, hrows = [], huv = [];
+          for (let j = 0; j <= NSh; j++) {
+            const s = j / NSh, row = [];
+            for (let i = 0; i <= NTh; i++) {
+              const th = lerp(1.22, Math.PI * 2 - 1.22, i / NTh), wb = smooth(clamp(1 - Math.abs(th - Math.PI) / 1.9, 0, 1));
+              const ys = lerp(lerp(0.42, 0.32, wb), lerp(-0.45, -0.82, wb), s), ear = Math.min(1, gs(th - HP, ys + 0.02, 0.34, 0.42) + gs(th - 3 * HP, ys + 0.02, 0.34, 0.42));
+              row.push(headAt(th, ys, (lerp(0.009, 0.015, s) + 0.6 * lock(th * 1.3, s)) * (1 - 0.9 * ear)));
+              const ew = smooth(clamp(ear * 2.2, 0, 1));
+              (huv[j] = huv[j] || []).push([(i / NTh) * 6, lerp(0.3 + s * 0.66, 0.012 + s * 0.05, ew)]);
+            }
+            hrows.push(row);
+          }
+          geos.push(sheet(hrows, (i, j) => huv[j][i]));
+        }
+        return mergeGeometries(geos);
+      };
+      // what the beard lies on: the tunic; the high priest's - the robe, and the breastplate on it (in his torso, scaled ZS)
+      const MEIL = [[0.3, 0.456], [0.55, 0.45], [1.3, 0.4], [1.85, 0.36], [2.3, 0.39], [2.52, 0.405], [2.62, 0.395], [2.68, 0.37], [2.74, 0.31], [2.83, 0.155]];
+      const meilR = (y) => { for (let i = 1; i < MEIL.length; i++) if (y <= MEIL[i][0]) return lerp(MEIL[i - 1][1], MEIL[i][1], clamp((y - MEIL[i - 1][0]) / (MEIL[i][0] - MEIL[i - 1][0]), 0, 1)); return 0; };
+      const envK = (x, y) => { if (y > 2.8) return -1; const R = robeR(y); return ZS * Math.sqrt(Math.max(0, R * R - x * x)); };
+      const envH = (x, y) => { if (y > 2.83) return -1; const R = meilR(y); let z = ZS * Math.sqrt(Math.max(0, R * R - x * x)); if (y < 2.53 && Math.abs(x) < 0.26) z = Math.max(z, ZS * 0.466); return z; };
+      // the hairs: a body whole between its two ends, single hairs at the top (where it begins on the face) and at the bottom (its end)
+      const beardTex = (() => {
+        const W2 = 128, H2 = 512, cv = document.createElement("canvas");
+        cv.width = W2; cv.height = H2;
+        const c = cv.getContext("2d");
+        let sd = 4321;
+        const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+        c.fillStyle = "#eeece7"; c.fillRect(0, 0.07 * H2, W2, 0.83 * H2);
+        for (let k = 0; k < 1300; k++) {
+          const x0 = rnd() * W2, y0 = (rnd() < 0.55 ? rnd() * 0.12 : rnd() * 0.05) * H2, y1 = (0.86 + rnd() * 0.14) * H2, g = (178 + rnd() * 77) | 0, ph = rnd() * 6;
+          c.strokeStyle = "rgba(" + g + "," + (g - 3) + "," + (g - 8) + "," + (0.55 + rnd() * 0.45).toFixed(2) + ")";
+          c.lineWidth = 0.7 + rnd() * 1.1;
+          c.beginPath();
+          for (let y = y0; y <= y1; y += 8) { const x = x0 + Math.sin(y * 0.022 + ph) * 3; if (y === y0) c.moveTo(x, y); else c.lineTo(x, y); }
+          c.stroke();
+        }
+        const tx = new CanvasTexture(cv);
+        tx.wrapS = RepeatWrapping;
+        tx.colorSpace = SRGBColorSpace;
+        tx.anisotropy = 8;
+        return tx;
+      })();
+      MAT.beard = [COL.beardW, COL.beardG, COL.beardD].map((col) => std(col, { map: beardTex, alphaTest: 0.42, side: DoubleSide, roughness: 0.92, bumpMap: beardTex, bumpScale: 0.6 }));
+      // the feet, bare (Zevachim 24a: nothing between the feet and the floor): a man's foot in its length, the toes, the ankle up into the
+      // hem; the left foot (its great toe within, -x), the right mirrored
+      const footG = (() => {
+        const g = new SphereGeometry(1, 18, 12), p = g.attributes.position;
+        for (let i = 0; i < p.count; i++) {
+          let x = p.getX(i), y = p.getY(i);
+          const z = p.getZ(i), f = Math.max(0, z);
+          if (y < 0) y *= 0.25;                                // the sole flat
+          y *= 1 - 0.5 * f;                                    // low toward the toes
+          x *= 1 + 0.22 * f - 0.25 * Math.max(0, -z);          // broad at the ball, narrow at the heel
+          p.setXYZ(i, x * 0.068, 0.012 + (y + 0.25) * 0.055, z * 0.215 + 0.12);
+        }
+        g.computeVertexNormals();
+        const parts = [g, new CylinderGeometry(0.047, 0.052, 0.2, 12).translate(0, 0.14, -0.02)];   // the ankle
+        [[-0.042, 0.315, 0.016], [-0.02, 0.33, 0.013], [0.0, 0.333, 0.012], [0.019, 0.327, 0.0115], [0.037, 0.315, 0.011]].forEach(([x, z, r]) => parts.push(new SphereGeometry(r, 8, 6).scale(1, 0.8, 1.3).translate(x, 0.022, z)));   // the toes
+        return mergeGeometries(parts);
+      })();
+      // the garments by the sleepers' heads (Tamid 1:1 "פושטין ומקפלין ומניחין אותן"; the Gemara 27a: "כנגד ראשיהן", not under them - "תיפוק
+      // ליה משום איסורא דכלאים"): the folded linen and the hat; the belt rolled on them (its own mesh, roll)
+      const pileGeo = () => mergeGeometries([
+        tint(uvScale(new BoxGeometry(0.44, 0.1, 0.34), 2, 2), COL.linen).translate(0, 0.05, 0),
+        tint(plain(new SphereGeometry(0.11, 10, 6, 0, Math.PI * 2, 0, HP).scale(1, 0.75, 1)), COL.hat).translate(0.08, 0.1, 0.07)
+      ]);
+      const G = {
+        K: bodyGeo("K"), H: bodyGeo("H"), HK: bodyGeo("HK"), L: bodyGeo("L"), head: headG, beard: { K: beardG(envK), H: beardG(envH) }, pile: pileGeo(), belt: beltG,
+        roll: uvScale(new CylinderGeometry(0.045, 0.045, 0.26, 12).rotateZ(HP), 4, 1),
+        upperP: sleeve(false), upperL: sleeve(true), foreP: { 1: fore(false, 1), "-1": fore(false, -1) }, foreL: { 1: fore(true, 1), "-1": fore(true, -1) },
+        foot: { 1: footG, "-1": mirrorX(footG.clone()) }
+      };
+      const figs = {};
+      // TAMID_FIG_207 (the user, 12.11.2026 19:28: "שים לב להתאים את הדמויות לאלו שעשית בשרשור הזה"): the priests and the Levites are
+      // the lotteries' priest (55-payis.js PAYIS_FIGURE4; his parts in SH.priestKit, shared) on this skeleton - g, lean, the two arms (sh,
+      // el, grip) and the feet, which the poses below move; the high priest keeps this demonstration's body under his eight garments
+      // (fitted to it: buildHP), with the priest's head, beard, sleeves, hands and feet. Without the kit (never in the plugin): as before.
+      const KIT = SH.priestKit || null;
+      const KG = KIT ? (() => {
+        const K = KIT, FS = K.FS, sc = (q, s) => q.scale(s, s, s);
+        const W1 = (q) => K.white(q);
+        // an arm in amot: the sleeve from the shoulder to the elbow (up) and from the elbow to the wrist (fore), the priest's radii
+        const upper = (up) => sc(mergeGeometries([W1(K.sph(0.07, 0.07, 0.07, 14, 10)), W1(K.at(new CylinderGeometry(0.07, 0.058, up / FS, 14), 0, -up / FS / 2, 0)),
+          W1(K.at(K.sph(0.058, 0.058, 0.058, 12, 8), 0, -up / FS, 0))]), FS);
+        const fore = (fo) => sc(W1(K.at(new CylinderGeometry(0.056, 0.046, fo / FS, 14), 0, -fo / FS / 2, 0)), FS);
+        const hand = (side, fo) => sc(K.at(K.handRaw(side), 0, -(fo / FS + 0.045), 0), FS);
+        const foot = (side) => sc(K.footGeo(side).translate(-side * 0.1, 0, 0), FS);
+        const P = { sx: K.SH_X * FS, sy: K.SH_Y * FS, up: K.UP * FS, fo: K.FORE * FS };      // the priest's own arm
+        const H = { sx: 0.39, sy: 2.6, up: 0.6, fo: 0.66 };                                     // the high priest's: as this body (his garments)
+        return {
+          P, H,
+          upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) },
+          upH: upper(H.up), foH: fore(H.fo), handH: { 1: hand(1, H.fo), "-1": hand(-1, H.fo) },
+          foot: { 1: foot(1), "-1": foot(-1) },
+          // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin
+          thigh: W1(new CylinderGeometry(0.084 * FS, 0.1 * FS, 1, 12, 1, true).translate(0, 0.5, 0)),
+          knee: W1(K.sph(0.09 * FS, 0.09 * FS, 0.09 * FS, 12, 8)),
+          shin: W1(new CylinderGeometry(0.04 * FS, 0.05 * FS, 1, 10, 1, true).translate(0, 0.5, 0)),
+          neck: sc(K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), 1),
+          mLev: K.mat(COL.levite, { vertexColors: true, roughness: 0.9 }), mLevCap: K.mat(COL.levCap, { roughness: 0.9 })
+        };
+      })() : null;
+      const makeFigKit = (id, kind) => {
+        const K = KIT, FS = K.FS, lev = kind === "L", hp = kind === "H", n = Object.keys(figs).length;
+        const g = new Group(), lean = new Group();
+        g.add(lean);
+        let body, belt = null, bend = null;
+        if (hp) {
+          body = new Mesh(G.HK, MAT.fig);              // this demonstration's body (no ears: the head is the priest's)
+          body.castShadow = true;
+          lean.add(body);
+          belt = new Mesh(G.belt, MAT.beltK);           // his avnet: "דברי הכל של כלאים"
+          lean.add(belt);
+          const hs = new Group();                       // the priest's head, where this body's head was (its mitznefet and tzitz sit on it)
+          hs.scale.setScalar(1.3);
+          hs.position.set(0, 3.0 - 1.3 * K.HEAD_Y, HZ);
+          lean.add(hs);
+          K.headOn(hs, K.HEAD_Y, K.mBeards[0], 1);
+        } else {
+          const S = new Group();
+          S.scale.setScalar(FS);
+          lean.add(S);
+          // KIDDUSH_BEND_212: the robe in two at the waist (55-payis.js WAIST) - all above it in `bend`, turned there (the legs upright)
+          const WY = (K.WAIST || 0) * FS;
+          bend = new Group();
+          bend.position.y = WY;
+          lean.add(bend);
+          const U = new Group();
+          U.scale.setScalar(FS);
+          U.position.y = -WY;
+          bend.add(U);
+          body = new Mesh(K.gRobeLow || K.gRobeBody, lev ? KG.mLev : K.mRobe);
+          body.castShadow = true;
+          S.add(body);
+          if (K.gRobeUp) { const up = new Mesh(K.gRobeUp, lev ? KG.mLev : K.mRobe); up.castShadow = true; U.add(up); }
+          U.add(new Mesh(KG.neck, K.mSkin));
+          if (!lev) { belt = new Mesh(K.gSash, TM.belt === "white" ? K.mSashWhite : K.mSashDyed); belt.userData.kit = true; U.add(belt); }
+          const hg = K.headOn(U, K.HEAD_Y, K.mBeards[n % K.mBeards.length], n);
+          hg.rotation.set(0, (((n * 0.618) % 1) - 0.5) * 0.4, 0);   // every man a little different (a fixed turn, no chance)
+          if (lev) { const cap = new Mesh(K.gCap, KG.mLevCap); cap.position.y = K.HEAD_Y; U.add(cap); }
+          else { const hat = new Mesh(K.gHat, K.mHat); hat.position.y = K.HAT_Y; hat.rotation.y = hg.rotation.y + (((n * 0.37) % 1) - 0.5) * 0.9; U.add(hat); }
+        }
+        const A = hp ? KG.H : KG.P, armMat = lev ? KG.mLev : K.mRobe;
+        const arm = (side) => {   // side +1 = the left (+x), -1 = the right
+          const sh = new Group();
+          const by = bend ? bend.position.y : 0;   // KIDDUSH_BEND_212: the arms go with the body above the waist
+          sh.position.set(side * A.sx, A.sy - by, 0);
+          (bend || lean).add(sh);
+          sh.add(new Mesh(hp ? KG.upH : KG.upP, armMat));
+          const el = new Group();
+          el.position.y = -A.up;
+          sh.add(el);
+          el.add(new Mesh(hp ? KG.foH : KG.foP, armMat));
+          el.add(new Mesh((hp ? KG.handH : KG.handP)[side], K.mSkin));
+          const grip = new Group();
+          grip.position.set(0, -(A.fo + 0.08), 0.03);
+          el.add(grip);
+          return { sh, el, grip };
+        };
+        const L = arm(1), R = arm(-1);
+        const fl = new Mesh(KG.foot[1], K.mSkin), fr = new Mesh(KG.foot[-1], K.mSkin);
+        fl.position.x = 0.1 * FS;
+        fr.position.x = -0.1 * FS;
+        g.add(fl, fr);
+        // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14): a leg that rises for kiddush, on each side - hidden while he stands (his own foot)
+        let legs = null;
+        if (bend) {
+          legs = {};
+          for (const side of [1, -1]) {
+            const lg = new Group();
+            lg.visible = false;
+            lean.add(lg);
+            const th = new Mesh(KG.thigh, lev ? KG.mLev : K.mRobe), kn = new Mesh(KG.knee, lev ? KG.mLev : K.mRobe);
+            const sn = new Mesh(KG.shin, K.mSkin), ft = new Mesh(KG.foot[side], K.mSkin);
+            for (const m of [th, kn, sn, ft]) { m.castShadow = true; lg.add(m); }
+            legs[side] = { g: lg, th, kn, sn, ft };
+          }
+        }
+        g.visible = false;
+        group.add(g);
+        const f = { id, g, lean, bend, legs, A, L, R, fl, fr, levite: lev, kind, body, belt, st: null, tag: null, kit: true };
+        figs[id] = f;
+        return f;
+      };
+      const makeFig = (id, kind) => {
+        if (KIT) return makeFigKit(id, kind);   // TAMID_FIG_207
+        const lev = kind === "L", g = new Group(), lean = new Group();
+        g.add(lean);
+        const body = new Mesh(G[kind], MAT.fig);
+        lean.add(new Mesh(G.head, MAT.face));
+        const bd = new Mesh(kind === "H" ? G.beard.H : G.beard.K, MAT.beard[kind === "H" ? 0 : Object.keys(figs).length % MAT.beard.length]);   // the beards' shades by turns
+        bd.castShadow = true;
+        lean.add(bd);
+        body.castShadow = true;
+        lean.add(body);
+        let belt = null;
+        if (!lev) { belt = new Mesh(G.belt, MAT.beltK); belt.castShadow = true; lean.add(belt); }
+        const arm = (side) => {   // side +1 = the left (+x), -1 = the right
+          const sh = new Group();
+          sh.position.set(side * 0.39, 2.6, 0);
+          lean.add(sh);
+          sh.add(new Mesh(lev ? G.upperL : G.upperP, MAT.fig));
+          const el = new Group();
+          el.position.y = -0.6;
+          sh.add(el);
+          el.add(new Mesh(lev ? G.foreL[side] : G.foreP[side], MAT.fig));
+          const grip = new Group();
+          grip.position.set(0, -0.66, 0.03);
+          el.add(grip);
+          return { sh, el, grip };
+        };
+        const L = arm(1), R = arm(-1);
+        const fl = new Mesh(G.foot[1], MAT.skin), fr = new Mesh(G.foot[-1], MAT.skin);
+        fl.castShadow = fr.castShadow = true;
+        fl.position.x = 0.1;
+        fr.position.x = -0.1;
+        g.add(fl, fr);
+        g.visible = false;
+        group.add(g);
+        const f = { id, g, lean, L, R, fl, fr, levite: lev, kind, body, belt, st: null, tag: null };
+        figs[id] = f;
+        return f;
+      };
+      for (const id of FIG_IDS) makeFig(id, "K");
+      for (const id of LEV_IDS) makeFig(id, "L");
+      // ---- the high priest in his eight (Rambam, Klei HaMikdash 9 - 10; 10:3 "לובש המעיל. ועל המעיל האפוד והחשן וחוגר בחשב האפוד על
+      // המעיל מתחת החשן... ואחר כך צונף במצנפת וקושר הציץ למעלה מן המצנפת ושערו היה נראה בין ציץ למצנפת ושם היה מניח תפלין"):
+      //  the robe "כלו תכלת... ואין לו בית יד" (9:3), to the feet (the Ramban 28:31 "עד רגלי האדם"; its opening not drawn), on its hem
+      //   "פעמון ורמון פעמון ורמון": 72 bells of gold and as many pomegranates of the three wools (9:4);
+      //  the ephod "רחבו כרחב גבו של אדם מכתף לכתף. וארכו מכנגד אצילי הידים מאחוריו עד הרגלים", its band "קשור על לבו תחת החשן", its two
+      //   shoulders with a square shoham in gold on each (9:9 - 9:11; the stones' colour a model choice; the names on them not drawn);
+      //  the breastplate "זרת על זרת... ארבעה טורים של אבן המפרשים בתורה כל אבן מהן מרבע ומשקע בבית של זהב" (9:6), "על לבו בשוה"
+      //   (9:11), the stones of Shemot 28:17 - 20 in their rows, the tribes' names on them "כתולדותם... על האדם ראובן ועל ישפה בנימין" (9:7;
+      //   Rashi 28:10, 28:21) and above and below them the Gemara's words (Yoma 73b; the user: as the Gemara); the
+      //   first of a row at the viewer's right (model choice: as it is read); the stones' colours are not in the verse - a model choice,
+      //   only to tell them apart; the chains of gold from its upper rings to the shoulders, the cords of techelet from its lower rings
+      //   under the arms to the ephod's (9:8 - 9:11);
+      //  the tzitz "טס של זהב רחב שתי אצבעות ומקיף מאזן לאזן... קדש מלמטה לה' מלמעלה" (9:1);
+      //  the mitznefet - TM.mitz: Rashi "כמין כפת כובע" (28:4) "למעלה בגבה הראש ואינה עמקה לכנס בה כל הראש עד המצח", with his three
+      //   cords, the middle one over it (28:37); or the Ramban "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל" (28:31; the Rambam
+      //   8:2 "כמי שלופף על השבר"), with the Rambam's one cord "נקשר... כנגד הערף" (9:2) "למעלה מן המצנפת" (10:3)
+      const HEX = (n) => "#" + new Color(n).getHexString();
+      const canvasTex = (w, h, draw, rep) => {
+        const cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        draw(cv.getContext("2d"), w, h);
+        const t = new CanvasTexture(cv);
+        t.colorSpace = SRGBColorSpace;
+        t.anisotropy = 4;
+        if (rep) { t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(rep[0], rep[1]); }
+        return t;
+      };
+      const STONES = [["אדם", "ראובן", 0xb3222c], ["פטדה", "שמעון", 0x3f8f4c], ["ברקת", "לוי", 0x1d9a86],
+        ["נפך", "יהודה", 0xc8711f], ["ספיר", "דן", 0x2c52b4], ["יהלם", "נפתלי", 0xdce6ec],
+        ["לשם", "גד", 0x8d5aa6], ["שבו", "אשר", 0x6d7176], ["אחלמה", "יששכר", 0x9a376a],
+        ["תרשיש", "זבולן", 0x2a90b8], ["שהם", "יוסף", 0x2a3331], ["ישפה", "בנימין", 0x63a067]];
+      const buildHP = (f) => {
+        const L = f.lean, out = {}, TILE = 0.42;   // TILE: amot to the ephod's texture
+        const T = new Group();   // his torso: all that lies on the tunic, flat as it (ZS)
+        T.scale.z = ZS;
+        L.add(T);
+        const mk = (geo, mat, x = 0, y = 0, z = 0, par = T) => { const m = new Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; par.add(m); return m; };
+        const tube = (pts, r, mat) => mk(new TubeGeometry(new CatmullRomCurve3(pts.map((p) => new Vector3(p[0], p[1], p[2]))), Math.max(10, pts.length * 7), r, 5, false), mat);
+        // a cord of plies twined round its path (the user: "פתיל, לא צינור"): the cords of techelet two plies, the chains of gold three
+        // ("מעשה עבת. מעשה קליעת חוטין", Rashi 28:14)
+        const cord = (pts, r, mat, plies = 2, pitch = 0.028) => {
+          const curve = new CatmullRomCurve3(pts.map((p) => new Vector3(p[0], p[1], p[2])));
+          const len = curve.getLength(), n = Math.max(24, Math.ceil(len / 0.005)), fr = curve.computeFrenetFrames(n, false), geos = [];
+          for (let k = 0; k < plies; k++) {
+            const ps = [];
+            for (let i = 0; i <= n; i++) {
+              const u = i / n, th = (u * len / pitch) * Math.PI * 2 + k * Math.PI * 2 / plies;
+              ps.push(curve.getPointAt(u).addScaledVector(fr.normals[i], Math.cos(th) * r * 0.55).addScaledVector(fr.binormals[i], Math.sin(th) * r * 0.55));
+            }
+            geos.push(new TubeGeometry(new CatmullRomCurve3(ps), n, r * 0.56, 5, false));
+          }
+          return mk(mergeGeometries(geos), mat);
+        };
+        const ribbon = (pts, w, mat) => {   // a flat band along a path, its width along x
+          const P = new CatmullRomCurve3(pts.map((p) => new Vector3(p[0], p[1], p[2]))).getPoints(30), pos = [], uv = [], idx = [];
+          let len = 0;
+          P.forEach((p, i) => { if (i) len += p.distanceTo(P[i - 1]); pos.push(p.x - w / 2, p.y, p.z, p.x + w / 2, p.y, p.z); uv.push(0, len / TILE, w / TILE, len / TILE); if (i) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); } });
+          const g = new BufferGeometry();
+          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+          g.setIndex(idx);
+          g.computeVertexNormals();
+          return mk(g, mat);
+        };
+        const M = {
+          techelet: std(COL.techelet, { roughness: 0.75, side: DoubleSide }),
+          // "חמשת מינים הללו שזורין בכל חוט וחוט... ואחר כך שוזר את כלם כאחד" (Rashi 28:6): its threads twined (twine), the ground red with
+          // the gold between; the figures of "מעשה חשב" in techelet - flowers and leaves on a vine, as the site the user sent (its picture
+          // 191: red, its figures blue; model choice). The user: "הצבע של האפוד גם לא נכון"
+          ephod: std(0xffffff, { roughness: 0.6, metalness: 0.12, side: DoubleSide, map: (() => {
+            const S = 256, cv = twine(S, S, [[COL.techelet, 0.3], [COL.argaman, 0.14], [COL.tolaat, 0.16], [COL.shesh, 0.26], [0xd8b04c, 0.14]], 31, 3, 1.2, 0.45), c = cv.getContext("2d");
+            const NAVY = "rgba(36,52,120,0.78)", BLUE = "rgba(96,124,200,0.85)", EDGE = "rgba(232,206,130,0.75)";
+            const flower = (x, y, R, rot) => {
+              for (let k = 0; k < 6; k++) {
+                const an = rot + (k * Math.PI) / 3, px = x + Math.cos(an) * R * 0.55, py = y + Math.sin(an) * R * 0.55;
+                c.fillStyle = NAVY; c.beginPath(); c.ellipse(px, py, R * 0.52, R * 0.27, an, 0, Math.PI * 2); c.fill();
+                c.strokeStyle = EDGE; c.lineWidth = 1.2; c.stroke();
+                c.fillStyle = BLUE; c.beginPath(); c.ellipse(px, py, R * 0.3, R * 0.11, an, 0, Math.PI * 2); c.fill();
+              }
+              c.fillStyle = "#e3bd52"; c.beginPath(); c.arc(x, y, R * 0.2, 0, Math.PI * 2); c.fill();
+            };
+            const leaf = (x, y, an, l) => {
+              c.fillStyle = NAVY; c.beginPath(); c.ellipse(x, y, l, l * 0.36, an, 0, Math.PI * 2); c.fill();
+              c.strokeStyle = BLUE; c.lineWidth = 1; c.beginPath(); c.moveTo(x - Math.cos(an) * l * 0.8, y - Math.sin(an) * l * 0.8); c.lineTo(x + Math.cos(an) * l * 0.8, y + Math.sin(an) * l * 0.8); c.stroke();
+            };
+            for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {   // drawn round, so that the tile repeats whole
+              c.save(); c.translate(ox, oy);
+              c.strokeStyle = NAVY; c.lineWidth = 3.2;
+              for (const [x0, y0, x1, y1, cx, cy] of [[64, 64, 192, 192, 160, 80], [64, 64, -64, 192, -40, 90], [192, 192, 320, 320, 290, 210], [192, 192, 64, 320, 90, 300]]) { c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1); c.stroke(); }
+              for (const [x, y, an] of [[120, 92, 0.4], [150, 150, -0.9], [228, 230, 2.2], [40, 140, 1.9], [100, 220, -0.6], [215, 120, 0.9], [20, 40, 2.6], [150, 20, 0.2]]) leaf(x, y, an, 17);
+              flower(64, 64, 34, 0.2); flower(192, 192, 34, 0.7); flower(192, 64, 15, 0); flower(64, 192, 15, 0.5);
+              c.restore();
+            }
+            return texOf(cv);
+          })() }),
+          tefillin: std(0x141414, { roughness: 0.45 }),
+          shoham: std(0x1f6450, { roughness: 0.14, metalness: 0.1 }),
+          pom: std(0x86304a, { roughness: 0.8 })
+        };
+        // the robe and its hem
+        // the robe: "ואין לו בית יד אלא נחלק לשתי כנפים מסוף הגרון עד למטה כדרך כל המעילים ואינו מחבר אלא כנגד כל הגרון בלבד" (9:3; the
+        // user: "אין ידיים") - two wings, before and behind, joined only round the neck; the arms out between them
+        {
+          const prof = MEIL;
+          const rows = [];
+          for (let i = 1; i < prof.length; i++) { const n = Math.max(1, Math.round((prof[i][0] - prof[i - 1][0]) / 0.06)); for (let k = i === 1 ? 0 : 1; k <= n; k++) rows.push([lerp(prof[i - 1][0], prof[i][0], k / n), lerp(prof[i - 1][1], prof[i][1], k / n)]); }
+          const NX = 64, pos = [], idx = [];
+          rows.forEach(([y, r]) => { for (let i = 0; i <= NX; i++) { const ph = (i / NX) * Math.PI * 2, k = 1 + 0.032 * clamp((2.0 - y) / 1.7, 0, 1) * Math.sin(8 * ph + 0.7 * Math.sin(3 * ph)); pos.push(Math.sin(ph) * r * k, y - 0.07 * smooth(clamp((y - 2.6) / 0.23, 0, 1)) * Math.pow(Math.max(0, Math.cos(ph)), 1.5), Math.cos(ph) * r * k); } });
+          for (let j = 0; j < rows.length - 1; j++) {
+            const ym = (rows[j][0] + rows[j + 1][0]) / 2;
+            for (let i = 0; i < NX; i++) {
+              const ph = ((i + 0.5) / NX) * Math.PI * 2, side = Math.min(Math.abs(ph - HP), Math.abs(ph - 3 * HP));
+              if (ym < 2.74 && side < 0.3) continue;   // between the wings
+              const p0 = j * (NX + 1) + i, p1 = p0 + NX + 1;
+              idx.push(p0, p0 + 1, p1, p1, p0 + 1, p1 + 1);
+            }
+          }
+          const mg = new BufferGeometry();
+          mg.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          mg.setIndex(idx);
+          mg.computeVertexNormals();
+          mk(mg, M.techelet);
+        }
+        const bellG = new LatheGeometry([V2(0.023, -0.016), V2(0.02, -0.012), V2(0.016, 0.006), V2(0.011, 0.02), V2(0.001, 0.022)], 8);
+        const bells = new InstancedMesh(bellG, MAT.gold, 72), poms = new InstancedMesh(new SphereGeometry(0.019, 8, 6).scale(1, 1.35, 1), M.pom, 72);
+        const m4 = new Matrix4();
+        for (let w = 0; w < 2; w++) for (let i = 0; i < 72; i++) {   // each wing: from its one edge to the other, bell and pomegranate by turns
+          const an = -HP + 0.3 + (i / 71) * (Math.PI - 0.6) + w * Math.PI;
+          m4.makeTranslation(Math.sin(an) * 0.461, 0.272, Math.cos(an) * 0.461);
+          (i % 2 ? poms : bells).setMatrixAt(w * 36 + (i >> 1), m4);
+        }
+        for (const im of [bells, poms]) { im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; T.add(im); }
+        // the ephod behind, its band round, its two shoulders and their stones
+        // the ephod by Rashi (the user: "רק רש״י"): "כמין סינר של נשים רוכבות סוסים, וחוגר אותו מאחוריו כנגד לבו למטה מאציליו, רחבו כמדת
+        // רחב גבו של אדם ויותר, ומגיע עד עקביו" (28:6), "ונקפל הסינר לפני הכהן על מתניו, וקצת כרסו מכאן ומכאן עד כנגד קצות החשן" (28:26):
+        // a cloth 1.9 amot wide (model choice: so that girded its ends come before him under the breastplate's corners), round the back and
+        // the sides, hanging to the heels
+        {
+          const prof = [[0.12, 0.482], [0.55, 0.476], [1.3, 0.428], [1.85, 0.39], [1.97, 0.394]];
+          const rAt = (y) => { for (let i = 1; i < prof.length; i++) if (y <= prof[i][0]) return lerp(prof[i - 1][1], prof[i][1], (y - prof[i - 1][0]) / (prof[i][0] - prof[i - 1][0])); return prof[prof.length - 1][1]; };
+          const XE = 0.25, NY = 16, NX = 32, pos = [], uv = [], idx = [];   // its ends hang straight, x = +-XE (the breastplate's corners)
+          for (let j = 0; j <= NY; j++) {
+            const y = lerp(0.12, 1.97, j / NY), r = rAt(y), span = Math.PI - Math.asin(Math.min(1, XE / r));
+            for (let i = 0; i <= NX; i++) { const ph = Math.PI + lerp(-span, span, i / NX), k = 1 + 0.022 * clamp((1.9 - y) / 1.8, 0, 1) * Math.sin(10 * ph); pos.push(Math.sin(ph) * r * k, y, Math.cos(ph) * r * k); uv.push((lerp(-span, span, i / NX) * r) / TILE, y / TILE); }
+          }
+          for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const p0 = j * (NX + 1) + i, p1 = p0 + NX + 1; idx.push(p0, p1, p0 + 1, p1, p1 + 1, p0 + 1); }
+          const eg = new BufferGeometry();
+          eg.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          eg.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+          eg.setIndex(idx);
+          eg.computeVertexNormals();
+          out.ephod = { rashi: mk(eg, M.ephod) };
+        }
+        // the Rambam's: "רחבו כרחב גבו של אדם מכתף לכתף. וארכו מכנגד אצילי הידים מאחוריו עד הרגלים" (9:9) - behind only
+        out.ephod.rambam = mk((() => {
+          const g = new LatheGeometry([[0.12, 0.478], [0.55, 0.471], [1.3, 0.424], [1.85, 0.386], [1.97, 0.394]].map(([y, r]) => V2(r, y)), 14, Math.PI * 2 / 3, Math.PI * 2 / 3), p = g.attributes.position, uv = g.attributes.uv;
+          for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv.setXY(i, (Math.atan2(-x, -z) * Math.hypot(x, z)) / TILE, p.getY(i) / TILE); }
+          return g;
+        })(), M.ephod);
+        // its band "קשור על לבו תחת החשן" (9:11) - its knot and its ends not drawn (the user: "מה הקשר של הסרט באפוד ובאבנט? לא קשור")
+        mk(uvScale(new CylinderGeometry(0.394, 0.39, 0.13, 36, 1, true), 6, 0.13 / ((Math.PI * 2 * 0.394) / 6)), M.ephod, 0, 1.965, 0);
+        for (const s of [1, -1]) {
+          // the shoulder: a broad strap of the ephod's work ("שתי רצועות רחבות", Rashi 28:7) from its upper edge behind, over the shoulder,
+          // folded down before him a little; the shoham on the shoulder in its gold
+          ribbon([[s * 0.21, 2.0, -0.348], [s * 0.21, 2.3, -0.357], [s * 0.21, 2.55, -0.333], [s * 0.21, 2.72, -0.262], [s * 0.21, 2.818, 0], [s * 0.21, 2.742, 0.252], [s * 0.21, 2.64, 0.307]], 0.13, M.ephod);
+          // "וקובע על כל כתף וכתף אבן שהם מרבע משקע בבית של זהב" (9:9): the square stone in its gold, lying on the shoulder (the user: "מה
+          // עשית בכתפיים?" - they stood up as boxes); outside the torso's flattening, set on the strap where it passes over
+          const sg = new Group();
+          sg.position.set(s * 0.21, 2.792, 0.094);
+          sg.rotation.x = 0.5;
+          L.add(sg);
+          mk(new BoxGeometry(0.104, 0.014, 0.104), MAT.gold, 0, 0, 0, sg);
+          mk(new BoxGeometry(0.08, 0.018, 0.08), M.shoham, 0, 0.008, 0, sg);
+          mk(new CylinderGeometry(0.03, 0.033, 0.014, 20).rotateX(HP), MAT.gold, s * 0.21, 2.645, 0.335);   // "והמשבצות נתונות בראשיהם לפני כתפיו" (Rashi 28:6): flat on the strap's end
+          cord([[s * 0.235, 2.505, 0.44], [s * 0.226, 2.575, 0.38], [s * 0.21, 2.64, 0.33]], 0.0085, MAT.gold, 3, 0.03);                        // the chains
+          // the lower rings "על שפתו אשר אל עבר האפוד ביתה" (28:26: on its inner side), their cords under the arms to the shoulders' lower
+          // rings "למעלה מן החשב" (9:9, 9:11)
+          cord([[s * 0.235, 2.035, 0.405], [s * 0.35, 2.045, 0.25], [s * 0.398, 2.05, 0.0], [s * 0.35, 2.05, -0.27], [s * 0.21, 2.045, -0.37]], 0.0055, M.techelet);
+          mk(new TorusGeometry(0.017, 0.005, 5, 10), MAT.gold, s * 0.235, 2.505, 0.44);
+          mk(new TorusGeometry(0.017, 0.005, 5, 10), MAT.gold, s * 0.235, 2.035, 0.41);
+          mk(new TorusGeometry(0.017, 0.005, 5, 10), MAT.gold, s * 0.21, 2.05, -0.362);   // "למעלה מן החגורה מעט... והן כנגד סוף החשן" (Rashi 28:27)
+        }
+        // the breastplate: its middle before the heart; four rows of three, the first above
+        const ch = new Group();
+        ch.position.set(0, 2.27, 0.424);   // "יהיה החשן על לבו בשוה" (9:11)
+        T.add(ch);
+        mk(uvScale(new BoxGeometry(0.5, 0.5, 0.024), 0.5 / TILE, 0.5 / TILE), M.ephod, 0, 0, 0, ch);
+        const setG = new BoxGeometry(0.114, 0.114, 0.02), stG = new BoxGeometry(0.094, 0.094, 0.026);
+        STONES.forEach(([, tribe, hex], i) => {
+          const r = Math.floor(i / 3), k = i % 3, x = (1 - k) * 0.155, y = 0.18 - r * 0.12;
+          mk(setG, MAT.gold, x, y, 0.016, ch);
+          const light = new Color(hex).getHSL({}).l > 0.6;
+          const map = canvasTex(128, 128, (c, w, h) => {
+            const col = new Color(hex), g = c.createRadialGradient(w * 0.36, h * 0.32, 4, w / 2, h / 2, w * 0.75);
+            g.addColorStop(0, HEX(col.clone().lerp(new Color(0xffffff), 0.4).getHex()));
+            g.addColorStop(1, HEX(col.clone().multiplyScalar(0.6).getHex()));
+            c.fillStyle = g; c.fillRect(0, 0, w, h);
+            c.textAlign = "center"; c.textBaseline = "middle"; c.direction = "rtl";
+            // above Reuven and below Binyamin the Gemara's words (Yoma 73b: "״אברהם יצחק ויעקב״ כתיב שם", "״שבטי ישורון״ כתיב שם" - the user:
+            // as the Gemara; their places as the Rambam 9:7)
+            const lines = i === 0 ? [["אברהם יצחק ויעקב", 15, 0.3], [tribe, 30, 0.64]] : i === 11 ? [[tribe, 28, 0.37], ["שבטי ישורון", 17, 0.72]] : [[tribe, tribe.length > 4 ? 29 : 35, 0.5]];
+            for (const [txt, fs, fy] of lines) {
+              c.font = "700 " + fs + "px 'Frank Ruhl Libre', 'David', 'Times New Roman', serif";
+              c.fillStyle = light ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.4)"; c.fillText(txt, w / 2 + 1.2, h * fy + 1.6);
+              c.fillStyle = light ? "rgba(40,48,60,0.85)" : "rgba(255,255,255,0.84)"; c.fillText(txt, w / 2, h * fy);
+            }
+          });
+          mk(stG, std(0xffffff, { map, roughness: 0.16, metalness: 0.05 }), x, y, 0.026, ch);
+        });
+        // the tzitz on the forehead, from ear to ear; his hair seen above it, and there the tefillin
+        const tz = canvasTex(512, 66, (c, w, h) => {
+          const g = c.createLinearGradient(0, 0, 0, h);
+          g.addColorStop(0, "#f6dc80"); g.addColorStop(0.5, "#dab64c"); g.addColorStop(1, "#b48c2c");
+          c.fillStyle = g; c.fillRect(0, 0, w, h);
+          c.textAlign = "center"; c.textBaseline = "middle"; c.direction = "rtl";
+          c.font = "700 27px 'Frank Ruhl Libre', 'David', 'Times New Roman', serif";
+          for (const [t, y] of [["לה׳", 17], ["קדש", 48]]) { c.fillStyle = "rgba(90,60,10,0.8)"; c.fillText(t, w / 2 + 1, y + 1.5); c.fillStyle = "#fff3c0"; c.fillText(t, w / 2, y); }
+        });
+        mk(new CylinderGeometry(1, 1, 0.078, 36, 1, true, -HP, Math.PI).scale(0.174, 1, 0.194), std(0xffffff, { map: tz, metalness: 0.75, roughness: 0.3, side: DoubleSide }), 0, 3.085, HZ, L);
+        mk(new BoxGeometry(0.056, 0.056, 0.056), M.tefillin, 0, 3.172, 0.164 + HZ, L).rotation.x = -0.55;
+        // the mitznefet sits back on the head (model choice: its frame hd tilted 0.3 back about the head's centre): its front edge above the
+        // hair and the tefillin, its back over the nape; loc() = a point of the figure in that frame
+        const TILT = -0.3, cT = Math.cos(TILT), sT = Math.sin(TILT);
+        const loc = (x, y, z) => { const yy = y - 3.04, zz = z - HZ; return [x, yy * cT + zz * sT, -yy * sT + zz * cT]; };
+        const hd = new Group();
+        hd.position.set(0, 3.04, HZ);
+        hd.rotation.x = TILT;
+        L.add(hd);
+        const rashi = new Group(), rashiW = new Group(), ramban = new Group();
+        hd.add(rashi, ramban);
+        L.add(rashiW);
+        const tubeIn = (par, pts, r, mat) => { const tm = cord(pts, r * 0.7, mat); par.add(tm); return tm; };
+        // Rashi: "כמין כפת כובע", high on the head; his cords: the two at the ends tied behind the nape, the middle one over it
+        mk(mergeGeometries([tint(plain(new SphereGeometry(0.19, 18, 10, 0, Math.PI * 2, 0, HP).scale(1, 0.95, 1).translate(0, 0.125, 0)), COL.hat),
+          tint(plain(new TorusGeometry(0.186, 0.022, 6, 26).rotateX(HP).translate(0, 0.13, 0)), COL.hat2)]), MAT.fig, 0, 0, 0, rashi);
+        const nape = (k) => { const t = k / 12, p = headAt(HP + t * Math.PI, 0.366 - 0.58 * Math.sin(t * Math.PI), 0.027); return [p.x, p.y, p.z]; };
+        tubeIn(rashiW, Array.from({ length: 13 }, (_, k) => nape(k)), 0.0075, M.techelet);
+        const NP = nape(6);
+        mk(new SphereGeometry(0.011, 6, 5), M.techelet, NP[0], NP[1], NP[2] - 0.004, rashiW);
+        const mer = [0.3, 0.8, 1.35, 1.9, 2.45, 2.9].map((an) => [0, 0.125 + 0.1895 * Math.sin(an), 0.199 * Math.cos(an)]);
+        tubeIn(rashi, [loc(0, 3.122, 0.196 + HZ), ...mer, loc(0, 3.03, HZ - 0.222), loc(NP[0], NP[1], NP[2])], 0.0075, M.techelet);
+        // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it
+        const turns = [[0.14, 0.19], [0.195, 0.198], [0.25, 0.2], [0.305, 0.196], [0.355, 0.185]].map(([y, R], i) => tint(plain(new TorusGeometry(R, 0.032, 6, 24).rotateX(HP).translate(0, y, 0)), i % 2 ? COL.hat2 : COL.hat));
+        mk(mergeGeometries([...turns, tint(plain(new CylinderGeometry(0.185, 0.185, 0.24, 20, 1, true).translate(0, 0.25, 0)), COL.hat2),
+          tint(plain(new SphereGeometry(0.185, 18, 6, 0, Math.PI * 2, 0, HP).scale(1, 0.3, 1).translate(0, 0.37, 0)), COL.hat)]), MAT.fig, 0, 0, 0, ramban);
+        tubeIn(ramban, [loc(0.174, 3.085, HZ), [0.214, 0.1, -0.08], [0.17, 0.165, -0.17], [0, 0.175, -0.235], [-0.17, 0.165, -0.17], [-0.214, 0.1, -0.08], loc(-0.174, 3.085, HZ)], 0.0075, M.techelet);
+        mk(new SphereGeometry(0.011, 6, 5), M.techelet, 0, 0.175, -0.24, ramban);
+        out.mitz = { rashi: [rashi, rashiW], ramban: [ramban] };
+        return out;
+      };
+      const hpGarb = buildHP(makeFig("hp", "H"));
+      // ---- the sleepers of Beit HaMoked (Tamid 1:1): the elders on the stone benches ("רובדין של אבן", 30-courts.js - MOKED_WIDE_211,
+      // FLOOR_211: the lower step x -33..-31 top 17, the upper -33..-32 top 18, z -69.5..-65.5, and the same on the east; the floor
+      // 16), the young on the floor by the hearth, each
+      // on his own garment, covered in his own clothes
+      const sleepers = new Group(), piles = [];
+      group.add(sleepers);
+      {
+        const body = new CapsuleGeometry(0.42, 2.0, 4, 10).rotateX(HP);
+        const head = new SphereGeometry(0.2, 10, 8), capG = new SphereGeometry(0.21, 10, 6, 0, Math.PI * 2, 0, HP);
+        SLEEP.forEach(([x, y, z, yaw], i) => {
+          const s = new Group();
+          const b = new Mesh(body, MAT.blanket[i % 4]);
+          b.scale.set(1, 0.62, 1);
+          b.position.y = 0.26;
+          s.add(b);
+          const h = new Mesh(head, MAT.skin);
+          h.position.set(0, 0.32, 1.45);
+          s.add(h);
+          const c = new Mesh(capG, MAT.cap);
+          c.rotation.x = HP;
+          c.position.set(0, 0.32, 1.5);
+          s.add(c);
+          const pl = new Mesh(G.pile, MAT.fig);   // "כנגד ראשיהן"
+          pl.position.set(0, 0, 1.83);
+          s.add(pl);
+          const roll = new Mesh(G.roll, MAT.beltK);
+          roll.position.set(-0.03, 0.143, 1.76);
+          s.add(roll);
+          piles.push(roll);
+          s.position.set(x, y, z);
+          s.rotation.y = yaw;
+          sleepers.add(s);
+        });
+      }
+      // ---- the lamb (Tamid 3:3): faces +z; legs that swing; bound = on its side, the legs together (4:1 "ראשו לדרום ופניו למערב")
+      // LAMB_211 (the user, 14.11.2026: "את הטלאים עשית ציוריים מדי, אני רוצה אותם ממש אמיתיים"): the kit's lamb (10-core.js
+      // lambKit: the animal's own build, with its joints) - the same lamb as in its chamber. Until 2.0.1: a ball, a tube and sticks.
+      const lamb = (() => {
+        const L = ctx2.H.lambKit().build();
+        L.g.visible = false;
+        group.add(L.g);
+        return { g: L.g, body: L.body, legs: L.legs, head: L.head, st: null };
+      })();
+      // ---- the vessels and the other things: each a prop, in the world or held at a figure's grip
+      const props = {};
+      const prop = (id, o, grip, upright = true) => { const p = { id, o, grip: grip || { p: [0, 0, 0], r: [0, 0, 0] }, upright, st: null }; o.visible = false; group.add(o); props[id] = p; return p; };
+      const mesh = (geo, mat, x = 0, y = 0, z = 0) => { const m = new Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; return m; };
+      const pan = (mat) => {   // a fire pan: a shallow box with a long handle (Tamid 1:4 "מחתת הכסף"; 5:5 "לתוך של זהב")
+        const g = new Group();
+        g.add(mesh(new BoxGeometry(0.62, 0.12, 0.62), mat, 0, 0.06, 0.62));
+        const coals = mesh(new BoxGeometry(0.5, 0.06, 0.5), MAT.ember, 0, 0.13, 0.62);
+        coals.visible = false;
+        g.add(coals);
+        g.add(mesh(new CylinderGeometry(0.035, 0.035, 0.75, 6).rotateX(HP), mat, 0, 0.08, 0.1));
+        g.userData.coals = coals;
+        return g;
+      };
+      prop("machtaS", pan(MAT.silver), { p: [0, -0.1, 0.05], r: [0, 0, 0] });
+      prop("machtaG", pan(MAT.gold), { p: [0, -0.1, 0.05], r: [0, 0, 0] });
+      prop("teni", (() => {   // "הטני דומה לתרקב גדול של זהב" (3:6): a deep golden basket with two handles
+        const g = new Group();
+        g.add(mesh(new CylinderGeometry(0.32, 0.24, 0.42, 14, 1, true), MAT.gold, 0, 0.21, 0));
+        g.add(mesh(new CircleGeometry(0.24, 14).rotateX(-HP), MAT.gold, 0, 0.01, 0));
+        for (const s of [-1, 1]) g.add(mesh(new TorusGeometry(0.09, 0.022, 6, 10, Math.PI).rotateY(HP), MAT.gold, s * 0.32, 0.3, 0));
+        const ash = mesh(new CylinderGeometry(0.28, 0.28, 0.06, 12), MAT.ash, 0, 0.3, 0);
+        ash.visible = false;
+        g.add(ash);
+        g.userData.ash = ash;
+        return g;
+      })(), { p: [0, -0.32, 0.22], r: [0, 0, 0] });
+      prop("kuz", (() => {   // "והכוז דומה לקיתון גדול של זהב" (3:6): a pitcher with a handle
+        const g = new Group();
+        g.add(mesh(new LatheGeometry([V2(0.001, 0), V2(0.17, 0.02), V2(0.21, 0.18), V2(0.16, 0.42), V2(0.1, 0.52), V2(0.13, 0.6)], 14), MAT.gold));
+        g.add(mesh(new TorusGeometry(0.12, 0.022, 6, 12, Math.PI * 1.2).rotateY(HP), MAT.gold, 0, 0.36, -0.2));
+        return g;
+      })(), { p: [0, -0.3, 0.12], r: [0, 0, 0] });
+      prop("kaf", (() => {   // "והכף דומה לתרקב גדול של זהב... והבזך היה בתוכו, מלא וגדוש קטרת. וכסוי היה לו" (6:3 / 5:4)
+        const g = new Group();
+        g.add(mesh(new CylinderGeometry(0.34, 0.26, 0.36, 14, 1, true), MAT.gold, 0, 0.18, 0));
+        g.add(mesh(new CircleGeometry(0.26, 14).rotateX(-HP), MAT.gold, 0, 0.01, 0));
+        const lid = new Group();
+        lid.add(mesh(new SphereGeometry(0.35, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2.4), MAT.gold, 0, 0.32, 0));
+        lid.add(mesh(new SphereGeometry(0.06, 8, 6), MAT.gold, 0, 0.62, 0));
+        g.add(lid);
+        g.userData.lid = lid;
+        return g;
+      })(), { p: [0, -0.3, 0.25], r: [0, 0, 0] });
+      prop("bazach", (() => {   // the dish of incense, "מלא וגדוש"
+        const g = new Group();
+        g.add(mesh(new CylinderGeometry(0.2, 0.15, 0.1, 12), MAT.gold, 0, 0.05, 0));
+        g.add(mesh(new SphereGeometry(0.17, 12, 6, 0, Math.PI * 2, 0, HP).scale(1, 0.5, 1), MAT.incense, 0, 0.1, 0));
+        return g;
+      })(), { p: [0, -0.06, 0.12], r: [0, 0, 0] });
+      prop("magrefa", (() => {   // the shovel (Tamid 5:6) - model choice: a broad blade on a handle
+        const g = new Group();
+        g.add(mesh(new BoxGeometry(0.5, 0.05, 0.45), MAT.bronze, 0, 0, 0.9));
+        g.add(mesh(new CylinderGeometry(0.035, 0.035, 1.3, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1));
+        return g;
+      })(), { p: [0, 0, 0], r: [0, 0, 0] }, false);
+      prop("mizrak", (() => {   // the bowl of the blood, pointed below (model choice)
+        const g = new Group();
+        g.add(mesh(new LatheGeometry([V2(0.001, -0.14), V2(0.12, 0.02), V2(0.22, 0.12), V2(0.24, 0.16)], 14), MAT.silver));
+        const b = mesh(new CircleGeometry(0.21, 14).rotateX(-HP), MAT.blood.clone(), 0, 0.13, 0);
+        b.material.opacity = 0.95;
+        b.visible = false;
+        g.add(b);
+        g.userData.blood = b;
+        return g;
+      })(), { p: [0, -0.12, 0.18], r: [0, 0, 0] });
+      prop("cup", mesh(new LatheGeometry([V2(0.001, 0), V2(0.07, 0.01), V2(0.06, 0.08), V2(0.09, 0.2)], 12), MAT.gold), { p: [0, -0.1, 0.08], r: [0, 0, 0] });
+      const torch = (k) => {   // "ושתי אבוקות של אור בידם" (1:3)
+        const g = new Group();
+        g.add(mesh(new CylinderGeometry(0.05, 0.04, 1.3, 6), MAT.wood, 0, 0.45, 0));
+        const fl = new Mesh(new ConeGeometry(0.16, 0.5, 8), new MeshBasicMaterial({ color: 0xffb04a }));
+        fl.position.y = 1.32;
+        g.add(fl);
+        const li = new PointLight(0xffa04a, 0, 34, 1.6);
+        li.position.y = 1.5;
+        g.add(li);
+        g.userData.light = li;
+        return prop("torch" + k, g, { p: [0, -0.1, 0.1], r: [-0.25, 0, 0] }, false);
+      };
+      torch(1); torch(2);
+      const toolS = () => { const g = new Group(); g.add(mesh(new BoxGeometry(0.4, 0.04, 0.35), MAT.bronze, 0, 0, 0.75)); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1)); return g; };
+      const toolF = () => { const g = new Group(); for (const x of [-0.1, 0, 0.1]) g.add(mesh(new CylinderGeometry(0.015, 0.015, 0.35, 5).rotateX(HP), MAT.bronze, x, 0, 0.8)); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1)); return g; };
+      prop("tool1", toolS(), null, false); prop("tool2", toolF(), null, false); prop("tool3", toolS(), null, false); prop("tool4", toolF(), null, false);
+      const logGeo = new CylinderGeometry(0.22, 0.22, 3.2, 8).rotateZ(HP);
+      for (let i = 1; i <= 4; i++) prop("carry" + i, mesh(logGeo, MAT.woodNew), { p: [0, -0.15, 0.25], r: [0, HP, 0] }, false);
+      // ONE_KOHEN_211 (the refuter, R-04): the two gezirin of the morning in the hands of the one who won the terumah (below, SC.maarachah)
+      // - two flat boards an amah by an amah, as the model's own (40-altar.js GEZIRIN_DEFAULT_195: Zevachim 62b "אורכן אמה, ורוחבן אמה")
+      { const g2 = new Group(); for (const dy of [0, 0.13]) g2.add(mesh(new BoxGeometry(0.94, 0.1, 0.94), MAT.woodNew, 0, dy, 0)); prop("carryT", g2, { p: [0, -0.2, 0.42], r: [0, 0, 0] }, false); }
+      // the new wood on the pyres (40-altar.js): the great pyre GP x 59.7..64.2, z ACZ + 4.5 +- 4, six layers to TOP + 3, and the model's two
+      // gezirin on it (TOP + 3..4, z GP.cz +- 1, the gap between them left open: "ורוח היה בין הגזרין") - the new logs lie beside them; the
+      // second pyre at (46, 5), 1.5 x 1, its top TOP + 0.7 (addPyre)
+      const L1 = [], L2 = [];
+      const GPZ = ACZ + 4.5;
+      for (const dz of [-3.4, -2.4, 2.4, 3.4]) { const m = mesh(new CylinderGeometry(0.22, 0.22, 4.3, 8).rotateZ(HP), MAT.woodNew, 61.95, TOP0 + 3.22, GPZ + dz); altarG.add(m); L1.push(m); }
+      for (const z of [4.6, 5.0, 5.4]) { const m = mesh(new CylinderGeometry(0.1, 0.1, 1.4, 7).rotateZ(HP), MAT.woodNew, 46, TOP0 + 0.8, z); altarG.add(m); L2.push(m); }
+      // the model's own gezirin (40-altar.js): hidden until the stage that lays them. GEZ_FIND_211: since 1.9.5 they are two boards
+      // 0.94 x 0.1 x 0.94 (GEZIRIN_DEFAULT_195), and this search still looked for the old beams 4.5 x 1 x 1 - it found nothing, so the two
+      // boards lay on the pyre from the demonstration's first second. Both sizes are looked for now.
+      const modelGez = [];
+      try { ctx2.root.traverse((o) => { const p = o.isMesh && o.geometry && o.geometry.parameters; if (!p) return;
+        const near = (v, w) => Math.abs(v - w) < 0.011;
+        if ((near(p.width, 0.94) && near(p.height, 0.1) && near(p.depth, 0.94)) || (near(p.width, 4.5) && p.height === 1 && p.depth === 1)) modelGez.push(o); }); } catch (_) {}
+      // KEY_SLAB_211: the keys of the court on their ring, taken from under the marble tablet (30-courts.js mokedSlab; Middot 1:9)
+      prop("keys", (() => {
+        const g = new Group();
+        g.add(mesh(new TorusGeometry(0.06, 0.011, 8, 20), MAT.bronze));
+        for (const dx of [-0.04, 0, 0.04]) { g.add(mesh(new CylinderGeometry(0.012, 0.012, 0.26, 6), MAT.bronze, dx, -0.19, 0)); g.add(mesh(new BoxGeometry(0.045, 0.04, 0.012), MAT.bronze, dx + 0.02, -0.3, 0)); }
+        return g;
+      })(), { p: [0, -0.06, 0.06], r: [0, 0, 0] }, false);
+      // the heap of the morning's ash east of the ramp (1:4), the golden altar's ash, the portions, the salt
+      prop("ashHeap", mesh(new ConeGeometry(0.55, 0.45, 12).translate(0, 0.225, 0), MAT.ash));
+      prop("ashGold", mesh(new SphereGeometry(0.34, 12, 6, 0, Math.PI * 2, 0, HP).scale(1, 0.35, 1), MAT.ash));
+      const portionGeo = new SphereGeometry(0.22, 10, 8).scale(1.4, 0.8, 0.9);
+      for (let i = 1; i <= 9; i++) {
+        let o;
+        if (i === 7) o = (() => { const g = new Group(); g.add(mesh(new CylinderGeometry(0.3, 0.24, 0.26, 12), MAT.silver, 0, 0.13, 0)); g.add(mesh(new CylinderGeometry(0.27, 0.27, 0.04, 12), MAT.flour, 0, 0.26, 0)); return g; })();
+        else if (i === 8) o = (() => { const g = new Group(); g.add(mesh(new CylinderGeometry(0.34, 0.34, 0.06, 14), MAT.silver)); for (let k = 0; k < 5; k++) g.add(mesh(new CylinderGeometry(0.12, 0.12, 0.05, 10), MAT.cake, Math.cos(k * 1.26) * 0.18, 0.06, Math.sin(k * 1.26) * 0.18)); return g; })();
+        else if (i === 9) o = (() => { const g = new Group(); g.add(mesh(new LatheGeometry([V2(0.001, 0), V2(0.16, 0.02), V2(0.19, 0.2), V2(0.1, 0.42), V2(0.12, 0.5)], 12), MAT.gold)); return g; })();
+        else { o = new Group(); o.add(mesh(portionGeo, MAT.portion, -0.12, 0.16, 0)); if (i !== 6) o.add(mesh(portionGeo, MAT.portion, 0.16, 0.18, 0.05)); }
+        prop("p" + i, o, { p: [0, -0.16, 0.24], r: [0, 0, 0] });
+      }
+      prop("salt", (() => { const g = new Group(); for (let i = 0; i < 9; i++) g.add(mesh(new SphereGeometry(0.06, 6, 4), MAT.salt, Math.cos(i) * 0.3, 0.06, (i - 4) * 1.2)); return g; })());
+      // MAARACHOT2_211 (stage ב; the user: the arrangements in detail): the limbs and the fats not consumed from the evening - charred, on the
+      // old fire until "סונקין אותם לצדדי המזבח" (Tamid 2:1) and "מחזירין אותן למערכה" (2:5); and the kindling lit in the gaps between the
+      // new logs - "ורוח היה בין הגזרין, שהיו מציתין את האליתא משם" (2:4). Their number, form and places - model choices
+      const charMat = new MeshStandardMaterial({ color: 0x3a2116, roughness: 1, emissive: 0x2a0a02, emissiveIntensity: 0.6 });
+      for (let i = 1; i <= 3; i++) { const o = new Group(); o.add(mesh(portionGeo, charMat, -0.1, 0.15, 0)); if (i !== 2) o.add(mesh(portionGeo, charMat, 0.15, 0.17, 0.06)); prop("old" + i, o, null, false); }
+      const kindleMat = new MeshBasicMaterial({ color: 0xffb347 });
+      for (let i = 1; i <= 3; i++) prop("kindle" + i, mesh(new ConeGeometry(0.16, 0.55, 8).translate(0, 0.27, 0), kindleMat), null, false);
+      // the blood's marks: the two corners above the yesod and below the red line (40-altar.js: the body x 40.5..70.5, z -18.5..11.5,
+      // the line at F + 4.925) - "מתנה אחת שהן שתים", one on each face of the corner; the remainder on the southern yesod (its top F + 1)
+      const blood = {};
+      const bmark = (key, w, h, x, y, z, ry) => { const m = new Mesh(new PlaneGeometry(w, h), MAT.blood.clone()); m.position.set(x, y, z); m.rotation.y = ry; m.renderOrder = 3; m.visible = false; altarG.add(m); (blood[key] = blood[key] || []).push(m); };
+      bmark("ne", 1.6, 2.4, 69.6, F + 2.9, -18.53, Math.PI); bmark("ne", 1.6, 2.4, 70.53, F + 2.9, -17.6, HP);
+      bmark("sw", 1.6, 2.4, 41.4, F + 2.9, 11.53, 0); bmark("sw", 1.6, 2.4, 40.47, F + 2.9, 10.6, -HP);
+      { const m = new Mesh(new CircleGeometry(0.5, 14).rotateX(-HP), MAT.blood.clone()); m.position.set(41.2, F + 1.015, 12.0); m.renderOrder = 3; m.visible = false; altarG.add(m); blood.ys = [m]; }
+      // the trumpets, the cymbals, the flags, the lyres
+      const trumpet = () => { const g = new Group(); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.6, 8).rotateX(HP), MAT.silver, 0, 0, 0.7)); g.add(mesh(new ConeGeometry(0.13, 0.3, 12, 1, true).rotateX(HP), MAT.silver, 0, 0, 1.55)); return g; };
+      prop("tru1", trumpet(), { p: [0, 0, 0], r: [-1.1, 0, 0] }, false);
+      prop("tru2", trumpet(), { p: [0, 0, 0], r: [-1.1, 0, 0] }, false);
+      prop("cymL", mesh(new CylinderGeometry(0.28, 0.28, 0.03, 16).rotateZ(HP), MAT.bronze), { p: [0, -0.05, 0.05], r: [0, 0, 0] }, false);
+      prop("cymR", mesh(new CylinderGeometry(0.28, 0.28, 0.03, 16).rotateZ(HP), MAT.bronze), { p: [0, -0.05, 0.05], r: [0, 0, 0] }, false);
+      prop("flags", (() => { const g = new Group(); g.add(mesh(new CylinderGeometry(0.025, 0.025, 1.1, 6), MAT.wood, 0, 0.5, 0)); g.add(mesh(new PlaneGeometry(0.9, 0.6), MAT.cloth, 0.45, 0.85, 0)); return g; })(), null, false);
+      for (let i = 1; i <= 9; i++) {   // LEVITES_211: nine lyres (six until 2.0.1)
+        const g = new Group();
+        g.add(mesh(new TorusGeometry(0.32, 0.03, 6, 14, Math.PI * 1.3).rotateZ(-0.1), MAT.wood, 0, 0.3, 0));
+        g.add(mesh(new BoxGeometry(0.62, 0.05, 0.06), MAT.wood, 0, 0.6, 0));
+        for (let s = -2; s <= 2; s++) g.add(mesh(new CylinderGeometry(0.004, 0.004, 0.52, 3), MAT.salt, s * 0.08, 0.35, 0));
+        prop("lyre" + i, g, { p: [0, 0.1, 0.2], r: [0, 0, 0] }, false);
+      }
+      for (let i = 1; i <= 2; i++) {   // LEVITES_211: two harps (נבלים) - a tall frame with a resonator below and more strings; the form - model choice
+        const g = new Group();
+        g.add(mesh(new BoxGeometry(0.09, 0.95, 0.11), MAT.wood, 0, 0.47, 0));
+        g.add(mesh(new BoxGeometry(0.56, 0.07, 0.09), MAT.wood, 0.27, 0.92, 0));
+        g.add(mesh(new BoxGeometry(0.58, 0.14, 0.14), MAT.wood, 0.28, 0.07, 0));
+        for (let s = 1; s <= 7; s++) g.add(mesh(new CylinderGeometry(0.004, 0.004, 0.74, 3), MAT.salt, s * 0.068, 0.51, 0));
+        prop("nevel" + i, g, { p: [0, 0.05, 0.2], r: [0, 0, 0] }, false);
+      }
+      // the role tags over the figures (sprites, drawn over everything on a dark plate)
+      const tagCache = new Map();
+      const tagMat = (text) => {
+        if (tagCache.has(text)) return tagCache.get(text);
+        const cv = document.createElement("canvas"), c = cv.getContext("2d"), fs = 46, font = "600 " + fs + "px 'Segoe UI', Arial, sans-serif";
+        c.font = font;
+        const w = Math.ceil(c.measureText(text).width) + 36;
+        cv.width = w; cv.height = fs + 26;
+        c.font = font;
+        c.fillStyle = "rgba(18,22,32,0.84)";
+        const r = 14, h = cv.height;
+        c.beginPath(); c.moveTo(r, 0); c.lineTo(w - r, 0); c.quadraticCurveTo(w, 0, w, r); c.lineTo(w, h - r); c.quadraticCurveTo(w, h, w - r, h); c.lineTo(r, h); c.quadraticCurveTo(0, h, 0, h - r); c.lineTo(0, r); c.quadraticCurveTo(0, 0, r, 0); c.fill();
+        c.fillStyle = "#ffe7a8"; c.textAlign = "center"; c.textBaseline = "middle"; c.direction = "rtl";
+        c.fillText(text, w / 2, h / 2 + 2);
+        const t = new CanvasTexture(cv);
+        t.colorSpace = SRGBColorSpace;
+        const v = { m: new SpriteMaterial({ map: t, depthTest: false, transparent: true }), aspect: w / h };
+        tagCache.set(text, v);
+        return v;
+      };
+      return { group, altarG, MAT, G, figs, hp: hpGarb, piles, lamb, props, sleepers, L1, L2, modelGez, blood, tagMat, paths: new Map(), routes: new Map() };
+    }
+    // ---------------------------------------------------------------- the cast
+    const FIG_IDS = ["mem", "t", "mc", "cv", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "k", "f", "e", "b1", "b2", "b3", "b4", "sg", "tr1", "tr2"];
+    // LEVITES_211 (stage ב, point 28; the user: V): "אין פוחתין משנים עשר לוים עומדים על הדוכן" (Arachin 2:6); "אין פוחתין משני נבלים ולא
+    // מוסיפין על ששה... ואין פוחתין מתשעה כנורות, ומוסיפין עד לעולם. והצלצל לבד" (2:5) - twelve: nine with lyres, two with harps, and Ben
+    // Arza with the cymbal (no flute - only on twelve days, Rambam KH 3:6). Until 2.0.1 six and Ben Arza.
+    // SINGERS_211 (the refuter, R-06; the user, 15.11.2026 18:12: "2. ב"): THE TWELVE OF THE DUCHAN SING WITH THEIR MOUTHS, AND THE PLAYERS
+    // ARE OTHERS - the Rambam, Klei HaMikdash 3:3 (338:39): "ואין פוחתין משנים עשר לוים עומדים על הדוכן בכל יום לומר שירה על הקרבן... ואין
+    // אומרין שירה אלא בפה בלא כלי... ואחרים היו עומדים שם מנגנין בכלי שיר. מהן לוים ומהן ישראלים מיחסין... ואין אלו המשוררים על פי הכלים
+    // עולין למנין השנים עשר". (Rav Papa, Arachin 13b, 134:435: the twelve are "כנגד תשעה כנורות ושני נבלים וצלצל אחד" - said in the
+    // stage's words.) So: twelve singers, "v1".."v12", their hands empty; and the players - nine lyres ("l1".."l9"), two harps ("l10",
+    // "l11") and Ben Arza with the cymbal ("ba"). Until this fix the twelve of the duchan were the players themselves. All are drawn
+    // as Levites (whether some players were Israelites of good descent - not drawn); their spots along the duchan - model choices.
+    const LEV_SING = ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12"];
+    const LEV_IDS = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10", "l11", "ba", ...LEV_SING];
+    const LEV_PLAY = LEV_IDS.slice(0, 11);
+    const R13 = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13"];
+    const ROLE = { s1: "השוחט", s2: "הזורק", s3: "מדשן מזבח הפנימי", s4: "מדשן המנורה", s5: "הראש והרגל", s6: "שתי הידים", s7: "העוקץ והרגל", s8: "החזה והגרה",
+      s9: "שתי הדפנות", s10: "הקרבים", s11: "הסולת", s12: "החביתין", s13: "היין" };
+    const LOT1 = ["t", "b1", "b2", "b3", "b4", "s1", "s5", "s6", "s7", "s8"];   // those who woke in Beit HaMoked (model choice: ten)
+    const ALLP = ["t", "mc", "b1", "b2", "b3", "b4", ...R13, "k", "f", "e", "sg", "tr1", "tr2"];   // the priests of the hall of hewn stone
+    const REST = ["t", "b1", "b2", "b3", "s1", "s2", "s5", "s6", "s7", "s8", "s9", "s10"];   // the priests who have no vessel in the stages of the heichal
+    // the sleepers: [x, y, z, yaw] (the body along its local z, the head at +z), and where each rises - the ten of LOT1 in order
+    const SLEEP = [[-31.6, F + 1, -67.5, 0], [-32.5, F + 2, -67.5, Math.PI], [-4.4, F + 1, -67.5, 0], [-3.5, F + 2, -67.5, Math.PI],
+      // (SLEEP_CLEAR_211: the two by the hearth lie beside the aisle's middle line, not on it - the officer's way in from the north gate
+      // and the priests' way out by the south gate run along x -18, and a way's floor is sampled once, sometimes while a sleeper still lay there)
+      [-15.4, F, -72.6, HP], [-20.6, F, -61.3, -HP], [-23.6, F, -67.5, 0], [-12.4, F, -67.5, Math.PI], [-20.15, F + 0.1, -70.5, -HP], [-10.8, F, -67.5, 0]];
+    // KEY_SLAB_211: the ninth lies on the marble tablet (30-courts.js mokedSlab, its top F + 0.1), his head to the west - the one who locked:
+    // "החזיר את המפתחות לשלשלת ואת הטבלא למקומה, נתן כסותו עליה, ישן לו" (Middot 1:9); he rises beside it (the ring keeps its old spots)
+    const RISE = [[-30.1, -66.4], [-30.1, -68.8], [-5.9, -66.4], [-5.9, -68.8], [-16.6, -71.3], [-20.4, -62.6], [-22.6, -66.2], [-13.4, -69.2], [-21.6, -72.0], [-13.6, -66.0]];
+    // ---------------------------------------------------------------- the floor under a point, and the ways of the court
+    const hintY = (x, z) => {
+      const lz = z - D;
+      if (x > -34 && x < -2 && z > -77.5 && z < -57.5) return F;                                             // Beit HaMoked (MOKED_WIDE_211, FLOOR_211: 32 wide, one floor at the court's level; the steps inside its gate to the chel are found from above)
+      if (x > -34 && x < 9 && z <= -77.5 && z > -100) return null;                                           // before its gate to the chel: whatever is there (CHEL_211: the landing and the flight along the north face)
+      if (x > 68.8 && x < 89.2 && z > -78.2 && z < -55.8) return F;                                          // GAZIT_PLACE_211: the hall of hewn stone's floor (over the court of Israel's strip too)
+      if (x > 41 && x < 70 && lz > -18 && lz < 11) return TOP;                                               // the altar's top
+      if (x > 47.5 && x < 63.5 && lz >= 10.5 && lz < 42.6) return F + 9 * (42.6 - lz) / 32;                 // the ramp
+      if (x > 17.5 && x <= 39.5 && Math.abs(z) <= 50) return F + 6 * clamp((39.5 - x) / 19, 0, 1);          // the ulam's steps
+      if (x > 1.5 && x <= 17.5 && Math.abs(z) <= 50) return HEI;                                            // the ulam
+      if (x <= 1.5 && x > -82.5 && Math.abs(z) <= 35) return HEI + houseRise(x);                            // the house
+      if (x > 85.5) return MK;                                                                               // the court of Israel
+      return F;
+    };
+    const floorCache = new Map();
+    const floorAt = (x, z, h) => {
+      const hint = h != null ? h : hintY(x, z);
+      const key = Math.round(x * 4) + "," + Math.round(z * 4) + "," + (hint == null ? "n" : Math.round(hint * 2));
+      let y = floorCache.get(key);
+      if (y !== undefined) return y;
+      y = fnc(SH.floorY) ? SH.floorY(x, (hint == null ? F : hint) + 2.2, z) : -Infinity;
+      if (hint == null) { if (!isFinite(y)) y = MK; }
+      else if (!(isFinite(y) && Math.abs(y - hint) < 3.2)) y = hint;
+      floorCache.set(key, y);
+      return y;
+    };
+    // the regions of the court and the nodes that join them (model choices: the lanes a few amot from the walls and the furniture)
+    const regionOf = (x, z) => {
+      const lz = z - D;
+      if (x > -30 && x < -6 && z > -77.5 && z < -57.5) return "moked";
+      if (x > -34 && x < 9 && z <= -77.5) return "mokedN";
+      if (x > 68.8 && x < 89.2 && z > -78.2 && z < -55.8) return "gazit";   // GAZIT_PLACE_211 (x 46.8..73.2 until 2.0.1)
+      if (x > 39.4 && x < 71.6 && lz > -19.6 && lz < 12.6) return "top";
+      if (x >= 47.5 && x <= 63.5 && lz >= 12.6 && lz < 42.7) return "ramp";
+      if (x <= -4.5 && Math.abs(z) < 10.5) return "heichal";
+      if (x > -4.5 && x <= 1.5 && Math.abs(z) < 5) return "gate";
+      if (x > 1.5 && x <= 12.5 && Math.abs(z) < 36) return "ulam";
+      if (x > 12.5 && x <= 17.5 && Math.abs(z) < 10) return "ulamDoor";
+      if (x > 17.5 && x < 39.4 && Math.abs(z) <= 50) return "steps";
+      if (x > 85.5) return "israel";
+      if (x >= 71.6) return "courtE";
+      if (lz <= -19.6) return "courtN";
+      if (x > 63.5 && lz >= 12.6) return "courtSE";
+      if (x >= 39.4 && x < 47.5 && lz >= 12.6) return "courtSW";
+      if (z > 50) return "courtS";
+      return "courtN";
+    };
+    const nodes = () => ({
+      MN_OUT: [-18, -78.65], MN_IN: [-18, -74.4], MK_C: [-18, -62.6], MS_IN: [-18, -59.6], MS_OUT: [-18, -55.3],
+      CN_W: [-15, -52.2], CN: [36, -48.5], NL: [65.45, -49.6], GZ_OUT: [81, -51.4], GZ_IN: [81, -57.4], GZ_C: [83.2, -61.4],   // GAZIT_PLACE_211: the hall's door, in its south wall at x 81
+      CNE: [77.5, -47], CE: [77.5, -12], CE2: [77.5, 32], CSE: A(68.4, 32.6), RF_E: A(64.8, 42.1), RF: A(55.5, 41.6), RT: A(55.5, 11.6),
+      TOP_S: A(55.5, 8.4), RF_W: A(46.6, 42.1), RFW2: A(49.6, 41.9), RFE2: A(61.4, 41.9), CSW: A(41.6, 30), CSW_N: A(41.4, 14.4), STB_S: [38.4, 48.6], STB_N: [38.4, -12],
+      ST_C: [30, -1], LAV: [24.6, 52.6], UL_D: [15, 0], UL: [8, 0], G_OUT: [2.6, 0], G_IN: [-6.2, 0], HEI: [-22, 0], WK: [3.4, -19],
+      ISR: [92, 0], DUCH: [83.6, 0], UL_NE: [18.6, -52.2], CV_D: [88.6, 24], ST_NE: [34.4, -51.0], ST_SE: [34.4, 51.0]
+    });
+    // ROUTER_BLOCK_215: the north lane passes the ulam's platform (it reaches z -51) by the corner UL_NE, not across its edge
+    const EDGES = [["MN_OUT", "MN_IN"], ["MN_IN", "MK_C"], ["MK_C", "MS_IN"], ["MS_IN", "MS_OUT"], ["MS_OUT", "CN_W"], ["CN_W", "UL_NE"], ["UL_NE", "ST_NE"], ["ST_NE", "CN"], ["CN", "NL"], ["NL", "GZ_OUT"],
+      ["GZ_OUT", "GZ_IN"], ["GZ_IN", "GZ_C"], ["CNE", "GZ_OUT"], ["NL", "CNE"], ["CNE", "CE"], ["CE", "CE2"], ["CE2", "CSE"], ["CSE", "RF_E"], ["RF_E", "RF"], ["RF", "RT"], ["RT", "TOP_S"],
+      ["RF_W", "RFW2"], ["RFW2", "RF"], ["RF_E", "RFE2"], ["RFE2", "RF"], ["RF_W", "CSW"], ["CSW", "CSW_N"], ["CSW", "STB_S"], ["STB_S", "ST_SE"], ["ST_SE", "LAV"], ["STB_S", "RF_W"], ["STB_S", "STB_N"], ["STB_N", "CN"], ["CN", "ST_C"], ["STB_N", "ST_C"],
+      ["STB_S", "ST_C"], ["ST_C", "UL_D"], ["UL_D", "UL"], ["UL", "G_OUT"], ["G_OUT", "G_IN"], ["G_IN", "HEI"], ["UL", "WK"], ["CE", "DUCH"], ["CE2", "DUCH"], ["DUCH", "ISR"], ["CV_D", "DUCH"], ["CV_D", "CE2"]];   // ROUTER_BLOCK_215: CV_D before the chavitin chamber's door
+    const REG_NODES = { moked: ["MK_C", "MS_IN", "MN_IN"], mokedN: ["MN_OUT"], gazit: ["GZ_C", "GZ_IN"], top: ["TOP_S"], ramp: ["RF", "RT", "RFW2", "RFE2"], heichal: ["HEI", "G_IN"],
+      gate: ["G_IN", "G_OUT"], ulam: ["UL", "WK", "G_OUT"], ulamDoor: ["UL_D"], steps: ["ST_C", "STB_N", "STB_S", "UL_D"], israel: ["ISR", "CV_D"],
+      courtE: ["CE", "CE2", "CNE", "DUCH"], courtN: ["CN", "CN_W", "NL", "CNE", "STB_N", "MS_OUT"], courtSE: ["CSE", "RF_E"], courtSW: ["CSW", "CSW_N", "RF_W", "STB_S"], courtS: ["LAV", "STB_S", "ST_SE"] };   // ROUTER_BLOCK_215: ST_NE and ST_SE - round the corners of the ulam's twelve steps (to z ±50), not over them
+    const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+    // ROUTER_BLOCK_215: the house (70 wide) and the ulam on its platform (100 wide, to x 17.5) stand in the court, with half
+    // an amah to spare; a straight hop between two points outside them that would cross them is not taken
+    // (and the low wall at x 90..91 before the court's east wall, open only at the gate, the wickets and the chambers' doors)
+    // (and the ulam's twelve steps - a hop round their corners, not over them)
+    const BLK = [[-83, 1.5, -35.6, 35.6], [1, 17.9, -51.6, 51.6], [17.5, 33.9, -50.4, 50.4],
+      ...[[-65, -26], [-22, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 22], [26, 65]].map(([z0, z1]) => [89.6, 91.4, z0 - 0.4, z1 + 0.4])];
+    const inBlk = (p) => BLK.some(([x0, x1, z0, z1]) => p[0] > x0 && p[0] < x1 && p[1] > z0 && p[1] < z1);
+    const segBox = (p, q, x0, x1, z0, z1) => {
+      let t0 = 0, t1 = 1;
+      const dx = q[0] - p[0], dz = q[1] - p[1];
+      const clip = (den, num) => {
+        if (den === 0) return num >= 0;
+        const t = num / den;
+        if (den < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+        return true;
+      };
+      return clip(-dx, p[0] - x0) && clip(dx, x1 - p[0]) && clip(-dz, p[1] - z0) && clip(dz, z1 - p[1]) && t0 < t1;
+    };
+    const blocked = (p, q) => !inBlk(p) && !inBlk(q) && BLK.some(([x0, x1, z0, z1]) => segBox(p, q, x0, x1, z0, z1));
+    const route = (p, q) => {
+      const rp = regionOf(p[0], p[1]), rq = regionOf(q[0], q[1]);
+      if (rp === rq && rp !== "courtN") return [p, q];
+      const key = p[0].toFixed(1) + "," + p[1].toFixed(1) + ">" + q[0].toFixed(1) + "," + q[1].toFixed(1) + "@" + D;
+      const hit = W.routes.get(key);
+      if (hit) return hit;
+      const N = nodes(), dd = {}, prev = {}, done = new Set();
+      const seeds = (REG_NODES[rp] || ["CN"]).filter((n) => !blocked(p, N[n]));
+      for (const n of seeds.length ? seeds : REG_NODES[rp] || ["CN"]) { dd[n] = dist(p, N[n]); prev[n] = null; }
+      const adj = {};
+      for (const [a, b] of EDGES) { (adj[a] = adj[a] || []).push(b); (adj[b] = adj[b] || []).push(a); }
+      for (;;) {
+        let u = null;
+        for (const n in dd) if (!done.has(n) && (u === null || dd[n] < dd[u])) u = n;
+        if (u === null) break;
+        done.add(u);
+        for (const v of adj[u] || []) { const c = dd[u] + dist(N[u], N[v]); if (dd[v] === undefined || c < dd[v]) { dd[v] = c; prev[v] = u; } }
+      }
+      let best = null, bc = Infinity;
+      const ends = (REG_NODES[rq] || ["CN"]).filter((n) => dd[n] !== undefined && !blocked(N[n], q));
+      for (const n of ends.length ? ends : REG_NODES[rq] || ["CN"]) if (dd[n] !== undefined && dd[n] + dist(N[n], q) < bc) { bc = dd[n] + dist(N[n], q); best = n; }
+      const out = [p];
+      if (best) { const chain = []; for (let n = best; n; n = prev[n]) chain.unshift(N[n]); for (const c of chain) if (dist(c, out[out.length - 1]) > 0.4) out.push(c); }
+      if (dist(q, out[out.length - 1]) > 0.05) out.push(q);
+      W.routes.set(key, out);
+      return out;
+    };
+    // a path: points [x, z] or [x, z, y-hint]; sampled every 1.2 amot, each sample's floor taken once
+    const pathOf = (pts) => {
+      const key = pts.map((p) => p[0].toFixed(2) + "," + p[1].toFixed(2) + (p[2] != null ? "," + p[2].toFixed(2) : "")).join(";");
+      let P = W.paths.get(key);
+      if (P) return P;
+      const S = [];
+      let s = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        if (i === 0) { S.push({ x: a[0], z: a[1], h: a[2], s: 0, y: null }); continue; }
+        const b = pts[i - 1], L = Math.hypot(a[0] - b[0], a[1] - b[1]), n = Math.max(1, Math.ceil(L / 1.2));
+        for (let k = 1; k <= n; k++) {
+          const u = k / n;
+          S.push({ x: lerp(b[0], a[0], u), z: lerp(b[1], a[1], u), h: a[2] != null && b[2] != null ? lerp(b[2], a[2], u) : u === 1 ? a[2] : undefined, s: s + L * u, y: null });
+        }
+        s += L;
+      }
+      P = { S, len: s };
+      W.paths.set(key, P);
+      return P;
+    };
+    const yOf = (q) => (q.y == null ? (q.y = floorAt(q.x, q.z, q.h)) : q.y);
+    const pathAt = (P, d) => {
+      const S = P.S;
+      if (S.length === 1) return { x: S[0].x, y: yOf(S[0]), z: S[0].z, yaw: null };
+      d = clamp(d, 0, P.len);
+      let i = 1;
+      while (i < S.length - 1 && S[i].s < d) i++;
+      const a = S[i - 1], b = S[i], u = b.s > a.s ? clamp((d - a.s) / (b.s - a.s), 0, 1) : 1;
+      return { x: lerp(a.x, b.x, u), y: lerp(yOf(a), yOf(b), u), z: lerp(a.z, b.z, u), yaw: Math.atan2(b.x - a.x, b.z - a.z) };
+    };
+    // ---------------------------------------------------------------- the state of the world, from the night (resetState) by the stages (SC)
+    const N = {};
+    const S0 = {};   // where each figure stands when the current stage begins (a stage walks from there)
+    const resetState = () => {
+      for (const id in W.figs) {
+        const f = W.figs[id];
+        if (!f.st) f.st = {};
+        Object.assign(f.st, { vis: false, x: 0, y: 0, z: 0, yaw: 0, pose: "stand", ph: 0, t: 0, tag: "" });
+        if (!S0[id]) S0[id] = { vis: false, x: 0, z: 0, yaw: 0 };
+      }
+      W.lamb.st = { vis: false, x: 0, y: 0, z: 0, yaw: 0, pose: "stand", ph: 0 };
+      for (const id in W.props) { const p = W.props[id]; if (!p.st) p.st = {}; Object.assign(p.st, { vis: false, fig: null, hand: "R", x: 0, y: 0, z: 0, ry: 0, rx: 0 }); }
+      Object.assign(N, { kidWater: 0, sleepers: 1, gate: 0, mukhni: 1, lamps: [1, 1, 1, 1, 1, 1, 1], tap: 1, l1: 0, l2: 0, gz: 0, glow: 0, ashGold: 1, coals: 0, smoke: 0,
+        blood: { ne: 0, sw: 0, ys: 0 }, chelG: 0, roofs: false, torches: [0, 0], coalsS: 0, coalsG: 0, teniAsh: 0, kafLid: 1, mizrak: 0, slab: 0, slabKeys: 1, fx: [] });
+      N.lamps.fill(1);
+    };
+    const snap = () => { for (const id in W.figs) { const s = W.figs[id].st, o = S0[id]; o.vis = s.vis; o.x = s.x; o.z = s.z; o.yaw = s.yaw; } };
+    // the script API of one stage at its second `tau` (every call does nothing before its own time)
+    const API = (tau, id, prevId) => {
+      const fig = (k) => W.figs[k], P = (k) => W.props[k];
+      const a = {
+        tau, prev: prevId,
+        from(k, fb) { const s = S0[k]; return s && s.vis ? [s.x, s.z] : fb; },
+        seen(k) { return !!(S0[k] && S0[k].vis); },
+        path(p, q) { return route(p, q); },
+        // a walk along points between two times; at its end a pose and a facing
+        walk(k, pts, t0, t1, o = {}) {
+          if (tau < t0) return;
+          const f = fig(k), Pth = pathOf(pts), T = Math.max(0.01, t1 - t0), u = clamp((tau - t0) / T, 0, 1);
+          const d = Pth.len * (u < 1 ? lerp(u, smooth(u), 0.35) : 1);
+          const q = pathAt(Pth, d);
+          Object.assign(f.st, { vis: true, x: q.x, y: q.y, z: q.z });
+          if (q.yaw != null && u < 1) f.st.yaw = q.yaw;
+          if (u < 1) { const v = Pth.len / T; f.st.pose = o.carry ? "walkCarry" : o.hold ? "walkHold" : "walk"; f.st.ph = v > 3.2 ? (tau - t0) * 14 : d * 4.5; }
+          else { if (q.yaw != null) f.st.yaw = q.yaw; f.st.pose = o.end || "stand"; if (o.yaw != null) f.st.yaw = o.yaw; }
+        },
+        // to a point by the court's ways, from where the figure stood when the stage began (or o.from)
+        go(k, q, t0, t1, o = {}) {
+          const p = o.from || a.from(k, null);
+          if (!p) { a.at(k, q[0], q[1], o.yaw, t0, o); return; }
+          a.walk(k, route(p, q), t0, t1, o);
+        },
+        at(k, x, z, yaw, t = 0, o = {}) {
+          if (tau < t) return;
+          const f = fig(k);
+          Object.assign(f.st, { vis: true, x, z, y: o.y != null ? o.y : floorAt(x, z, o.h), pose: o.pose || "stand" });
+          if (yaw != null) f.st.yaw = yaw;
+        },
+        pose(k, p, t0, t1 = 1e9) { if (tau >= t0 && tau < t1) { const f = fig(k); f.st.pose = p; f.st.t = tau - t0; f.st.tl = t1 - tau; } },
+        face(k, yaw, t) { if (tau >= t) fig(k).st.yaw = yaw; },
+        hide(k, t = 0) { if (tau >= t) fig(k).st.vis = false; },
+        tag(k, text, t0 = 0, t1 = 1e9) { if (tau >= t0 && tau < t1) fig(k).st.tag = text; },
+        hold(k, p, hand, t) { if (tau >= t) Object.assign(P(p).st, { vis: true, fig: k, hand }); },
+        put(p, x, y, z, t, ry = 0, rx = 0) { if (tau >= t) Object.assign(P(p).st, { vis: true, fig: null, x, y: y == null ? floorAt(x, z) : y, z, ry, rx }); },
+        putA(p, x, lz, t, ry = 0, y = null) { a.put(p, x, y, lz + D, t, ry); },   // by the altar: (x, z) in its own frame
+        // a thrown or tossed prop flying from where it is to a point between two times (an arc of height h)
+        fly(p, to, t0, t1, h = 1) {
+          if (tau < t0) return;
+          const st = P(p).st;
+          if (tau >= t1) { Object.assign(st, { vis: true, fig: null, x: to[0], y: to[1], z: to[2] }); return; }
+          const from = st.fig ? gripWorld(st.fig, st.hand) : [st.x, st.y, st.z];
+          const u = (tau - t0) / (t1 - t0);
+          Object.assign(st, { vis: true, fig: null, x: lerp(from[0], to[0], u), y: lerp(from[1], to[1], u) + Math.sin(u * Math.PI) * h, z: lerp(from[2], to[2], u) });
+        },
+        gone(p, t) { if (tau >= t) P(p).st.vis = false; },
+        set(key, v, t) { if (tau >= t) N[key] = v; },
+        ramp(key, v0, v1, t0, t1) { if (tau < t0) return; const u = clamp((tau - t0) / Math.max(0.01, t1 - t0), 0, 1); N[key] = lerp(v0, v1, smooth(u)); },
+        lamp(i, v0, v1, t0, t1) { if (tau < t0) return; const u = clamp((tau - t0) / Math.max(0.01, t1 - t0), 0, 1); N.lamps[i] = lerp(v0, v1, u); },
+        blood(k, t0, t1) { if (tau >= t0) N.blood[k] = clamp((tau - t0) / Math.max(0.01, t1 - t0), 0, 1); },
+        lamb(x, z, yaw, t, pose = "stand") { if (tau >= t) Object.assign(W.lamb.st, { vis: true, x, z, y: floorAt(x, z), yaw, pose }); },
+        lambWalk(pts, t0, t1, yawEnd) {
+          if (tau < t0) return;
+          const Pth = pathOf(pts), u = clamp((tau - t0) / Math.max(0.01, t1 - t0), 0, 1), q = pathAt(Pth, Pth.len * u);
+          Object.assign(W.lamb.st, { vis: true, x: q.x, y: q.y, z: q.z, pose: u < 1 ? "walk" : "stand", ph: Pth.len * u * 7 });
+          if (q.yaw != null) W.lamb.st.yaw = u < 1 || yawEnd == null ? q.yaw : yawEnd;
+        },
+        lambGone(t) { if (tau >= t) W.lamb.st.vis = false; },
+        fx(name, t) { N.fx.push([id, name, t]); },   // a sound at its second (play() sounds it when the clock passes it)
+        roofs(t0 = 0, t1 = 1e9) { if (tau >= t0 && tau < t1) N.roofs = true; }
+      };
+      return a;
+    };
+    const gripWorld = (k, hand) => {
+      const f = W.figs[k], gp = (hand === "L" ? f.L : f.R).grip;
+      f.g.updateMatrixWorld(true);
+      const v = new Vector3();
+      gp.getWorldPosition(v);
+      return [v.x, v.y, v.z];
+    };
+    // the circle of a lottery (Rambam 4:1 "והן עומדין בהקפה"): `ids` on an arc round a centre, facing it; the arc leaves a gap at `gap`
+    // (an angle; the officer stands there)
+    const ringSpots = (ids, cx, cz, rx, rz, gap = -HP, open = 0.5) => ids.map((k, i) => {
+      const an = gap + open + (i + 0.5) / ids.length * (Math.PI * 2 - 2 * open);
+      const x = cx + Math.cos(an) * rx, z = cz + Math.sin(an) * rz;
+      return [k, x, z, Math.atan2(cx - x, cz - z)];
+    });
+    // Beit HaMoked: the ring round the hearth (30-courts.js: the hearth at (-18, -67.5), its stones 2.4 round), each rising to the nearest
+    // place; and the way round the hearth to the gate (a figure never walks through the fire)
+    const MOKED_RING = (() => {
+      const spots = ringSpots(LOT1, -18, -67.5, 4.3, 4.3).map((x) => x.slice(1)), used = new Set();
+      return RISE.map((r) => { let b = -1, bd = 1e9; spots.forEach((x, j) => { const d = Math.hypot(x[0] - r[0], x[1] - r[1]); if (!used.has(j) && d < bd) { bd = d; b = j; } }); used.add(b); return spots[b]; });
+    })();
+    const byHearth = (p) => { const sd = p[0] < -18 ? -1 : 1; return p[1] < -67.5 ? [[-18 + sd * 3.6, -70.6], [-18 + sd * 3.6, -64.4]] : p[1] < -64.4 ? [[-18 + sd * 3.6, -64.4]] : []; };
+    const GZX = 84, GZZ = -67;   // GAZIT_PLACE_211: the middle of the hall's east half (60, -63.3 until 2.0.1 - where the hall stood before 1.9.5)
+    const gather = (a, ids, t0, t1) => {   // all into the hall of hewn stone, its holy half ("מקום הפייס"), round the officer (model choice: an
+      // ellipse, the officer in its gap at the door's side)
+      for (const [k, x, z, yaw] of ringSpots(ids, GZX, GZZ, 4.2, 7.4, HP, 0.42)) {   // GAZIT_PLACE_211: the east half is ten by twenty-two, long north-south
+        if (a.seen(k)) a.go(k, [x, z], t0, t1, { yaw });
+        else a.at(k, x, z, yaw, t0);
+      }
+      if (a.seen("mem")) a.go("mem", [GZX, GZZ + 7.0], t0, t1, { yaw: Math.PI }); else a.at("mem", GZX, GZZ + 7.0, Math.PI, t0);
+    };
+    // the lamps by the reading (45-vessels.js: index 0..6 along the row - north-south: 0 the southern, 3 the middle, 6 the northern;
+    // east-west: 0 the western, 6 the eastern)
+    const lampSets = () => (TM.lamps === "rashi"
+      ? { five: [0, 1, 2, 3, 4], east: 6, west: 5, light: false }   // the two eastern by the door; the western = the second from the east
+      : { five: [0, 1, 2, 5, 6], east: 4, west: 3, light: true });  // the middle (the western) and the one north of it (Tiferet Yisrael)
+    const menorahWay = () => {   // the priest's way to the stone before the menorah, and his place on its top step
+      const m = SH.menorah;
+      if (!m || !fnc(m.at)) return { pre: [-40, 3.5], ap: [-39.6, 6.5], stand: [-37.6, 6.5], y: HEI + houseRise(-37) + 1.42, yaw: HP, kuz: [-38, 6.9], kuzY: HEI + houseRise(-37) + 0.94 };
+      const M = m.MEN;
+      return { pre: m.ew ? [M.x + 0.4, M.z - 3.6] : [M.x - 3.4, M.z - 3.1], ap: m.at(0, -2.3), stand: m.at(0, -0.62), y: m.FL + m.stoneTop, yaw: M.rot,
+        kuz: m.at(0.36, -1.05), kuzY: m.FL + 2 * m.stoneStep };
+    };
+    const GA = () => SH.goldenAltar || { x: -33.5, z: 0, top: 25.9 };
+    const BOWSPOT = (p) => [GA().x + 5.0, p[1]];   // BOW_SPOT_209: where one bows in the heichal after his service at the golden altar - east of it
+    const RING2 = [42, -30];   // Rambam 1:11 "על קרן צפונית מערבית של בית המטבחים על טבעת שניה" - model choice: the second ring of the western
+    // column from that corner (40-altar.js: the rings at 42 + 4i, -18 - 6j; the north is -z)
+    // ---------------------------------------------------------------- THE STAGES (each its own words in TAMID_DATA, by its id)
+    const SC = {};
+    // MAARACHOT2_211: where the unconsumed limbs lie (the altar's frame): on the old fire, at the altar's east side ("לצדדי המזבח"), on the new pyre
+    const OLDL = { fire: [[61.0, 3.3, 0.0], [62.6, 3.35, 2.2], [60.4, 3.3, 3.1]], side: [[66.2, 0.25, -2.4], [66.3, 0.25, -0.6], [66.2, 0.25, 1.2]], back: [[61.3, 3.5, -0.9], [62.5, 3.55, 1.4], [61.1, 3.5, 2.7]] };
+    const oldAt = (where, i) => { const p = OLDL[where][i]; return V3(p[0], TOP + p[1], p[2]); };
+    SC.moked = (a) => {
+      a.roofs();
+      for (let i = 0; i < 3; i++) { const q = oldAt("fire", i); a.put("old" + (i + 1), q[0], q[1], q[2], 0, i * 1.1); }   // MAARACHOT2_211
+      a.walk("mem", [[8, -78.65], [1.5, -78.65], [-12, -78.65], [-13.2, -79.4], [-18, -79.4, 13.5]], 2, 12, { yaw: 0 });   // MOKED_KNOCK_215: on the landing, clear of the leaf ajar   // CHEL_211: across the chel and up the flight along the house's north face
+    };
+    // the first lot: Abaye's order - in Beit HaMoked round the hearth; the Rambam's - the first and the second together, in the hall of
+    // hewn stone, after the search (6:1)
+    SC.lot1 = (a) => {
+      a.roofs();
+      if (a.prev === "moked") {
+        // MOKED_KNOCK_215: on the landing before the gate (z -79.8..-77.5, 13.5 high) - until 2.0.14 at z -80.5, beyond its edge, so the
+        // officer stood on the ground below it and walked in through the landing's stone; the gate opens (CHEL_GATE_215)
+        a.at("mem", -18, -79.4, 0, 0, { h: 13.5 });
+        a.pose("mem", "knock", 0.5, 3);
+        a.fx("knock", 0.6);
+        a.fx("door", 1.7);   // SOUND_211: "והם פתחו לו"
+        a.ramp("chelG", 0, 1, 1.7, 2.6);
+        a.set("sleepers", 0, 2.2);
+        LOT1.forEach((k, i) => {
+          const sp = MOKED_RING[i], yaw = Math.atan2(-18 - sp[0], -67.5 - sp[1]);
+          a.at(k, RISE[i][0], RISE[i][1], yaw, 2.2, { h: F });
+          // LOT1_RING_211: the ring's spot is [x, z, yaw] - given whole as a path point, its yaw was read as the floor's height, and the
+          // ten sank under the floor when they reached the ring (so it was in 2.0.1 as published, found 15.11.2026 while the wider
+          // house was checked)
+          a.walk(k, [RISE[i], [sp[0], sp[1]]], 2.6 + i * 0.12, 5.4 + i * 0.12, { yaw });
+        });
+        a.walk("mem", [[-18, -79.4, 13.5], [-18, -74.4], [-18, -72.2]], 3, 6.5, { yaw: 0 });
+        for (const k of LOT1) a.pose(k, "fingers", 8, 13);
+        a.pose("mem", "point", 8.5, 12.5);
+        a.tag("t", "זכה בתרומת הדשן", 13);
+        return;
+      }
+      gather(a, ALLP, 0, 6.5);
+      for (const k of ALLP) a.pose(k, "fingers", 7, 11);
+      a.pose("mem", "point", 7.5, 11);
+      a.tag("t", "זכה בתרומת הדשן", 11.5);
+      R13.forEach((k, i) => a.tag(k, ROLE[k], 12 + i * 0.4));
+    };
+    // the search with torches (1:3): the officer opens the wicket, all come out after him, two groups go round the court - one by the east,
+    // one by the west (behind the house and along the south) - and meet at the chamber of the chavitin's makers by the Nikanor gate (model
+    // choice: the lanes; the walk is quick). In the Rambam's order the stage begins with the knock and the waking (6:1).
+    // KLI_SHIR_211: they meet before the chavitin chamber's door (through the court's east wall at z 24, the bar shura broken there) - the
+    // ends were at x 92.4, inside the wall's thickness (x 91..96), and the third of the east group stood on the bar shura (x 90..91)
+    const EAST = [[-14, -52.4], [36, -51.2], [62, -50.6], [77.5, -47], [78.4, -20], [78.4, 15.6], [89.6, 21.2]];
+    const WEST = [[-22, -52.4], [-80, -52.4], [-88.4, -44], [-88.4, 44], [-80, 53.6], [16, 53.6], [44.5, 54.2],   // PLATFORM_215: z 53.6 (52.2 until 2.0.14 - the third, 1.4 inside, walked in the ulam's platform)
+      [66, 54.2], [77, 46], [78.2, 28], [89.6, 26.6]];
+    SC.patrol = (a) => {
+      const night = a.prev === "moked";   // (the Rambam's order)
+      a.roofs(0, 9);
+      let t0 = 1;
+      const start = {};
+      if (night) {
+        a.at("mem", -18, -79.4, 0, 0, { h: 13.5 });   // MOKED_KNOCK_215
+        a.pose("mem", "knock", 0.5, 2.6);
+        a.fx("knock", 0.6);
+        a.fx("door", 1.7);   // SOUND_211: "והם פתחו לו"
+        a.ramp("chelG", 0, 1, 1.7, 2.6);   // CHEL_GATE_215
+        a.set("sleepers", 0, 2.4);
+        LOT1.forEach((k, i) => { a.at(k, RISE[i][0], RISE[i][1], Math.PI, 2.4, { h: F }); start[k] = RISE[i]; });
+      } else LOT1.forEach((k) => { start[k] = a.from(k, [-18, -64]); });
+      // KEY_SLAB_211 (stage ב; the user, 14.11.2026 22:22): first to the marble tablet - he lifts it by its ring and takes the key from the
+      // chain under it ("נטל את המפתח" - Tamid 1:3; "מתחת הטבלא של שיש" - Melechet Shlomo there; Middot 1:9), puts the tablet back, and
+      // then to the wicket. He stands north of the tablet, facing south (model choice)
+      const SL = SH.mokedSlab, sp = SL ? [SL.x, SL.z - 1.25] : [-20, -71.75];
+      if (night) a.walk("mem", [[-18, -79.4, 13.5], [-18, -74.4], sp], 2.8, 4.4, { yaw: 0 });
+      else a.walk("mem", [a.from("mem", [-18, -72.2]), sp], 1, 1.8, { yaw: 0 });
+      const ts = night ? 4.6 : 2;
+      a.pose("mem", "scoop", ts, ts + 2.6);
+      a.ramp("slab", 0, 1, ts + 0.3, ts + 1.1);
+      a.set("slabKeys", 0, ts + 1.5);
+      a.hold("mem", "keys", "R", ts + 1.5);
+      a.ramp("slab", 1, 0, ts + 1.8, ts + 2.5);
+      a.fx("door", ts + 2.4);   // SOUND_211: the tablet back in its place
+      a.tag("mem", "מגביה את טבלת השיש בטבעת — המפתחות תחתיה (מידות א, ט)", ts, ts + 3);
+      t0 = ts + 2.8;
+      const mp = sp;
+      a.walk("mem", [mp, ...byHearth(mp), [-18, -59.6]], t0, t0 + 1.4, { hold: true, yaw: 0 });
+      a.pose("mem", "knock", t0 + 1.4, t0 + 2.6);   // the key in the wicket
+      a.tag("mem", "״נטל את המפתח ופתח את הפשפש״", t0 + 1.2, t0 + 4.2);   // KEYS_211: Tamid 1:3 (88:4), as a caption
+      a.fx("door", t0 + 2.3); a.fx("torch", t0 + 3.4); a.fx("torch", 13); a.fx("torch", 21);   // SOUND_211: "ופתח את הפשפש"; the torches
+      a.walk("mem", [[-18, -59.6], [-18, -55.3], [-18.6, -53.2]], t0 + 2.6, t0 + 4, { yaw: Math.PI });
+      a.gone("keys", t0 + 4.2);   // KEY_SLAB_211 (model choice: kept in his clothes)
+      const E = ["b1", "s5", "s6"], Wg = ["b3", "s7", "s8"], stay = ["t", "b2", "b4", "s1"];
+      a.hold("b1", "torch1", "R", 0);
+      a.hold("b3", "torch2", "R", 0);
+      a.set("torches", [1, 1], 0);
+      const out = (k, i, list, t1, t2, side) => a.walk(k, [start[k], ...byHearth(start[k]), [-18 + side * 0.6, -59.6], [-18 + side * 0.6, -55.4], ...list.map(([x, z]) => [x + (i ? -0.9 * i * side : 0), z - 0.7 * i])], t1, t2);
+      E.forEach((k, i) => out(k, i, EAST, t0 + 3 + i * 0.4, 24.6 + i * 0.4, 1));
+      Wg.forEach((k, i) => out(k, i, WEST, t0 + 3.2 + i * 0.4, 27 + i * 0.4, -1));
+      stay.forEach((k, i) => a.walk(k, [start[k], ...byHearth(start[k]), [-18, -59.6], [-18, -55.4], [-21.4 + i * 1.6, -51.8 + (i % 2) * 0.8]], t0 + 4 + i * 0.4, t0 + 7.5 + i * 0.4, { yaw: Math.PI }));
+      for (const k of [...E, ...Wg]) a.pose(k, "greet", 28.5, 31.5);
+      // SHALOM_211 (stage ב, point 20; the user: "מוחשי יותר"): "הגיעו אלו ואלו, אמרו שלום, הכל שלום" (Tamid 1:3) - the words as captions
+      a.tag("b1", "״שלום״", 28.6, 35);
+      a.tag("b3", "״הכל שלום״", 29.6, 36.5);
+      a.at("cv", 96.7, 24.0, -HP, 31);   // "העמידו עושי חבתים לעשות חבתים" (KLI_SHIR_211: in the chamber's door, on the court's floor - it opens to the court now)
+      a.tag("cv", "עושי חביתין", 31);
+      a.set("torches", [0, 0], 33.6);
+      a.gone("torch1", 33.6); a.gone("torch2", 33.6);
+    };
+    SC.kiyor = (a) => {
+      a.putA("machtaS", 46.4, 14.1, 0, Math.PI);   // "והרי המחתה נתונה במקצוע בין הכבש למזבח, במערבו של כבש"
+      a.go("t", [22.2, 53.3], 0, 9.8, { yaw: 0 });   // PACE_215: round the house and the altar (some 150 amot) in 9.8 s (7.4 until 2.0.14)
+      a.ramp("mukhni", 1, 0, 9.8, 14);
+      a.fx("mukhni", 10.6);
+      // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר!"): he raises his right foot,
+      // his right hand on it, under the north spout's stream (his face to the laver), lowers it; a step west, the left hand on the raised
+      // left foot (Zevachim 19b, 130:754: "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש")
+      const qR = KID.spot(-1), qL = KID.spot(1);
+      a.walk("t", [[22.2, 53.3], qR], 14.3, 15.0, { yaw: KID.yaw(-1) });
+      a.pose("t", "kidR", 15.0, 17.05);
+      a.set("kidWater", 1, 15.45); a.set("kidWater", 0, 16.65);
+      a.fx("water", 15.4);   // SOUND_211
+      a.walk("t", [qR, qL], 17.1, 17.95, { yaw: KID.yaw(1) });   // KIDDUSH_SOUTH_214: a step west (round the stream until 2.0.13)
+      a.pose("t", "kidL", 18.0, 19.95);
+      a.set("kidWater", 2, 18.45); a.set("kidWater", 0, 19.55);
+      a.fx("water", 18.4);
+      a.tag("t", "מקדש ידיו ורגליו — יד ימין על רגל ימין, ואחר כך יד שמאל על רגל שמאל (זבחים יט:)", 15, 19.95);
+    };
+    SC.terumah = (a) => {
+      const pan = A(45.3, 15.3);
+      a.go("t", pan, 0, 4.2, { yaw: Math.PI * 0.8 });
+      a.hold("t", "machtaS", "R", 4.4);
+      // EAST_UP_211 (the refuter, R-12): "בכל יום כהנים עולים במזרחו של כבש ויורדין במערבו" (Yoma 4:5; 55:35) - every ascent of the
+      // demonstration runs on the ramp's EAST half (x 58..61; its middle 55.5) and every descent on the west half. Until this fix the
+      // ascents ran on the west half too - against the very rule that the new arrows on the ramp teach. From the fire-pan (west of the
+      // ramp) he walks down to the ramp's foot, across it, and up its east side.
+      a.walk("t", [pan, A(46.6, 41.9), A(49.6, 41.9), A(60.2, 41.7), A(60.0, 12.2), A(57.4, 7.2)], 4.8, 10.6, { hold: true, yaw: Math.PI * 0.75 });
+      a.pose("t", "scoop", 10.8, 14);
+      a.fx("coals", 11.2);   // SOUND_211
+      a.set("coalsS", 1, 13);
+      a.walk("t", [A(57.4, 7.2), A(51.2, 12.2), A(50.6, 40.6), A(55.5, 42.2), A(64.4, 42.3), A(64.4, 33.4)], 14.2, 21.4, { hold: true, yaw: Math.PI });
+      a.pose("t", "pour", 21.8, 24.4);
+      a.fx("coals", 22.2);   // SOUND_211
+      a.set("coalsS", 0, 23.4);
+      a.putA("ashHeap", 64.05, 32.4, 23.2);
+      a.putA("machtaS", 65.3, 34.3, 25.4, 0.4);
+      a.tag("t", "תרומת הדשן", 1, 25);
+      // BROTHERS_215: the two brothers who stood by Beit HaMoked go, at a walk, to the meeting place of the patrol before the chavitin
+      // makers' chamber (Tamid 1:3, "הגיעו אלו ואלו אצל בית עושי חביתין"), where their brothers stand - so that the run to the laver in
+      // the next stage ("והן רצין ובאין", 2:1) starts there for all four, and not 150 amot away (until 2.0.14 it was run in 4.4 s)
+      a.go("b2", [88.4, 23.2], 3, 21, { yaw: -HP });
+      a.go("b4", [88.4, 24.9], 3.6, 21.6, { yaw: -HP });
+      // (in the Rambam's order the lots were cast in the hall of hewn stone after the search: the two who carried the torches come too)
+      a.go("b1", [89.6, 21.2], 3.3, 21.3, { yaw: -HP });
+      a.go("b3", [89.6, 26.6], 3.9, 21.9, { yaw: -HP });
+    };
+    const TAP = [0.55, 0.95, 1.35, 1.75].map((f) => [ACX + Math.cos(f * Math.PI) * 4.6, ACZ + Math.sin(f * Math.PI) * 4.6]);   // round the heap, clear of the pyre
+    const B4 = ["b1", "b2", "b3", "b4"];
+    SC.tapuach = (a) => {
+      B4.forEach((k, i) => {
+        const w = [23.2 + i * 1.3, 52.8];
+        a.go(k, w, 0, 6.4, { yaw: 0 });   // PACE_215 / BROTHERS_215: from the chavitin chamber, running (4.4 s until 2.0.14)
+        a.pose(k, "wash", 6.6, 8.8);
+        a.hold(k, "tool" + (i + 1), "R", 9.0);
+        const c = A(TAP[i][0], TAP[i][1]);
+        a.walk(k, [w, ...route(w, A(58.0 + i * 0.9, 41.4)).slice(1), A(58.2 + i * 0.9, 12.2), c], 9.1, 14.3, { hold: true, yaw: Math.atan2(ACX - TAP[i][0], ACZ - TAP[i][1]) });   // EAST_UP_211
+        a.pose(k, "shovel", 14.5, 21);
+      });
+      a.ramp("tap", 1, 1.28, 15, 21);
+      a.fx("water", 6.9); a.fx("coals", 15.2); a.fx("coals", 18.2);   // SOUND_211
+      a.tag("b1", "האחים", 1, 8);
+      // MAARACHOT2_211: "האברין והפדרין שלא נתאכלו מבערב, סונקין אותם לצדדי המזבח" (Tamid 2:1) - before the ash goes up to the heap
+      for (let i = 0; i < 3; i++) a.fly("old" + (i + 1), oldAt("side", i), 14.4 + i * 0.4, 15.4 + i * 0.4, 0.5);
+      a.tag("b2", "״סונקין אותם לצדדי המזבח״ — האברים שלא נתאכלו", 14.2, 18.5);
+    };
+    // ONE_KOHEN_211 (the refuter, R-04; the user, 15.11.2026 18:13: approved): THE GREAT PYRE AND THE TWO LOGS OF THE MORNING ARE ONE
+    // PRIEST'S WORK - the one who won the terumah: "מי שזכה בתרומת הדשן (יזכה) בסידור מערכה ובשני גזירי עצים" (Yoma 22a; 107:486);
+    // the Rambam, Temidin uMusafin 4:5 (344:59): "והוא מסדר את המערכה. והוא מעלה שני גזרי עצים למזבח"; 2:3 (344:18): "שני גזרים של בין
+    // הערבים מעלין אותן שני כהנים... אבל של שחר בכהן אחד"; the Tiferet Yisrael, Tamid 2 (818:163, 179): "וזה שזכה בתרומת הדשן הולך בראשון
+    // ונושא ב' גזירי עצים", "אותו שזכה בתרומת הדשן מסדר המערכה הגדולה... ואחרים מסדרין מערכה שנייה של קטורת... ואח"כ הזוכה בתרומת הדשן
+    // מניח ב' הגיזרין על המערכה הגדולה". Until this fix the four brothers laid the great pyre and two of them laid the logs (the
+    // evening's rule), and the winner stood aside. Now: he goes up first with the two logs; his brothers bring the wood up after him
+    // ("החלו מעלין בגזרין", Tamid 2:3) and hand it over; he lays the pyre, and - alone - the two logs. THE SECOND PYRE (the user, 18:39:
+    // "הוסף שיטה בתוך המצגת לכמה שניות"): the brothers lay it, as the Tiferet Yisrael; and for a few seconds the Rambam's way is said and
+    // shown - Temidin 6:1 (344:87) "ואחר כך מסדר מערכה גדולה. ואחר כך מסדר מערכה שניה" - the winner steps over to it.
+    // The spots and the times: model choices. Every ascent on the ramp's east side (EAST_UP_211).
+    const T_PYRE = () => A(61.9, 7.0), BRO = [[59.3, 8.6], [60.9, 9.0], [62.9, 9.0], [64.5, 8.6]];
+    SC.maarachah = (a) => {
+      const tp = T_PYRE(), t0 = a.from("t", A(64.4, 33.4));
+      a.walk("t", [t0, A(64.6, 42.3), A(60.9, 41.9)], 0.3, 2.0, { yaw: -HP });
+      a.hold("t", "carryT", "R", 2.1);
+      a.walk("t", [A(60.9, 41.9), A(60.9, 12.2), tp], 2.3, 6.0, { carry: true, yaw: Math.PI });
+      a.putA("carryT", 65.4, 6.9, 6.3, 0, TOP + 0.06);   // the two boards wait beside him on the altar's top (the spot: model choice)
+      B4.forEach((k, i) => {
+        a.gone("tool" + (i + 1), 0);
+        const c = a.from(k, A(TAP[i][0], TAP[i][1])), sp = A(BRO[i][0], BRO[i][1]);
+        a.walk(k, [c, A(50.8 + i * 0.9, 12.2), A(50.4 + i * 0.9, 41.2)], 0.4 + i * 0.25, 4.2 + i * 0.25);
+        a.hold(k, "carry" + (i + 1), "R", 4.4 + i * 0.25);
+        a.walk(k, [A(50.4 + i * 0.9, 41.2), A(58.0 + i * 0.9, 41.5), A(58.2 + i * 0.9, 12.2), sp], 4.7 + i * 0.25, 9.6 + i * 0.25, { carry: true, yaw: Math.PI });
+        a.pose(k, "place", 9.9 + i * 0.25, 11.0 + i * 0.25);
+        a.gone("carry" + (i + 1), 10.6 + i * 0.25);
+      });
+      a.pose("t", "place", 8.6, 16.6);
+      a.ramp("l1", 0, 4, 10.4, 16.6);
+      a.fx("wood", 10.4); a.fx("wood", 13.4);   // SOUND_211
+      a.tag("b1", "אחיו הכהנים מעלים את העצים — ״החלו מעלין בגזרין״", 4.6, 10.2);
+      a.tag("t", "הזוכה בתרומת הדשן מסדר את המערכה הגדולה (יומא כב.)", 6.4, 17.5);
+    };
+    SC.maarachah2 = (a) => {
+      a.walk("b1", [a.from("b1", A(BRO[0][0], BRO[0][1])), A(57.6, 8.6), A(50, 7.4), A(47.7, 5.6)], 0.5, 5, { yaw: -HP });
+      a.walk("b2", [a.from("b2", A(BRO[1][0], BRO[1][1])), A(57.2, 9.4), A(50, 8.6), A(47.7, 4.4)], 0.8, 5.3, { yaw: -HP });
+      a.pose("b1", "place", 5.5, 9); a.pose("b2", "place", 5.8, 9);
+      a.ramp("l2", 0, 3, 6, 10);
+      a.fx("wood", 6);   // SOUND_211
+      a.tag("b1", "המערכה השנייה, של קטורת — ״ואחרים מסדרין״ (תפארת ישראל)", 1.2, 9.2);
+      // the Rambam's way, for a few seconds: the winner himself comes over to the second pyre
+      a.walk("t", [a.from("t", T_PYRE()), A(57.4, 9.6), A(51.4, 8.8), A(49.9, 6.6)], 9.2, 11.6, { yaw: -HP });
+      a.pose("t", "place", 11.8, 13.4);
+      a.tag("t", "ולרמב״ם (תמידין ו, א) — הזוכה בתרומת הדשן מסדר גם את המערכה השנייה", 9.4, 15.6);
+      // MAARACHOT2_211: the third arrangement, "לקיים מצות האש" (the Rambam, Temidin uMusafin 2:4; 344:19) - when the reading "מניין המערכות"
+      // has three or four (40-altar.js ctx2.shared.maarachot; its logs at (46, -11) in the altar's frame burn all the while in the model)
+      const MC = SH.maarachot;
+      if (MC && MC.count >= 3) {
+        a.walk("b2", [A(47.7, 4.4), A(48.7, -2), A(48.9, -9.4)], 9.3, 11.2, { yaw: -HP });
+        a.pose("b2", "place", 11.4, 13.6);
+        a.fx("wood", 11.6);
+        a.tag("b2", "המערכה השלישית — לקיום האש (רבי יוסי, יומא ד, ו; רמב״ם תמידין ב, ד)", 11.2, 15.6);
+      }
+    };
+    SC.gezirin = (a) => {
+      const tp = T_PYRE();
+      a.walk("t", [a.from("t", A(49.9, 6.6)), A(51.4, 8.8), A(57.4, 9.6), tp], 0.2, 2.0, { yaw: Math.PI });
+      a.pose("t", "place", 2.3, 5);
+      a.gone("carryT", 3.9);
+      a.set("gz", 1, 4);
+      a.fx("wood", 2.6);   // SOUND_211
+      a.tag("t", "שני גזרי עצים — בשחר כהן אחד מעלה אותם, הזוכה בתרומת הדשן (רמב״ם תמידין ב, ג)", 1.2, 5.2);
+      // MAARACHOT2_211: "האברים והפדרים שלא נתאכלו מבערב, מחזירין אותן למערכה" (Tamid 2:5), and the kindling in the gaps (2:4)
+      a.from("b3", A(BRO[2][0], BRO[2][1])); a.from("b4", A(BRO[3][0], BRO[3][1]));
+      a.pose("b3", "place", 5.4, 7.2);
+      for (let i = 0; i < 3; i++) a.fly("old" + (i + 1), oldAt("back", i), 5.5 + i * 0.35, 6.6 + i * 0.35, 0.8);
+      a.tag("b3", "״מחזירין אותן למערכה״ (תמיד ב, ה)", 5.3, 7.6);
+      [-2.9, 0, 2.9].forEach((dz, i) => { const q = V3(61.95, TOP + 3.32, ACZ + 4.5 + dz); a.put("kindle" + (i + 1), q[0], q[1], q[2], 7.6 + i * 0.3); });
+      a.tag("b4", "מציתין את האליתא — ״ורוח היה בין הגזרין״ (תמיד ב, ד)", 7.6, 9.6);
+      for (let i = 1; i <= 3; i++) a.gone("kindle" + i, 13.2);
+      a.ramp("glow", 0, 1, 9.6, 13);
+      a.fx("ignite", 10);
+      a.tag("b3", "״הציתו שתי המערכות באש״", 9.8, 13.6);   // MAARACHOT_211: Tamid 2:5 (88:11), as a caption
+    };
+    SC.lot2 = (a) => {
+      a.roofs();
+      gather(a, ALLP, 0, 9);
+      for (const k of ALLP) a.pose(k, "fingers", 10, 15);
+      a.pose("mem", "point", 10.5, 15);
+      R13.forEach((k, i) => a.tag(k, ROLE[k], 15.5 + i * 0.55));
+    };
+    SC.barkai = (a) => {
+      a.roofs(0, 1);
+      // BARKAI_UP_215: he leaves the hall and is seen on its roof (until 2.0.14 he slid there at once, through the wall), and after the
+      // call he goes down out of sight - until 2.0.14 he stood on the roof to the Shema, and then was set inside the hall's west wall
+      a.hide("b2", 0.4);
+      a.at("b2", 68, -62, HP, 1.4, { h: 33.5 });   // "on a high place" (Bartenura) - model choice: the roof of the hall of hewn stone, looking east
+      a.pose("b2", "point", 7, 16);
+      // SOUND_211: no tone for "ברקאי" - a man's call is a caption only (the user, 15.11.2026: speech in the captions)
+      // BARKAI_211 (stage ב, point 24; the user: "ברור יותר"): "אם הגיע, הרואה אומר, ברקאי" (Tamid 3:2) - the call itself, as a caption
+      a.tag("b2", "הרואה — עולה למקום גבוה", 2, 7.8);
+      a.tag("b2", "״ברקאי!״ — הגיע זמן השחיטה", 7.8, 15.4);
+      a.hide("b2", 15.4);
+    };
+    SC.lamb = (a) => {
+      // the lamb from its chamber - the south-west room of Beit HaMoked (30-courts.js, MOKED_WIDE_211: its doorway to the hall at x -25,
+      // z -65.2; the chamber's wall to the aisle at x -23.3)
+      a.go("s1", [-23.9, -66.9], 0, 6.6, { yaw: -HP });
+      a.lamb(-25.0, -66.1, Math.PI, 6.8);
+      const way = [[-25.0, -66.1], [-21.8, -66.6], [-19.4, -62.4], [-18, -57.5], [-17.4, -51.4]];
+      a.walk("s1", [[-23.9, -66.9], [-21.2, -66.0], [-19.2, -61.4], [-18.8, -55.4], [-19.2, -50.2]], 7.2, 12, { yaw: HP });
+      a.lambWalk(way, 7.4, 12.4, HP);
+      a.fx("bleat", 8.2); a.fx("bleat", 15.4);   // SOUND_211
+      a.go("s2", [-15.4, -49.6], 0, 9, { yaw: -HP * 0.7 });
+      a.hold("s2", "cup", "R", 9);
+      a.pose("s2", "offer", 13, 16.5);
+      a.go("b1", [-16.6, -53.8], 0, 9.5, { yaw: -HP });
+      a.hold("b1", "torch1", "R", 9.5);
+      a.set("torches", [1, 0], 9.5);
+      a.pose("b1", "offer", 18, 22.5);
+      a.tag("s1", "השוחט", 1);
+    };
+    SC.tobeit = (a) => {
+      a.gone("cup", 0); a.gone("torch1", 0); a.set("torches", [0, 0], 0);
+      const lamb0 = [W.lamb.st.x || -17.4, W.lamb.st.z || -51.4];
+      const way = [lamb0, [8, -52.4], [18.6, -52.4], [34.4, -51.0], [36, -47.8], [40.9, -34.6], [42, -31.1]];   // PLATFORM_215: round the ulam's corner and its steps' corner
+      a.lambWalk(way, 0.6, 9, 0);
+      a.walk("s1", [a.from("s1", [-19.2, -50.2]), [8, -53.8], [18.6, -53.8], [34.6, -52.4], [36, -49.2], [43.4, -35.4], [43.5, -32.4]], 0.4, 9, { yaw: -HP });
+      ["s5", "s6", "s7", "s8", "s9", "s10"].forEach((k, i) => a.go(k, [45.2 + (i % 3) * 1.4, -37.2 - Math.floor(i / 3) * 1.4], 1 + i * 0.3, 11 + i * 0.3, { yaw: Math.PI * 0.85 }));
+      // NINE_215: the meal, the cakes and the wine (Tamid 4:3 - the nine who carry to the ramp) come out of the hall after them, and wait
+      // behind them (model choice); until 2.0.14 they stayed in the hall and were set by the row of the nine at once, 50 amot away
+      ["s11", "s12", "s13"].forEach((k, i) => a.go(k, [45.2 + i * 1.4, -40.2], 2.8 + i * 0.3, 13 + i * 0.3, { yaw: Math.PI * 0.85 }));
+      a.tag("s1", "השוחט", 1.5);
+    };
+    SC.keys = (a) => {
+      a.go("s3", [11.6, -1.6], 0, 11, { hold: true, yaw: -HP });
+      a.go("s4", [11.6, 1.6], 0.3, 11.3, { hold: true, yaw: -HP });
+      a.hold("s3", "teni", "R", 0); a.hold("s4", "kuz", "R", 0);
+      a.tag("s3", "הטני", 3); a.tag("s4", "הכוז", 3);
+    };
+    SC.gate = (a) => {
+      // to the northern wicket (50-heichal.js: the Sages' way - from the wicket to the cell, from the cell into the heichal)
+      a.walk("s3", [a.from("s3", [11.6, -1.6]), [6.4, -12], [3.4, -18.6], [0.4, -19]], 0, 4.4, { hold: true });
+      a.hide("s3", 4.6);
+      a.at("s3", -6.4, -2.8, HP, 14, { pose: "stand" });
+      a.ramp("gate", 0, 1, 10, 15.5);
+      a.fx("gate", 10);
+      for (const i of lampSets().five) a.lamp(i, 1, 0, 2, 3);   // by now five have gone out (the morning finds two burning, 3:9)
+      a.tag("s3", "הפשפש הצפוני", 0.5, 4.6);
+    };
+    SC.inner = (a) => {
+      const g = GA(), sp = [g.x + 1.5, g.z];
+      a.walk("s3", [a.from("s3", [-6.4, -2.8]), [-24, -1.4], sp], 0, 4, { hold: true, yaw: -HP });
+      a.put("teni", g.x + 1.1, null, g.z + 0.95, 4.2);
+      a.pose("s3", "scoop", 4.5, 11);
+      a.fx("coals", 5.2);   // SOUND_211
+      a.ramp("ashGold", 1, 0, 5, 11);
+      a.ramp("teniAsh", 0, 1, 5, 11);
+      a.walk("s3", [sp, [-24, -1.6], [-6, -1.6], [10.6, -2.6]], 12, 15.6, { yaw: HP });
+    };
+    const toMenorah = (a, k, t0, t1, hold) => {
+      const w = menorahWay(), p = a.from(k, [11.6, 1.6]);
+      a.walk(k, [p, [-6, 1.4], [-29, 3], w.pre, w.ap, w.stand], t0, t1, { hold, yaw: w.yaw });
+      a.at(k, w.stand[0], w.stand[1], w.yaw, t1 + 0.05, { y: w.y });
+      return w;
+    };
+    SC.lamps5 = (a) => {
+      const L = lampSets();
+      for (const i of L.five) a.lamp(i, 0, 0, 0, 0.1);
+      const w = toMenorah(a, "s4", 0, 5, true);
+      L.five.forEach((i, n) => {
+        const t = 6 + n * 2.6;
+        if (L.light) a.lamp(i, 0, 1, t + 1.8, t + 2.4);   // the Rambam: "ומדליק נר שכבה" (3:12)
+      });
+      a.pose("s4", "reach", 6, 19.5);
+      a.put("kuz", w.kuz[0], w.kuzY, w.kuz[1], 25.5, w.yaw);
+      a.walk("s4", [w.stand, w.ap, w.pre, [-29, 3], [-6, 1.4], [10.6, 2.6]], 26.5, 29.6, { yaw: HP });
+      a.tag("s4", "מטיב חמש נרות", 6, 21);
+    };
+    SC.akedah = (a) => {
+      const [rx, rz] = RING2;
+      a.lamb(rx, rz - 0.9, 0, 0, "bound");   // "ראשו לדרום ופניו למערב" - the head at the ring, the body north of it
+      [["s5", 40.6, rz - 0.8, HP], ["s6", 40.6, rz - 1.9, HP], ["s7", 40.7, rz - 3, HP], ["s8", 41.6, rz - 3.9, 0], ["s9", 42.8, rz - 3.9, 0], ["s10", 44, rz - 3.4, -HP * 0.6]]
+        .forEach(([k, x, z, yaw], i) => { a.go(k, [x, z], 0.3 + i * 0.15, 3.6 + i * 0.15, { yaw }); a.pose(k, "hold", 4 + i * 0.1); });
+      a.go("s1", [rx + 1.5, rz - 1.1], 0.8, 3.2, { yaw: -HP });   // "השוחט עומד במזרח ופניו למערב"
+      a.go("s2", [rx - 0.9, rz + 1.2], 0, 8, { yaw: Math.PI * 0.8 });
+      a.hold("s2", "mizrak", "R", 8.2);
+      a.tag("s2", "המקבל — הזורק", 9);
+      a.tag("s1", "השוחט", 9);
+    };
+    SC.dam = (a) => {
+      const [rx, rz] = RING2;
+      a.lamb(rx, rz - 0.9, 0, 0, "bound");
+      a.set("mizrak", 1, 1.6);
+      const ne = A(72.4, -20.4), sw = A(38.2, 13.6), ys = A(41.4, 13.9);
+      a.walk("s2", [a.from("s2", [rx - 0.9, rz + 1.2]), [rx - 0.6, -9.6], A(71.6, -21.4), ne], 2.2, 5.6, { hold: true, yaw: -Math.PI / 4 });
+      a.pose("s2", "throw", 5.8, 7.4);
+      a.blood("ne", 6.6, 7.4);
+      a.walk("s2", [ne, A(71.6, -21.4), A(38.2, -21.2), sw], 7.8, 11, { hold: true, yaw: Math.PI * 0.75 });
+      a.pose("s2", "throw", 11.2, 12.8);
+      a.blood("sw", 12, 12.8);
+      a.walk("s2", [sw, ys], 14, 15.2, { yaw: Math.PI });
+      a.pose("s2", "pour", 16, 19);
+      a.blood("ys", 16.6, 18.6);
+      a.set("mizrak", 0, 18.6);
+      a.tag("s2", "הזורק", 0.5);
+    };
+    // the nine in a row with the limbs (4:3), to the lower half of the ramp, its west side, and salt (Rambam 6:3)
+    const NINE = ["s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13"];
+    const onRamp = (i) => A(48.25, 30.2 + i * 1.25);
+    // SHULCHAN_210: the two tables west of the ramp (40-altar.js: ctx2.shared.rampTables, in mv's frame; R. Yose's first altar moves them
+    // with the ramps, 2 east and 4 north)
+    const tableLocal = (k) => {
+      const RT = SH.rampTables, p = RT && RT[k] ? RT[k] : k === "silver" ? [40, 18.2] : [40, 16];
+      const y = !!(SH.altarMeasures && SH.altarMeasures.mode === "yose");
+      return [p[0] + (y ? 2 : 0), p[1] + (y ? -4 : 0)];
+    };
+    const tableAt = (k) => { const p = tableLocal(k); return A(p[0], p[1]); };
+    const tableTop = () => (SH.rampTables && SH.rampTables.top) || 1.5;
+    SC.evarim = (a) => {
+      a.lambGone(0.5);
+      a.gone("mizrak", 0);
+      NINE.forEach((k, i) => {
+        const row = [44.4 + i * 1.3, -33.4];
+        a.walk(k, [a.from(k, row), row], 0, 0.8 + i * 0.25, { yaw: Math.PI });   // NINE_215: a walk to the row (until 2.0.14 set there at once)
+        a.hold(k, "p" + (i + 1), "R", 0.4);
+        const s = onRamp(i);
+        // TABLES_215: west of the two tables by the altar's south-west corner (x 39.4..40.6, z 28..31.2) - until 2.0.14 the way cut over
+        // the silver table's corner
+        a.walk(k, [row, [38.4, -10], [38.4, 26], [38.2, 33.6], A(41.6, 30), A(46.6, 41.9), A(48.9, 42.3), [48.9, s[1]]], 1 + i * 0.25, 11 + i * 0.25, { carry: true, yaw: -HP });
+        a.put("p" + (i + 1), s[0], null, s[1], 12 + i * 0.12, HP);
+        a.pose(k, "place", 11.4 + i * 0.25, 12.6 + i * 0.25);
+      });
+      a.put("salt", onRamp(4)[0] + 0.05, null, onRamp(4)[1], 15);
+      a.tag("s5", "האברים", 2, 14);
+    };
+    SC.shema = (a) => {
+      a.roofs();
+      gather(a, ALLP, 0, 8.5);
+    };
+    SC.lot34 = (a) => {
+      a.roofs();
+      gather(a, ALLP, 0, 0.1);
+      for (const k of ALLP) a.pose(k, "fingers", 2, 7);
+      a.tag("k", "זכה בקטורת", 7.5);
+      a.tag("e", "מעלה האברים מן הכבש למזבח", 10);
+    };
+    SC.machta = (a) => {
+      a.hold("k", "kaf", "R", 0.5);
+      a.go("k", [37.6, 21], 0.5, 9, { hold: true, yaw: -HP });
+      a.tag("k", "הכף", 1, 12);
+      // SHULCHAN_210: the golden machta lies on the silver table, by the altar's south-west corner (40-altar.js) - he comes down the ramp,
+      // round the foot of the path to the yesod, and stands east of the table, his face to the west
+      const sv = tableLocal("silver");
+      const up = A(60.4, 41.4), coal = A(47.8, 6.6), stand = A(sv[0] + 1.25, sv[1] + 0.1);
+      a.go("mc", A(66, 35.4), 0.5, 7.8, { yaw: -HP });
+      a.hold("mc", "machtaS", "R", 8);
+      a.walk("mc", [A(66, 35.4), A(64.6, 42.2), up, A(60.6, 12.2), A(52, 8.6), coal], 8.2, 12.8, { hold: true, yaw: -HP });
+      a.pose("mc", "scoop", 13, 14.6);
+      a.fx("coals", 13.2);   // SOUND_211
+      a.set("coalsS", 1, 14);
+      a.walk("mc", [coal, A(50.6, 12.2), A(50.4, 41.2), A(46.8, 42), A(44.2, 38.8), A(42.2, 30), A(41.6, 22.5), stand], 14.8, 17.8, { hold: true, yaw: -HP });
+      a.putA("machtaG", sv[0], sv[1] - 0.35, 0, HP, F + tableTop() + 0.02);   // on the silver table (Rambam Beit HaBechirah 2:15: the table of silver for the vessels)
+      a.pose("mc", "pour", 18, 19.6);
+      a.fx("coals", 18.2);   // SOUND_211
+      a.set("coalsS", 0, 19); a.set("coalsG", 1, 19);
+      a.putA("machtaS", sv[0], sv[1] + 0.4, 19.7, HP, F + tableTop() + 0.02);
+      a.hold("mc", "machtaG", "R", 19.8);
+      a.tag("mc", "מי שזכה במחתה", 9.5);
+    };
+    const stepsSpot = (i, n) => [34.6 - (i % 2) * 1.6, -13 + (i / Math.max(1, n - 1)) * 26];
+    SC.magrefa = (a) => {
+      a.hold("b4", "magrefa", "R", 0);
+      a.go("b4", [38.2, -6], 0, 5, { hold: true, yaw: -HP });
+      a.pose("b4", "throw", 5.2, 6.2);
+      a.fly("magrefa", [28, floorAt(28, -2) + 0.05, -2], 5.7, 6.6, 1.6);
+      a.fx("magrefa", 6.6);
+      REST.forEach((k, i) => a.go(k, stepsSpot(i, REST.length), 7 + i * 0.1, 12 + i * 0.1, { yaw: -HP }));
+      [["k", [27, 3.4]], ["mc", [27, 5.4]], ["f", [27, 7.4]], ["s3", [27, -3.4]], ["s4", [27, -5.4]], ["e", [33, 14]], ["s11", [33, 16]], ["s12", [33, 18]], ["s13", [33, 20]]]
+        .forEach(([k, p], i) => a.go(k, p, 7 + i * 0.15, 12.2 + i * 0.15, { yaw: -HP, hold: k === "k" || k === "mc" }));
+      // LEVITES_211 / SINGERS_211: in through Nikanor's gate, then each to his place along the duchan - the twelve singers in its
+      // middle part (six north and six south of the middle, where Ben Arza stands with the cymbal and the two trumpeters come later),
+      // and the players beyond them on both sides: five lyres north; four lyres and the two harps south (the spots: model choices)
+      const LZ = [-18.4, -20.8, -23.2, -25.6, -28.0, 18.4, 20.8, 23.2, 25.6, 28.0, 30.4, 0.6,
+        -15.6, -13.2, -10.8, -8.4, -6.0, -3.6, 3.6, 6.0, 8.4, 10.8, 13.2, 15.6];
+      // LEVITES_GATE_215: two files through the gate's opening (its walls at z ±5, the low wall west of it open at |z| < 5.6),
+      // and only west of the wicket frames (x 89.7) each turns to his place
+      LEV_IDS.forEach((k, i) => {
+        const s = LZ[i] < 0 ? -1.2 : 1.2;
+        a.walk(k, [[98.4, s], [89.4, s], [86.3, LZ[i]]], 7 + i * 0.12, 12.4 + i * 0.12, { yaw: -HP });
+        if (i < 9) a.hold(k, "lyre" + (i + 1), "L", 7);
+        else if (i < 11) a.hold(k, "nevel" + (i - 8), "L", 7);
+      });
+      a.hold("ba", "cymL", "L", 7); a.hold("ba", "cymR", "R", 7);
+      a.tag("b4", "המגרפה", 1, 9);
+      a.tag("v6", "שנים עשר לויים — אומרים שירה בפה (רמב״ם כלי המקדש ג, ג)", 10, 14);
+      a.tag("l3", "המנגנים בכלי שיר — אינם ממניין השנים עשר", 10.6, 14);
+    };
+    SC.teni = (a) => {
+      const g = GA(), sp = [g.x + 1.8, g.z - 0.4];
+      a.put("magrefa", 28, floorAt(28, -2) + 0.05, -2, 0);
+      a.walk("s3", [a.from("s3", [27, -3.4]), [15, -1.4], [-6, -1.4], [-24, -1.6], sp], 0, 5, { yaw: -HP });
+      a.hold("s3", "teni", "R", 5.2);
+      // BOW_SPOT_209 (the user, 13.11.2026 02:57: "...כאילו הוא משתחוה על המזבח"): he bowed where he stood, by the golden altar, and lay
+      // over it - now he steps back east first, and bows toward the devir with the altar before him, not under him (model choice: 4.4 east)
+      const bs = BOWSPOT(sp);
+      a.walk("s3", [sp, bs], 5.4, 6.1, { hold: true, yaw: -HP });
+      a.face("s3", -HP, 6.1); a.pose("s3", "prostrate", 6.2, 9.2);   // PROSTRATE_WEST_209: toward the devir
+      a.walk("s3", [bs, [-24, -1.6], [-6, -1.6], [15, -2], [19.2, -4.6]], 9.5, 13.6, { hold: true, yaw: HP });
+    };
+    SC.lamps2 = (a) => {
+      const L = lampSets();
+      const w = toMenorah(a, "s4", 0, 4.6, false);
+      a.pose("s4", "reach", 5, 12);
+      if (L.light) { a.lamp(L.east, 1, 0.5, 6, 7.5); a.lamp(L.east, 0.5, 1, 9, 10.5); }   // the Rambam: "ונר שמצאו שלא כבה מתקנו" (3:12)
+      else a.lamp(L.east, 1, 0, 6, 8);                                                          // the Bartenura: new oil and wick, left unlit until the evening
+      a.tag("s4", L.light ? "מתקן את הנר שמצפון לאמצעי — האמצעי נשאר דולק" : "מדשן את המזרחי — המערבי נשאר דולק", 6, 16);
+      a.walk("s4", [w.stand, w.ap], 12.6, 13.6);
+      a.hold("s4", "kuz", "R", 14);
+      a.face("s4", -HP, 14.7); a.pose("s4", "prostrate", 14.8, 17.6);   // PROSTRATE_WEST_209: toward the devir (he stood at the menorah)
+      a.walk("s4", [w.ap, w.pre, [-29, 3], [-6, 1.4], [15, 2], [19.2, 4.6]], 18, 21.6, { hold: true, yaw: HP });
+    };
+    SC.gechalim = (a) => {
+      const g = GA(), sp = [g.x + 1.6, g.z + 0.3];
+      a.walk("mc", [...route(a.from("mc", [27, 5.4]), [-6, 1.2]), [-24, 1.2], sp], 0, 5, { hold: true, yaw: -HP });
+      a.pose("mc", "pour", 5.5, 8.5);
+      a.fx("coals", 5.8);   // SOUND_211
+      a.set("coalsG", 0, 7);
+      a.ramp("coals", 0, 1, 6, 8);
+      const bs = BOWSPOT(sp);   // BOW_SPOT_209: back from the golden altar before he bows
+      a.walk("mc", [sp, bs], 8.6, 9.3, { hold: true, yaw: -HP });
+      a.face("mc", -HP, 9.3); a.pose("mc", "prostrate", 9.4, 11.6);   // PROSTRATE_WEST_209: toward the devir
+      a.walk("mc", [bs, [-24, 1.2], [-6, 1.2], [15, 2], [19.2, 6.6]], 11.6, 13.8, { hold: true, yaw: HP });   // CUT_215: ends within the stage (14 s; to 14.2 until 2.0.14 - he was set the last 3 amot at once)
+    };
+    SC.ketoret = (a) => {
+      const g = GA(), sk = [g.x + 1.7, g.z - 0.2], sf = [g.x + 2.5, g.z - 1.4];
+      a.set("coals", 1, 0);
+      a.walk("k", [...route(a.from("k", [27, 3.4]), [-6, 0.4]), [-24, 0.4], sk], 0, 5, { hold: true, yaw: -HP });
+      a.walk("f", [...route(a.from("f", [27, 7.4]), [-6, -0.8]), [-24, -0.8], sf], 0.3, 5.3, { yaw: -HP * 1.15 });
+      a.set("kafLid", 0, 5.5);
+      a.hold("f", "bazach", "R", 5.6);   // "נוטל את הבזך מתוך הכף ונותנו לאוהבו או לקרובו"
+      a.pose("f", "offer", 7.6, 9.4);    // "נתפזר ממנו לתוכו, נותנו לו בחפניו"
+      a.tag("f", "אוהבו או קרובו", 6, 12);
+      a.walk("f", [sf, [-24, -1.6], [-6, -1.6], [15, -1]], 9.6, 13, { hold: true });
+      a.go("mem", [16.2, -6], 0, 9, { yaw: -HP });
+      a.pose("mem", "point", 12, 14.5);
+      a.tag("mem", "הממונה: הקטר", 12, 16);
+      // "פרשו העם" - the priests on the steps step back from between the ulam and the altar (model choice: to the north, by the rings)
+      REST.forEach((k, i) => a.go(k, [41 + (i % 4) * 1.6, -21 - Math.floor(i / 4) * 1.6], 12.4 + i * 0.05, 16 + i * 0.05, { yaw: -HP }));
+      ["b4", "e", "s11", "s12", "s13"].forEach((k, i) => a.go(k, [48 + i * 1.5, -24.8], 12.6, 16.2, { yaw: -HP }));
+      a.pose("k", "pour", 14, 18);
+      a.ramp("smoke", 0, 1, 15, 18);
+      a.fx("hiss", 15);   // SOUND_211: the incense on the coals
+      const bs = BOWSPOT(sk);   // BOW_SPOT_209: back from the golden altar before he bows
+      a.walk("k", [sk, bs], 18.2, 18.9, { hold: true, yaw: -HP });
+      a.face("k", -HP, 18.9); a.pose("k", "prostrate", 19, 21.5);   // PROSTRATE_WEST_209: toward the devir
+      a.walk("k", [bs, [-24, 0.4], [-6, 0.4], [15, 1], [19.2, 2.6]], 22, 24, { hold: true, yaw: HP });
+      a.tag("k", "המקטיר", 13, 22);
+    };
+    SC.birkat = (a) => {
+      a.set("smoke", 1, 0); a.set("coals", 1, 0);
+      // "עמדו הראשונים לדרום אחיהם הכהנים, וחמשה כלים בידם: הטני ביד אחד, והכוז ביד אחד, והמחתה ביד אחד, והבזך ביד אחד, וכף וכסויה ביד אחד"
+      [["s3", "teni"], ["s4", "kuz"], ["mc", "machtaG"], ["f", "bazach"], ["k", "kaf"]].forEach(([k, p], i) => {
+        a.hold(k, p, "R", 0);
+        a.go(k, [21.6, 9.4 + i * 1.6], 0, 6, { yaw: HP, hold: true });
+      });
+      const others = [...REST, "b4", "e", "s11", "s12", "s13"];
+      others.forEach((k, i) => a.go(k, [21.6, 7.6 - i * 1.6], 0.3 + i * 0.08, 6.5 + i * 0.08, { yaw: HP }));
+      for (const k of [...others, "s3", "s4", "mc", "f", "k"]) a.pose(k, "raise", 10, 18.5);
+      // SOUND_211: no chord for the blessing - the priests' words are a caption only (the user, 15.11.2026: speech in the captions)
+    };
+    const UPTOP = A(57.4, 7.2), FIRE = () => V3(61.9, TOP + 3.6, 1);
+    SC.haalaah = (a) => {
+      a.go("e", [48.9, onRamp(0)[1] + 0.6], 0, 5, { yaw: -HP });   // PACE_215: from the ulam's steps round the altar (3 s until 2.0.14)
+      for (let i = 0; i < 3; i++) {
+        const t = 5 + i * 5.0, at = [48.9, onRamp(2 * i)[1] + 0.6];
+        a.hold("e", "p" + (2 * i + 1), "R", t);
+        a.hold("e", "p" + (2 * i + 2), "L", t);
+        a.walk("e", [at, A(59.6, (at[1] - D + 12.2) / 2), A(59.8, 12.2), UPTOP], t + 0.1, t + 2.4, { carry: true, yaw: HP * 0.6 });   // EAST_UP_211: the limbs lie on the ramp's west half (Tamid 4:3); he crosses to its east side as he climbs
+        a.pose("e", "throw", t + 2.5, t + 3.1);
+        a.fx("hiss", t + 3.2);   // SOUND_211
+        a.fly("p" + (2 * i + 1), FIRE(), t + 2.6, t + 3.2, 1.2);
+        a.fly("p" + (2 * i + 2), FIRE(), t + 2.7, t + 3.3, 1.2);
+        a.gone("p" + (2 * i + 1), t + 3.3); a.gone("p" + (2 * i + 2), t + 3.4);
+        if (i < 2) a.walk("e", [UPTOP, A(51.4, 12.2), [48.9, onRamp(2 * i + 2)[1] + 0.6]], t + 3.4, t + 5.0, { yaw: -HP });
+      }
+      a.tag("e", "מעלה האברים למזבח", 1);
+      // PACE_215: the two of the meal and the cakes walk meanwhile to their places by their parts on the ramp (until 2.0.14 they ran
+      // there in the first 3 s of the next stage)
+      a.go("s11", [48.9, onRamp(6)[1] + 0.6], 6, 18, { yaw: -HP });
+      a.go("s12", [48.9, onRamp(7)[1] + 0.6], 7, 19, { yaw: -HP });
+    };
+    // DESHEN_211 (the user, 15.11.2026 18:12, with the sources he sent; the refuter R-05, S4-15): THE ASHES OF THE TENI AND THE KUZ ARE
+    // POURED OUT AS SOON AS THE TWO VESSELS ARE TAKEN OUT, after the trimming of the two lamps - the Bartenura, Tamid 6:1 (634:201):
+    // "היה ממתין עד לאחר זריקת התמיד שהיה הזוכה בדשון המנורה עושה הטבת שתי נרות וגומר השלמת דשון המנורה, ואז היו שניהן מוציאין זה הטני
+    // וזה הכוז ושופכים הדשן במקום אחד אצל המזבח קדמה" (and on 3:9, 634:123); the Rosh on Tamid 33a (2224:289): "כדי שיוציאם ביחד". So a
+    // stage of its own, "deshen", right after "lamps2" in BOTH orders (in Abaye's - before the incense; in the Rambam's, where the two
+    // lamps follow the incense - after it). Until this fix the pouring stood inside "haalaah", after the incense and the blessing in
+    // Abaye's order, and its time was called a model choice. Afterwards the two stand at the blessing with the vessels in their hands
+    // (Tamid 7:2). The place: "מקום שנותנין מראות העוף ודשון מזבח הפנימי והמנורה" (Tamid 1:4; 88:5), east of the ramp; the Rambam
+    // (Temidin uMusafin 3:12; 344:43): "משליכו במקום הדשן אצל המזבח עם דשון המזבח הפנימי והחיצון". The way there (round the ramp's foot,
+    // north along its east side) and their spots east of the heap - model choices.
+    SC.deshen = (a) => {
+      [["s3", "teni"], ["s4", "kuz"]].forEach(([k, p], i) => {
+        // ASH_PLACE_215: the two lanes across the ramp's foot lie north of its edge (z 55.2, where the chambers begin - until 2.0.14 the
+        // second walked in their wall), and the two stand south of the small ramp (x 63.5..65.7, to z 44.4 - the first stood in it)
+        const ap = A(65.25, 32.95 + i * 1.25), st = a.from(k, [19.2, i ? 4.6 : -4.6]);
+        a.hold(k, p, "R", 0);
+        a.walk(k, [...route(st, A(46.6, 42.0 - i * 0.7)), A(55.5, 41.6 - i * 0.7), A(64.6, 41.9 - i * 0.7), A(66.0, 39.6), ap], 0.4 + i * 0.5, 10.6 + i * 0.5, { hold: true, yaw: -HP });
+        a.pose(k, "pour", 11.2 + i * 0.4, 14.0);
+      });
+      a.fx("coals", 11.7);   // SOUND_211
+      a.set("teniAsh", 0, 12.8);
+      a.tag("s3", "דישון מזבח הפנימי והמנורה — אל מקום הדשן שבמזרח הכבש", 9.6, 16.5);
+    };
+    SC.mincha = (a) => {
+      ["s11", "s12"].forEach((k, i) => {
+        // PACE_215: the stage is 17 s (14 until 2.0.14): in the Rambam's order the two come from the blessing on the ulam's steps (round
+        // the altar, some 70 amot - they ran it in 3 s), in Abaye's they are at their places already (they came in the stage before)
+        const at = [48.9, onRamp(6 + i)[1] + 0.6], t = 5.2 + i * 4.4;
+        a.go(k, at, 0, 5.0 + i * 0.6, { yaw: -HP });
+        a.hold(k, "p" + (7 + i), "R", t);
+        a.walk(k, [at, A(59.6, (at[1] - D + 12.2) / 2), A(59.8, 12.2), UPTOP], t + 0.2, t + 2.6, { carry: true, yaw: HP * 0.6 });   // EAST_UP_211
+        a.pose(k, "throw", t + 2.7, t + 3.3);
+        a.fx("hiss", t + 3.4);   // SOUND_211
+        a.fly("p" + (7 + i), FIRE(), t + 2.8, t + 3.4, 1);
+        a.gone("p" + (7 + i), t + 3.5);
+        a.walk(k, [UPTOP, A(51.4, 12.2), A(50.8, 34 + i * 1.6)], t + 3.6, t + 5.6);
+      });
+      // PACE_215: meanwhile the wine's priest to his place by the ramp, the deputy (with the flags) to its foot, and the two trumpeters to
+      // the marble table (until 2.0.14 they all ran there in the first seconds of the next stage, some 120 amot in 5 s)
+      a.go("s13", [48.9, onRamp(8)[1] + 0.6], 3, 13, { yaw: -HP });
+      a.go("sg", A(46.0, 40.0), 1, 13, { yaw: -HP });
+      { const tb = tableAt("marble"); a.go("tr1", [tb[0] - 1.3, tb[1] - 0.4], 1.5, 13.5, { yaw: HP }); a.go("tr2", [tb[0] - 1.3, tb[1] + 0.4], 2, 13.8, { yaw: HP }); }
+    };
+    SC.nesachim = (a) => {
+      // the wine at the south-west horn (the libation bowls there); the deputy on the horn with the flags; two priests with silver
+      // trumpets on the marble table (the table of the fats, Rambam 2:15), then beside Ben Arza at the duchan (model choice: its middle)
+      a.go("s13", [48.9, onRamp(8)[1] + 0.6], 0, 2.6, { yaw: -HP });
+      a.hold("s13", "p9", "R", 2.8);
+      a.walk("s13", [[48.9, onRamp(8)[1] + 0.6], A(59.6, (onRamp(8)[1] + 0.6 - D + 12.2) / 2), A(59.4, 12.0), A(50.8, 9.8), A(44, 9.6), A(42.7, 9.5)], 3, 7, { carry: true, yaw: -Math.PI * 0.75 });   // EAST_UP_211: up the east side, and at the top to his left, to the south-west horn
+      a.hold("sg", "flags", "R", 0);
+      a.go("sg", A(42.4, 7.4), 0, 6, { hold: true, yaw: -Math.PI * 0.75 });
+      // SHULCHAN_210: the marble table stands by the altar's south-west corner (40-altar.js, ctx2.shared.rampTables - the Ra'avad); the
+      // two step up onto it from its west side, and down to it again
+      const tb = tableAt("marble"), TTOP = F + tableTop();
+      const sw1 = [tb[0] - 1.3, tb[1] - 0.4], sw2 = [tb[0] - 1.3, tb[1] + 0.4];
+      a.go("tr1", sw1, 0, 5.2, { hold: true, yaw: HP });
+      a.go("tr2", sw2, 0, 5.2, { hold: true, yaw: HP });
+      a.at("tr1", tb[0] - 0.1, tb[1] - 0.4, HP, 5.4, { y: TTOP });
+      a.at("tr2", tb[0] + 0.1, tb[1] + 0.4, HP, 5.4, { y: TTOP });
+      a.hold("tr1", "tru1", "R", 0); a.hold("tr2", "tru2", "R", 0);
+      a.pose("tr1", "trumpet", 6, 10); a.pose("tr2", "trumpet", 6, 10);
+      a.fx("tekia", 6.2);
+      const ba = [86.6, 0.6];
+      a.at("ba", ba[0], ba[1], -HP, 0);
+      a.walk("tr1", [[tb[0] - 0.1, tb[1] - 0.4], ...route(sw1, [ba[0] - 0.2, ba[1] - 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });   // PACE_215: to 13.8 until 2.0.14 (they blow there at 21)
+      a.walk("tr2", [[tb[0] + 0.1, tb[1] + 0.4], ...route(sw2, [ba[0] - 0.2, ba[1] + 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });
+      a.pose("s13", "pour", 13, 17);
+      a.fx("pour", 13.3);   // SOUND_211: the wine
+      a.pose("sg", "wave", 13.4, 17);
+      a.pose("ba", "cymbal", 13.8, 15);
+      a.fx("cymbal", 14);
+      a.fx("song", 14.6);
+      LEV_PLAY.forEach((k) => a.pose(k, "play", 14.6, 30));
+      for (const t of [21, 26]) { a.pose("tr1", "trumpet", t, t + 2); a.pose("tr2", "trumpet", t, t + 2); a.fx("tekiaShort", t + 0.1); }
+      // PROSTRATE_WEST_209 (the user, 13.11.2026 02:57: "בעבודת הבוקר יש כמה פאדיחות עם ההשתחוויות יוצא שכאילו הוא משתחוה על המזבח"):
+      // "הגיעו לפרק, תקעו, והשתחוו העם" (Tamid 7:3) - TOWARD THE HOUSE. The priests on the ulam's steps stood facing the people for the
+      // blessing (east, to the altar): they turn west first. The three at their service on the altar's top and its ramp (the limbs,
+      // the meal-offerings: "e", "s11", "s12") do not bow there. (Until 2.0.8 all of them bowed as they stood - to the altar, and on it.)
+      const BOW = [...REST, "b4", "s3", "s4", "mc", "f", "k"];
+      for (const k of BOW) a.face(k, -HP, 20.9);
+      for (const k of BOW) { a.pose(k, "prostrate", 21.6, 24.6); a.pose(k, "prostrate", 26.6, 29.6); }
+      a.tag("sg", "הסגן — הסודרים", 1, 18);
+      a.tag("ba", "בן ארזא — הצלצל", 12, 18);
+      a.tag("s13", "הנסכים", 3, 18);
+    };
+    SC.shir = (a) => {
+      LEV_PLAY.forEach((k) => a.pose(k, "play", 0, 16));
+      a.fx("song", 0.5);
+      a.tag("v6", "שיר של יום", 0.5, 16);
+    };
+    SC.sof = () => {};
+    // ---------------------------------------------------------------- applying the state to the scene
+    const POSES = {   // [right shoulder x, abduct, elbow], [left ...], lean - the arm hangs down; a negative x lifts it forward
+      stand: [[0.05, 0.08, -0.15], [0.05, 0.08, -0.15], 0], hold: [[-0.55, 0.05, -1.0], [0.05, 0.08, -0.15], 0], carry: [[-0.5, -0.12, -1.15], [-0.5, -0.12, -1.15], 0],
+      fingers: [[-1.25, 0.05, -0.45], [0.05, 0.08, -0.15], 0], knock: [[-1.4, 0.05, -1.3], [0.05, 0.08, -0.15], 0.05], wash: [[-0.95, -0.12, -0.55], [-0.95, -0.12, -0.55], 0.18],
+      scoop: [[-0.95, 0.05, -0.35], [-0.95, 0.05, -0.35], 0.42], shovel: [[-0.85, -0.1, -0.5], [-0.75, -0.25, -0.7], 0.3], place: [[-0.9, -0.1, -0.4], [-0.9, -0.1, -0.4], 0.35],
+      pour: [[-1.15, 0.05, -0.35], [0.05, 0.08, -0.15], 0.22], offer: [[-1.0, -0.05, -0.6], [-0.6, -0.1, -0.8], 0.15], point: [[-1.7, 0.1, -0.05], [0.05, 0.08, -0.15], 0],
+      reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.95, 0.32, -0.15], [-2.95, 0.32, -0.15], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12],
+      trumpet: [[-1.5, -0.25, -1.45], [-1.45, -0.3, -1.55], 0], cymbal: [[-1.0, 0.5, -1.2], [-1.0, 0.5, -1.2], 0], wave: [[-2.6, 0.35, -0.2], [0.05, 0.08, -0.15], 0],
+      play: [[-0.75, -0.15, -1.15], [-0.95, -0.1, -0.9], 0], throw: [[-1.5, 0.05, -0.2], [0.05, 0.08, -0.15], 0.1], prostrate: [[-2.9, 0.4, 0], [-2.9, 0.4, 0], 1.48],
+      // KIDDUSH_211 (the user, 14.11.2026 23:36; Zevachim 19b, 130:754): "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו
+      // השמאלית, ומקדש" - each hand down to its leg. KIDDUSH_BEND_212 (the user, 16.11.2026 13:31: "הכהן צריך להיות כמה שיותר זקוף ורק
+      // היד שלו על הרגל (כיפוף ולא נפילה...)"): the legs upright, the body bends at the waist (KB), each hand on its leg as low as it
+      // reaches (kidReach) - until 2.1.2 the whole figure leaned from the ankles (0.5), as falling. The arms below: only where there is
+      // no waist (the high priest's body) - there the old lean, a little less.
+      kiddush: [[-0.3, 0.14, 0], [-0.3, 0.14, 0], 0.4]
+    };
+    const KB = 0.95;   // KIDDUSH_BEND_212: how far he bends at the waist (rad) - a model choice
+    // an arm reaching a point: sp the shoulder, tp the point (in its parent's frame, amot); a the upper arm, b the forearm to the palm;
+    // side as setArm's. [shoulder x, abduct, elbow] - the elbow bends forward. Out of reach: the arm straight toward the point.
+    const reach = (sp, tp, a, b, side) => {
+      const vx = tp[0] - sp[0], vy = tp[1] - sp[1], vz = tp[2] - sp[2], D3 = Math.hypot(vx, vy, vz) || 1e-6;
+      const al = Math.asin(clamp(vx / D3, -0.9, 0.9)), ca = Math.cos(al);
+      const Dp = Math.min(Math.hypot(vy, vz), (a + b) * ca - 1e-4), a2 = a * ca, b2 = b * ca;
+      const phT = Math.atan2(-vz, -vy);
+      const be = Math.acos(clamp((a2 * a2 + Dp * Dp - b2 * b2) / (2 * a2 * Dp), -1, 1));
+      const ga = Math.acos(clamp((a2 * a2 + b2 * b2 - Dp * Dp) / (2 * a2 * b2), -1, 1));
+      return [phT + be, side * al, -(Math.PI - ga)];
+    };
+    // the hands' places for kiddush on a figure with a waist: on the front of each leg, the lowest it reaches (cached on the figure)
+    const kidReach = (f) => {
+      if (f.kidArms) return f.kidArms;
+      const K = SH.priestKit, FS = K.FS, WY = f.bend.position.y, cb = Math.cos(KB), sb = Math.sin(KB);   // (KIT is the world builder's own)
+      const A = f.A, a = A.up, b = A.fo + 0.06 * FS;
+      const toBend = (x, y, z) => { const dy = y - WY; return [x, dy * cb + z * sb, -dy * sb + z * cb]; };   // the figure's frame -> the bending part's
+      const out = {};
+      for (const side of [1, -1]) {
+        const sp = [side * A.sx, A.sy - WY, 0];
+        let best = null;
+        for (let y = 0.18; y <= 1.2; y += 0.02) {
+          const tp = toBend(side * 0.1 * FS, y * FS, (K.spl(K.bZ, y) + 0.05) * FS);
+          if (Math.hypot(tp[0] - sp[0], tp[1] - sp[1], tp[2] - sp[2]) <= (a + b) * 0.985) { best = tp; break; }
+        }
+        out[side] = reach(sp, best || toBend(side * 0.1 * FS, 0.9 * FS, 0.25 * FS), a, b, side);
+      }
+      return (f.kidArms = out);
+    };
+    // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "הקידוש צריך להיות יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר! בכל ההדגמות!"):
+    // the leg in the figure's frame (the priest's kit units; side +1 the left): the hip; the knee and the ankle standing (0) and raised
+    // (1: the thigh a little above the level, the shin down and forward); the foot's pitch (the toes a little down). The foot's ankle
+    // point is (0, 0.15, -0.01) of its geometry, its top (0, 0.06, 0.10). The shapes and the height - model choices.
+    // KIDDUSH_LEG_214 (as the First Temple's 58-ark.js ARK_LEG): the leg reaches further forward and the foot is higher - the knee at the
+    // hip's height, the hand on the foot 1.34 above the floor and 1.3 ahead of him; until 2.0.13 the knee rose above the hip and the shin
+    // ran in under the bent body, so that the leg itself was hardly seen - and the bend is less (42 degrees instead of 48)
+    const LEG = { hip: 1.0, k0: [0.1, 0.55, 0.02], k1: [0.18, 1.12, 0.43], a0: [0.1, 0.15, -0.01], a1: [0.27, 1.02, 0.83], pitch: 0.1, side: 0.12 };   // side: the body leans a little to the standing leg (the head off the stream)
+    const legAt = (side, u) => {
+      const L2 = (a, b) => [side * lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+      return { H: [side * 0.1, LEG.hip, 0], K: L2(LEG.k0, LEG.k1), A: L2(LEG.a0, LEG.a1), pitch: LEG.pitch * u };
+    };
+    const footTop = (A, pitch) => { const c = Math.cos(pitch), sn = Math.sin(pitch); return [A[0], A[1] - 0.09 * c - 0.11 * sn, A[2] - 0.09 * sn + 0.11 * c]; };
+    KID.local = (side) => { const FS = SH.priestKit.FS, q = legAt(side, 1), T = footTop(q.A, q.pitch); return [T[0] * FS, (T[1] + 0.035) * FS, T[2] * FS]; };   // the hand's place (amot)
+    // where he stands for each side: the hand on the raised foot at KID.P (under the north spout's stream)
+    // KIDDUSH_SOUTH_214: his face to the laver (south) for both - the right foot raised ahead of him, a step west, the left; he stands on
+    // the court's floor, 0.56 north of the well's curb (until 2.0.13 he faced east for the right and west for the left and stood on the
+    // well's wall - from the laver's own eye, in the west, the right was washed behind his back). From that eye both are seen from the side.
+    KID.P = [22, 54.25];   // 40-altar.js: the laver KX 22, KZ 57; the north spout's mouth at z 55.35 - the stream comes 1.1 out
+    KID.yaw = () => 0;
+    KID.spot = (side) => {
+      const T = KID.local(side), ps = KID.yaw(side), x2 = T[0] * Math.cos(ps) + T[2] * Math.sin(ps), z2 = -T[0] * Math.sin(ps) + T[2] * Math.cos(ps);
+      return [KID.P[0] - x2, KID.P[1] - z2];
+    };
+    // the bend (the least that lets the hand reach the foot) and the arm's angles, per figure and side (cached)
+    const kidFoot = (f, side) => {
+      f.kidFoot = f.kidFoot || {};
+      if (f.kidFoot[side]) return f.kidFoot[side];
+      const K = SH.priestKit, FS = K.FS, WY = f.bend.position.y, A = f.A, a = A.up, b = A.fo + 0.06 * FS;
+      const T = KID.local(side), sp = [side * A.sx, A.sy - WY, 0];
+      const ph = side * LEG.side, cp = Math.cos(ph), spp = Math.sin(ph);   // the bend group: Rx(th) then Rz(ph) (Euler XYZ) - the target back through both
+      let th = 0, Tb = null;
+      for (th = 0; th <= 1.3; th += 0.02) {
+        const cb = Math.cos(th), sb = Math.sin(th), dy = T[1] - WY, y1 = dy * cb + T[2] * sb, z1 = -dy * sb + T[2] * cb;
+        Tb = [T[0] * cp + y1 * spp, -T[0] * spp + y1 * cp, z1];
+        if (Math.hypot(Tb[0] - sp[0], Tb[1] - sp[1], Tb[2] - sp[2]) <= (a + b) * 0.985) break;
+      }
+      return (f.kidFoot[side] = { th, ph, arm: reach(sp, Tb, a, b, side) });
+    };
+    const _lv = new Vector3(), _lw = new Vector3(), _lup = new Vector3(0, 1, 0);
+    const seg = (m, a, b) => { _lv.set(a[0], a[1], a[2]); _lw.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const n = _lw.length() || 1e-6; m.position.copy(_lv); m.quaternion.setFromUnitVectors(_lup, _lw.multiplyScalar(1 / n)); m.scale.set(1, n, 1); };
+    const setLeg = (f, side, u) => {
+      const lg = f.legs[side], on = u > 0.02;
+      if (lg.g.visible !== on) lg.g.visible = on;
+      const own = side > 0 ? f.fl : f.fr;
+      if (own.visible === on) own.visible = !on;
+      if (!on) return;
+      const FS = SH.priestKit.FS, q = legAt(side, u), H = q.H.map((v) => v * FS), Kp = q.K.map((v) => v * FS), A = q.A.map((v) => v * FS);
+      seg(lg.th, H, Kp);
+      lg.kn.position.set(Kp[0], Kp[1], Kp[2]);
+      seg(lg.sn, Kp, A);
+      const c = Math.cos(q.pitch), sn = Math.sin(q.pitch), ay = 0.15 * FS, az = -0.01 * FS;
+      lg.ft.rotation.set(q.pitch, 0, 0);
+      lg.ft.position.set(A[0], A[1] - (ay * c - az * sn), A[2] - (ay * sn + az * c));
+    };
+    // the north spout's stream (40-altar.js: its mouth at x 22, y KY + 1.22 - 0.129, z 55.35, pointing north and down by 0.35) onto the
+    // hand on the raised foot (KID.P), and off the foot to the floor; built on first use
+    KID.water = () => {
+      const g = new Group();
+      g.name = "kiddushWater";
+      const M = new MeshStandardMaterial({ color: 0x7db8ec, emissive: 0x15406a, emissiveIntensity: 0.5, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.85, depthWrite: false });
+      const y0 = F + 0.6 + 1.22 - 0.129, hy = F + KID.local(-1)[1];
+      const P0 = new Vector3(22, y0, 55.35), C = new Vector3(22, y0 - 0.17, 55.35 - 0.47), P1 = new Vector3(KID.P[0], hy + 0.02, KID.P[1]);
+      g.add(new Mesh(new TubeGeometry(new QuadraticBezierCurve3(P0, C, P1), 24, 0.034, 8, false), M));
+      const run = new Mesh(new CylinderGeometry(0.026, 0.036, 1, 8, 1, true).translate(0, -0.5, 0), M);   // off the foot's edge
+      run.position.set(KID.P[0], hy - 0.2, KID.P[1] - 0.12);
+      run.scale.y = Math.max(0.05, hy - 0.2 - F);
+      g.add(run);
+      const pool = new Mesh(new CircleGeometry(0.2, 20).rotateX(-Math.PI / 2), M);   // KIDDUSH_LEG_214: 0.2 (0.32 until 2.0.13)
+      pool.position.set(KID.P[0], F + 0.012, KID.P[1] - 0.12);
+      g.add(pool);
+      W.group.add(g);
+      return g;
+    };
+    const setArm = (A2, v, side) => { A2.sh.rotation.x = v[0]; A2.sh.rotation.z = side * v[1]; A2.el.rotation.x = v[2]; };
+    const applyFig = (f) => {
+      const s = f.st;
+      f.g.visible = !!s.vis;
+      if (!s.vis) { if (f.tag) f.tag.visible = false; return; }
+      f.g.position.set(s.x, s.y, s.z);
+      f.g.rotation.y = s.yaw;
+      const p = s.pose;
+      let R = POSES.stand[0], Lv = POSES.stand[1], lean = 0, bob = 0, fz0 = 0, fz1 = 0, bendA = 0, bendZ = 0, legR = 0, legL = 0;
+      if (p === "walk" || p === "walkCarry" || p === "walkHold") {
+        const sw = Math.sin(s.ph);
+        R = p === "walkCarry" ? POSES.carry[0] : p === "walkHold" ? POSES.hold[0] : [-0.32 * sw, 0.08, -0.25];
+        Lv = p === "walkCarry" ? POSES.carry[1] : [0.32 * sw, 0.08, -0.25];
+        bob = Math.abs(Math.cos(s.ph)) * 0.035;
+        fz0 = 0.17 * sw; fz1 = -0.17 * sw;
+      } else {
+        const P0 = POSES[p] || POSES.stand, t = s.t || 0;
+        R = P0[0]; Lv = P0[1]; lean = P0[2];
+        if (p === "throw") { const u = clamp(t / 0.7, 0, 1); R = [lerp(0.7, -1.5, u), 0.05, lerp(-0.6, -0.2, u)]; }
+        else if (p === "wave") R = [-2.6, 0.35 + 0.35 * Math.sin(t * 9), -0.2];
+        else if (p === "cymbal") { const u = Math.abs(Math.sin(t * 5)); R = Lv = [-1.0, 0.15 + 0.5 * u, -1.25]; }
+        else if (p === "shovel" || p === "scoop" || p === "place") { const w = Math.sin(t * 3.2); R = [R[0] + 0.25 * w, R[1], R[2]]; Lv = [Lv[0] + 0.25 * w, Lv[1], Lv[2]]; }
+        else if (p === "wash") { const w = Math.sin(t * 6); R = [R[0] + 0.1 * w, R[1], R[2]]; Lv = [Lv[0] - 0.1 * w, Lv[1], Lv[2]]; }
+        else if (p === "play") R = [R[0] + 0.12 * Math.sin(t * 7), R[1], R[2]];
+        else if (p === "fingers") R = [R[0] + 0.06 * Math.sin(t * 2), R[1], R[2]];
+        else if (p === "prostrate") { const u = clamp(t / 1.2, 0, 1), d = t > 2.2 ? clamp((t - 2.2) / 0.8, 0, 1) : 0, k = smooth(u) * (1 - smooth(d)); lean = 1.48 * k; R = Lv = [lerp(0.05, -2.9, k), 0.4 * k, 0]; }
+        else if (p === "knock") R = [-1.4 + 0.2 * Math.sin(t * 9), 0.05, -1.3];
+        else if ((p === "kidR" || p === "kidL") && f.legs && SH.priestKit) {   // KIDDUSH_FOOT_213: the foot raised, the hand on it
+          const side = p === "kidR" ? -1 : 1, tl = s.tl == null ? 9 : s.tl;
+          const u = smooth(clamp(t / 0.55, 0, 1)) * smooth(clamp(tl / 0.45, 0, 1)), H = kidFoot(f, side);
+          const mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)], other = [0.15, 0.32, -0.3];
+          if (side < 0) { R = mix(POSES.stand[0], H.arm); Lv = mix(POSES.stand[1], other); legR = u; }
+          else { Lv = mix(POSES.stand[1], H.arm); R = mix(POSES.stand[0], other); legL = u; }
+          lean = 0; bendA = H.th * u; bendZ = H.ph * u;
+        }
+        else if (p === "kiddush" && f.bend && SH.priestKit && SH.priestKit.bZ) {   // KIDDUSH_BEND_212: upright legs, bent at the waist, the hands on the legs
+          const u = smooth(clamp(t / 0.8, 0, 1)), H = kidReach(f), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
+          R = mix(POSES.stand[0], H[-1]); Lv = mix(POSES.stand[1], H[1]); lean = 0.03 * u; bendA = KB * u;
+        }
+      }
+      setArm(f.R, R, -1);
+      setArm(f.L, Lv, 1);
+      if (f.bend) { f.bend.rotation.x = bendA; f.bend.rotation.z = bendZ; }
+      if (f.legs) { setLeg(f, -1, legR); setLeg(f, 1, legL); }
+      f.lean.rotation.x = lean;
+      f.lean.position.y = bob + (lean > 1 ? 0.36 * Math.sin(lean) : 0);
+      f.fl.position.z = fz0;
+      f.fr.position.z = fz1;
+      f.fl.visible = f.fr.visible = lean < 1;
+      if (s.tag) {
+        const tm = W.tagMat(s.tag);
+        if (!f.tag) { f.tag = new Sprite(tm.m); f.tag.renderOrder = 45; f.tag.center.set(0.5, 0); W.group.add(f.tag); }
+        if (f.tag.material !== tm.m) f.tag.material = tm.m;
+        f.tag.scale.set(0.62 * tm.aspect, 0.62, 1);
+        f.tag.position.set(s.x, s.y + (lean > 1 ? 1.2 : 3.75), s.z);
+        f.tag.visible = true;
+      } else if (f.tag) f.tag.visible = false;
+    };
+    const applyLamb = () => {
+      const L = W.lamb, s = L.st;
+      L.g.visible = !!s.vis;
+      if (!s.vis) return;
+      L.g.position.set(s.x, s.y, s.z);
+      L.g.rotation.y = s.yaw;
+      if (s.pose === "bound") {   // on its side, the legs west, held together (model choice for "ופניו למערב")
+        L.body.rotation.z = -HP;
+        L.body.position.set(-0.3, 0.32, 0);
+        L.legs.forEach((lg, i) => { lg.rotation.x = i < 2 ? -0.5 : 0.5; });
+        L.head.rotation.set(-0.4, 0, 0);
+      } else {
+        L.body.rotation.z = 0;
+        L.body.position.set(0, 0, 0);
+        const w = s.pose === "walk" ? Math.sin(s.ph) * 0.45 : 0;
+        L.legs.forEach((lg, i) => { lg.rotation.x = i === 0 || i === 3 ? w : -w; });
+        L.head.rotation.set(0, 0, 0);
+      }
+    };
+    const QA = new Quaternion(), QB = new Quaternion(), EU = new Euler();
+    const applyProps = () => {
+      for (const id in W.props) {
+        const p = W.props[id], s = p.st, o = p.o;
+        if (!s.vis) { o.visible = false; continue; }
+        if (s.fig) {
+          const f = W.figs[s.fig];
+          if (!f.st.vis) { o.visible = false; continue; }
+          const gp = (s.hand === "L" ? f.L : f.R).grip;
+          if (o.parent !== gp) gp.add(o);
+          o.position.set(p.grip.p[0], p.grip.p[1], p.grip.p[2]);
+          o.rotation.set(p.grip.r[0], p.grip.r[1], p.grip.r[2]);
+          if (p.upright) {   // vessels stay upright whatever the arm does
+            gp.getWorldQuaternion(QA);
+            EU.set(0, f.g.rotation.y, 0);
+            QB.setFromEuler(EU);
+            o.quaternion.copy(QA.invert()).multiply(QB);
+          }
+        } else {
+          if (o.parent !== W.group) W.group.add(o);
+          o.position.set(s.x, s.y, s.z);
+          o.rotation.set(s.rx || 0, s.ry || 0, 0);
+        }
+        o.visible = true;
+      }
+    };
+    let roofAt = 0;
+    const applyWorld = () => {
+      W.altarG.position.z = D;
+      W.altarG.position.y = TOP - TOP0;
+      W.sleepers.visible = N.sleepers > 0.5;
+      W.L1.forEach((m, i) => { m.visible = N.l1 > i + 0.5; });
+      W.L2.forEach((m, i) => { m.visible = N.l2 > i + 0.5; });
+      for (const m of W.modelGez) m.visible = N.gz > 0.5;
+      W.MAT.woodNew.emissiveIntensity = 0.55 * N.glow;
+      const T = SH.tapuach;
+      if (T && T.heap) { const h = T.heap; if (!h.userData.s0) h.userData.s0 = h.scale.clone(); const s0 = h.userData.s0; h.scale.set(s0.x * Math.sqrt(N.tap), s0.y * N.tap, s0.z * Math.sqrt(N.tap)); }
+      const g = SH.goldenAltar;
+      if (g) {
+        if (g.coals) g.coals.visible = N.coals > 0.5;
+        for (const m of g.smoke || []) {
+          const k = Math.max(0.02, N.smoke), ht = m.geometry.parameters ? m.geometry.parameters.height : 0;
+          m.visible = N.smoke > 0.02;
+          m.scale.y = k;
+          m.position.y = g.top + 0.05 + ht * k / 2;
+        }
+        const ag = W.props.ashGold;
+        if (N.ashGold > 0.02) { Object.assign(ag.st, { vis: true, fig: null, x: g.x, y: g.top + 0.01, z: g.z - 0.13 }); ag.o.scale.setScalar(Math.max(0.05, N.ashGold)); } else ag.st.vis = false;
+      }
+      for (const k of ["ne", "sw", "ys"]) for (const m of W.blood[k]) { m.visible = N.blood[k] > 0.01; m.material.opacity = 0.85 * N.blood[k]; }
+      W.props.machtaS.o.userData.coals.visible = N.coalsS > 0.5;
+      W.props.machtaG.o.userData.coals.visible = N.coalsG > 0.5;
+      W.props.teni.o.userData.ash.visible = N.teniAsh > 0.5;
+      if (SH.mokedSlab && fnc(SH.mokedSlab.pose)) SH.mokedSlab.pose(N.slab, N.slabKeys > 0.5);   // KEY_SLAB_211
+      W.props.kaf.o.userData.lid.visible = N.kafLid > 0.5;
+      W.props.mizrak.o.userData.blood.visible = N.mizrak > 0.5;
+      W.props.torch1.o.userData.light.intensity = N.torches[0] ? 26 : 0;
+      W.props.torch2.o.userData.light.intensity = N.torches[1] ? 26 : 0;
+      const m = SH.menorah;
+      if (m && m.lampK) for (let i = 0; i < 7; i++) m.lampK[i] = clamp(N.lamps[i], 0, 1);
+      if (SH.greatGate && fnc(SH.greatGate.pose)) { try { SH.greatGate.pose(N.gate); } catch (_) {} }
+      chelGate(N.chelG);   // CHEL_GATE_215
+      if (SH.mukhni && fnc(SH.mukhni.pose)) { try { SH.mukhni.pose(5.6 * N.mukhni, null); } catch (_) {} }
+      if (N.kidWater > 0 && !W.kidWater) { try { W.kidWater = KID.water(); } catch (_) {} }   // KIDDUSH_FOOT_213
+      if (W.kidWater) W.kidWater.visible = N.kidWater > 0;
+      const now = performance.now();
+      if (N.roofs && fnc(SH.openFor) && now - roofAt > 2500) { roofAt = now; try { SH.openFor("crt-lishkot-roofs", 6000); } catch (_) {} }
+    };
+    // the night (0), the first light (1: "האיר פני כל המזרח"), sunrise (2), the morning (3): the sun from the east, the sky, the lights,
+    // the fog, the environment. The light comes with "ברקאי" and grows to the end, whichever the order (skyAt)
+    const SKYC = { night: new Color(0x070b16), fogN: new Color(0x0a0f1c), fog: new Color(), dir: new Vector3() };
+    let saved = null;
+    const applySky = (s) => {
+      const K = SH.sky;
+      if (!K || !saved) return;
+      // TAMID_NIGHT_207: the lotteries' night (55-payis.js NIGHT) - the phase by the demonstration's clock of the sky
+      const NK = SH.nightKit;
+      if (NK && saved.night) {
+        const ph = s < 0.6 ? ["night", "alot", s / 0.6] : s < 1.2 ? ["alot", "barkai", (s - 0.6) / 0.6] : s < 2 ? ["barkai", "heir", (s - 1.2) / 0.8] : ["heir", "morning", Math.min(1, s - 2)];
+        NK.set(ph[0], ph[1], ph[2]);
+        K.sky.visible = true;
+        ctx2.scene.background = saved.bg;
+        return;
+      }
+      const day = clamp(s / 3, 0, 1), dark = 1 - smooth(clamp(s / 2.2, 0, 1));   // dark: 1 in the night, 0 from the sunrise
+      const el = s < 1 ? -14 + 10 * s : s < 2 ? -4 + 9 * (s - 1) : 5 + 17 * (s - 2);   // degrees: -14 .. -4 .. 5 .. 22
+      const az = MathUtils.degToRad(s < 2 ? 92 : lerp(92, 112, s - 2));
+      const dir = SKYC.dir.setFromSphericalCoords(1, MathUtils.degToRad(90 - el), az);
+      K.sky.material.uniforms.sunPosition.value.copy(dir);
+      K.sky.visible = s > 0.6;
+      ctx2.scene.background = s > 0.6 ? saved.bg : SKYC.night;
+      K.sun.position.copy(dir).multiplyScalar(700);
+      // the night is a dim blue light (model choice: enough to see the figures by), and the torches, the hearth and the pyres
+      const sk = clamp((el + 2) / 24, 0, 1);
+      K.sun.intensity = K.sunInt * lerp(0.28, 1, Math.max(sk, 1 - dark));
+      K.sun.color.setRGB(lerp(0.55, 1, sk), lerp(0.66, 0.93, sk), lerp(1, 0.8, sk));
+      K.hemi.intensity = K.hemiInt * lerp(1, 0.5, dark);
+      ctx2.renderer.toneMappingExposure = K.exposure * lerp(1, 0.6, dark);
+      ctx2.scene.environment = K.env;
+      if (ctx2.scene.fog) ctx2.scene.fog.color.copy(SKYC.fogN).lerp(SKYC.fog.setHex(K.fogColor), day);
+    };
+    const skyAt = (list, i, sec) => {
+      const kB = list.indexOf("barkai");
+      if (kB < 0 || i < kB) return 0;
+      const st = DATA.stages[list[i]], u = clamp(sec / Math.max(1, st.dur), 0, 1);
+      if (i === kB) return 1.2 * smooth(clamp((sec - 2) / 12, 0, 1));
+      const n = list.length - 1 - kB, v = (k) => 1.2 + 1.8 * (k - kB) / Math.max(1, n);
+      return lerp(v(i - 1 >= kB ? i - 1 : kB), v(i), u);
+    };
+    const enterWorld = () => {
+      const K = SH.sky, lg = ctx2.scene.getObjectByName("labels");
+      // the model's labels are put aside while the demonstration runs (its own tags name the priests); they come back at its end
+      saved = { bg: ctx2.scene.background, sunCol: K ? K.sun.color.clone() : null, labels: lg ? lg.visible : null };
+      { const NK = SH.nightKit; saved.night = !!(NK && NK.begin()); }   // TAMID_NIGHT_207
+      if (lg) lg.visible = false;
+      if (fnc(SH.stopDemos)) { try { SH.stopDemos("tamid-demo"); } catch (_) {} }   // (TAMID_STOP_209: the others, not itself)
+      // SLAUGHTER_HOLD_211: the priests' ways cross the slaughter place as it stands in the usual layout (two rows of pillars, the
+      // tables south of them) - the Ra'avyah's row and the Gra's (40-altar.js, SLAUGHTER_SPLIT_211) stand across those ways. While
+      // the demonstration runs the usual layout is shown; the viewer's choice comes back at its end
+      { const SL = SH.slaughterLayout; saved.slaughter = SL && (SL.current === "raavyah" || SL.current === "gra") ? SL.current : null; if (saved.slaughter) SL.set("bartenura"); }
+      applyLampRot();
+      floorCache.clear();
+      W.paths.clear();
+      W.routes.clear();
+      lastI = -1;
+    };
+    const leaveWorld = () => {
+      W.group.visible = false;
+      stopSounds();
+      if (saved && saved.slaughter && SH.slaughterLayout) { SH.slaughterLayout.set(saved.slaughter); saved.slaughter = null; }   // SLAUGHTER_HOLD_211
+      if (saved && saved.night && SH.nightKit) SH.nightKit.end();   // TAMID_NIGHT_207 (the lines below give the day back as well)
+      const K = SH.sky;
+      if (K) {
+        K.sky.material.uniforms.sunPosition.value.copy(K.sunDir);
+        K.sky.visible = true;
+        K.sun.position.copy(K.sunDir).multiplyScalar(700);
+        K.sun.intensity = K.sunInt;
+        if (saved && saved.sunCol) K.sun.color.copy(saved.sunCol);
+        K.hemi.intensity = K.hemiInt;
+        ctx2.renderer.toneMappingExposure = K.exposure;
+        ctx2.scene.environment = K.env;
+        if (ctx2.scene.fog) ctx2.scene.fog.color.setHex(K.fogColor);
+      }
+      ctx2.scene.background = saved ? saved.bg : null;
+      { const lg = ctx2.scene.getObjectByName("labels"); if (lg && saved && saved.labels != null) lg.visible = saved.labels; }
+      const m = SH.menorah;
+      if (m && fnc(m.reset)) m.reset();
+      if (SH.mokedSlab && fnc(SH.mokedSlab.pose)) SH.mokedSlab.pose(0, true);   // KEY_SLAB_211: the tablet in its place, the keys under it
+      const T = SH.tapuach;
+      if (T && T.heap && T.heap.userData.s0) T.heap.scale.copy(T.heap.userData.s0);
+      const g = SH.goldenAltar;
+      if (g) { if (g.coals) g.coals.visible = true; for (const s of g.smoke || []) { s.visible = true; s.scale.y = 1; s.position.y = g.top + 0.05 + (s.geometry.parameters ? s.geometry.parameters.height / 2 : 0); } }
+      for (const o of W.modelGez) o.visible = true;
+      chelGate(-1);   // CHEL_GATE_215: the leaves as they were
+      if (SH.greatGate && fnc(SH.greatGate.pose)) { try { SH.greatGate.pose(1); } catch (_) {} }
+      if (SH.mukhni && fnc(SH.mukhni.stop)) { try { SH.mukhni.stop(); } catch (_) {} }
+      saved = null;
+      TM.stage = -1;
+    };
+    // CHEL_GATE_215: the gate of Beit HaMoked to the chel (10-core.js doors, tagged userData.tmDoors; it stands ajar in the model) -
+    // "הממונה בא ודופק עליהם, והם פתחו לו" (Tamid 1:2): from the knock its leaves open out to the chel (half a radian - the landing
+    // before it is 2.3 amot deep), so that the officer walks in through the doorway and not through the leaves (found 16.11.2026: he passed between
+    // two leaves ajar, 0.4 amah apart). At the demo's end the leaves are as they were.
+    const CG = { o: null, r0: null, cur: null };
+    const chelGate = (u) => {
+      if (u < 0) { if (CG.o && CG.r0) { CG.o.children[0].rotation.y = CG.r0[0]; CG.o.children[1].rotation.y = CG.r0[1]; } CG.o = CG.r0 = CG.cur = null; return; }
+      if (!CG.o) {
+        const P0 = SH.mokedGates && SH.mokedGates.mode === "adjacent" ? [-2.5, -73.3] : [-18, -77];
+        let best = null, bd = 2.5;
+        const v = new Vector3();
+        ctx2.scene.traverse((o) => {
+          if (!o.userData || !o.userData.tmDoors || o.children.length < 2) return;
+          let q = o, vis = true;
+          while (q && vis) { vis = q.visible; q = q.parent; }
+          if (!vis) return;
+          o.getWorldPosition(v);
+          const d = Math.hypot(v.x - P0[0], v.z - P0[1]);
+          if (d < bd) { bd = d; best = o; }
+        });
+        if (!best) return;
+        CG.o = best; CG.r0 = [best.children[0].rotation.y, best.children[1].rotation.y];
+      }
+      if (u === CG.cur) return;
+      CG.cur = u;
+      if (u <= 0) { CG.o.children[0].rotation.y = CG.r0[0]; CG.o.children[1].rotation.y = CG.r0[1]; return; }
+      // half a radian: the leaves open out over the landing before the gate (it is 2.3 deep) and leave 1.6 amot between them
+      const inw = CG.o.userData.tmDoors.inward || 1, a = 0.5, k = Math.min(1, u);
+      CG.o.children[0].rotation.y = lerp(CG.r0[0], -a * inw, k);
+      CG.o.children[1].rotation.y = lerp(CG.r0[1], Math.PI + a * inw, k);
+    };
+    // ---------------------------------------------------------------- the clock
+    let lastI = -1, lastSec = 0, lastO = "";
+    const play = (o, i, sec) => {
+      const list = TM.list(o);
+      i = clamp(i | 0, 0, list.length - 1);
+      const d = altDz(), top = TOP0 + topLift();
+      if (d !== D || top !== TOP) { D = d; TOP = top; floorCache.clear(); W.paths.clear(); W.routes.clear(); }
+      resetState();
+      for (let k = 0; k <= i; k++) {
+        const id = list[k], st = DATA.stages[id], fn = SC[id];
+        if (k === i) for (const f in W.figs) W.figs[f].st.tag = "";
+        snap();
+        const tau = k < i ? st.dur + 1 : clamp(sec, 0, st.dur);
+        if (fn) { try { fn(API(tau, id, k > 0 ? list[k - 1] : null)); } catch (e) { console.warn("[tamid] stage " + id + ":", e && e.message); } }
+      }
+      if (fnc(TM.qa)) { try { TM.qa(API(1e9, "qa", null)); } catch (e) { console.warn("[tamid] qa:", e && e.message); } }
+      for (const id in W.figs) applyFig(W.figs[id]);
+      applyLamb();
+      applyWorld();
+      applyProps();
+      applySky(skyAt(list, i, sec));
+      // the moving eye of a stage (CAMK), after the slide's own flight (sec > 0) and never while the viewer holds the presentation
+      const ck = CAMK[list[i]];
+      if (ck && sec > 0.02 && !tourHeld() && ctx2.camera && ctx2.controls) {
+        const [p, t] = camKey(ck(o), sec);
+        ctx2.camera.position.set(p[0], p[1], p[2]);
+        ctx2.controls.target.set(t[0], t[1], t[2]);
+      }
+      // the sounds of the current stage whose second the clock has just passed (forward, in the same stage, not by a jump)
+      if (i === lastI && o === lastO && sec > lastSec && sec - lastSec < 0.75) {
+        const cur = list[i];
+        for (const [sid, name, t] of N.fx) if (sid === cur && t > lastSec && t <= sec) sound(name);
+      }
+      lastI = i; lastSec = sec; lastO = o;
+      TM.stage = i; TM.sec = sec;
+    };
+    // ---------------------------------------------------------------- the sounds (WebAudio, made here; no files)
+    let AC = null, master = null;
+    const live = new Set();
+    const ac = () => {
+      if (SH.soundOff) return null;   // SOUND_211: the settings' row "קולות בהדגמות"
+      if (!AC) {
+        const C = window.AudioContext || window.webkitAudioContext;
+        if (!C) return null;
+        try { AC = new C(); master = AC.createGain(); master.gain.value = 0.55; master.connect(AC.destination); } catch (_) { return null; }
+      }
+      if (AC.state === "suspended") { try { AC.resume(); } catch (_) {} }
+      return AC;
+    };
+    const stopSounds = () => { for (const n of live) { try { n.stop(); } catch (_) {} } live.clear(); };
+    (SH.soundStops || (SH.soundStops = [])).push(stopSounds);   // SOUND_211: the row silences what sounds now
+    const noiseBuf = (a, sec) => { const b = a.createBuffer(1, Math.max(1, Math.floor(a.sampleRate * sec)), a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; };
+    const env = (g, t, att, hold, rel, peak) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + att); g.gain.setValueAtTime(peak, t + att + hold); g.gain.exponentialRampToValueAtTime(0.0001, t + att + hold + rel); };
+    const osc = (a, type, f, t, dur, peak, dest, att = 0.02, rel = 0.3) => {
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      env(g, t, att, Math.max(0, dur - att), rel, peak);
+      o.connect(g); g.connect(dest || master);
+      o.start(t); o.stop(t + dur + rel + 0.05);
+      live.add(o); o.onended = () => live.delete(o);
+      return o;
+    };
+    const noise = (a, t, dur, peak, fType, fFreq, q = 1, rel = 0.2) => {
+      const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+      s.buffer = noiseBuf(a, dur + rel + 0.1);
+      f.type = fType; f.frequency.value = fFreq; f.Q.value = q;
+      env(g, t, 0.005, dur, rel, peak);
+      s.connect(f); f.connect(g); g.connect(master);
+      s.start(t); s.stop(t + dur + rel + 0.1);
+      live.add(s); s.onended = () => live.delete(s);
+    };
+    const brass = (a, t, dur, f = 466) => {   // a silver trumpet: two detuned saws through a low-pass that opens
+      const lp = a.createBiquadFilter();
+      lp.type = "lowpass"; lp.Q.value = 2;
+      lp.frequency.setValueAtTime(600, t); lp.frequency.linearRampToValueAtTime(2600, t + 0.12);
+      lp.connect(master);
+      osc(a, "sawtooth", f, t, dur, 0.16, lp, 0.05, 0.12);
+      osc(a, "sawtooth", f * 1.004, t, dur, 0.12, lp, 0.05, 0.12);
+      osc(a, "square", f / 2, t, dur, 0.04, lp, 0.05, 0.12);
+    };
+    const sound = (name) => {
+      const a = ac();
+      if (!a) return;
+      const t = a.currentTime + 0.02;
+      try {
+        if (name === "knock") { for (let i = 0; i < 3; i++) { noise(a, t + i * 0.32, 0.03, 0.9, "lowpass", 380, 1, 0.15); osc(a, "sine", 95, t + i * 0.32, 0.05, 0.5, null, 0.003, 0.18); } }
+        else if (name === "mukhni") { const o = osc(a, "sawtooth", 70, t, 2.6, 0.07, null, 0.2, 0.4); o.frequency.linearRampToValueAtTime(95, t + 2.6); noise(a, t + 0.3, 2.3, 0.08, "bandpass", 900, 0.8, 0.5); noise(a, t + 2.7, 0.4, 0.2, "lowpass", 600, 1, 0.8); }
+        else if (name === "gate") { const o = osc(a, "sawtooth", 58, t, 4.2, 0.1, null, 0.3, 0.6); o.frequency.linearRampToValueAtTime(82, t + 3); noise(a, t, 4.2, 0.12, "lowpass", 160, 1, 0.6); osc(a, "sine", 46, t + 4.3, 0.2, 0.6, null, 0.005, 0.6); }
+        else if (name === "magrefa") { for (const [f, p] of [[523, 0.3], [811, 0.22], [1307, 0.15], [1879, 0.1], [2467, 0.07]]) osc(a, "sine", f, t, 0.05, p, null, 0.002, 1.6); noise(a, t, 0.08, 0.6, "highpass", 1800, 0.7, 0.9); osc(a, "sine", 70, t, 0.1, 0.5, null, 0.003, 0.8); }
+        else if (name === "ignite") noise(a, t, 1.4, 0.18, "bandpass", 1200, 0.6, 1.2);
+        // SOUND_211 (the user, 15.11.2026: more sounds in the morning's service; speech stays in the captions): a door on its pivot and
+        // its thud; water at the laver; a shovel in the coals and their crackle; logs laid on the pile; the lamb; the hiss of what is
+        // put on the fire; wine poured; a torch. All made here, model choices
+        else if (name === "door") { const o = osc(a, "sawtooth", 140, t, 0.7, 0.05, null, 0.05, 0.2); o.frequency.linearRampToValueAtTime(95, t + 0.7); noise(a, t, 0.7, 0.06, "bandpass", 700, 4, 0.2); noise(a, t + 0.85, 0.03, 0.5, "lowpass", 300, 1, 0.2); }
+        else if (name === "water") { for (let i = 0; i < 5; i++) noise(a, t + i * 0.33 + Math.random() * 0.1, 0.12, 0.22, "bandpass", 1500 + Math.random() * 1400, 1.2, 0.25); noise(a, t, 1.8, 0.05, "highpass", 2500, 0.5, 0.5); }
+        else if (name === "coals") { noise(a, t, 0.5, 0.25, "bandpass", 2400, 2.5, 0.25); noise(a, t + 0.6, 0.45, 0.2, "bandpass", 2000, 2.5, 0.3); for (let i = 0; i < 8; i++) noise(a, t + 0.2 + Math.random() * 1.6, 0.012, 0.35, "highpass", 3000, 0.8, 0.05); }
+        else if (name === "wood") { for (let i = 0; i < 4; i++) { const tt = t + i * 0.55; noise(a, tt, 0.02, 0.6, "bandpass", 520 + i * 60, 3, 0.12); osc(a, "sine", 150 + i * 14, tt, 0.03, 0.3, null, 0.002, 0.12); } }
+        else if (name === "bleat") {
+          const bp = a.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1100; bp.Q.value = 2.5; bp.connect(master);
+          const o = osc(a, "sawtooth", 420, t, 0.7, 0.14, bp, 0.05, 0.15); o.frequency.linearRampToValueAtTime(360, t + 0.7);
+          const l = a.createOscillator(), lg = a.createGain(); l.frequency.value = 11; lg.gain.value = 26; l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + 1); live.add(l); l.onended = () => live.delete(l);
+        }
+        else if (name === "hiss") { noise(a, t, 2.2, 0.1, "highpass", 3500, 0.6, 1.0); for (let i = 0; i < 10; i++) noise(a, t + Math.random() * 2.4, 0.012, 0.3, "highpass", 2800, 0.8, 0.05); }
+        else if (name === "pour") { noise(a, t, 1.6, 0.12, "bandpass", 900, 1.2, 0.5); for (let i = 0; i < 6; i++) osc(a, "sine", 500 + Math.random() * 500, t + 0.1 + i * 0.25, 0.04, 0.05, null, 0.005, 0.12); }
+        else if (name === "torch") { noise(a, t, 3.0, 0.07, "lowpass", 500, 0.7, 1.0); for (let i = 0; i < 14; i++) noise(a, t + Math.random() * 3.2, 0.012, 0.3, "highpass", 2600, 0.8, 0.05); }
+        else if (name === "barkai") osc(a, "sine", 660, t, 0.6, 0.05, null, 0.2, 0.8);
+        else if (name === "tekia") { brass(a, t, 1.4); for (let i = 0; i < 9; i++) brass(a, t + 1.8 + i * 0.16, 0.08); brass(a, t + 3.4, 1.4); }
+        else if (name === "tekiaShort") brass(a, t, 1.3);
+        else if (name === "cymbal") { noise(a, t, 0.05, 0.7, "highpass", 4000, 0.6, 1.8); for (const f of [3150, 4470, 5560, 7230]) osc(a, "square", f, t, 0.02, 0.025, null, 0.001, 1.2); }
+        else if (name === "song" || name === "blessing") {   // a quiet choir of four voices (and for the song a lyre) - model choice
+          const base = name === "blessing" ? 196 : 220, chord = [1, 5 / 4, 3 / 2, 2];
+          const lp = a.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1400; lp.connect(master);
+          chord.forEach((r, i) => { osc(a, "triangle", base * r, t + i * 0.12, 5.5, 0.05, lp, 1.2, 2.2); osc(a, "sawtooth", base * r * 1.003, t + i * 0.12, 5.5, 0.012, lp, 1.2, 2.2); });
+          if (name === "song") [0, 2, 4, 5, 7, 9, 7, 4].forEach((s, i) => osc(a, "sine", base * 2 * Math.pow(2, s / 12), t + 0.4 + i * 0.55, 0.02, 0.12, null, 0.003, 1.4));
+        }
+      } catch (_) {}
+    };
+    SH.sfx = { play: (name) => sound(name), stop: stopSounds };   // SOUND_211: 55-payis.js sounds the night with it
+    // ---------------------------------------------------------------- the button on the model (over the altar), as the other demonstrations
+    {
+      const MB = Array.isArray(SH.modelButtons) ? SH.modelButtons : (SH.modelButtons = []);
+      MB.push({
+        id: "tamid-demo", label: "הדגמה: סדר עבודת הבוקר", labelOn: "עצור את ההדגמה", maxDist: 150,
+        title: "סדר עבודת הבוקר לפי מסכת תמיד — מבית המוקד בלילה ועד שיר הלויים, שלב אחר שלב, בלשון המשנה ובסדר שנבחר בתפריט, תחת ״שיטות ומחלוקות״ (אביי או הרמב״ם).",
+        anchor: () => [ACX, TOP0 + 7.5, ACZ + 14 + altDz()],
+        show: () => !(ctx2.layers && ctx2.layers.altar28 && ctx2.layers.altar28.visible),   // MEASURES_211: not over the plates of the altar's measures
+        get: () => { const T = SH.tour; try { const s = T && fnc(T.state) ? T.state() : null; return !!(s && s.running && s.mode === "tamid"); } catch (_) { return false; } },
+        set: (on) => { const T = SH.tour; if (!T) return; if (on) T.start("tamid"); else if (fnc(T.stop)) T.stop(); }
+      });
+    }
+    // TAMID_STOP_209 (the full review, 13.11.2026): the demonstration runs as the presentation's fourth mode, so the rule of 90-entry.js
+    // "every switch first stops the demonstrations" (ctx.shared.demoStops) did not reach it: a place pressed in the panel flew there, and
+    // the demonstration's moving eye took the camera back at once (and went on, stage after stage). Now it is one of them - a switch
+    // ends it; the presentation's own banner is not a switch (90-entry.js), and its own start stops the others but not itself
+    (SH.demoStops || (SH.demoStops = [])).push({
+      id: "tamid-demo",
+      running: () => { const T = SH.tour; try { const s = T && fnc(T.state) ? T.state() : null; return !!(s && s.running && s.mode === "tamid"); } catch (_) { return false; } },
+      stop: () => { const T = SH.tour; if (T && fnc(T.stop)) T.stop(); }
+    });
+  }

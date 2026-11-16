@@ -1,0 +1,12 @@
+import { open } from '/home/claude/qa/fs/h.mjs';
+const P = await open('/home/claude/b2src/plugin', { dsf: 0.5, vw: 800, vh: 500 }); const pg = P.page;
+await P.settle(30000, 3);
+const r = await pg.evaluate(() => { const c = window.__ctx, T = c.THREE; c.scene.updateMatrixWorld(true); const out = [];
+  c.scene.traverse((o) => { if (!o.isMesh || o.isInstancedMesh) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
+    if (b.max.x < 92 || b.min.x > 98 || b.max.z < -15 || b.min.z > 15 || b.max.y < 14 || b.max.x - b.min.x > 8 || b.max.z - b.min.z > 8) return;
+    let vis = true; for (let a = o; a; a = a.parent) if (a.visible === false) vis = false;
+    const m = Array.isArray(o.material) ? o.material[0] : o.material;
+    out.push((vis ? 'VIS ' : 'hid ') + o.geometry.type + ' ' + (m.color ? m.color.getHexString() : '') + ' x[' + b.min.x.toFixed(2) + ',' + b.max.x.toFixed(2) + '] y[' + b.min.y.toFixed(1) + ',' + b.max.y.toFixed(1) + '] z[' + b.min.z.toFixed(2) + ',' + b.max.z.toFixed(2) + '] < ' + (o.parent && (o.parent.name || o.parent.type))); });
+  return out.join('\n'); });
+console.log(r); await P.close(); process.exit(0);
