@@ -1333,10 +1333,11 @@
     // layers (mechonaWash / mechonaPurpose), so they show while the water runs. The figures and their places - model choices.
     const kidd = { w: null, p: null, organs: null };
     try {
-      const w = ark_priestFig(3);
+      // KIDDUSH_BEND_212 (the user, 16.11.2026 13:31: "כמה שיותר זקוף ורק היד שלו על הרגל (כיפוף ולא נפילה...)"): the legs upright,
+      // bent at the waist, each hand on its leg (58-ark.js ark_kiddush) - until 1.4.5 the whole figure leaned from the ankles (0.5)
+      const w = ark_priestFig(3, true);
       w.g.position.set(WASH[0] + VSL_TAP_R + 0.85, F, WASH[1]); w.g.rotation.y = -Math.PI / 2;
-      w.lean.rotation.x = 0.5;   // the kit bends from the ankles (no hip joint): a moderate lean, the arms straight down past the knees
-      ark_setArm(w.L, [-0.3, 0.14, 0], 1); ark_setArm(w.R, [-0.3, 0.14, 0], -1);
+      ark_kiddush(w, 0.95);
       wash.add(w.g); kidd.w = w;
       const q = ark_priestFig(5);
       q.g.position.set(STOP[0] + VSL_TAP_R + 0.48, F, STOP[1] - 0.9); q.g.rotation.y = Math.atan2(-0.48, 0.9);   // north of the stream, his face to it
