@@ -1,0 +1,14 @@
+import { open } from '/home/claude/qa/fs/h.mjs';
+const P = await open('/home/claude/b2src/plugin', { dsf: 0.5, vw: 900, vh: 560 }); const pg = P.page;
+await P.settle(30000, 3);
+const r = await pg.evaluate(async () => { const c = window.__ctx, S = c.shared, wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  let g = null; c.scene.traverse((o) => { if (!g && o.name && /solomon/i.test(o.name)) g = o; });
+  const out = { name: g && g.name };
+  S.solomonVessels.set('ten'); out.before = g ? g.visible : null;
+  S.ykEntry.start(); await wait(1500); out.during = g ? g.visible : null; out.on = S.ykEntry.on;
+  S.ykEntry.stop(); await wait(300); out.after = g ? g.visible : null;
+  S.solomonVessels.set('one'); out.one = g ? g.visible : null;
+  S.ykEntry.start(); await wait(800); out.duringOne = g ? g.visible : null; S.ykEntry.stop(); await wait(200); out.afterOne = g ? g.visible : null;
+  return out; });
+console.log(JSON.stringify(r), JSON.stringify(P.errs.slice(0, 3)));
+await P.close(); process.exit(0);
