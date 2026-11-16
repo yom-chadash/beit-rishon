@@ -43109,11 +43109,12 @@ var OtzariaPlugin = (() => { //
       o.c = 1 - 0.11 * k * Math.max(0, -fold); //
       o.tv = (y - 0.1) / 1.8; //
     }); //
-    // KIDDUSH_BEND_212 (the user, 16.11.2026 13:31: "בכל קידוש ידיים ורגליים הכהן צריך להיות כמה שיותר זקוף ורק היד שלו על הרגל //
-    // (כיפוף ולא נפילה...)", in both houses): the kutonet in two at the waist, under the avnet (WAIST) - that the body may bend there //
-    // while the legs stand upright (55-tamid.js "kiddush"). The same surface as gRobeBody (its folds, shades and uv) in two bands; the //
-    // lower goes on a little up inside the upper one (narrower, and narrowing as it goes up: hidden while he stands), and closes the back as he bends. //
-    const WAIST = 1.33; //
+    // KIDDUSH_BEND_212 / KIDDUSH_FOOT_213 (the user, 16.11.2026 13:31 and 17:14: "הקידוש צריך להיות יד ימין על רגל ימין (מורמת) וכן //
+    // בשמאל לפי הסדר! בכל ההדגמות!"): the kutonet in two at the hips (WAIST - the name kept; 1.33, at the avnet, until 2.0.4) - that the //
+    // body may bend there while the legs stay, and a leg may rise (55-tamid.js). One surface (as gRobeBody: its folds, shades and uv), its //
+    // index cut at the row of the hips: the two parts share their vertices and normals - no seam while he stands. Below, a band a little //
+    // narrower inside the upper part, narrowing as it goes up: hidden while he stands, it closes the back as he bends. //
+    const WAIST = 1.0; //
     const robeBand = (y0, y1, rows, grow) => surf(40, rows, (u, v, o) => { //
       const y = y0 + (y1 - y0) * v, a = u * TAU + Math.PI, k = Math.max(0, (1.3 - y) / 1.2); //
       const fold = Math.sin(7 * a + 0.8) * 0.6 + Math.sin(11 * a + 2.1) * 0.4, m = (1 + 0.02 * k * fold) * (typeof grow === "function" ? grow(v) : grow); //
@@ -43123,8 +43124,16 @@ var OtzariaPlugin = (() => { //
       o.c = 1 - 0.11 * k * Math.max(0, -fold); //
       o.tv = (y - 0.1) / 1.8; //
     }); //
-    const gRobeLow = mergeGeometries([robeBand(0.1, WAIST, 26, 1), robeBand(WAIST - 0.02, WAIST + 0.13, 6, (v) => 0.965 - 0.42 * v * v)]); //
-    const gRobeUp = robeBand(WAIST, 1.9, 16, 1); //
+    const ROWS = 48, CUT = Math.round(ROWS * (WAIST - 0.1) / 1.8);   // (the hips' row: 24) //
+    const gRobeAll = robeBand(0.1, 1.9, ROWS, 1); //
+    const part = (j0, j1) => { //
+      const q = new BufferGeometry(); //
+      for (const k of ["position", "uv", "color", "normal"]) q.setAttribute(k, gRobeAll.attributes[k]); //
+      q.setIndex(Array.from(gRobeAll.index.array.slice(j0 * 40 * 6, j1 * 40 * 6))); //
+      return q; //
+    }; //
+    const gRobeLow = mergeGeometries([part(0, CUT), robeBand(WAIST - 0.02, WAIST + 0.16, 6, (v) => 0.97 - 0.4 * v * v)]); //
+    const gRobeUp = part(CUT, ROWS); //
     // an arm hanging from the shoulder (its origin), a little bent at the elbow: the sleeve to the wrist (its top is the shoulder's //
     // own roundness - no ball on it) //
     const SH_X = 0.252, SH_Y = 1.728, BEND = 0.2, UP = 0.36, FORE = 0.34; //
@@ -44093,6 +44102,7 @@ var OtzariaPlugin = (() => { //
     if (!DATA) return; //
     const F = LV.KOH, MK = 13.5, HEI = LV.HEI, ACX = 55.5, ACZ = -3.5, TOP0 = F + 9; //
     const SH = ctx2.shared; //
+    const KID = {};   // KIDDUSH_FOOT_213: the raised leg, the hand's place on the foot, the priest's spots and the stream (below) //
     const fnc = (f) => typeof f === "function"; //
     const clamp = (v, a, b) => (v < a ? a : v > b ? b : v); //
     const lerp = (a, b, u) => a + (b - a) * u; //
@@ -44729,6 +44739,10 @@ var OtzariaPlugin = (() => { //
           upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, //
           upH: upper(H.up), foH: fore(H.fo), handH: { 1: hand(1, H.fo), "-1": hand(-1, H.fo) }, //
           foot: { 1: foot(1), "-1": foot(-1) }, //
+          // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin //
+          thigh: W1(new CylinderGeometry(0.084 * FS, 0.1 * FS, 1, 12, 1, true).translate(0, 0.5, 0)), //
+          knee: W1(K.sph(0.09 * FS, 0.09 * FS, 0.09 * FS, 12, 8)), //
+          shin: W1(new CylinderGeometry(0.04 * FS, 0.05 * FS, 1, 10, 1, true).translate(0, 0.5, 0)), //
           neck: sc(K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), 1), //
           mLev: K.mat(COL.levite, { vertexColors: true, roughness: 0.9 }), mLevCap: K.mat(COL.levCap, { roughness: 0.9 }) //
         }; //
@@ -44795,9 +44809,23 @@ var OtzariaPlugin = (() => { //
         fl.position.x = 0.1 * FS; //
         fr.position.x = -0.1 * FS; //
         g.add(fl, fr); //
+        // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14): a leg that rises for kiddush, on each side - hidden while he stands (his own foot) //
+        let legs = null; //
+        if (bend) { //
+          legs = {}; //
+          for (const side of [1, -1]) { //
+            const lg = new Group(); //
+            lg.visible = false; //
+            lean.add(lg); //
+            const th = new Mesh(KG.thigh, lev ? KG.mLev : K.mRobe), kn = new Mesh(KG.knee, lev ? KG.mLev : K.mRobe); //
+            const sn = new Mesh(KG.shin, K.mSkin), ft = new Mesh(KG.foot[side], K.mSkin); //
+            for (const m of [th, kn, sn, ft]) { m.castShadow = true; lg.add(m); } //
+            legs[side] = { g: lg, th, kn, sn, ft }; //
+          } //
+        } //
         g.visible = false; //
         group.add(g); //
-        const f = { id, g, lean, bend, A, L, R, fl, fr, levite: lev, kind, body, belt, st: null, tag: null, kit: true }; //
+        const f = { id, g, lean, bend, legs, A, L, R, fl, fr, levite: lev, kind, body, belt, st: null, tag: null, kit: true }; //
         figs[id] = f; //
         return f; //
       }; //
@@ -45476,7 +45504,7 @@ var OtzariaPlugin = (() => { //
       } //
       W.lamb.st = { vis: false, x: 0, y: 0, z: 0, yaw: 0, pose: "stand", ph: 0 }; //
       for (const id in W.props) { const p = W.props[id]; if (!p.st) p.st = {}; Object.assign(p.st, { vis: false, fig: null, hand: "R", x: 0, y: 0, z: 0, ry: 0, rx: 0 }); } //
-      Object.assign(N, { sleepers: 1, gate: 0, mukhni: 1, lamps: [1, 1, 1, 1, 1, 1, 1], tap: 1, l1: 0, l2: 0, gz: 0, glow: 0, ashGold: 1, coals: 0, smoke: 0, //
+      Object.assign(N, { kidWater: 0, sleepers: 1, gate: 0, mukhni: 1, lamps: [1, 1, 1, 1, 1, 1, 1], tap: 1, l1: 0, l2: 0, gz: 0, glow: 0, ashGold: 1, coals: 0, smoke: 0, //
         blood: { ne: 0, sw: 0, ys: 0 }, roofs: false, torches: [0, 0], coalsS: 0, coalsG: 0, teniAsh: 0, kafLid: 1, mizrak: 0, slab: 0, slabKeys: 1, fx: [] }); //
       N.lamps.fill(1); //
     }; //
@@ -45512,7 +45540,7 @@ var OtzariaPlugin = (() => { //
           Object.assign(f.st, { vis: true, x, z, y: o.y != null ? o.y : floorAt(x, z, o.h), pose: o.pose || "stand" }); //
           if (yaw != null) f.st.yaw = yaw; //
         }, //
-        pose(k, p, t0, t1 = 1e9) { if (tau >= t0 && tau < t1) { const f = fig(k); f.st.pose = p; f.st.t = tau - t0; } }, //
+        pose(k, p, t0, t1 = 1e9) { if (tau >= t0 && tau < t1) { const f = fig(k); f.st.pose = p; f.st.t = tau - t0; f.st.tl = t1 - tau; } }, //
         face(k, yaw, t) { if (tau >= t) fig(k).st.yaw = yaw; }, //
         hide(k, t = 0) { if (tau >= t) fig(k).st.vis = false; }, //
         tag(k, text, t0 = 0, t1 = 1e9) { if (tau >= t0 && tau < t1) fig(k).st.tag = text; }, //
@@ -45696,9 +45724,19 @@ var OtzariaPlugin = (() => { //
       a.go("t", [22.2, 53.3], 0, 7.4, { yaw: 0 }); //
       a.ramp("mukhni", 1, 0, 7.6, 14); //
       a.fx("mukhni", 9.5); //
-      a.fx("water", 15.3);   // SOUND_211 //
-      a.pose("t", "kiddush", 15, 19.5); //
-      a.tag("t", "מקדש ידיו ורגליו — יד ימין על רגל ימין (זבחים יט:)", 15, 19.6); //
+      // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר!"): he raises his right foot, //
+      // his right hand on it, under the north spout's stream (his face to the laver), lowers it; a step west, the left hand on the raised //
+      // left foot (Zevachim 19b, 130:754: "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש") //
+      const qR = KID.spot(-1), qL = KID.spot(1); //
+      a.walk("t", [[22.2, 53.3], qR], 14.3, 15.0, { yaw: KID.yaw(-1) }); //
+      a.pose("t", "kidR", 15.0, 17.05); //
+      a.set("kidWater", 1, 15.45); a.set("kidWater", 0, 16.65); //
+      a.fx("water", 15.4);   // SOUND_211 //
+      a.walk("t", [qR, qL], 17.1, 17.95, { yaw: KID.yaw(1) });   // KIDDUSH_SOUTH_214: a step west (round the stream until 2.0.13) //
+      a.pose("t", "kidL", 18.0, 19.95); //
+      a.set("kidWater", 2, 18.45); a.set("kidWater", 0, 19.55); //
+      a.fx("water", 18.4); //
+      a.tag("t", "מקדש ידיו ורגליו — יד ימין על רגל ימין, ואחר כך יד שמאל על רגל שמאל (זבחים יט:)", 15, 19.95); //
     }; //
     SC.terumah = (a) => { //
       const pan = A(45.3, 15.3); //
@@ -46233,6 +46271,80 @@ var OtzariaPlugin = (() => { //
       } //
       return (f.kidArms = out); //
     }; //
+    // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "הקידוש צריך להיות יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר! בכל ההדגמות!"): //
+    // the leg in the figure's frame (the priest's kit units; side +1 the left): the hip; the knee and the ankle standing (0) and raised //
+    // (1: the thigh a little above the level, the shin down and forward); the foot's pitch (the toes a little down). The foot's ankle //
+    // point is (0, 0.15, -0.01) of its geometry, its top (0, 0.06, 0.10). The shapes and the height - model choices. //
+    // KIDDUSH_LEG_214 (as the First Temple's 58-ark.js ARK_LEG): the leg reaches further forward and the foot is higher - the knee at the //
+    // hip's height, the hand on the foot 1.34 above the floor and 1.3 ahead of him; until 2.0.13 the knee rose above the hip and the shin //
+    // ran in under the bent body, so that the leg itself was hardly seen - and the bend is less (42 degrees instead of 48) //
+    const LEG = { hip: 1.0, k0: [0.1, 0.55, 0.02], k1: [0.18, 1.12, 0.43], a0: [0.1, 0.15, -0.01], a1: [0.27, 1.02, 0.83], pitch: 0.1, side: 0.12 };   // side: the body leans a little to the standing leg (the head off the stream) //
+    const legAt = (side, u) => { //
+      const L2 = (a, b) => [side * lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)]; //
+      return { H: [side * 0.1, LEG.hip, 0], K: L2(LEG.k0, LEG.k1), A: L2(LEG.a0, LEG.a1), pitch: LEG.pitch * u }; //
+    }; //
+    const footTop = (A, pitch) => { const c = Math.cos(pitch), sn = Math.sin(pitch); return [A[0], A[1] - 0.09 * c - 0.11 * sn, A[2] - 0.09 * sn + 0.11 * c]; }; //
+    KID.local = (side) => { const FS = SH.priestKit.FS, q = legAt(side, 1), T = footTop(q.A, q.pitch); return [T[0] * FS, (T[1] + 0.035) * FS, T[2] * FS]; };   // the hand's place (amot) //
+    // where he stands for each side: the hand on the raised foot at KID.P (under the north spout's stream) //
+    // KIDDUSH_SOUTH_214: his face to the laver (south) for both - the right foot raised ahead of him, a step west, the left; he stands on //
+    // the court's floor, 0.56 north of the well's curb (until 2.0.13 he faced east for the right and west for the left and stood on the //
+    // well's wall - from the laver's own eye, in the west, the right was washed behind his back). From that eye both are seen from the side. //
+    KID.P = [22, 54.25];   // 40-altar.js: the laver KX 22, KZ 57; the north spout's mouth at z 55.35 - the stream comes 1.1 out //
+    KID.yaw = () => 0; //
+    KID.spot = (side) => { //
+      const T = KID.local(side), ps = KID.yaw(side), x2 = T[0] * Math.cos(ps) + T[2] * Math.sin(ps), z2 = -T[0] * Math.sin(ps) + T[2] * Math.cos(ps); //
+      return [KID.P[0] - x2, KID.P[1] - z2]; //
+    }; //
+    // the bend (the least that lets the hand reach the foot) and the arm's angles, per figure and side (cached) //
+    const kidFoot = (f, side) => { //
+      f.kidFoot = f.kidFoot || {}; //
+      if (f.kidFoot[side]) return f.kidFoot[side]; //
+      const K = SH.priestKit, FS = K.FS, WY = f.bend.position.y, A = f.A, a = A.up, b = A.fo + 0.06 * FS; //
+      const T = KID.local(side), sp = [side * A.sx, A.sy - WY, 0]; //
+      const ph = side * LEG.side, cp = Math.cos(ph), spp = Math.sin(ph);   // the bend group: Rx(th) then Rz(ph) (Euler XYZ) - the target back through both //
+      let th = 0, Tb = null; //
+      for (th = 0; th <= 1.3; th += 0.02) { //
+        const cb = Math.cos(th), sb = Math.sin(th), dy = T[1] - WY, y1 = dy * cb + T[2] * sb, z1 = -dy * sb + T[2] * cb; //
+        Tb = [T[0] * cp + y1 * spp, -T[0] * spp + y1 * cp, z1]; //
+        if (Math.hypot(Tb[0] - sp[0], Tb[1] - sp[1], Tb[2] - sp[2]) <= (a + b) * 0.985) break; //
+      } //
+      return (f.kidFoot[side] = { th, ph, arm: reach(sp, Tb, a, b, side) }); //
+    }; //
+    const _lv = new Vector3(), _lw = new Vector3(), _lup = new Vector3(0, 1, 0); //
+    const seg = (m, a, b) => { _lv.set(a[0], a[1], a[2]); _lw.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const n = _lw.length() || 1e-6; m.position.copy(_lv); m.quaternion.setFromUnitVectors(_lup, _lw.multiplyScalar(1 / n)); m.scale.set(1, n, 1); }; //
+    const setLeg = (f, side, u) => { //
+      const lg = f.legs[side], on = u > 0.02; //
+      if (lg.g.visible !== on) lg.g.visible = on; //
+      const own = side > 0 ? f.fl : f.fr; //
+      if (own.visible === on) own.visible = !on; //
+      if (!on) return; //
+      const FS = SH.priestKit.FS, q = legAt(side, u), H = q.H.map((v) => v * FS), Kp = q.K.map((v) => v * FS), A = q.A.map((v) => v * FS); //
+      seg(lg.th, H, Kp); //
+      lg.kn.position.set(Kp[0], Kp[1], Kp[2]); //
+      seg(lg.sn, Kp, A); //
+      const c = Math.cos(q.pitch), sn = Math.sin(q.pitch), ay = 0.15 * FS, az = -0.01 * FS; //
+      lg.ft.rotation.set(q.pitch, 0, 0); //
+      lg.ft.position.set(A[0], A[1] - (ay * c - az * sn), A[2] - (ay * sn + az * c)); //
+    }; //
+    // the north spout's stream (40-altar.js: its mouth at x 22, y KY + 1.22 - 0.129, z 55.35, pointing north and down by 0.35) onto the //
+    // hand on the raised foot (KID.P), and off the foot to the floor; built on first use //
+    KID.water = () => { //
+      const g = new Group(); //
+      g.name = "kiddushWater"; //
+      const M = new MeshStandardMaterial({ color: 0x7db8ec, emissive: 0x15406a, emissiveIntensity: 0.5, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.85, depthWrite: false }); //
+      const y0 = F + 0.6 + 1.22 - 0.129, hy = F + KID.local(-1)[1]; //
+      const P0 = new Vector3(22, y0, 55.35), C = new Vector3(22, y0 - 0.17, 55.35 - 0.47), P1 = new Vector3(KID.P[0], hy + 0.02, KID.P[1]); //
+      g.add(new Mesh(new TubeGeometry(new QuadraticBezierCurve3(P0, C, P1), 24, 0.034, 8, false), M)); //
+      const run = new Mesh(new CylinderGeometry(0.026, 0.036, 1, 8, 1, true).translate(0, -0.5, 0), M);   // off the foot's edge //
+      run.position.set(KID.P[0], hy - 0.2, KID.P[1] - 0.12); //
+      run.scale.y = Math.max(0.05, hy - 0.2 - F); //
+      g.add(run); //
+      const pool = new Mesh(new CircleGeometry(0.2, 20).rotateX(-Math.PI / 2), M);   // KIDDUSH_LEG_214: 0.2 (0.32 until 2.0.13) //
+      pool.position.set(KID.P[0], F + 0.012, KID.P[1] - 0.12); //
+      g.add(pool); //
+      W.group.add(g); //
+      return g; //
+    }; //
     const setArm = (A2, v, side) => { A2.sh.rotation.x = v[0]; A2.sh.rotation.z = side * v[1]; A2.el.rotation.x = v[2]; }; //
     const applyFig = (f) => { //
       const s = f.st; //
@@ -46241,7 +46353,7 @@ var OtzariaPlugin = (() => { //
       f.g.position.set(s.x, s.y, s.z); //
       f.g.rotation.y = s.yaw; //
       const p = s.pose; //
-      let R = POSES.stand[0], Lv = POSES.stand[1], lean = 0, bob = 0, fz0 = 0, fz1 = 0, bendA = 0; //
+      let R = POSES.stand[0], Lv = POSES.stand[1], lean = 0, bob = 0, fz0 = 0, fz1 = 0, bendA = 0, bendZ = 0, legR = 0, legL = 0; //
       if (p === "walk" || p === "walkCarry" || p === "walkHold") { //
         const sw = Math.sin(s.ph); //
         R = p === "walkCarry" ? POSES.carry[0] : p === "walkHold" ? POSES.hold[0] : [-0.32 * sw, 0.08, -0.25]; //
@@ -46260,6 +46372,14 @@ var OtzariaPlugin = (() => { //
         else if (p === "fingers") R = [R[0] + 0.06 * Math.sin(t * 2), R[1], R[2]]; //
         else if (p === "prostrate") { const u = clamp(t / 1.2, 0, 1), d = t > 2.2 ? clamp((t - 2.2) / 0.8, 0, 1) : 0, k = smooth(u) * (1 - smooth(d)); lean = 1.48 * k; R = Lv = [lerp(0.05, -2.9, k), 0.4 * k, 0]; } //
         else if (p === "knock") R = [-1.4 + 0.2 * Math.sin(t * 9), 0.05, -1.3]; //
+        else if ((p === "kidR" || p === "kidL") && f.legs && SH.priestKit) {   // KIDDUSH_FOOT_213: the foot raised, the hand on it //
+          const side = p === "kidR" ? -1 : 1, tl = s.tl == null ? 9 : s.tl; //
+          const u = smooth(clamp(t / 0.55, 0, 1)) * smooth(clamp(tl / 0.45, 0, 1)), H = kidFoot(f, side); //
+          const mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)], other = [0.15, 0.32, -0.3]; //
+          if (side < 0) { R = mix(POSES.stand[0], H.arm); Lv = mix(POSES.stand[1], other); legR = u; } //
+          else { Lv = mix(POSES.stand[1], H.arm); R = mix(POSES.stand[0], other); legL = u; } //
+          lean = 0; bendA = H.th * u; bendZ = H.ph * u; //
+        } //
         else if (p === "kiddush" && f.bend && SH.priestKit && SH.priestKit.bZ) {   // KIDDUSH_BEND_212: upright legs, bent at the waist, the hands on the legs //
           const u = smooth(clamp(t / 0.8, 0, 1)), H = kidReach(f), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)]; //
           R = mix(POSES.stand[0], H[-1]); Lv = mix(POSES.stand[1], H[1]); lean = 0.03 * u; bendA = KB * u; //
@@ -46267,7 +46387,8 @@ var OtzariaPlugin = (() => { //
       } //
       setArm(f.R, R, -1); //
       setArm(f.L, Lv, 1); //
-      if (f.bend) f.bend.rotation.x = bendA; //
+      if (f.bend) { f.bend.rotation.x = bendA; f.bend.rotation.z = bendZ; } //
+      if (f.legs) { setLeg(f, -1, legR); setLeg(f, 1, legL); } //
       f.lean.rotation.x = lean; //
       f.lean.position.y = bob + (lean > 1 ? 0.36 * Math.sin(lean) : 0); //
       f.fl.position.z = fz0; //
@@ -46363,6 +46484,8 @@ var OtzariaPlugin = (() => { //
       if (m && m.lampK) for (let i = 0; i < 7; i++) m.lampK[i] = clamp(N.lamps[i], 0, 1); //
       if (SH.greatGate && fnc(SH.greatGate.pose)) { try { SH.greatGate.pose(N.gate); } catch (_) {} } //
       if (SH.mukhni && fnc(SH.mukhni.pose)) { try { SH.mukhni.pose(5.6 * N.mukhni, null); } catch (_) {} } //
+      if (N.kidWater > 0 && !W.kidWater) { try { W.kidWater = KID.water(); } catch (_) {} }   // KIDDUSH_FOOT_213 //
+      if (W.kidWater) W.kidWater.visible = N.kidWater > 0; //
       const now = performance.now(); //
       if (N.roofs && fnc(SH.openFor) && now - roofAt > 2500) { roofAt = now; try { SH.openFor("crt-lishkot-roofs", 6000); } catch (_) {} } //
     }; //
@@ -47178,13 +47301,18 @@ var OtzariaPlugin = (() => { //
         const PPy = tm_people(ctx2); //
         SPOTS.forEach(([mx, mz], si) => DIRS.forEach(([dx, dz], di) => { //
           const G = new Group(); //
-          const foot = [mx + dx * (RB + 0.7), Y0, mz + dz * (RB + 0.7)], top = [mx + dx * (RT + 0.75), TOPY - 3.0, mz + dz * (RT + 0.75)]; //
+          // SIMCHA_POUR_214 (the user, 16.11.2026 17:23: "השפיכה מאבדת את הכן ושוכפת החוצה"): he climbs ON the ladder, 0.22 out from its //
+          // rungs all the way, and stops on its highest rung (TOPY - 1.3; until 2.0.13 he went up 0.6..0.7 out from it, in the air, and //
+          // stopped 3 under the cups' arms - his head at the cup's level and the jar under its rim): the cup at his waist, the jar at his chest //
+          const foot = [mx + dx * (RB + 0.22), Y0, mz + dz * (RB + 0.22)], top = [mx + dx * (RT + 0.26), TOPY - 1.3, mz + dz * (RT + 0.26)]; //
           G.position.set(foot[0], foot[1], foot[2]); //
           G.rotation.y = Math.atan2(-dx, -dz);   // his face to the shaft //
           MG.add(G); //
           PPy.crowd(G, [[0, 0, 0]], { y: 0, s: YS, pose: "stand", kind: "kohen", robe: 0xf1ede2, tone: () => (si + di) % 3, exact: true, name: "pirchaKehunah" }); //
           const jar = new Mesh(jarG, jarM); jar.position.set(0, 1.05 * YS, 0.36 * YS); jar.castShadow = true; G.add(jar); //
-          YOUTHS.push({ G, jar, foot, top, cup: si * 4 + di }); //
+          // the oil's stream from the jar's mouth into the cup (SIMCHA_POUR_214): a thin rod, set every frame of the pouring //
+          const run = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true).translate(0, -0.5, 0), oilM); run.visible = false; run.userData.noPick = true; MG.add(run); //
+          YOUTHS.push({ G, jar, foot, top, cup: si * 4 + di, run, cx: mx + dx * CUPR, cz: mz + dz * CUPR }); //
         })); //
       } catch (_) {} //
       // NOTE 4 (the understandability review, U-42): the two labels were a few pixels high in the place's view - twice their size; and //
@@ -47205,12 +47333,26 @@ var OtzariaPlugin = (() => { //
       // the demonstration's clock (seconds from the start): 0-1.5 stand, 1.5-11.5 climb, 11.5-13.5 pour, 13.5-14.5 the wicks catch, 14.5-23 down //
       const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }; //
       const D = { t0: -1, lit: false, held: -1, fl: 0 }; //
+      // SIMCHA_POUR_214: the jar is lifted to his chest before the pouring and tilted toward the cup: its mouth over the cup's middle, //
+      // 0.45 above the rim, its lowest edge 0.12 above it; the oil runs from the mouth down into the cup. Until 2.0.13 the jar rose //
+      // with him and was tilted beside the cup, under its rim, and no oil was seen. //
+      const _mo = new Vector3(); //
       const pose = (t) => { //
         const up = ss(1.5, 11.5, t) * (1 - ss(14.5, 23, t)), pour = Math.sin(Math.PI * Math.max(0, Math.min(1, (t - 11.5) / 2))); //
+        const lift = ss(10.9, 11.5, t) * (1 - ss(13.5, 14.2, t)); //
         for (const Y of YOUTHS) { //
           Y.G.position.set(Y.foot[0] + (Y.top[0] - Y.foot[0]) * up, Y.foot[1] + (Y.top[1] - Y.foot[1]) * up, Y.foot[2] + (Y.top[2] - Y.foot[2]) * up); //
           Y.jar.rotation.x = 1.3 * pour; //
-          Y.jar.position.y = (1.05 + 1.0 * up) * YS;   // the jar goes up to the cup as he reaches it //
+          Y.jar.position.y = (1.05 + 0.36 * lift) * YS; //
+          const on = pour > 0.35; //
+          if (Y.run.visible !== on) Y.run.visible = on; //
+          if (on) { //
+            Y.G.updateMatrixWorld(true); //
+            Y.jar.localToWorld(_mo.set(0, 0.66, 0)); MG.worldToLocal(_mo); //
+            const yb = TOPY + 0.12;   // the oil's face in the cup //
+            Y.run.position.copy(_mo); //
+            Y.run.scale.y = Math.max(0.05, _mo.y - yb); //
+          } //
         } //
         oils.forEach((o) => { o.visible = t >= 12.3; }); //
         const lit = (i) => t >= 13.5 + (i % 4) * 0.25; //
@@ -47218,7 +47360,7 @@ var OtzariaPlugin = (() => { //
         halos.forEach((h, i) => { h.visible = t >= 13.6 + i * 0.15; }); //
         caps(t); //
       }; //
-      const reset = () => { caps(-1); D.t0 = -1; for (const Y of YOUTHS) { Y.G.position.set(Y.foot[0], Y.foot[1], Y.foot[2]); Y.jar.rotation.x = 0; Y.jar.position.y = 1.05 * YS; } oils.forEach((o) => { o.visible = false; }); flames.forEach((f) => { f.visible = false; }); halos.forEach((h) => { h.visible = false; }); }; //
+      const reset = () => { caps(-1); D.t0 = -1; for (const Y of YOUTHS) { Y.G.position.set(Y.foot[0], Y.foot[1], Y.foot[2]); Y.jar.rotation.x = 0; Y.jar.position.y = 1.05 * YS; Y.run.visible = false; } oils.forEach((o) => { o.visible = false; }); flames.forEach((f) => { f.visible = false; }); halos.forEach((h) => { h.visible = false; }); }; //
       // SIMCHA_STOP_211 (the function review, F1-06 / F1-07; U-50): the demonstration was not among the registered ones - no pause bar, a //
       // press on the model did not pause it, "מבט כללי" did not end it, and its two flights (set by the place's click, on timers) took //
       // the eye back to the lamps from wherever the viewer had gone, in the presentation too. Now: stop / pause / resume / restart, //
@@ -48215,11 +48357,12 @@ var OtzariaPlugin = (() => { //
   var ui_AUTO_OFF_S = 15;   // 1.0.1-L (L.27): a feature a PLACE switched on goes off by itself after this many seconds //
   // 1.0.2 (C): the window "מה חדש" - shown once for this version (ver = manifest.json's version); short plain Hebrew, one line a feature //
   var UI_NEWS = { //
-    ver: "2.0.4",   // tools/assemble.mjs writes manifest.json's version here //
-    items: ["**קידוש ידיים ורגליים** — בהדגמת סדר עבודת הבוקר (״קידוש ידיים ורגליים — והמוכני״) הכהן עומד עכשיו ורגליו זקופות, שוחה מן המותניים, וידיו על רגליו — ״מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש״ (זבחים יט, ב). עד עכשיו נטה כל גופו באלכסון, כמו נופל.", "**המוכני של הכיור** — בשיטת הרמב״ם (בתפריט, תחת ״שיטות ומחלוקות״) נוספה לשונו בפירוש המשניות (תמיד ג, ח): ״מכסה גבוה יורד בגלגל״, ודברי התוספות יום טוב עליה (תמיד א, ד): ״שהיה כלי סביב ושהיו משקעים אותו הכלי״ — כלומר, זה אותו הכלי שסביב הכיור."] //
+    ver: "2.0.5",   // tools/assemble.mjs writes manifest.json's version here //
+    items: ["**קידוש ידיים ורגליים** — בהדגמת סדר עבודת הבוקר (בשלב ״קידוש ידיים ורגליים — והמוכני״) הכהן מרים את רגל ימין, ומניח עליה את יד ימין, תחת הזרם שיוצא מן הכיור. אחר כך הוא מוריד אותה, צועד צעד אחד, ועושה כך ברגל שמאל וביד שמאל — ״מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש״ (זבחים יט, ב). פניו אל הכיור, והוא עומד על רצפת העזרה. עד עכשיו הוא רק שחה מן המותניים, והניח את ידיו על רגליו.", "**שמחת בית השואבה** — בהדגמת המנורות של זהב, הילדים מפרחי הכהונה עולים על הסולמות, ועומדים על השלב העליון. הם מטים את הכדים מעל הספלים, ורואים את השמן נשפך לתוך כל ספל — ״שהן מטילין לכל ספל וספל״ (סוכה ה, ב). עד עכשיו עלו באוויר ליד הסולמות, והכד הוטה מתחת לשפת הספל, כך שהשמן לא נכנס אליו."] //
   }; //
   // what is new by version, newest first - one who saw a version is shown only the versions after it //
   var UI_NEWS_VERS = [ //
+    ["2.0.5", ["**קידוש ידיים ורגליים** — בהדגמת סדר עבודת הבוקר (בשלב ״קידוש ידיים ורגליים — והמוכני״) הכהן מרים את רגל ימין, ומניח עליה את יד ימין, תחת הזרם שיוצא מן הכיור. אחר כך הוא מוריד אותה, צועד צעד אחד, ועושה כך ברגל שמאל וביד שמאל — ״מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש״ (זבחים יט, ב). פניו אל הכיור, והוא עומד על רצפת העזרה. עד עכשיו הוא רק שחה מן המותניים, והניח את ידיו על רגליו.", "**שמחת בית השואבה** — בהדגמת המנורות של זהב, הילדים מפרחי הכהונה עולים על הסולמות, ועומדים על השלב העליון. הם מטים את הכדים מעל הספלים, ורואים את השמן נשפך לתוך כל ספל — ״שהן מטילין לכל ספל וספל״ (סוכה ה, ב). עד עכשיו עלו באוויר ליד הסולמות, והכד הוטה מתחת לשפת הספל, כך שהשמן לא נכנס אליו."]], //
     ["2.0.4", ["**קידוש ידיים ורגליים** — בהדגמת סדר עבודת הבוקר (״קידוש ידיים ורגליים — והמוכני״) הכהן עומד עכשיו ורגליו זקופות, שוחה מן המותניים, וידיו על רגליו — ״מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש״ (זבחים יט, ב). עד עכשיו נטה כל גופו באלכסון, כמו נופל.", "**המוכני של הכיור** — בשיטת הרמב״ם (בתפריט, תחת ״שיטות ומחלוקות״) נוספה לשונו בפירוש המשניות (תמיד ג, ח): ״מכסה גבוה יורד בגלגל״, ודברי התוספות יום טוב עליה (תמיד א, ד): ״שהיה כלי סביב ושהיו משקעים אותו הכלי״ — כלומר, זה אותו הכלי שסביב הכיור."]], //
     ["2.0.3", ["**שערי חולדה** — המבט של המקום (בתפריט: ״שערי הר הבית וחצרות״, ״שערי חולדה״) מראה עכשיו את שני השערים ואת המדרגות שלהם; עד עכשיו נראה בעיקר הקיר שביניהם.", "**הדגמת הפייסות** — הממונה, והאבוקה אחריו, באים מהר הבית, עוברים בפתח שבסורג ועולים בעשרים ושבע המדרגות שלאורך הכותל הצפוני של בית המוקד, עד השער; ואחרי שפותחים לו — עולים בחמש המדרגות שבתוך השער, אל רצפת הבית. עד עכשיו הלכו בדרך הישנה, מלפני שהחיל הועמד בגובה הר הבית (בגרסה 2.0.2), ועלו כאילו באוויר. וכך גם בפירושו השני של הרא״ש, שהשער בכותל המזרחי — ושם השער גם נפתח עכשיו לממונה.", "**הדגמת הפייסות, לשיטת הרמב״ם** — שתי דמויות שהלכו בתוך בית המוקד שתי אמות וחצי מתחת לרצפתו — הולכות עכשיו על הרצפה."]], //
     ["2.0.2", ["**לשכות כלי השיר** — שתי לשכות חדשות (מידות ב, ו; רמב״ם בית הבחירה ו, ו): פתחן בעזרת הנשים, והן נמשכות אל מתחת לרצפת עזרת ישראל; ובהן כינורות, נבלים ומצלתיים. מעליהן, משני צדי שער ניקנור, לשכת פנחס המלביש ולשכת עושי חביתין — ״בעזרת ישראל״, כלשון הרמב״ם (בית הבחירה ה, יז), ופתחן אליה. מקום הפתח ועומק הלשכה — בחירת מודל. בתפריט: ״לשכות״.", "**חלקי יהודה ובנימין** — רצפת העזרה צבועה לפי חלקי השבטים, יהודה בזהב ובנימין בכחול; ונראית הרצועה היוצאת מחלקו של יהודה, שבה המזבח בנוי (יומא יב.; זבחים נג:). עד היכן היא נמשכת בדרום — בחירת מודל. בתפריט: ״מזבח וכלים״.", "**צפון לשחיטת קדשי קדשים** — ״איזהו צפון״ (יומא לו.): דעות רבי יוסי ברבי יהודה, רבי אלעזר ברבי שמעון ורבי נצבעות על רצפת העזרה, כל אחת בצבעה; והגבול הדרומי — לרש״י ולרמב״ם. מתג חדש בתפריט, תחת ״שיטות ומחלוקות״.", "**יום הכיפורים** — הדגמה חדשה: ״הכהן הגדול נכנס בקטורת״ (יומא ה, א–ב). מקומות חדשים: ״הרובד הרביעי״ ו״כני הזהב שבהיכל״ (תחת ״ההיכל ופנים״) ו״שלוש המחתות״ (תחת ״מזבח וכלים״). ושני מתגים: ״הפרוכות — שתיים או אחת״, ״כני הזהב — שניים או אחד״.", "**שמחת בית השואבה** — מנורות הזהב שבעזרת הנשים, גובהן חמישים אמה (סוכה נב:); ובהדגמה פרחי הכהונה עולים בסולמות, יוצקים שמן ומדליקים. מספר המנורות — בחירת מודל. בתפריט: ״שערי הר הבית וחצרות״, ״מנורות של זהב״.", "**בית המוקד** — הבית הורחב, וארבע לשכותיו נבנו מחדש. מקומות חדשים תחת ״לשכות״: ״לשכת עושי לחם הפנים״ (התנור, הדפוסים והחלות), ״לשכת החותמות״, ״לשכת אבני המזבח״ ו״הירידה לבית הטבילה״. וברצפה — טבלת השיש שתחתיה מפתחות העזרה (מידות א, ט).", "**אנשים וכלים בלשכות** — בלשכת המלח, הפרוה, המדיחין, בית אבטינס, פרהדרין, הנזירים, המצורעים, עושי חביתין ולשכת הכלים; ובלשכת פנחס המלביש — תשעים ושישה החלונות לבגדי הכהונה (רמב״ם כלי המקדש ח, ח–ט). מי שעובד בכל לשכה — כהן, לוי או ישראל — לפי המקור; ובאין מקור, כתוב בכרטיס ״בחירת מודל״.", "**הממונים שבמקדש** — חמישה עשר הממונים שבמשנה (שקלים ה, א) עומדים במקומות עבודתם, ולכל אחד לוחית ובה מספרו, שמו ותפקידו. צבע הלוחית: כהן, לוי או ישראל — לפי המקורות; ומי ששבטו לא נתפרש — בכחול. בתפריט: ״לשכות״.", "**סדר עבודת הבוקר** — נוספו להדגמה: המפתח שמתחת לטבלת השיש (מידות א, ט); ״שלום, הכל שלום״; קידוש ידיים ורגליים (זבחים יט:); האברים שלא נתאכלו מבערב (תמיד ב, א); הצתת האליתא; המערכה השלישית; שפיכת דשן המזבח הפנימי והמנורה, מיד אחר הטבת שתי הנרות; ושנים עשר לויים האומרים שירה בפה, ולצדם המנגנים (רמב״ם כלי המקדש ג, ג). ותוקן: הזוכה בתרומת הדשן הוא המסדר את המערכה הגדולה ומניח את שני הגזרים (יומא כב.), והעולים למזבח עולים במזרח הכבש ויורדים במערבו (יומא ד, ה).", "**מתגים חדשים** (בתפריט, תחת ״שיטות ומחלוקות״) — ״צורת לחם הפנים״: ספינה רוקדת או תיבה פרוצה (מנחות צד:); ״קירוי הר הבית״: רק האצטבאות שבצדדים, או ההר כולו עד כותלי העזרות; ״הסורג — שלוש עשרה הפרצות״; ״חביתי כהן גדול — אפייה וטיגון״ (מנחות נ:); ״לשכת עושי לחם הפנים — מה נעשה בה״; ״המוכני של הכיור״: גלגל, ומשקיעים את הכיור בבור (רש״י והראב״ד), או כלי חול סביב הכיור, ובו המים (הרמב״ם).", "**בית המטבחים — ארבע שיטות** — שיטת הראבי״ה ושיטת הגר״א הוצגו עד כה, בטעות, כשיטה אחת; עכשיו כל אחת לעצמה. במתג ״בית המטבחים — העמודים והאונקליות״.", "**המזבח והכבש** — לכל מידה של המזבח (32, 30, 28, 26 ו־24 אמה) קו בצבע משלו, ולצדו לוחית; התפוח לשיטת הראב״ד צויר מחדש; הכבש הקטן העולה לסובב יוצא מצד הכבש הגדול; וחיצים על הכבש מראים היכן עולים והיכן יורדים (יומא ד, ה) — מקום חדש תחת ״מזבח וכלים״.", "**החיל** — נבנה מחדש: עשר אמות פנויות לפנים מן הסורג, כלשון הברטנורא, בגובה הר הבית, כדברי הרמב״ם (בית הבחירה ו, א); ושתים עשרה המעלות בתוכו.", "**ועוד במודל** — נרות המנורה: כשהיא עומדת מצפון לדרום (ברירת המחדל) הם פונים אל הנר האמצעי (מנחות צח:), וכשבוחרים בשיטת רבי, ממזרח למערב — פי כל הנרות למערב, כציור הרמב״ם בפירוש המשנה (תמיד ג, ט); מזוזה בשער ניקנור ובלשכת פרהדרין; ניצוצות הנברשת של הילני בזריחת החמה (יומא לז:); פתחים ודלתות ללשכות עזרת הנשים לשיטת הרא״ש; ושמות ברורים לשמונה השיטות שב״צורת התאים״.", "**צורת ההר** — הקרקע שסביב הר הבית יורדת אל נחל קדרון שבמזרח, אל המדרון שבדרום ואל העמק שבמערב; וכבש הפרה נמשך מעליה על כיפין. העומקים והמרחקים — בחירת מודל.", "**נוח יותר** — קולות בהדגמות (לכיבוי: בתפריט, תחת ״תצוגה״); כרטיס הסבר ארוך מציג את תחילתו ואת הפסקה ״במודל״, והכפתור ״המשך הכרטיס״ פותח את האמצע; המקש Enter מקרב אל המקום שהסמן עומד עליו, ו־Shift עם Enter מרחיק; דף ״ניווט״ נכתב מחדש בלשון פשוטה; גוון אבן עתיקה לחומות וללשכות (״תצוגה״); ו״מה חדש בגרסה זו״, בסוף התפריט, פותח שוב את הרשימה הזאת.", "**תיקונים** — בהדגמות: הכהנים אינם שוקעים עוד ברצפה בפייס הראשון; ההתכנסות לפייס ולקריאת שמע היא עכשיו בתוך לשכת הגזית; בפתיחת השער הגדול נראים המפתח והבריח מקרוב; ובפשפשים פותח את המנעולים כהן, ולא יד לבדה. ״מבט כללי״ מחזיר את מה שמקום הדליק מעצמו; ובמצגת כל מקום מוצג עם תצוגתו (הממונים, רצועת השבטים). תוקנו מבטים שנכנסו לתוך קיר. לדמויות שיער ופאות; הלויים בלבוש פשוט, ולא בבגדי כהונה."]], //

@@ -279,11 +279,11 @@
       o.c = 1 - 0.11 * k * Math.max(0, -fold);
       o.tv = (y - 0.1) / 1.8;
     });
-    // KIDDUSH_BEND_212 (the user, 16.11.2026 13:31: "בכל קידוש ידיים ורגליים הכהן צריך להיות כמה שיותר זקוף ורק היד שלו על הרגל
-    // (כיפוף ולא נפילה...)", in both houses - as the Second Temple's 55-payis.js): the kutonet in two at the waist, under the avnet
-    // (WAIST) - that the body may bend there while the legs stand upright; the lower goes on a little up inside the upper (narrower),
-    // to close the back as he bends
-    const WAIST = 1.36;
+    // KIDDUSH_BEND_212 / KIDDUSH_FOOT_213 (the user, 16.11.2026 13:31 and 17:14: "הקידוש צריך להיות יד ימין על רגל ימין (מורמת) וכן
+    // בשמאל לפי הסדר! בכל ההדגמות!" - as the Second Temple's 55-payis.js): the kutonet in two at the hips (WAIST; 1.36, at the avnet,
+    // until 1.4.6) - that the body may bend there while the legs stay, and a leg may rise. One surface, its index cut at the hips' row:
+    // the two parts share their vertices and normals (no seam while he stands); below, a narrower band inside, closing the back as he bends.
+    const WAIST = 1.0;
     const robeBand = (y0, y1, rows, grow) => surf(40, rows, (u, v, o) => {
       const y = y0 + (y1 - y0) * v, a = u * TAU + Math.PI, k = Math.max(0, (1.3 - y) / 1.2);
       const fold = Math.sin(7 * a + 0.8) * 0.6 + Math.sin(11 * a + 2.1) * 0.4, m = (1 + 0.02 * k * fold) * (typeof grow === "function" ? grow(v) : grow);
@@ -293,8 +293,16 @@
       o.c = 1 - 0.11 * k * Math.max(0, -fold);
       o.tv = (y - 0.1) / 1.8;
     });
-    const gRobeLow = mergeGeometries([robeBand(0.1, WAIST, 26, 1), robeBand(WAIST - 0.02, WAIST + 0.13, 6, (v) => 0.965 - 0.42 * v * v)]);
-    const gRobeUp = robeBand(WAIST, 1.9, 16, 1);
+    const ROWS = 48, CUT = Math.round(ROWS * (WAIST - 0.1) / 1.8);
+    const gRobeAll = robeBand(0.1, 1.9, ROWS, 1);
+    const part = (j0, j1) => {
+      const q = new BufferGeometry();
+      for (const k of ["position", "uv", "color", "normal"]) q.setAttribute(k, gRobeAll.attributes[k]);
+      q.setIndex(Array.from(gRobeAll.index.array.slice(j0 * 40 * 6, j1 * 40 * 6)));
+      return q;
+    };
+    const gRobeLow = mergeGeometries([part(0, CUT), robeBand(WAIST - 0.02, WAIST + 0.16, 6, (v) => 0.97 - 0.4 * v * v)]);
+    const gRobeUp = part(CUT, ROWS);
     // an arm hanging from the shoulder (its origin), a little bent at the elbow: the sleeve to the wrist (its top is the shoulder's
     // own roundness - no ball on it)
     const SH_X = 0.252, SH_Y = 1.728, BEND = 0.2, UP = 0.36, FORE = 0.34;
@@ -376,7 +384,11 @@
     const foot = (side) => sc(K.footGeo(side).translate(-side * 0.1, 0, 0), FS);
     const P = { sx: K.SH_X * FS, sy: K.SH_Y * FS, up: K.UP * FS, fo: K.FORE * FS };
     return (ark_kitArms.kg = { P, upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, foot: { 1: foot(1), "-1": foot(-1) },
-      neck: K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0) });
+      neck: K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0),
+      // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin
+      thigh: W1(new CylinderGeometry(0.084 * FS, 0.1 * FS, 1, 12, 1, true).translate(0, 0.5, 0)),
+      knee: W1(K.sph(0.09 * FS, 0.09 * FS, 0.09 * FS, 12, 8)),
+      shin: W1(new CylinderGeometry(0.04 * FS, 0.05 * FS, 1, 10, 1, true).translate(0, 0.5, 0)) });
   }
   // the arms' poses, [shoulder x, abduct, elbow] as 55-tamid.js POSES (a negative x lifts the arm forward): hanging; and the hand on the
   // staff that lies on the shoulder, before it (solved for a staff 0.3 off the body's middle, 2.62 over the floor - "בכתף ישאו", Numbers 7:9)
@@ -437,7 +449,81 @@
     g.add(fl, fr);
     ark_setArm(L, ARK_POSE.stand, 1);
     ark_setArm(R, ARK_POSE.stand, -1);
-    return { g, lean, bend, L, R, fl, fr };
+    // KIDDUSH_FOOT_213: with a waist, a leg that rises on each side (hidden while he stands - his own foot then)
+    let legs = null;
+    if (waist) {
+      legs = {};
+      for (const side of [1, -1]) {
+        const lg = new Group();
+        lg.visible = false;
+        lean.add(lg);
+        const th = new Mesh(KG.thigh, K.mRobe), kn = new Mesh(KG.knee, K.mRobe), sn = new Mesh(KG.shin, K.mSkin), ft = new Mesh(KG.foot[side], K.mSkin);
+        for (const m of [th, kn, sn, ft]) { m.castShadow = true; lg.add(m); }
+        legs[side] = { g: lg, th, kn, sn, ft };
+      }
+    }
+    return { g, lean, bend, legs, L, R, fl, fr };
+  }
+  // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "הקידוש צריך להיות יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר! בכל ההדגמות!"),
+  // as the Second Temple's 55-tamid.js: the leg in the figure's frame (kit units; side +1 the left) - the hip; the knee and the ankle
+  // standing (0) and raised (1); the foot's pitch; the hand's place on the raised foot (amot). The shapes and the height - model choices.
+  // KIDDUSH_LEG_214: the leg reaches further forward and the foot is higher (the knee at the hip's height, the hand on the foot at F + 1.34,
+  // 1.3 ahead of him; until 1.4.7 the knee rose above the hip and the shin ran in under the bent body, so that from the follow view only
+  // a hand on a foot in the air was seen - the leg itself was hidden), and the bend is less (42 degrees instead of 48)
+  const ARK_LEG = { hip: 1.0, k0: [0.1, 0.55, 0.02], k1: [0.18, 1.12, 0.43], a0: [0.1, 0.15, -0.01], a1: [0.27, 1.02, 0.83], pitch: 0.1, side: 0.12 };   // side: the lean to the standing leg (the head off the stream)
+  function ark_legAt(side, u) {
+    const L2 = (a, b) => [side * (a[0] + (b[0] - a[0]) * u), a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
+    return { H: [side * 0.1, ARK_LEG.hip, 0], K: L2(ARK_LEG.k0, ARK_LEG.k1), A: L2(ARK_LEG.a0, ARK_LEG.a1), pitch: ARK_LEG.pitch * u };
+  }
+  function ark_kidLocal(side) {
+    const FS = ark_kit().FS, q = ark_legAt(side, 1), c = Math.cos(q.pitch), sn = Math.sin(q.pitch);
+    return [q.A[0] * FS, (q.A[1] - 0.09 * c - 0.11 * sn + 0.035) * FS, (q.A[2] - 0.09 * sn + 0.11 * c) * FS];
+  }
+  // a priest with a waist and legs (ark_priestFig(n, true)) at kiddush: side -1 the right, +1 the left; u 0..1 how far the foot is up.
+  // The bend is the least that lets the hand reach the raised foot; the arm by two bones (cached per figure and side).
+  function ark_kidPose(w, side, u) {
+    const K = ark_kit(), KG = ark_kitArms(), FS = K.FS, P = KG.P, WY = w.bend.position.y;
+    const cl = (v, a, b) => (v < a ? a : v > b ? b : v), a = P.up, b = P.fo + 0.06 * FS;
+    w.kid = w.kid || {};
+    if (!w.kid[side]) {
+      const T = ark_kidLocal(side), sp = [side * P.sx, P.sy - WY, 0], ph = side * ARK_LEG.side, cp = Math.cos(ph), spp = Math.sin(ph);
+      let th = 0, Tb = null;
+      for (th = 0; th <= 1.3; th += 0.02) {
+        const cb = Math.cos(th), sb = Math.sin(th), dy = T[1] - WY, y1 = dy * cb + T[2] * sb, z1 = -dy * sb + T[2] * cb;
+        Tb = [T[0] * cp + y1 * spp, -T[0] * spp + y1 * cp, z1];   // back through the bend group's Rx(th) then Rz(ph)
+        if (Math.hypot(Tb[0] - sp[0], Tb[1] - sp[1], Tb[2] - sp[2]) <= (a + b) * 0.985) break;
+      }
+      const vx = Tb[0] - sp[0], vy = Tb[1] - sp[1], vz = Tb[2] - sp[2], D3 = Math.hypot(vx, vy, vz) || 1e-6;
+      const al = Math.asin(cl(vx / D3, -0.9, 0.9)), ca = Math.cos(al);
+      const Dp = Math.min(Math.hypot(vy, vz), (a + b) * ca - 1e-4), a2 = a * ca, b2 = b * ca;
+      const be = Math.acos(cl((a2 * a2 + Dp * Dp - b2 * b2) / (2 * a2 * Dp), -1, 1)), ga = Math.acos(cl((a2 * a2 + b2 * b2 - Dp * Dp) / (2 * a2 * b2), -1, 1));
+      w.kid[side] = { th, ph, arm: [Math.atan2(-vz, -vy) + be, side * al, -(Math.PI - ga)] };
+    }
+    const H = w.kid[side], other = [0.15, 0.32, -0.3], st = ARK_POSE.stand, mix = (q, v) => [q[0] + (v[0] - q[0]) * u, q[1] + (v[1] - q[1]) * u, q[2] + (v[2] - q[2]) * u];
+    ark_setArm(side < 0 ? w.R : w.L, mix(st, H.arm), side);
+    ark_setArm(side < 0 ? w.L : w.R, mix(st, other), -side);
+    w.lean.rotation.x = 0;
+    w.bend.rotation.x = H.th * u;
+    w.bend.rotation.z = H.ph * u;
+    for (const sd of [1, -1]) {
+      const lg = w.legs[sd], uu = sd === side ? u : 0, on = uu > 0.02;
+      lg.g.visible = on;
+      (sd > 0 ? w.fl : w.fr).visible = !on;
+      if (!on) continue;
+      const q = ark_legAt(sd, uu), Hh = q.H.map((v) => v * FS), Kp = q.K.map((v) => v * FS), A = q.A.map((v) => v * FS);
+      const seg = (m, p0, p1) => {
+        const d = new Vector3(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]), n = d.length() || 1e-6;
+        m.position.set(p0[0], p0[1], p0[2]);
+        m.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), d.multiplyScalar(1 / n));
+        m.scale.set(1, n, 1);
+      };
+      seg(lg.th, Hh, Kp);
+      lg.kn.position.set(Kp[0], Kp[1], Kp[2]);
+      seg(lg.sn, Kp, A);
+      const c = Math.cos(q.pitch), sn = Math.sin(q.pitch), ay = 0.15 * FS, az = -0.01 * FS;
+      lg.ft.rotation.set(q.pitch, 0, 0);
+      lg.ft.position.set(A[0], A[1] - (ay * c - az * sn), A[2] - (ay * sn + az * c));
+    }
   }
   // KIDDUSH_BEND_212: a priest with a waist (ark_priestFig(n, true)) at kiddush - the legs upright, bent at the waist by kb, each hand on
   // the front of its leg as low as it reaches (as the Second Temple's 55-tamid.js kidReach): "מניח ידו הימנית על גבי רגלו הימנית, וידו

@@ -1201,7 +1201,7 @@
     let WASH = [HX, washZ()];                      // (34.5, 22): beside the ramp, 5 west of it, between the ulam and the altar
     let ROUTE = [[HX, HZ], WASH, "wash", [HX, STOP[1]], STOP, "pour", [HX, STOP[1]], [HX, HZ]];   // home, the ramp, the corner, the tables and back
     let WP = ROUTE.filter((p) => typeof p !== "string");   // the corners of the route (the contract's demo.path)
-    const SPEED = 5.0, TURN = 0.7, PAUSE0 = 1.2, PAUSE1 = 0.2, POUR = 5.0, WASHT = 4.0, FLOW = 0.35;   // FLOW: the water starts / stops in 0.35 s
+    const SPEED = 5.0, TURN = 0.7, PAUSE0 = 1.2, PAUSE1 = 0.2, POUR = 5.0, WASHT = 7.0, FLOW = 0.35;   // KIDDUSH_FOOT_213: WASHT 7 (4 until 1.4.6) - the right, then the left   // FLOW: the water starts / stops in 0.35 s
     const REST_ALPHA = 0;                           // the resting heading of the small wheels: rolling east-west, like the nine resting bases
                                                     // (the wheels inside the 4 x 4, L.8); the route's first leg runs north, so the round
                                                     // begins and ends with a turn of the small wheels (L.66)
@@ -1332,12 +1332,39 @@
     // 55-tamid.js "kiddush"); at the rinsing stop another holds the innards under the stream, by the marble tables. In the stops' own
     // layers (mechonaWash / mechonaPurpose), so they show while the water runs. The figures and their places - model choices.
     const kidd = { w: null, p: null, organs: null };
+    // KIDDUSH_FOOT_213: the washing priest at time lt of the wash stop (0..WASHT): the right (0.35..3.1), a step (3.15..4.0), the left
+    // (4.05..6.8). The stream falls from the east tap at (WASH[0] + VSL_TAP_R, WASH[1]); his hand on the raised foot under it.
+    // KIDDUSH_WEST_214: the close view (FOL_KID below) looks from the south-south-east and from above, so each raised foot must stand out
+    // beside him from there, not under his bent body: for the right he faces south-west (yaw -PI/4), for the left an eighth of a turn more,
+    // to face the base (west, yaw -PI/2); the raised foot goes in under the base's body, between its wheels (until 1.4.7 he
+    // faced south and then went round the stream to face north - his back to the view). He stands at the stream less the hand's place
+    // turned by his yaw (Ry). Model choice.
+    const kiddAt = (lt) => {
+      const w = kidd.w;
+      if (!w) return;
+      const sx = WASH[0] + VSL_TAP_R, sz = WASH[1], YR = -Math.PI / 4, YL = -2 * Math.PI / 3;
+      const at = (side, yw) => { const T = ark_kidLocal(side), c = Math.cos(yw), s = Math.sin(yw); return [sx - (T[0] * c + T[2] * s), sz - (-T[0] * s + T[2] * c)]; };
+      const qR = at(-1, YR), qL = at(1, YL);         // (42.31, 21.35) and (42.44, 22.33)
+      const sm = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u)), cl = (v, a, b) => (v < a ? a : v > b ? b : v);
+      const up = (t0, t1) => sm(cl((lt - t0) / 0.55, 0, 1)) * sm(cl((t1 - lt) / 0.45, 0, 1));
+      if (lt < 3.15) { w.g.position.set(qR[0], F, qR[1]); w.g.rotation.y = YR; ark_kidPose(w, -1, up(0.35, 3.1)); return; }
+      if (lt < 4.0) {   // the turn, standing (the right foot down)
+        const u = sm((lt - 3.15) / 0.85);
+        w.g.position.set(qR[0] + (qL[0] - qR[0]) * u, F, qR[1] + (qL[1] - qR[1]) * u);
+        w.g.rotation.y = YR + (YL - YR) * u;
+        ark_kidPose(w, 1, 0);
+        return;
+      }
+      w.g.position.set(qL[0], F, qL[1]); w.g.rotation.y = YL; ark_kidPose(w, 1, up(4.05, 6.8));
+    };
     try {
       // KIDDUSH_BEND_212 (the user, 16.11.2026 13:31: "כמה שיותר זקוף ורק היד שלו על הרגל (כיפוף ולא נפילה...)"): the legs upright,
       // bent at the waist, each hand on its leg (58-ark.js ark_kiddush) - until 1.4.5 the whole figure leaned from the ankles (0.5)
+      // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר!"): east of the base, by the tap's
+      // stream - the right foot raised under the stream and the right hand on it, then the left (kiddAt above, every frame of the stop;
+      // KIDDUSH_WEST_214: facing the base)
       const w = ark_priestFig(3, true);
-      w.g.position.set(WASH[0] + VSL_TAP_R + 0.85, F, WASH[1]); w.g.rotation.y = -Math.PI / 2;
-      ark_kiddush(w, 0.95);
+      ark_kidPose(w, -1, 0);
       wash.add(w.g); kidd.w = w;
       const q = ark_priestFig(5);
       q.g.position.set(STOP[0] + VSL_TAP_R + 0.48, F, STOP[1] - 0.9); q.g.rotation.y = Math.atan2(-0.48, 0.9);   // north of the stream, his face to it
@@ -1390,6 +1417,7 @@
       const wOn = act && st.tau > TL.wash[0] - 1.5 && st.tau < TL.wash[1] + 0.6;
       if (purpose.visible !== pOn) purpose.visible = pOn;
       if (wash.visible !== wOn) wash.visible = wOn;
+      if (wOn && kidd.w) kiddAt(st.tau - TL.wash[0]);   // KIDDUSH_FOOT_213
       if (!sprites && spriteTries < 40) { spriteTries++; sprites = findSprites(); }
       for (let i = 0; i < PL.length; i++) {          // (a plain loop: no allocation per frame while the base moves)
         const p = PL[i], l = partLabels[i];
@@ -1475,7 +1503,7 @@
         buildTL();
         // the wash stop's label (and the follow view's aim at it) go with the stop
         washLabel.z = WASH[1] - 5;
-        if (kidd.w) kidd.w.g.position.z = WASH[1];   // KIDDUSH_211: the priest at the wash stop with it
+        if (kidd.w) kiddAt(0);   // KIDDUSH_211 / KIDDUSH_FOOT_213: the priest at the wash stop with it
         FOL_LABW[0] = WASH[0] - 8;
         FOL_LABW[1] = WASH[1] - 5;
         try {
@@ -1544,6 +1572,31 @@
     // (150 instead of 160 with the altar in the north: 3 clear of its yesod instead of 1.4). Model choice; measured on the three placements.
     const FOL_AZ = { route: -8, wash: -8, corner: 118, pour: 160 };
     const D2R = Math.PI / 180;
+    // KIDDUSH_VIEW_214 (the user, 16.11.2026 17:14: "יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר! בכל ההדגמות!"): from the far view at the
+    // wash stop (north-north-west, over the base) the base's own body hid the washing priest east of it. While the water runs the view comes
+    // down to him from the south (9.5 south of the stream, 5.5 above the floor: east of the base's east face, west of the ramp's west face,
+    // x 47, south of the altar's yesod in all its places, z <= 26 with R. Tam's four amot, beside the block's north-east place, the moving
+    // base's own, empty while it is out) and goes back up
+    // as the base moves on. A blend of the camera's place and aim, not of its azimuth (from -8 to 160 degrees the swing would cross the
+    // altar). The pill "עצור" above the base stays in the frame (0.87 of the half-height); the label "השיתין" (2.6 north-west of the altar's south-west corner: in the south placement over the base's north-east
+    // corner, right behind the priest from this side) and the ramp window's label (beside his head with the altar in the middle) are hidden
+    // while the close view is on (ctx.shared.hideLabels, 70-ui.js). Model choice; seen in the altar's three places and with R. Tam's four amot.
+    const FOL_KID = { pos: [3.4, 5.5, 9.5], aim: [2.6, 3.4, 0] };   // from the wash stop: x, F + y, z
+    const folKid = (tau) => smooth(Math.min((tau - (TL.wash[0] - 0.7)) / 1.2, (TL.wash[1] + 0.9 - tau) / 1.2));
+    const kidMix = (v, p, t) => {                  // the close view mixed into a view: p (the camera) and t (the aim), in place
+      const k = v.kc || 0;
+      if (!(k > 0)) return;
+      const P = FOL_KID.pos, A = FOL_KID.aim;
+      // on the way the eye rises (up to 4 amot at the middle): the straight line from the far view passes over the laver's rim (r 2.17, F + 7)
+      p[0] += (WASH[0] + P[0] - p[0]) * k; p[1] += (F + P[1] - p[1]) * k + 16 * k * (1 - k); p[2] += (WASH[1] + P[2] - p[2]) * k;
+      t[0] += (WASH[0] + A[0] - t[0]) * k; t[1] += (F + A[1] - t[1]) * k; t[2] += (WASH[1] + A[2] - t[2]) * k;
+    };
+    let kidLabs = null;                             // the labels "השיתין" and "רבובה — חלון בכבש" (40-altar.js; the second beside his head with
+    const kidLab = (on) => {                        // the altar in the middle), found once
+      const H = ctx.shared.hideLabels || (ctx.shared.hideLabels = new Set());
+      if (!kidLabs) kidLabs = (Array.isArray(ctx.labels) ? ctx.labels : []).filter((l) => l && typeof l.text === "string" && (l.text === "השיתין" || l.text.indexOf("רבובה") === 0));
+      for (const l of kidLabs) { if (on) H.add(l); else H.delete(l); }
+    };
     // the view for a moment of the round: the base at (x, z); out = {tx, ty, tz, az (radians), r, h}
     const folNear = (tau, w) => smooth(Math.min((tau - (w[0] - 1.6)) / 1.6, (w[1] + 1.2 - tau) / 1.2));   // in 1.6 s before the water, out 1.2 s after it
     const folView = (tau, x, z, out) => {          // (runs every frame: no allocation)
@@ -1564,6 +1617,7 @@
       const lab = nW >= nP ? FOL_LABW : FOL_LABP, kl = n * FOL_NEAR.lab;
       out.tx += (lab[0] - out.tx) * kl;
       out.tz += (lab[1] - out.tz) * kl;
+      out.kc = folKid(tau);                          // KIDDUSH_VIEW_214
       return out;
     };
     const folPos = (v, p) => {                      // the camera's place of a view, into the array p
@@ -1572,18 +1626,21 @@
       p[2] = v.tz - v.r * Math.cos(v.az);
       return p;
     };
-    const fo = { on: false, wait: 0, cur: { tx: 0, ty: 0, tz: 0, az: 0, r: 0, h: 0 }, want: { tx: 0, ty: 0, tz: 0, az: 0, r: 0, h: 0 },
-      p: [0, 0, 0], set: [0, 0, 0, 0, 0, 0], last: null, el: null, downs: new Map() };
+    const fo = { on: false, wait: 0, cur: { tx: 0, ty: 0, tz: 0, az: 0, r: 0, h: 0, kc: 0 }, want: { tx: 0, ty: 0, tz: 0, az: 0, r: 0, h: 0, kc: 0 },
+      p: [0, 0, 0], t: [0, 0, 0], set: [0, 0, 0, 0, 0, 0], last: null, el: null, downs: new Map() };
     const folCam = () => (ctx.camera && ctx.controls && ctx.controls.target ? ctx.camera : null);
     const folPut = () => {                          // the camera at fo.cur, and what was set, to see whether anyone else moves it
       const cam = folCam();
       if (!cam) return;
       folPos(fo.cur, fo.p);
+      fo.t[0] = fo.cur.tx; fo.t[1] = fo.cur.ty; fo.t[2] = fo.cur.tz;
+      kidMix(fo.cur, fo.p, fo.t);                   // KIDDUSH_VIEW_214
       cam.position.set(fo.p[0], fo.p[1], fo.p[2]);
-      ctx.controls.target.set(fo.cur.tx, fo.cur.ty, fo.cur.tz);
+      ctx.controls.target.set(fo.t[0], fo.t[1], fo.t[2]);
       cam.lookAt(ctx.controls.target);              // as OrbitControls' update does: this frame is drawn already aimed
       const s = fo.set;
-      s[0] = fo.p[0]; s[1] = fo.p[1]; s[2] = fo.p[2]; s[3] = fo.cur.tx; s[4] = fo.cur.ty; s[5] = fo.cur.tz;
+      s[0] = fo.p[0]; s[1] = fo.p[1]; s[2] = fo.p[2]; s[3] = fo.t[0]; s[4] = fo.t[1]; s[5] = fo.t[2];
+      kidLab(fo.cur.kc > 0.25);
     };
     const folMoved = () => {                        // has anything but the follow moved the camera since the last frame?
       const cam = folCam(), q = ctx.controls.target, s = fo.set, E = 0.02;
@@ -1616,9 +1673,11 @@
         folView(st.tau, pose.x, pose.z, fo.want);
         Object.assign(fo.cur, fo.want);
         folPos(fo.cur, fo.p);
+        fo.t[0] = fo.cur.tx; fo.t[1] = fo.cur.ty; fo.t[2] = fo.cur.tz;
+        kidMix(fo.cur, fo.p, fo.t);                 // KIDDUSH_VIEW_214
         const fly = ctx.ui && typeof ctx.ui.fly === "function" ? ctx.ui.fly : typeof ctx.flyTo === "function" ? ctx.flyTo : null;
         if (fly) {
-          fly(fo.p.slice(), [fo.cur.tx, fo.cur.ty, fo.cur.tz]);
+          fly(fo.p.slice(), fo.t.slice());
           fo.wait = performance.now() + 1700;       // the flight's 1600 ms (90-entry.js flyTo) and a frame
         } else fo.wait = 0;
         fo.downs.clear();
@@ -1626,7 +1685,7 @@
         fo.last = null;
         return true;
       },
-      stop() { fo.on = false; fo.wait = 0; },
+      stop() { fo.on = false; fo.wait = 0; kidLab(false); },
       // snap(): the camera at once in the view of the present moment (for the pictures and the checks)
       snap() {
         if (!folCam()) return false;
@@ -1643,7 +1702,9 @@
       view(tau) {
         const P = poseAt(((+tau || 0) % TL.total + TL.total) % TL.total, { x: 0, z: 0, alpha: 0, flow: 0 });
         const v = folView(((+tau || 0) % TL.total + TL.total) % TL.total, P.x, P.z, {});
-        return { pos: folPos(v, [0, 0, 0]), target: [v.tx, v.ty, v.tz] };
+        const p = folPos(v, [0, 0, 0]), t = [v.tx, v.ty, v.tz];
+        kidMix(v, p, t);                             // KIDDUSH_VIEW_214
+        return { pos: p, target: t, kc: v.kc };
       }
     };
     ctx.animated.push((t) => {
@@ -1651,19 +1712,19 @@
       const dt = fo.last == null ? 0 : Math.min(0.25, Math.max(0, (now - fo.last) / 1000));
       fo.last = now;
       if (!fo.on) return;
-      if (!st.running || !folCam()) { fo.on = false; return; }   // the demonstration ended: the camera stays where it is
+      if (!st.running || !folCam()) { fo.on = false; kidLab(false); return; }   // the demonstration ended: the camera stays where it is
       if (fo.wait) {
         if (now < fo.wait) return;                 // the flight is still on (the frame's own time: the flight ended in this frame's first step)
         fo.wait = 0;
         // the flight did not end in the view (a flight elsewhere took over): no follow
         const s = fo.set;
-        s[0] = fo.p[0]; s[1] = fo.p[1]; s[2] = fo.p[2]; s[3] = fo.cur.tx; s[4] = fo.cur.ty; s[5] = fo.cur.tz;
-        if (folMoved()) { fo.on = false; return; }
-      } else if (!ctx.controls.autoRotate && folMoved()) { fo.on = false; return; }   // someone else moved the camera ("סיבוב איטי" is overridden)
+        s[0] = fo.p[0]; s[1] = fo.p[1]; s[2] = fo.p[2]; s[3] = fo.t[0]; s[4] = fo.t[1]; s[5] = fo.t[2];
+        if (folMoved()) { fo.on = false; kidLab(false); return; }
+      } else if (!ctx.controls.autoRotate && folMoved()) { fo.on = false; kidLab(false); return; }   // someone else moved the camera ("סיבוב איטי" is overridden)
       folView(st.tau, pose.x, pose.z, fo.want);
       const k = dt > 0 ? 1 - Math.exp(-dt / FOL_LAG) : 0, c = fo.cur, w = fo.want;
       c.tx += (w.tx - c.tx) * k; c.ty += (w.ty - c.ty) * k; c.tz += (w.tz - c.tz) * k;
-      c.az += (w.az - c.az) * k; c.r += (w.r - c.r) * k; c.h += (w.h - c.h) * k;
+      c.az += (w.az - c.az) * k; c.r += (w.r - c.r) * k; c.h += (w.h - c.h) * k; c.kc += ((w.kc || 0) - (c.kc || 0)) * k;
       folPut();
     });
 
