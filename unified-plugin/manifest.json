@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "com.beit-hamikdash.rishon-3d-model",
   "name": "בית המקדש",
-  "version": "2.0.17",
+  "version": "2.0.18",
   "description": "מודל תלת־ממדי של שני בתי המקדש: בית ראשון כפירוש רש״י, ובית שני לפי מסכת מידות והרמב״ם. סיור, שיטות ומחלוקות, מצגות, ומקורות שנפתחים באוצריא.",
   "author": "יוני מאיר ויוסי כהן (Yossi Cohen), shalomke",
   "homepage": "https://github.com/yoniny/beit-rishon",
@@ -1270,7 +1270,13 @@
             "program": "beit-rishon-books",
             "visibleOutput": "show"
           },
-          "openPlugin": true
+          "openPlugin": true,
+          "when": {
+            "storage": {
+              "key": "tm.ui.readerButton",
+              "notEquals": false
+            }
+          }
         },
         {
           "id": "open-beit-sheni",
@@ -1284,7 +1290,13 @@
             "program": "beit-sheni-books",
             "visibleOutput": "show"
           },
-          "openPlugin": true
+          "openPlugin": true,
+          "when": {
+            "storage": {
+              "key": "tm.ui.readerButton",
+              "notEquals": false
+            }
+          }
         }
       ],
       "searchFieldActions": [

@@ -100,6 +100,43 @@
     color:var(--tm-ink-note);font-family:var(--font-ui);font-size:min(0.75rem,3vh,3.8vw);line-height:1.5;text-align:center}
   #uni-msg[hidden]{display:none}
 
+  /* 2.0.18 (the user, 17.11.2026: "כל הוספ[ות] כפתורים... שקיימים כבר תן למשתמש אפשרות לביטול שלהם מתוך התוסף. מקום השליטה יהיה במסך
+     הבחירה סרגל קשיח משלו... במקום זה יהיה גם כפתור בדיקת העדכונים ולא כמו שהוא עכשיו בתוך התפריט"; "אני מתכוון להגדרות בתוך
+     אוצריא, כמו הוספת פקדים"; "בהגדרות יש 'כפתורים באוצריא' — אפשר להסתיר כל כפתור שהתוסף מוסיף לאוצריא בנפרד, בלי לבטל הרשאה"):
+     THE CHOICE SCREEN'S OWN BAR, at its foot. In Otzaria - "כפתורים באוצריא": a switch for each button the plugin puts into
+     Otzaria (the switch writes the plugin's storage; the button's `when` in the manifest reads it, and Otzaria hides or shows it at once,
+     the plugin open or not - no permission is touched). In the one-file HTML - "בדיקת עדכונים" (unified/update-check.js; until 2.0.17 at
+     the end of each house's menu). Elsewhere (the plugin's page in a browser) - no bar. */
+  :root{--uni-bar-h:2.9rem}
+  #uni-bar{position:absolute;left:0;right:0;bottom:0;z-index:3;min-height:var(--uni-bar-h);
+    background:var(--color-surface-container-high);border-top:1px solid var(--color-outline);box-shadow:0 -1px 0 var(--color-primary-subtle);
+    color:var(--color-on-surface);font-family:var(--font-ui);font-size:min(0.72rem,2.4vh,3vw);line-height:1.4;
+    display:flex;align-items:center;justify-content:center;gap:0.5em 1.4em;flex-wrap:wrap;padding:0.45em 1em;user-select:none}
+  #uni-bar[hidden],#uni-bar .grp[hidden]{display:none}
+  #uni-bar .grp{display:flex;align-items:center;gap:0.4em 1.2em;flex-wrap:wrap;justify-content:center}
+  #uni-bar .lbl{font-weight:600;color:var(--color-on-surface-variant)}
+  #uni-bar label.sw{position:relative;display:inline-flex;align-items:center;gap:0.5em;cursor:pointer}
+  #uni-bar label.sw input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+  #uni-bar .knob{position:relative;flex:0 0 auto;width:2.3em;height:1.25em;border-radius:var(--radius-pill);background:var(--color-outline);transition:background .15s}
+  #uni-bar .knob::after{content:"";position:absolute;top:0.17em;inset-inline-start:0.17em;width:0.91em;height:0.91em;border-radius:50%;
+    background:var(--color-on-surface);transition:inset-inline-start .15s,background .15s}
+  #uni-bar input:checked + .knob{background:var(--color-primary)}
+  #uni-bar input:checked + .knob::after{inset-inline-start:1.22em;background:var(--color-on-primary)}
+  #uni-bar input:focus-visible + .knob{outline:2px solid var(--color-primary);outline-offset:2px}
+  #uni-bar label.sw.na{cursor:default;opacity:0.55}
+  #uni-bar small{font-size:0.9em;color:var(--color-on-surface-variant)}
+  #uni-bar button{font-family:var(--font-ui);font-size:1em;padding:0.3em 1.1em;border-radius:var(--radius-pill);cursor:pointer;
+    background:var(--color-primary-subtle);color:var(--color-on-surface);border:1px solid var(--color-primary);white-space:nowrap}
+  #uni-bar button:hover,#uni-bar button:focus-visible{background:var(--color-primary);color:var(--color-on-primary);outline:none}
+  #uni-bar button[disabled]{opacity:0.6;cursor:default}
+  #uni-bar .out{color:var(--color-on-surface-variant)}
+  #uni-bar .out a{color:var(--color-primary)}
+  html.uni-bar-on #pick{bottom:calc(6% + var(--uni-bar-h))}
+  html.uni-bar-on #uni-msg{bottom:calc(14px + var(--uni-bar-h))}
+  html.uni-bar-on #uni-note{max-height:calc(100% - 36px - var(--uni-bar-h))}
+  /* a small window with a big reading font: the title of the screen is in the bar above it, the houses come down */
+  @media(max-width:640px) and (max-height:700px){html.uni-bar-on #pick{bottom:calc(2% + var(--uni-bar-h))}html.uni-bar-on #pick h1{display:none}}
+
   /* the houses: each in its own frame, both kept alive while the plugin is open */
   iframe.house-frame{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;z-index:1;
     background:var(--color-surface);visibility:hidden;opacity:0;transition:opacity .25s}
@@ -166,6 +203,14 @@ __BACKGROUND_SVG__
       </div>
     </div>
   </div>
+  <footer id="uni-bar" hidden>
+    <div class="grp" id="uni-bar-otz" hidden>
+      <span class="lbl">כפתורים באוצריא:</span>
+      <label class="sw" title="הכפתור שבסרגל העליון של ספר — במלכים, בדברי הימים, במידות, ברמב״ם ובעוד ספרים — שפותח את התוסף במקום שבו לומדים"><input type="checkbox" id="set-reader" checked><span class="knob" aria-hidden="true"></span><span>״פתח בתוסף בית המקדש״ — בסרגל הספר</span></label>
+      <label class="sw na" title="אוצריא מאפשרת לתוסף להסתיר את הכפתור הזה רק מגרסה 0.9.99 שלה. המתג יופעל בעדכון של התוסף שאחריה."><input type="checkbox" id="set-search" checked disabled><span class="knob" aria-hidden="true"></span><span>״בית המקדש — המקום במודל״ — בשדה החיפוש <small>(יתאפשר מאוצריא 0.9.99)</small></span></label>
+    </div>
+    <div class="grp" id="uni-bar-web" hidden></div>
+  </footer>
 </div>
 <!--__HOUSE_SOURCES__-->
 <script>/*__WORDS_INDEX__*/</script>
@@ -592,6 +637,46 @@ __BACKGROUND_SVG__
       }, function () { decide(false); });
     } catch (_) { decide(false); }
     setTimeout(function () { decide(false); }, 1200);   // no answer: the note shows (localStorage alone decides the next time)
+  })();
+
+  // ---------- 2.0.18: the choice screen's own bar ----------
+  // In Otzaria - a switch for each button the plugin puts into Otzaria. A switch writes the plugin's storage (storage.set, the baseline
+  // permission); the button's `when` in the manifest ({"storage": {"key": ..., "notEquals": false}} - tools/build-unified.mjs) reads it,
+  // and Otzaria hides or shows the button at once, also while the plugin is closed. Never written = shown. The search field's button can
+  // carry `when` only from Otzaria 0.9.99 (docs/plugin-sdk/API_REFERENCE.md, "when — תרומה תלוית-הגדרה"): its switch is shown, off limits,
+  // until then (the user, 17.11.2026: "להוסיף כשתצא 0.9.99"). In the one-file HTML - the update check (unified/update-check.js fills
+  // #uni-bar-web; the user: "רק בקובץ ה-HTML").
+  var BAR_KEYS = { reader: "tm.ui.readerButton" };
+  (function () {
+    var bar = document.getElementById("uni-bar"), otz = document.getElementById("uni-bar-otz"), web = document.getElementById("uni-bar-web");
+    if (!bar || !otz || !web) return;
+    if (OTZ) otz.hidden = false;
+    else if (CFG.standalone) web.hidden = false;
+    bar.hidden = otz.hidden && web.hidden;
+    var root = document.documentElement;
+    root.classList.toggle("uni-bar-on", !bar.hidden);
+    var fit = function () { if (!bar.hidden && bar.offsetHeight) root.style.setProperty("--uni-bar-h", bar.offsetHeight + "px"); };
+    window.addEventListener("resize", fit);
+    setTimeout(fit, 0);
+    setTimeout(fit, 800);
+    if (!OTZ) return;
+    [{ id: "set-reader", key: BAR_KEYS.reader }].forEach(function (s) {
+      var cb = document.getElementById(s.id);
+      if (!cb) return;
+      try {
+        Promise.resolve(window.Otzaria.call("storage.get", { key: s.key })).then(function (r) {
+          if (r && r.success !== false) cb.checked = r.data !== false;
+        }, function () {});
+      } catch (_) {}
+      cb.addEventListener("change", function () {
+        var on = cb.checked;
+        try {
+          Promise.resolve(window.Otzaria.call("storage.set", { key: s.key, value: on })).then(function (r) {
+            if (r && r.success === false) cb.checked = !on;
+          }, function () { cb.checked = !on; });
+        } catch (_) { cb.checked = !on; }
+      });
+    });
   })();
 
   // for the headless tests

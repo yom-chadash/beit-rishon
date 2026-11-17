@@ -1,6 +1,9 @@
 // update-check.js — ONLY in the single HTML file ("בית המקדש - לצפייה בלי אוצריא.html"); it is never part of the plugin (inside Otzaria
-// the store updates the plugin). tools/build-unified.mjs writes it into each house's page of that file, after house-bridge.js.
-// The user (10.11.2026): "בקובץ ה-HTML בלבד! הוסף מתג בסוף התפריט עם בדיקת עדכונים מגיט".
+// the store updates the plugin). The user (10.11.2026): "בקובץ ה-HTML בלבד! הוסף מתג בסוף התפריט עם בדיקת עדכונים מגיט".
+// 2.0.18 (the user, 17.11.2026: "במקום זה [סרגל משלו במסך הבחירה] יהיה גם כפתור בדיקת העדכונים ולא כמו שהוא עכשיו בתוך התפריט"; of
+// Otzaria: "רק בקובץ ה-HTML"): tools/build-unified.mjs writes it into the CHOICE SCREEN of that file, and it builds the button, its
+// line and the download button in the screen's own bar (#uni-bar-web, unified/shell.html); until 2.0.17 it was written into each
+// house's page and put the button at the end of the house's menu.
 // UPDATE_DOWNLOAD_210 (the user, 14.11.2026: "האם הכפתור בדיקת עדכונים יוצר דיאלוג הורדה ושמירה?" — "בודאי מה חשבת לעצמך? זה נועד
 // לעזור לאנשים שאין להם אוצריא ומשתמשים רק בקובץ הזה"): when a newer version exists, a second button downloads the new file and saves it.
 // Where the new file is: the branch "html" of yoniny/beit-rishon holds two files only - beit-hamikdash.html (this file, of the newest
@@ -21,7 +24,6 @@
   var PAGE = "https://github.com/" + REPO + "#readme";
   // 2.0.10 (the user: "תוסיף לשם הHTML את שם הגרסה"): the name offered for the new file carries ITS version - the old file is not overwritten unasked
   function fileName(v) { return "בית המקדש - לצפייה בלי אוצריא - גרסה " + v + ".html"; }
-  var BTN = "width:100%;padding:6px 8px;border-radius:6px;cursor:pointer;font:inherit;font-size:13px;background:rgba(201,168,76,.10);border:1px solid rgba(201,168,76,.32);color:#e8dcae";
   function cmp(a, b) {
     a = String(a).split("."); b = String(b).split(".");
     for (var i = 0; i < 3; i++) { var d = (+a[i] || 0) - (+b[i] || 0); if (d) return d; }
@@ -53,7 +55,6 @@
     a.target = "_blank";
     a.rel = "noopener";
     a.textContent = text;
-    a.style.color = "#f3dc9a";
     return a;
   }
   function mb(n) { return (n / 1048576).toFixed(1); }
@@ -84,17 +85,15 @@
       });
     });
   }
-  function build(panel) {
-    var box = document.createElement("div");
-    box.id = "tm-upd";
-    box.style.cssText = "margin:12px 0 4px;padding-top:8px;border-top:1px solid rgba(201,168,76,.3)";
+  // the button, its line and (when there is a newer version) the download button, side by side in the bar - styled by the bar's own rules
+  function build(box) {
     var b = document.createElement("button");
     b.type = "button";
+    b.id = "tm-upd";
     b.textContent = "בדיקת עדכונים";
     b.title = "בודק ב־GitHub אם פורסמה גרסה חדשה של הקובץ";
-    b.style.cssText = BTN;
-    var out = document.createElement("div");
-    out.style.cssText = "font-size:12px;color:#b9ac82;margin-top:6px;line-height:1.5";
+    var out = document.createElement("span");
+    out.className = "out";
     out.textContent = "הגרסה שלפניך: " + VER;
     var busy = false;
     function say(t) { out.textContent = t; }
@@ -111,7 +110,6 @@
       d.id = "tm-upd-get";
       d.textContent = "הורדת הגרסה החדשה ושמירה";
       d.title = "מוריד את הקובץ החדש (" + mb(info.size) + " מגה־בייט) ושואל היכן לשמור אותו";
-      d.style.cssText = BTN + ";margin-top:6px;background:rgba(201,168,76,.22);font-weight:600";
       d.addEventListener("click", function () { save(info, d); });
       box.appendChild(d);
     }
@@ -173,14 +171,12 @@
     });
     box.appendChild(b);
     box.appendChild(out);
-    panel.appendChild(box);
   }
-  // the menu is built by the house's own code; the button is put at its end once the house is ready, and put back if the menu is rebuilt
-  setInterval(function () {
-    var p = document.getElementById("tm-panel");
-    if (!p || !document.documentElement.classList.contains("tm-ready")) return;
-    var box = document.getElementById("tm-upd");
-    if (!box) build(p);
-    else if (p.lastElementChild !== box) p.appendChild(box);
-  }, 1500);
+  // the choice screen's bar (unified/shell.html): its group for this file
+  function start() {
+    var box = document.getElementById("uni-bar-web");
+    if (box && !document.getElementById("tm-upd")) build(box);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
 })();

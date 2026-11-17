@@ -10,7 +10,7 @@
 //                                 rishon/{index.html,bundle.js}, sheni/{index.html,bundle.js}, DEV_NOTES.md, .otzignore)
 //   <out>/בית-המקדש-<ver>.otzplugin
 //   <out>/בית המקדש - לצפייה בלי אוצריא - גרסה <ver>.html   one file: the choice screen and both houses inside it (and, in this file only,
-//                                 unified/update-check.js: the button "בדיקת עדכונים" at the end of each house's menu)
+//                                 unified/update-check.js: the button "בדיקת עדכונים" in the choice screen's bar - 2.0.18)
 //
 // The unified manifest is unified/manifest.json (id = בית ראשון's id, so the store updates the installed plugin).
 // 2.0.4: ONE button in the books, "פתח בתוסף בית המקדש" (the user, 11.11.2026: "אם יש ספרים הנמצאים בשתי הבתים תאחד ותסיר כפתורים").
@@ -69,7 +69,10 @@ for (const h of ['rishon', 'sheni']) {
 }
 // ---------- 2.0.4: one button in the books ----------
 const BOOKS = JSON.parse(read(path.join(U, 'books.json')));
-const UNI_ITEM = { title: 'פתח בתוסף בית המקדש', icon: 'building_24_regular' };
+const UNI_ITEM = { title: 'פתח בתוסף בית המקדש', icon: 'building_24_regular',
+  // 2.0.18: "כפתורים באוצריא" - the choice screen's switch (unified/shell.html, BAR_KEYS.reader) writes this key of the plugin's storage;
+  // never written = shown (Otzaria's `when`, from 0.9.97: docs/plugin-sdk/API_REFERENCE.md, "when — תרומה תלוית-הגדרה")
+  when: { storage: { key: 'tm.ui.readerButton', notEquals: false } } };
 const MAX_BOOKS = 77;   // a program holds 256 value nodes: 13 for the two fixed checks, 2 a group of 16, 3 a book (tools196/gen_manifest_books.py)
 {
   const st = manifest.contributes.startup;
@@ -176,13 +179,18 @@ if (!argv.includes('--no-pack')) {
   for (const h of ['rishon', 'sheni']) {
     let doc = houseHtml(h);
     // 10.11.2026 (the user: "בקובץ ה-HTML בלבד! הוסף מתג בסוף התפריט עם בדיקת עדכונים מגיט"): unified/update-check.js goes into this file only
-    doc = doc.replace(BRIDGE_TAG, () => inlineScript(bridge) + inlineScript(read(path.join(U, 'update-check.js')).split('__PLUGIN_VERSION__').join(version)));
+    doc = doc.replace(BRIDGE_TAG, () => inlineScript(bridge));
     doc = doc.replace('<script src="./bundle.js"></script>', () => inlineScript(houses[h].bundle));
     parts += '<textarea id="src-' + h + '" hidden aria-hidden="true">' + esc(doc) + '</textarea>\n';
   }
   // 2.0.10 (the user, 14.11.2026: "תוסיף לשם הHTML את שם הגרסה")
   const file = path.join(out, 'בית המקדש - לצפייה בלי אוצריא - גרסה ' + version + '.html');
-  fs.writeFileSync(file, shell(true, parts), 'utf8');
+  // 2.0.18 (the user: "במקום זה יהיה גם כפתור בדיקת העדכונים ולא כמו שהוא עכשיו בתוך התפריט"): unified/update-check.js goes into the
+  // CHOICE SCREEN of this file (its bar), no longer into each house's page
+  const upd = inlineScript(read(path.join(U, 'update-check.js')).split('__PLUGIN_VERSION__').join(version));
+  const page = shell(true, parts);
+  if (page.split('</body>').length !== 2) throw new Error('shell.html: one </body> expected');
+  fs.writeFileSync(file, page.replace('</body>', () => upd + '\n</body>'), 'utf8');
   log('standalone: ' + file + ' (' + fs.statSync(file).size + ' bytes)');
 }
 log('done: ' + manifest.name + ' ' + version);
