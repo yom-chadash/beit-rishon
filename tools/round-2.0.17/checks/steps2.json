@@ -1,0 +1,10 @@
+[
+ {"name":"a_rashi_outer","cam":[-35.5,30.5,1.5],"tg":[-44.5,27.5,7.0],"wait":2500},
+ {"name":"c_rashi_between","cam":[-45.05,26.2,9.75],"tg":[-44.95,24.6,-9]},
+ {"name":"d_rashi_tour1","cam":[-41.5,26,6.5],"tg":[-45.2,25.2,9.4]},
+ {"name":"e_rid_outer","js":"C.shared.parochetFold.set('rid'); return C.shared.parochetFold.mode","cam":[-35.5,30.5,1.5],"tg":[-44.5,27.5,7.0],"wait":1500},
+ {"name":"f_rid_hooks","cam":[-42.2,27.2,7.6],"tg":[-44.4,26.2,9.9]},
+ {"name":"g_rid_open","js":"C.shared.parochetFold.near([[-44.6,9.25]]); return 'near'","cam":[-35.5,30.5,1.5],"tg":[-44.5,27.5,7.0],"wait":3000},
+ {"name":"h_rid_inner_open","js":"C.shared.parochetFold.near([[-45.6,-9.25]]); return 'near-in'","cam":[-45.0,27.5,6.0],"tg":[-45.3,25.8,-9.3],"wait":3000},
+ {"name":"j_sol_close","js":"C.shared.parochetFold.near(null); C.shared.parochetFold.set('rashi'); C.shared.solomonVessels.set('ten'); return C.shared.solomonVessels.current","cam":[-29.5,27.6,-2.5],"tg":[-36,25.2,-7],"wait":2000}
+]
