@@ -9,7 +9,7 @@
         // north-west, under its west wall and the chel, to the bath - a room, and in it a pool of an amah by an amah, three deep, with steps
         // down into it; a lamp on each side every four amot; the fire in a niche on the south side by the bath, the toilet opposite, its
         // door open ("פתוח, יודע שאין שם אדם"). The light under the ground is drawn into the surfaces (the lamps' and the fire's - vertex
-        // colours on plain materials): no light is added to the scene. ctx2.shared.mesibah - for the demonstration (50-heichal.js,
+        // colours on plain materials): no light is added to the scene. ctx2.shared.tevilaWay - for the demonstration (50-heichal.js,
         // MESIBAH_DEMO); ctx2.shared.features.mesibahSee - the way seen through the ground (an x-ray: each piece's twin is drawn only where
         // the ground hides it). The course, the depth, the breadth (2) and the height (4), the rooms, the lamps' and the fire's form -
         // model choices. (The mouth's hole goes through the floor, the house's base and the mount's floor: FLOOR_211 above, 20-mount.js.)
@@ -17,7 +17,7 @@
           const [MX, MZ] = chC(-1, -1);                                   // the north-west chamber's middle: the mouth (-28.25, -73.25)
           const YF = -7, YC = -3, YR = -2.5, SH = 1.74, COLR = 0.35, NST = 45, RISE = 0.5;   // the floors and ceilings; the stair's half-breadth (in the mouth's 1.75), pillar, steps
           const root = new Group();
-          root.name = "mesibah";
+          root.name = "tevilaWay";
           g.add(root);
           const noRay = () => {};
           // ---- the lamps and the fire first: every surface's light is drawn from them
@@ -355,7 +355,7 @@
               parts.push(bg);
             }
             const cm = new Mesh(mergeGeometries(parts), new MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
-            cm.name = "mesibahWalls";
+            cm.name = "tevilaWalls";
             cm.castShadow = cm.receiveShadow = false;
             root.add(cm);
           }
@@ -368,7 +368,7 @@
             const cam = ctx2.camera;
             if (cam) {
               const p = cam.position, dx = Math.max(BB.x0 - p.x, 0, p.x - BB.x1), dy = Math.max(BB.y0 - p.y, 0, p.y - BB.y1), dz = Math.max(BB.z0 - p.z, 0, p.z - BB.z1);
-              const want = dx * dx + dy * dy + dz * dz < 150 * 150 || seeOn || !!(ctx2.shared.mesibahDemo && ctx2.shared.mesibahDemo.on);
+              const want = dx * dx + dy * dy + dz * dz < 150 * 150 || seeOn || !!(ctx2.shared.tevilaDemo && ctx2.shared.tevilaDemo.on);
               if (root.visible !== want) root.visible = want;
             }
             if (!root.visible) return;
@@ -387,7 +387,7 @@
           const FS = ctx2.shared.features.mesibahSee;
           ctx2.shared.mesibahSee = { set: (v) => (v ? FS.on() : FS.off()), get on() { return seeOn; } };   // the presentation's way (75-tour.js featureOf)
           // ---- for the demonstration (50-heichal.js MESIBAH_DEMO)
-          ctx2.shared.mesibah = {
+          ctx2.shared.tevilaWay = {
             MX, MZ, YF, YC, YR, FL, SH, NST, RISE, COLR, POOL, PB, RP, WATER: YF - 0.15, FIRE,
             TOWEL: [towel.position.x, towel.position.y, towel.position.z],
             stepTop: (k) => FL - RISE * (k + 1),

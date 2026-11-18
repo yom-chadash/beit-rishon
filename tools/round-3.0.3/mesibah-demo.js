@@ -6,9 +6,9 @@
     // its own captions, as the walk's - DW - draws them; the time written in demo seconds, run at SLOW). He is in his own clothes:
     // "ובגדי קדש לא היו ישנים בהן... ומתכסין בכסות עצמן" (the same Mishnah) - the Levites' look of the morning's service (55-tamid.js:
     // a plain robe, a cap, no belt). The ways, the times and the figures' forms - model choices. The underground: 30-courts.js
-    // MESIBAH_303 (ctx2.shared.mesibah).
+    // MESIBAH_303 (ctx2.shared.tevilaWay).
     {
-      const MS = () => ctx2.shared.mesibah;
+      const MS = () => ctx2.shared.tevilaWay;
       const HP = Math.PI / 2;
       const RW = 1.05;                                   // the stair's walking line, from the pillar's axis
       const cl = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -36,7 +36,7 @@
         const F0 = M.FL;
         // the hall: his place and his brothers asleep (Tamid 1:1 "ומתכסין בכסות עצמן"; their garments folded under their heads)
         const sleepG = new Group();
-        sleepG.name = "mesibahSleepers";
+        sleepG.name = "tevilaSleepers";
         sleepG.visible = false;
         g.add(sleepG);
         const blank = [0x6f5a45, 0x5d6470, 0x7a6a52, 0x5f5446, 0x6b5f6e].map((c) => new MeshStandardMaterial({ color: c, roughness: 0.95 }));
@@ -255,7 +255,7 @@
         },
         paused: () => D.pausedAt != null,
         restart: () => start() });
-      ctx2.shared.mesibahDemo = { start, stop, get on() { return D.run; },
+      ctx2.shared.tevilaDemo = { start, stop, get on() { return D.run; },
         seek(t) { if (D.run) { D.t0 = (D.pausedAt != null ? D.pausedAt : performance.now()) - t * 1000 * SLOW; D.shot = -1; } },   // (the tests' way to a moment)
         get length() { const B = build(); return B ? B.tEnd : 0; }, get marks() { const B = build(); return B ? B.marks : null; } };
       const towelOn = { v: false };
