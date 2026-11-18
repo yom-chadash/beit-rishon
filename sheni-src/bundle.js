@@ -41804,10 +41804,15 @@ var OtzariaPlugin = (() => { //
       // heichal. The leaves turn at their own pace - where he stands at each moment is clear of them. Model choices: all of it. //
       const KT = { //
         tk: [[0, -5.6, -1.05], [2.95, -5.6, -1.05], [3.15, -5.4, -1.05], [3.5, -5.4, -1.05], [4.0, -6.0, -0.5], [4.25, -5.35, 0], [4.8, -5.9, 0], [5.1, -6.6, 0], [5.25, -6.9, 0], [5.6, -7.4, 0], //
-             [6.6, -7.4, 0], [8.6, -0.55, 0], [9.0, -0.55, 0], [10.0, -1.5, 0], [10.3, -2.1, 0], [10.7, -2.6, 0], [13.0, -2.6, 0], [14.6, -7.5, 0], [16.0, -13, 0], [17.6, -17.5, 0]], //
+             [6.6, -7.4, 0], [8.6, -0.55, 0], [9.0, -0.55, 0], [10.0, -1.5, 0], [10.3, -2.1, 0], [10.7, -2.6, 0], [13.0, -2.6, 0], [14.6, -5.7, -0.8], [16.2, -5.7, -5.0], [17.6, -5.4, -8.6]], //
         yehuda: [[0, -0.1, -1.05], [2.95, -0.1, -1.05], [3.15, 0.05, -1.05], [3.5, 0.05, -1.05], [4.0, -0.55, -0.5], [4.3, 0.2, 0], [5.0, 0.2, 0], [5.6, -0.3, 0], [8.2, -0.3, 0], [9.0, -3.2, 0], //
-                 [9.9, -3.2, 0], [10.5, -2.6, 0], [13.0, -2.6, 0], [14.8, -7, 0], [16.4, -11.5, 0], [17.6, -16, 0]] //
+                 [9.9, -3.2, 0], [10.5, -2.6, 0], [13.0, -2.6, 0], [14.6, -5.7, -0.8], [16.2, -5.7, -5.0], [17.6, -5.4, -8.6]] //
       }; //
+      // KOH_EXIT_302 (the user, 18.11.2026: "בהדגמת הפשפש הכהן נעלם פתאום"; checked: in the regular engine too, at the end - until now he //
+      // walked on along the heichal's middle to x -17.5, in full sight of the demonstration's eye in the doorway, and was hidden at once //
+      // when it ended): from the doorway he goes in and turns north along the inside of the east wall, to its north-east corner (x -5.4, //
+      // z -8.6) - behind the doorway's north side for an eye in the gate or the ulam - before the end (17.6). His face follows his way //
+      // there (kohGate). His way - a model choice, as before. //
       const ktrk = (pts, t) => { //
         if (t <= pts[0][0]) return [pts[0][1], pts[0][2]]; //
         for (let i = 0; i + 1 < pts.length; i++) if (t <= pts[i + 1][0]) { const u = (t - pts[i][0]) / Math.max(1e-6, pts[i + 1][0] - pts[i][0]); return [pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u, pts[i][2] + (pts[i + 1][2] - pts[i][2]) * u]; } //
@@ -41826,7 +41831,11 @@ var OtzariaPlugin = (() => { //
       function kohGate(e, k) { //
         const clamp = (u) => Math.min(1, Math.max(0, u)); //
         const Lk = LOCK[k], yk = k === "yehuda", p = ktrk(KT[k], e), east = Math.PI / 2, west = -Math.PI / 2; //
-        const yaw = yk ? (e < 8.2 ? east : west) : (e < 13.0 ? east : west); //
+        let yaw = yk ? (e < 8.2 ? east : west) : (e < 13.0 ? east : west); //
+        if (e > 13.0) {   // KOH_EXIT_302: on his way in, his face along it (as far as the track turns; at its end he keeps the last) //
+          const a2 = ktrk(KT[k], Math.min(e, 17.5) - 0.25), b2 = ktrk(KT[k], Math.min(e, 17.5) + 0.25); //
+          if (Math.hypot(b2[0] - a2[0], b2[1] - a2[1]) > 1e-3) yaw = Math.atan2(b2[0] - a2[0], b2[1] - a2[1]); //
+        } //
         const o = { x: p[0], y: F, z: p[1], yaw, base: e < 3.0 ? "hold" : "rest", key: e < 1.0 ? true : null }; //
         // the key: toward the lock, in (1.5-2.3), turned (2.3-2.9), out and away //
         const px = (yk ? 0.955 : -4.545) - KOH.KEYL - 0.02; //
