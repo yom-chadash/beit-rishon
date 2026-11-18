@@ -1338,24 +1338,120 @@
         );
         const ease = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : 0.5 - 0.5 * Math.cos(Math.PI * u));
         const pose = (t) => { for (const [h, s2] of heiHinges) h.rotation.y = (s2 < 0 ? Math.PI / 2 : -Math.PI / 2) * (1 - ease(t)); };   // 0 shut, 1 open
-        // 1.3.4 (the Second Temple plugin's round, the user: "לא מספיק ברור איך היתה נדחפת היד כדי לפתוח"): the priest's hand on the key while
-        // it turns - a fist on the bow, the wrist and a white linen sleeve back along the shaft (out of the leaf's face, toward the ulam
-        // while the leaf is shut), turning with the key; seen only then. The form - a model choice
-        const handG = new Group();
-        handG.visible = false;
-        if (heiKey && heiKey.userData.turn) {
-          heiKey.userData.turn.add(handG);
-          const skin = new MeshStandardMaterial({ color: 0xc99d7c, roughness: 0.75 }), linen = new MeshStandardMaterial({ color: 0xf1ede2, roughness: 0.92 });
-          const hp = (geo, mat, z, rx) => { const m = new Mesh(geo, mat); m.position.set(0, 0, z); if (rx) m.rotation.x = rx; m.castShadow = true; m.userData.noPick = true; handG.add(m); return m; };
-          hp(new SphereGeometry(0.1, 14, 10), skin, 0.66).scale.set(1.0, 1.15, 1.2);           // the fist round the bow
-          hp(new CylinderGeometry(0.05, 0.055, 0.2, 10), skin, 0.84, Math.PI / 2);              // the wrist
-          hp(new CylinderGeometry(0.085, 0.105, 0.8, 14), linen, 1.33, Math.PI / 2);            // the sleeve
-        }
+        // DOORS_PRIEST_302 (the user, 18.11.2026: "תעשה כהן שלם"; from 1.3.4 only his hand was seen, a fist on the key's bow and a sleeve,
+        // floating - it is gone): a whole priest opens the doors, the priest of the other demonstrations (58-ark.js ark_priestFig: the
+        // kutonet, the avnet, the migba'at, barefoot). He stands in the ulam before the north leaf and turns the key in its lock with his right
+        // hand (Rashi's reading of "והפתות", ctx.shared.potot; in the other readings there is no key: he stands at the middle and waits), puts
+        // his hands on the two leaves and pushes them into the house, walking after them, lets go when they are a third open, and goes in
+        // along the middle of the passage and then north, along the inside of the east wall, out of the wide view from the ulam before the
+        // demonstration ends (at x -5.6, z -9 the line from the wide view's eye passes the doorway's plane at z -6, behind its north post).
+        // His way keeps 3 amot and more from the leaves while they swing, and 1.6 from the sotah's slab. His places, his steps and his way -
+        // model choices.
+        const PR = { w: null, tried: false };
+        const priestW = () => {
+          if (PR.w || PR.tried) return PR.w;
+          PR.tried = true;
+          try {
+            const w = ark_priestFig(2);
+            w.g.name = "doorsPriest";
+            w.g.visible = false;
+            w.g.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+            g.add(w.g);
+            PR.w = w;
+          } catch (_) { PR.w = null; }
+          return PR.w;
+        };
+        const PRI = { push0: 2.35, push1: 4.08, let1: 4.5, walk0: 4.5, walk1: 9.6, hy: 1.95, r: 4.15, back: 0.65, lean: 0.1,
+          B: [-4.6, -0.3], C: [-5.6, -9.0] };   // the hands' height over the floor and their distance from the pivots; the way in: B, C (x, z)
+        const sm01 = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
+        const mix3 = (p, q, u) => [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u, p[2] + (q[2] - p[2]) * u];
+        const leafAng = (s, e) => (s < 0 ? 1 : -1) * (Math.PI / 2) * (1 - ease((e - 2.2) / 4.8));   // as pose() below
+        const leafPt = (s, e, r, y) => {   // a point on the leaf's face toward the ulam (when it is shut), r from its pivot, y over the floor
+          const ps = leafAng(s, e), x = -r, z = -s * (T / 2 + 0.03);
+          return [HX + x * Math.cos(ps) + z * Math.sin(ps), F + y, s * DZ - x * Math.sin(ps) + z * Math.cos(ps)];
+        };
+        const pushAt = (e) => {            // where he stands while his hands are on the leaves: `back` behind their middle
+          const a = leafPt(-1, e, PRI.r, PRI.hy), b = leafPt(1, e, PRI.r, PRI.hy);
+          return { a, b, p: [(a[0] + b[0]) / 2 + PRI.back, F, (a[2] + b[2]) / 2] };
+        };
+        const keyBow = () => {             // the key's bow (its centre stays on the shaft while the key turns), in this group's frame
+          const tg = heiKey && heiKey.userData.turn;
+          if (!tg) return null;
+          tg.updateWorldMatrix(true, false);
+          return g.worldToLocal(tg.localToWorld(new Vector3(0, 0, 0.6))).toArray();
+        };
+        const toFig = (w, p) => {          // a point of this group's frame -> the priest's lean frame (his feet at 0, +z ahead, +x his left)
+          const th = w.g.rotation.y, c = Math.cos(th), s2 = Math.sin(th), dx = p[0] - w.g.position.x, dz = p[2] - w.g.position.z;
+          const x = dx * c - dz * s2, y = p[1] - w.g.position.y - w.lean.position.y, z = dx * s2 + dz * c, f = w.lean.rotation.x;
+          return [x, y * Math.cos(f) + z * Math.sin(f), -y * Math.sin(f) + z * Math.cos(f)];
+        };
+        const reachArm = (side, tp) => {   // the arm of a side (+1 his left) to a point of his lean frame, by two bones (as ark_kiddush's)
+          const P = ark_kitArms().P, a = P.up, b = P.fo + 0.06 * ark_kit().FS, cl = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+          const vx = tp[0] - side * P.sx, vy = tp[1] - P.sy, vz = tp[2], D3 = Math.hypot(vx, vy, vz) || 1e-6;
+          const al = Math.asin(cl(vx / D3, -0.9, 0.9)), ca = Math.cos(al);
+          const Dp = Math.min(Math.hypot(vy, vz), (a + b) * ca - 1e-4), a2 = a * ca, b2 = b * ca;
+          const be = Math.acos(cl((a2 * a2 + Dp * Dp - b2 * b2) / (2 * a2 * Dp), -1, 1)), ga = Math.acos(cl((a2 * a2 + b2 * b2 - Dp * Dp) / (2 * a2 * b2), -1, 1));
+          return [Math.atan2(-vz, -vy) + be, side * al, -(Math.PI - ga)];
+        };
+        const wayIn = (e) => {             // the way in: from where the push ended, through B to C; [x, z, yaw, moving, distance]
+          const A = pushAt(PRI.push1).p, P0 = [A[0], A[2]], pts = [P0, PRI.B, PRI.C];
+          const L1 = Math.hypot(PRI.B[0] - P0[0], PRI.B[1] - P0[1]), L = L1 + Math.hypot(PRI.C[0] - PRI.B[0], PRI.C[1] - PRI.B[1]);
+          const at = (d) => { d = Math.max(0, Math.min(L, d)); const i = d <= L1 ? 0 : 1, d0 = i ? L1 : 0, Li = i ? L - L1 : L1, u = (d - d0) / Li;
+            return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u]; };
+          const u = Math.max(0, Math.min(1, (e - PRI.walk0) / (PRI.walk1 - PRI.walk0))), q = 0.12;   // a little start and stop, the rest even
+          const f = u < q ? (u * u) / (2 * q * (1 - q)) : u > 1 - q ? 1 - ((1 - u) * (1 - u)) / (2 * q * (1 - q)) : (u - q / 2) / (1 - q);
+          const v = u < q ? u / q : u > 1 - q ? (1 - u) / q : 1, d = f * L, p = at(d), p0 = at(d - 0.5), p1 = at(d + 0.5);
+          return [p[0], p[1], Math.atan2(p1[0] - p0[0], p1[1] - p0[1]), u > 0 && u < 1 ? v : 0, d];
+        };
+        const priestAt = (e, keyOn) => {
+          const w = priestW();
+          if (!w) return;
+          w.g.visible = true;
+          const P0 = pushAt(PRI.push0).p;
+          let pos = P0, yaw = -Math.PI / 2, lean = 0, ph = 0, mv = 0, armR = null, armL = null, rT = null, lT = null, rU = 0, lU = 0;
+          const bow = keyOn ? keyBow() : null, KS = bow ? [bow[0] + 0.62, F, bow[2] + 0.32] : P0;   // before the key: a little south of it
+          if (e < PRI.push0) {
+            const k = bow ? sm01((e - 1.9) / (PRI.push0 - 1.9)) : 0, H = pushAt(PRI.push0);
+            pos = mix3(KS, P0, k);
+            ph = (Math.hypot(pos[0] - KS[0], pos[2] - KS[2]) * Math.PI) / 0.85;
+            mv = k > 0 && k < 1 ? 1 : 0;
+            lean = PRI.lean * k;
+            if (bow) { rT = mix3(bow, H.a, k); rU = sm01(e / 0.6); lT = H.b; lU = k; }
+            else { const u2 = sm01((e - 1.6) / (PRI.push0 - 1.6)); rT = H.a; lT = H.b; rU = lU = u2; lean = PRI.lean * u2; }
+          } else if (e < PRI.let1) {
+            const H = pushAt(Math.min(e, PRI.push1));
+            pos = H.p;
+            ph = ((P0[0] - pos[0]) * Math.PI) / 0.85;
+            mv = e < PRI.push1 ? 1 : 0;
+            rT = H.a; lT = H.b;
+            rU = lU = 1 - sm01((e - PRI.push1) / (PRI.let1 - PRI.push1));
+            lean = PRI.lean * rU;
+          } else {
+            const Wy = wayIn(e);
+            pos = [Wy[0], F, Wy[1]];
+            yaw = Wy[2];
+            mv = Wy[3];
+            ph = (Wy[4] * Math.PI) / 0.85;
+          }
+          w.g.position.set(pos[0], F, pos[2]);
+          w.g.rotation.y = yaw;
+          w.lean.rotation.x = lean;
+          const sw = Math.sin(ph) * mv;
+          w.lean.position.y = Math.abs(Math.cos(ph)) * 0.035 * mv;
+          w.fl.position.z = 0.17 * sw;
+          w.fr.position.z = -0.17 * sw;
+          w.g.updateMatrixWorld(true);
+          const free = (side) => [side * 0.32 * sw, 0.08, -0.25 * mv - 0.15 * (1 - mv)];   // the walk's swing (as 58-ark.js walkPose)
+          armR = rT && rU > 0 ? mix3(free(-1), reachArm(-1, toFig(w, rT)), rU) : free(-1);
+          armL = lT && lU > 0 ? mix3(free(1), reachArm(1, toFig(w, lT)), lU) : free(1);
+          ark_setArm(w.R, armR, -1);
+          ark_setArm(w.L, armL, 1);
+        };
         const apply = (e) => {
           const keyOn = !ctx.shared.potot || ctx.shared.potot.current === "rashi";
           if (heiKey && heiKey.userData.turn) heiKey.userData.turn.rotation.z = keyOn ? (Math.PI / 2) * ease((e - 1.0) / 0.8) : 0;
-          handG.visible = keyOn && e > 0.3 && e < 2.2;   // 1.3.4: the hand while the key turns
           pose((e - 2.2) / 4.8);
+          try { priestAt(e, keyOn && !!heiKey); } catch (_) {}   // DOORS_PRIEST_302 (after pose(): the leaves where they are now)
           const stage = e < 2.0 && keyOn ? 0 : e < 9.5 ? 1 : -1;
           capG.forEach((c, i) => (c.visible = i === stage));
         };
@@ -1369,24 +1465,30 @@
             if (keyOn) SFX.click(1.1 * SL);
             SFX.door(2.2 * SL, 4.8 * SL);
             if (flyToo && ctx.ui && typeof ctx.ui.fly === "function") {
-              // 1.3.4: first close to the key and the hand that turns it, then back to see both doors open
+              // 1.3.4: first close to the key and the hand that turns it, then back to see both doors open. DOORS_PRIEST_302: the close view
+              // from the north-east - the priest stands a little south of the key, his right arm reaching to it, seen from his right
               clearTimeout(D.__wide);
+              clearTimeout(D.__mid);
               // 1.3.4: from the steps before the ulam, through its doorway (10 x 22), at the whole heichal doorway; the target stands in the
               // ulam before the shut doors - nothing between it and the eye (the target inside the house pulled the eye to the leaves)
               const wide = () => ctx.ui.fly([25, F + 9.5, 2.5], [3.5, F + 9, 0]);
+              // DOORS_PRIEST_302: between the two a nearer view, from inside the ulam south-east of the doorway (clear of the gold table and
+              // of Boaz), while he pushes the leaves and they open; the wide view once he goes in (his way ends out of its sight)
+              const mid = () => ctx.ui.fly([11.5, F + 6.5, 4.0], [1.0, F + 4.0, -0.3]);
               if (keyOn && heiKey) {
                 const kp = new Vector3();
                 heiKey.updateWorldMatrix(true, false);
                 heiKey.getWorldPosition(kp);
-                ctx.ui.fly([kp.x + 2.6, kp.y + 0.6, kp.z + 1.5], [kp.x, kp.y - 0.1, kp.z]);
-                D.__wide = setTimeout(() => { if (D.t0 >= 0) wide(); }, 2300 * SL);
-              } else wide();
+                ctx.ui.fly([kp.x + 4.0, kp.y + 1.2, kp.z - 3.7], [kp.x + 0.65, kp.y - 0.3, kp.z + 0.1]);
+                D.__mid = setTimeout(() => { if (D.t0 >= 0) mid(); }, 1800 * SL);
+              } else mid();
+              D.__wide = setTimeout(() => { if (D.t0 >= 0) wide(); }, 5000 * SL);
             }
           },
           at(e) { this.t0 = -1; apply(e); },   // a still frame (checks, the presentation)
           stop() {
             SFX.stop();   // SFX_STOP_205
-            clearTimeout(this.__wide); this.t0 = -1; pose(1); if (heiKey && heiKey.userData.turn) heiKey.userData.turn.rotation.z = 0; handG.visible = false; capG.forEach((c) => (c.visible = false)); }
+            clearTimeout(this.__wide); clearTimeout(this.__mid); this.t0 = -1; pose(1); if (heiKey && heiKey.userData.turn) heiKey.userData.turn.rotation.z = 0; if (PR.w) PR.w.g.visible = false; capG.forEach((c) => (c.visible = false)); }
         };
         (ctx.shared.demoStops || (ctx.shared.demoStops = [])).push({ id: "int-doors-demo", running: () => D.t0 >= 0, stop: () => D.stop() });   // 1.3.4: any switch stops it
         ctx.animated.push(() => {
