@@ -3084,7 +3084,7 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "״דבקו שערים״ — הכנסת הארון", pill: "arkGatesDemo" },
           { t: "עלייה בלולים", pill: "hei-lulim-demo" },
           { t: "עליית המלך לכסא", pill: "palaceThroneAscent", layer: "palace", run: thr },
-          { t: "עדי השקר — הכסא מרעיש", pill: "palaceThroneWitnesses", layer: "palace", run: thr }
+          { t: "עדי השקר — הכסא מרעיש", pill: "palaceThroneWitnesses", layer: "palace", run: thr, fly: "throneSteps" }   // DEMO_FLY_301
         ];
       }
       const PLACES = [
@@ -3992,6 +3992,10 @@ body.tm-measuring canvas{cursor:crosshair}
               try { if (d.run) d.run(); } catch (_) {}
               const b = pillOf(d.pill);
               if (b && typeof b.set === "function" && !(typeof b.get === "function" && b.get())) b.set(true);
+              // DEMO_FLY_301 (the user, 18.11.2026: "ואני גם לב שכנראה בעוד הדגמות"): a pill whose own switch leaves the view where it is
+              // (pressed on the model, one stands by it already - the witnesses' scene) started from this group ran out of sight, wherever
+              // the camera was (from the opening view: 570 amot away). From the group it flies to its place's view (d.fly, a fly point)
+              if (d.fly) { const f = resolveFp(d.fly); if (f) fly(f.pos, f.target); }
             };
           }
           if (d.layer) it.layer = d.layer;
