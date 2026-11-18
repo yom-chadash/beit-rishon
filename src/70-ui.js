@@ -5293,6 +5293,36 @@ body.tm-measuring canvas{cursor:crosshair}
         window.addEventListener("focus", syncS);
         document.addEventListener("visibilitychange", syncS);
       }
+      // HQ_302 (the WebGPU round's STAGE2_LIGHT rows, in the regular engine): "soft shadow in corners" and, once it is ready, "light
+      // bounced from the walls"; both off by default, kept between visits in localStorage "tm.hq.ao" / "tm.hq.gi" (one key for both
+      // houses, as "tm.sound.off"); ctx.shared.hq (90-entry.js, 85-hq.js) does the drawing. Each house follows the other's change
+      // ("storage", focus, shown again), as the sound row does.
+      if (ctx.shared.hq) {
+        const HQ = ctx.shared.hq;
+        const rd = (k) => { try { return localStorage.getItem(k) === "1"; } catch (_) { return false; } };
+        const wr = (k, on) => { try { localStorage.setItem(k, on ? "1" : "0"); } catch (_) {} };
+        let aoOn = rd("tm.hq.ao"), giOn = HQ.giReady ? rd("tm.hq.gi") : false;
+        HQ.set(aoOn, giOn);
+        const inpAO = toggleRow("איכות גבוהה: צל רך בפינות", aoOn, (on) => { aoOn = on; wr("tm.hq.ao", on); HQ.set(aoOn, giOn); });
+        if (inpAO && inpAO.parentNode) inpAO.parentNode.title = "צל רך בפינות, בחיבורים ובתחתית הקירות. במחשב חלש זה עלול להאט את התנועה.";
+        let inpGI = null;
+        if (HQ.giReady) {
+          inpGI = toggleRow("אור חוזר מהקירות (כבד מאוד)", giOn, (on) => { giOn = on; wr("tm.hq.gi", on); HQ.set(aoOn, giOn); });
+          if (inpGI && inpGI.parentNode) inpGI.parentNode.title = "אור שחוזר מהקירות ומהזהב אל מה שסביבם. כבד מאוד: במחשב חלש התנועה תאט מאוד.";
+        }
+        const syncHQ = () => {
+          const a = rd("tm.hq.ao"), g = HQ.giReady ? rd("tm.hq.gi") : false;
+          if (a === aoOn && g === giOn) return;
+          aoOn = a;
+          giOn = g;
+          if (inpAO) inpAO.checked = a;
+          if (inpGI) inpGI.checked = g;
+          HQ.set(aoOn, giOn);
+        };
+        window.addEventListener("storage", (e) => { if (!e || e.key == null || e.key === "tm.hq.ao" || e.key === "tm.hq.gi") syncHQ(); });
+        window.addEventListener("focus", syncHQ);
+        document.addEventListener("visibilitychange", syncHQ);
+      }
       // ===== layers =====
       const secLay = document.createElement("div");
       secLay.className = "sec";

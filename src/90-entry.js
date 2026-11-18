@@ -145,8 +145,72 @@
   sun.shadow.normalBias = 0.35;
   scene.add(sun);
   scene.add(new HemisphereLight(12572400, 9074e3, 0.75));
+  // SHADOW_CACHE_302 (the user, 18.11.2026: "תשפר את המנוע הרגיל כמה שאתה יכול"): THE SUN'S SHADOW IS DRAWN AGAIN ONLY WHEN IT CHANGES.
+  // Until now every frame drew the shadow map anew - every caster of the mount (about 1000) a second time, from the sun: measured, half the
+  // frame's work (the opening view: 20.5 ms a frame with it, 9.6 without). The map depends on the casters and the light only, never on the eye.
+  // It is drawn again when a caster moved, was shown, hidden, added or removed, its shape, material or layers changed, the light or its shadow
+  // box changed, or the section (ent_sec) changed. The check walks the visible casters once a frame, as three.js's own pass does, and compares
+  // each one's world matrix with the one the map was drawn with. Other scenes (the shader warm-up's) are passed through as before.
+  var shc = { scene: scene, force: true, again: 0, skip: false, n: -1, h: 0, sec: "", frames: 0, draws: 0 };
+  function shc_obj(o) {
+    let c = o.__shc, ch = false;
+    if (!c) { c = o.__shc = new Float64Array(23); ch = true; }
+    const e = o.matrixWorld.elements;
+    for (let i = 0; i < 16; i++) if (c[i] !== e[i]) { c[i] = e[i]; ch = true; }
+    const g = o.geometry, pa = g && g.attributes ? g.attributes.position : null, m = o.material, im = o.instanceMatrix;
+    const v = [g ? g.id : -1, pa ? pa.version : -1, Array.isArray(m) ? -m.length : (m ? m.id : -1), Array.isArray(m) ? 1 : (m && m.visible ? 1 : 0),
+      o.layers.mask, im ? im.version : -1, o.isInstancedMesh ? o.count : -1];
+    for (let i = 0; i < 7; i++) if (c[16 + i] !== v[i]) { c[16 + i] = v[i]; ch = true; }
+    return ch;
+  }
+  function shc_walk(o, st) {
+    if (o.visible === false) return;
+    if ((o.isMesh || o.isLine || o.isPoints) && o.castShadow) {
+      st.n++;
+      st.h = (Math.imul(st.h, 31) + o.id) | 0;
+      if (shc_obj(o)) st.dirty = true;
+    }
+    const k = o.children;
+    for (let i = 0; i < k.length; i++) shc_walk(k[i], st);
+  }
+  function shc_light(L) {
+    const s = L.shadow, sc2 = s && s.camera;
+    let c = L.__shcL, ch = !s || !s.map;
+    if (!c) { c = L.__shcL = new Float64Array(41); ch = true; }
+    const a = L.matrixWorld.elements, b = L.target ? L.target.matrixWorld.elements : a;
+    for (let i = 0; i < 16; i++) { if (c[i] !== a[i]) { c[i] = a[i]; ch = true; } if (c[16 + i] !== b[i]) { c[16 + i] = b[i]; ch = true; } }
+    const v = sc2 ? [sc2.left, sc2.right, sc2.top, sc2.bottom, sc2.near, sc2.far, s.mapSize.x, s.mapSize.y, sc2.fov || 0] : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for (let i = 0; i < 9; i++) if (c[32 + i] !== v[i]) { c[32 + i] = v[i]; ch = true; }
+    return ch;
+  }
+  var shc_render = renderer.shadowMap.render;
+  renderer.shadowMap.render = function (lights, scn, cam) {
+    if (scn !== shc.scene || !lights || !lights.length || !this.enabled) return shc_render.call(this, lights, scn, cam);
+    if (shc.skip) return;   // HQ_302: the light toggles' prepass draws the scene again - the map stays as it is
+    shc.frames++;
+    const st = { n: 0, h: 0, dirty: false };
+    shc_walk(scn, st);
+    let dirty = st.dirty || st.n !== shc.n || st.h !== shc.h;
+    shc.n = st.n;
+    shc.h = st.h;
+    for (const L of lights) if (shc_light(L)) dirty = true;
+    const es = typeof ent_sec !== "undefined" && ent_sec ? ent_sec : null;
+    const sec = (es && es.on ? es.axis + ":" + es.v : "-") + (renderer.localClippingEnabled ? "+" : "");
+    if (sec !== shc.sec) { shc.sec = sec; dirty = true; }
+    // a change is drawn twice, on its own frame and the next: state that settles a frame late (a material's program, its clipping set from
+    // the section) is in the map too
+    if (dirty) shc.again = 1;
+    else if (shc.again > 0) { shc.again--; dirty = true; }
+    if (!dirty && !shc.force) return;
+    shc.force = false;
+    shc.draws++;
+    return shc_render.call(this, lights, scn, cam);
+  };
+  renderer.domElement.addEventListener("webglcontextrestored", () => { shc.force = true; });
   var camera = new PerspectiveCamera(48, viewWH[0] / viewWH[1], 0.5, 6e3);
   camera.position.set(430, 190, 240);
+  // HQ_302: the light toggles (85-hq.js); made before any material is compiled, since it adds its lines to every lit material
+  var ent_hq = HQ_make(renderer, scene, camera, { pre: (on) => { shc.skip = on; } });
   // 1.0.1-H: the controls are built by a function so that they can be rebuilt (OrbitControls keeps its drag deltas in a closure: once a
   // NaN gets in - a drag while the canvas had no height - update() re-applies it forever; see the guard in the animation loop)
   var controls = null;
@@ -1154,7 +1218,8 @@
     layers: {},
     shared: {
       walkMode: { on: false, set: (on) => ent_walkModeSet(on) },                                    // 1.2.9
-      section: { on: false, axis: "z", v: 0, set: (on, axis, v) => ent_sectionSet(on, axis, v) }    // 1.2.9
+      section: { on: false, axis: "z", v: 0, set: (on, axis, v) => ent_sectionSet(on, axis, v) },   // 1.2.9
+      hq: { get ao() { return ent_hq.S.ao; }, get gi() { return ent_hq.S.gi; }, giReady: true, set: (aoOn, giOn) => ent_hq.set(aoOn, giOn) }   // HQ_302
     },
     flyTo,
     camIndoors: cam_indoors,   // 1.2.0: mode "look" - 70-ui.js's nav buttons and keys turn in place
@@ -1692,12 +1757,14 @@
         const p1 = renderer.compileAsync(scene, camera);
         renderer.setRenderTarget(rt);   // the depth programs: keyed as in the shadow pass (see ent_depthScene)
         const p2 = renderer.compileAsync(ds.tiny, camera);
+        const p3 = renderer.compileAsync(ent_hq.warmScene(), camera);   // HQ_302: drawn into targets too, keyed as there
         renderer.setRenderTarget(null);
-        await Promise.race([Promise.all([p1, p2]), new Promise((r) => setTimeout(r, 25e3))]);
+        await Promise.race([Promise.all([p1, p2, p3]), new Promise((r) => setTimeout(r, 25e3))]);
       } else {
         renderer.compile(scene, camera);
         renderer.setRenderTarget(rt);
         renderer.compile(ds.tiny, camera);
+        renderer.compile(ent_hq.warmScene(), camera);   // HQ_302
         renderer.setRenderTarget(null);
       }
     } catch (e) {
@@ -1837,6 +1904,7 @@
     }
     if (ent_sec.on) ent_sectionApply();   // 1.3.4: the materials swapped in since (the wall fade's copies) are cut too
     cam_nearStep();   // CAM_219 (3): after every writer of the camera (ctx.animated too)
+    ent_hq.frame();   // HQ_302: with a light toggle on, its prepass and AO (nothing otherwise)
     if (ent_load.printed) {
       renderer.render(scene, camera);
     } else {
@@ -1897,4 +1965,6 @@
   window.__ctx = ctx;
   window.__ent360 = { cam, decide: cam_decide, roofed: ent_roofed, solids: ent_solids, floorY: cam_floorY, lift: ent_lift, lookEnd: cam_lookEnd };   // 1.2.0: for the headless tests
   window.__renderer = renderer;
+  window.__shc = shc;   // SHADOW_CACHE_302: QA (frames walked, maps drawn)
+  window.__hq = ent_hq;   // HQ_302: QA
   window.__camera = camera;
