@@ -94,6 +94,14 @@
         const hr = 0.045;
         H2.cyl(sfT, hr, hr, 0.008, dark, x, floorY, BZ, 16);
         way(wayT, x, BZ, hr, TOP + 0.05);
+        // Tosafot's "ושמא כמין בליטת חוטם היה עשוי על הנקב שלא יפול עליו דבר לסותמו" (the user, 18.11.2026: "ב", "ובספל" - drawn, over
+        // the bowl's hole): a small silver hood like a nose over it, open to the south - the drink runs in under it, and what falls from
+        // above does not stop the hole. Its form - a model choice
+        const nose = new Mesh(new SphereGeometry(0.075, 12, 6, Math.PI, Math.PI, 0, Math.PI / 2), sil);
+        nose.scale.set(1, 0.85, 1.35);
+        nose.position.set(x, floorY, BZ + 0.035);
+        nose.castShadow = true;
+        sfT.add(nose);
       });
       ctx2.shared.sfalim = { mode: "rashi", set(m) { this.mode = m === "tosafot" ? "tosafot" : "rashi"; sfR.visible = this.mode === "rashi"; sfT.visible = this.mode === "tosafot"; } };
       ctx2.labels.push({ text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: 43.5, y: TOP + 1.1, z: 9.4, size: 0.8, layer: "altarBody32" },
