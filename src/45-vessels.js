@@ -1596,19 +1596,49 @@
     // down to him from the south (9.5 south of the stream, 5.5 above the floor: east of the base's east face, west of the ramp's west face,
     // x 47, south of the altar's yesod in all its places, z <= 26 with R. Tam's four amot, beside the block's north-east place, the moving
     // base's own, empty while it is out) and goes back up
-    // as the base moves on. A blend of the camera's place and aim, not of its azimuth (from -8 to 160 degrees the swing would cross the
-    // altar). The pill "עצור" above the base stays in the frame (0.87 of the half-height); the label "השיתין" (2.6 north-west of the altar's south-west corner: in the south placement over the base's north-east
+    // as the base moves on. Until 3.0.0 a blend of the camera's place and aim, not of its azimuth (from -8 to 160 degrees the shorter swing
+    // would cross the altar); since FOLLOW_KID_301 (below) the eye swings the other way, round the west side. The pill "עצור" above the base stays in the frame (0.87 of the half-height); the label "השיתין" (2.6 north-west of the altar's south-west corner: in the south placement over the base's north-east
     // corner, right behind the priest from this side) and the ramp window's label (beside his head with the altar in the middle) are hidden
     // while the close view is on (ctx.shared.hideLabels, 70-ui.js). Model choice; seen in the altar's three places and with R. Tam's four amot.
     const FOL_KID = { pos: [3.4, 5.5, 9.5], aim: [2.6, 3.4, 0] };   // from the wash stop: x, F + y, z
     const folKid = (tau) => smooth(Math.min((tau - (TL.wash[0] - 0.7)) / 1.2, (TL.wash[1] + 0.9 - tau) / 1.2));
+    // FOLLOW_KID_301 (the user, 18.11.2026: "אין מעקב מצלמה במכונות", "במכונה יש בריחה של מצלמות"): from 2.0.14 to 3.0.0 the eye went to
+    // the close view in a straight line, which passed almost straight over the base (the far view looks from the north, the close one
+    // from the south): at 60 frames a second it came within 0.18 radians of the zenith, OrbitControls' update() lifted it to its
+    // minPolarAngle (0.2), folMoved() took that for the viewer's hand, and the follow ended there - over the stop, while the base drove
+    // on to the tables without it (in every engine and at every frame rate; 2.0.13, without the close view, followed to the end). Now the
+    // eye goes ROUND the stop on its west side, half a turn about the stop's centre (the azimuth from the far view's to the close view's,
+    // always decreasing: north - west - south), 8 to 8.5 amot out and 8.5 to 9.5 above the floor while it passes the west and the
+    // south-west, then down to the close view over the block's north-east place (the moving base's own, empty while it is out).
+    // Measured in this house: the ulam's face stands 20.5 west of the stop (the eye keeps 4.8 or more from it), the block's north row
+    // (z 30.5 .. 35.5, its lavers' rims F + 7.2) 4.6 or more from the eye; the altar and the ramp are on the east, away from the swing,
+    // in all their places. The aim is blended in a straight line as before. Back up the same way. Model choice of the view.
+    const FOL_ORB = { k: [0.5, 0.85], r: [8.5, 8.0], h: [9.5, 8.5] };   // the swing's two way-points: k of the blend, radius, height over F
     const kidMix = (v, p, t) => {                  // the close view mixed into a view: p (the camera) and t (the aim), in place
       const k = v.kc || 0;
       if (!(k > 0)) return;
-      const P = FOL_KID.pos, A = FOL_KID.aim;
-      // on the way the eye rises (up to 4 amot at the middle): the straight line from the far view passes over the laver's rim (r 2.17, F + 7)
-      p[0] += (WASH[0] + P[0] - p[0]) * k; p[1] += (F + P[1] - p[1]) * k + 16 * k * (1 - k); p[2] += (WASH[1] + P[2] - p[2]) * k;
-      t[0] += (WASH[0] + A[0] - t[0]) * k; t[1] += (F + A[1] - t[1]) * k; t[2] += (WASH[1] + A[2] - t[2]) * k;
+      const P = FOL_KID.pos, A = FOL_KID.aim, cx = WASH[0], cz = WASH[1], O = FOL_ORB;
+      t[0] += (cx + A[0] - t[0]) * k; t[1] += (F + A[1] - t[1]) * k; t[2] += (cz + A[2] - t[2]) * k;
+      const a0 = Math.atan2(p[0] - cx, cz - p[2]), r0 = Math.hypot(p[0] - cx, p[2] - cz), h0 = p[1] - F;
+      let a1 = Math.atan2(P[0], -P[2]);            // the close view's azimuth about the stop (160 degrees: south-south-east)
+      while (a1 > a0) a1 -= 2 * Math.PI;           // round the west side: the shorter way crosses the base and the altar
+      while (a1 < a0 - 2 * Math.PI) a1 += 2 * Math.PI;
+      const seg = (x0, x1) => smooth((k - x0) / (x1 - x0));
+      let r, h;
+      if (k < O.k[0]) { const s = seg(0, O.k[0]); r = r0 + (O.r[0] - r0) * s; h = h0 + (O.h[0] - h0) * s; }
+      else if (k < O.k[1]) { const s = seg(O.k[0], O.k[1]); r = O.r[0] + (O.r[1] - O.r[0]) * s; h = O.h[0] + (O.h[1] - O.h[0]) * s; }
+      else { const s = seg(O.k[1], 1); r = O.r[1] + (Math.hypot(P[0], P[2]) - O.r[1]) * s; h = O.h[1] + (P[1] - O.h[1]) * s; }
+      const a = a0 + (a1 - a0) * k;
+      p[0] = cx + r * Math.sin(a); p[1] = F + h; p[2] = cz - r * Math.cos(a);
+    };
+    // FOLLOW_KID_301: and the follow never writes a pose that OrbitControls' update() would change (that ends the follow, folMoved):
+    // an eye nearer the zenith than minPolarAngle (and a hair) is laid back to it, round the aim, at the same distance
+    const folKeep = (p, t) => {
+      const lo = ((ctx.controls && ctx.controls.minPolarAngle) || 0) + 0.02;
+      const dx = p[0] - t[0], dy = p[1] - t[1], dz = p[2] - t[2], hz = Math.hypot(dx, dz), d = Math.hypot(hz, dy);
+      if (!(d > 1e-6) || Math.atan2(hz, dy) >= lo) return;
+      const ux = hz > 1e-6 ? dx / hz : 0, uz = hz > 1e-6 ? dz / hz : -1, s = d * Math.sin(lo);
+      p[0] = t[0] + ux * s; p[1] = t[1] + d * Math.cos(lo); p[2] = t[2] + uz * s;
     };
     let kidLabs = null;                             // the labels "השיתין" and "רבובה — חלון בכבש" (40-altar.js; the second beside his head with
     const kidLab = (on) => {                        // the altar in the middle), found once
@@ -1654,6 +1684,7 @@
       folPos(fo.cur, fo.p);
       fo.t[0] = fo.cur.tx; fo.t[1] = fo.cur.ty; fo.t[2] = fo.cur.tz;
       kidMix(fo.cur, fo.p, fo.t);                   // KIDDUSH_VIEW_214
+      folKeep(fo.p, fo.t);                          // FOLLOW_KID_301
       cam.position.set(fo.p[0], fo.p[1], fo.p[2]);
       ctx.controls.target.set(fo.t[0], fo.t[1], fo.t[2]);
       cam.lookAt(ctx.controls.target);              // as OrbitControls' update does: this frame is drawn already aimed
@@ -1694,6 +1725,7 @@
         folPos(fo.cur, fo.p);
         fo.t[0] = fo.cur.tx; fo.t[1] = fo.cur.ty; fo.t[2] = fo.cur.tz;
         kidMix(fo.cur, fo.p, fo.t);                 // KIDDUSH_VIEW_214
+        folKeep(fo.p, fo.t);                        // FOLLOW_KID_301
         const fly = ctx.ui && typeof ctx.ui.fly === "function" ? ctx.ui.fly : typeof ctx.flyTo === "function" ? ctx.flyTo : null;
         if (fly) {
           fly(fo.p.slice(), fo.t.slice());
@@ -1723,6 +1755,7 @@
         const v = folView(((+tau || 0) % TL.total + TL.total) % TL.total, P.x, P.z, {});
         const p = folPos(v, [0, 0, 0]), t = [v.tx, v.ty, v.tz];
         kidMix(v, p, t);                             // KIDDUSH_VIEW_214
+        folKeep(p, t);                               // FOLLOW_KID_301
         return { pos: p, target: t, kc: v.kc };
       }
     };
