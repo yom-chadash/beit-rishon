@@ -110,8 +110,9 @@
   var viewWH = viewSize();
   renderer.setSize(viewWH[0], viewWH[1]);
   renderer.shadowMap.enabled = true;
-  // LIB187_302: PCFSoftShadowMap was removed from three.js (it warns and falls back to PCFShadowMap); the softness of its edge is
-  // sun.shadow.radius below
+  // LIB187_302: PCFSoftShadowMap was removed from three.js (it warns and falls back to PCFShadowMap). 187's PCFShadowMap is soft
+  // itself - five filtered samples within sun.shadow.radius (1, the default) - and its edge matched 160's soft one in the
+  // before/after views, so the radius is left as it is
   renderer.shadowMap.type = PCFShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.95;
