@@ -891,6 +891,7 @@
   };
   // 1.0.6 (the user): what is new by version, newest first - one who saw a version is shown only the versions after it; nothing stored -> all
   var UI_NEWS_VERS = [
+    ["1.4.12", ["**שיטות ומחלוקות — בקבוצות** — הרשימה ״שיטות ומחלוקות״ שבתפריט מחולקת עכשיו לחמש קבוצות, בשמות הקבוצות של רשימת המקומות: ״הר הבית והחצרות״, ״המזבח וכלי הנחושת״, ״הבית מבחוץ והיציע״, ״הבית מבפנים״ ו״בית שלמה״. כל קבוצה נפתחת בלחיצה, ובכותרתה מספר המחלוקות שבה. החיפוש שבראש התפריט פותח לבד את הקבוצה של מה שנמצא, ושם של קבוצה מוצא את כל המחלוקות שבה. גם במצגת, כל שיטה נוספת מראה את שם הקבוצה שלה.", "**האור החוזר מהקירות — בוטל** — השורה ״אור חוזר מהקירות (כבד מאוד)״ ירדה מן ההגדרות. כשסימנו אותה יחד עם ״צל רך בפינות״, כל המבט התעמעם באפור, והופיעו כתמים על הרצפה ועל הקירות. ״צל רך בפינות״ נשאר: הוא מוסיף צל עדין רק בפינות, בחיבורים ובתחתית הקירות."]],   // OPS_GROUPS_303, GI_OFF_303
     ["1.4.11", ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**פתיחת דלתות ההיכל — כהן שלם** — בהדגמה, כהן שלם פותח עכשיו את דלתות ההיכל: הוא עומד באולם, דוחף את שתי הדלתות פנימה, ונכנס אחריהן להיכל. עד עכשיו נראתה רק ידו על המפתח."]],
     ["1.4.10", ["**הדגמת המכונה — המצלמה עוקבת עד הסוף** — בהדגמת המכונה, כשהמכונה עוצרת לקידוש ידיים ורגליים, המצלמה מקיפה אותה עכשיו מצד מערב, יורדת אל הכהן, ואחר כך חוזרת וממשיכה לעקוב אחרי המכונה עד סוף הדרך. עד עכשיו, באותו רגע המצלמה נעצרה מעל המכונה, והמכונה המשיכה בדרכה בלי שראו אותה.", "**עדי השקר — מקבוצת ״הדגמות״** — לחיצה על ״עדי השקר — הכסא מרעיש״ בקבוצת ״הדגמות״ מביאה עכשיו את המבט אל כסא שלמה. עד עכשיו ההדגמה התחילה בלי להזיז את המבט, ולכן כשהמצלמה עמדה רחוק מן הכסא, לא ראו אותה."]],   // FOLLOW_KID_301, DEMO_FLY_301
     ["1.4.9", ["**מבט במקום — גם כלפי מטה** — בתוך מבנה מקורה, ובמצב הליכה, אפשר עכשיו להוריד את המבט כמעט עד למטה ממש. עד עכשיו, כשהמבט ירד הרבה ושחררו את העכבר, המצלמה קפצה ממקומה והמבט הסתובב; ובמצב הליכה העין החליקה לאחור ושקעה.", "**מעבר חלק אל כל מקום** — כל מעבר — בלחיצה על מקום, על מבט, או במצגת — עובר עכשיו בדרך חלקה מתחילתו ועד סופו. עד עכשיו, במעבר שעבר מעל המקום, המבט קפץ והתמונה הסתובבה בבת אחת באמצע הדרך.", "**עצירת מעבר באמצעו** — לחיצה על המודל, גלגלת העכבר, מקש או כפתור ניווט בזמן מעבר עוצרים אותו במקום שבו הוא נמצא, ומשם אפשר להסתובב ולהתקרב מיד. עד עכשיו גרירה בזמן מעבר לא נקלטה, ושארית שלה המשיכה להזיז את המבט אחרי סוף המעבר.", "**התקרבות לכלי** — כשמתקרבים מאוד לכלי — בכפתור ״+״, במקש + או בצביטה — הכלי כבר אינו נחתך.", "**מצב הליכה עולה ויורד עם הרצפה** — בהליכה העין שומרת על גובהה מעל הרצפה שתחתיה: עולה במדרגות ויורדת מהן. עד עכשיו, במעבר מן החצר אל מקום גבוה ממנה, העין נכנסה לתוך הרצפה.", "**הדגמות במצגת הרציפה** — כשמסתכלים סביב בזמן הדגמה במצגת הרציפה, ההדגמה נעצרת והמבט חופשי; כשהמצגת ממשיכה, גם ההדגמה ממשיכה מאותו רגע. עד עכשיו ההדגמה המשיכה להוביל את המבט, ואי אפשר היה להסתובב עד סופה.", "**המצפן** — לחיצה על מקום מיד אחרי לחיצה על אות במצפן כבר אינה מעקמת את המעבר.", "**צביטה במסך מגע** — צביטה בשתי אצבעות בתוך מבנה מקורה מקרבת ומרחיקה את המבט. עד עכשיו היא הרעידה אותו.", "**קבוצת ״הדגמות״** — בראש רשימת המקומות יש עכשיו קבוצה חדשה, ״הדגמות״, ובה כל ההדגמות של הבית במקום אחד.", "**כפתורי ההדגמה בצד** — הכפתורים ״השהה״ ו״עצור״, שמופיעים בזמן הדגמה, עברו לצד שמאל, מעל המצפן. עד עכשיו הם עמדו באמצע המסך והסתירו את המודל.", "**קולות בהדגמות** — בעוד הדגמות נשמעים עכשיו קולות, בעוצמה נמוכה. השהיה או עצירה של ההדגמה משתיקות אותם מיד. אפשר לכבות את כל הקולות בהגדרות, בשורה ״קולות בהדגמות״.", "**מדידה באמות** — נקודת מדידה נקבעת עכשיו רק על מה שרואים: לא על חלק שהחתך הסתיר, ולא על משהו שקרוב מדי לעין. עד עכשיו נקודה יכלה ליפול על חלק שאינו נראה, והמידה יצאה שגויה.", "**עלייה בלולים** — בהדגמה, העין עולה עכשיו בתוך הלולים עצמם, סביב העמוד, אחרי העולה. עד עכשיו העין נשארה מחוץ לתא, ורק עלתה במקום אחד.", "**הקולות בהדגמות של בית ראשון** — גלגלי המכונה והמים שבכיור, חריקת דלתות הדביר, החצוצרות והמצלתיים כשהענן ממלא את הבית, ונקישה בכל אחת משש המעלות של כסא שלמה."]],   // CAM_219, SOUNDS_300, DEMOS_GROUP_300, DPAUSE_LEFT_300, MEASURE_300, the lulim
@@ -1055,6 +1056,13 @@ details.tm-pl .tm-cnt{position:absolute;left:3px;top:-7px;min-width:17px;height:
 #tm-ops .tm-op button:hover{background:rgba(201,168,76,.28)}
 #tm-ops .tm-op button.on{background:rgba(201,168,76,.42);color:#fff2c8;border-color:rgba(201,168,76,.7)}
 #tm-ops .tm-op button:disabled{opacity:.45;cursor:default}
+#tm-ops details.tm-opg{border-bottom:1px solid rgba(201,168,76,.2)}
+#tm-ops details.tm-opg:last-child{border-bottom:0}
+#tm-ops details.tm-opg>summary{cursor:pointer;font-size:12px;font-weight:600;color:#e8dcae;padding:6px 0 5px}
+#tm-ops details.tm-opg>summary:hover{color:#fff2c8}
+#tm-ops details.tm-opg[open]>summary{color:#f3dc9a}
+#tm-ops details.tm-opg>summary .n{font-weight:400;font-size:10.5px;color:#b9ac82;margin-right:5px}
+#tm-ops .tm-opg-b{margin:0 4px 7px 0;padding-right:8px;border-right:2px solid rgba(201,168,76,.28)}
 #tm-panel label.row{display:flex;align-items:center;gap:7px;margin:5px 0;cursor:pointer;user-select:none;flex-wrap:wrap}
 #tm-panel label.row input{accent-color:#c9a84c;margin:0}
 #tm-panel label.row input:disabled+span{color:#7d7560}
@@ -2474,7 +2482,8 @@ body.tm-measuring canvas{cursor:crosshair}
         const hit = (el, q) => textHit(el.textContent, q) || textHit(el.title, q);
         // the buttons and the switches' rows; an opinion row's caption finds all its options
         const ITEMS = "button, label";
-        const itemHit = (b, q) => { const op = b.closest(".tm-op"), cap = op && op.querySelector(".cap"); return hit(b, q) || (!!cap && hit(cap, q)); };
+        // OPS_GROUPS_303: the name of a group of the opinions table finds all its rows
+        const itemHit = (b, q) => { const op = b.closest(".tm-op"), cap = op && op.querySelector(".cap"), g = op && op.closest("details.tm-opg"), gs = g && g.querySelector("summary"); return hit(b, q) || (!!cap && hit(cap, q)) || (!!gs && hit(gs, q)); };
         let savedTop = 0;
         let saved = null;  // the state before the search: the blocks' display and the groups' open
         const run = () => {
@@ -2519,8 +2528,17 @@ body.tm-measuring canvas{cursor:crosshair}
             }
           }
           }
+          // OPS_GROUPS_303: a group inside a group (the groups of the opinions table) opens when it holds a match and steps aside
+          // when it holds none; a row of the table without a match steps aside too (its caption alone was left). saved: back
           for (const d of panel.querySelectorAll("details details")) {
-            if (Array.from(d.querySelectorAll(ITEMS)).some((b) => b.style.display !== "none")) d.open = true;
+            if (!saved.has(d)) saved.set(d, { display: d.style.display, open: d.open });
+            const has = Array.from(d.querySelectorAll(ITEMS)).some((b) => b.style.display !== "none");
+            d.style.display = has ? saved.get(d).display : "none";
+            if (has) d.open = true;
+          }
+          for (const r of panel.querySelectorAll("#tm-ops .tm-op")) {
+            if (!saved.has(r)) saved.set(r, { display: r.style.display });
+            r.style.display = Array.from(r.querySelectorAll(ITEMS)).some((b) => b.style.display !== "none") ? saved.get(r).display : "none";
           }
           none.style.display = total ? "none" : "block";
         };
@@ -4571,7 +4589,7 @@ body.tm-measuring canvas{cursor:crosshair}
       secOps.appendChild(opsSum);
       const opsNote = document.createElement("div");
       opsNote.className = "s";
-      opsNote.textContent = "בכל שורה: הנושא והדעות. הלחיצה מחליפה את המודל, מסבירה את הדעה ועפה אליה. המקורות — בכרטיס ההסבר.";
+      opsNote.textContent = "המחלוקות מחולקות לקבוצות לפי המקומות; לחיצה על קבוצה פותחת אותה. בכל שורה: הנושא והדעות. הלחיצה מחליפה את המודל, מסבירה את הדעה ועפה אליה. המקורות — בכרטיס ההסבר.";   // OPS_GROUPS_303
       secOps.appendChild(opsNote);
       secOps.appendChild(opsBox);
       panel.appendChild(secOps);
@@ -5176,14 +5194,59 @@ body.tm-measuring canvas{cursor:crosshair}
       // ulam, the heichal and the devir, and last the king's house: the rows of one place stand together, and the camera of the table
       // (and of the presentation of the readings, 75-tour.js, which goes by this order) does not jump back and forth. A row that is not
       // in the list keeps its place after the listed ones.
+      // (the walk order of 1.3.5 lives on inside the groups: OPS_GROUPS_303 below)
+      // OPS_GROUPS_303 (the user, 18.11.2026: "שימת המחלוקות מאוד ארוכה, הייתי מציע לחלק אותה לקטגוריות כגון <הר הבית> <עזרת נשים>
+      // <לשכות העזרה> <המזבח> וכו'. ע"י כך זה יהיה מסודר יותר ויהיה קל יותר לשימוש"; on the groups proposed: "החלוקה מצוינת תתחיל
+      // לעבוד עליה"; a numbering of סימנים and סעיפים: "לא מעניין - בשביל זה יש חיפוש"): THE TABLE IN GROUPS BY PLACE, from outside in.
+      // Each group is a closed <details> inside #tm-ops, its title with the number of its rows; inside a group the rows of one place
+      // stand together (the order of one walk, 1.3.5). OPS (the readings of the presentation, 75-tour.js) goes by the same order, and
+      // every row knows its group (row.group - the line above a reading's slide). A row that no group lists (one added later) is not
+      // lost: it stands after the groups, in "עוד". A row of a card only (row.cardOnly) keeps its place in OPS and is not counted.
       {
-        const WANT = ["lesserPlace", "eastSteps", "yehoyadaChests", "seaPlacement", "sanhedrinRows", "slaughterLayout", "altarPlace", "altarRTam", "altarYose", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps",
-          "aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling", "potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout",
-          "forestHouse", "throneVersion"];
-        const at = (r) => { const i = WANT.indexOf(r.id); return i < 0 ? WANT.length : i; };
-        const sorted = OPS.map((r, i) => [r, i]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map((q) => q[0]);
+        const GROUPS = [
+          ["הר הבית והחצרות", ["lesserPlace", "eastSteps", "yehoyadaChests", "sanhedrinRows", "slaughterLayout"]],
+          ["המזבח וכלי הנחושת", ["seaPlacement", "altarPlace", "altarRTam", "altarYose", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps"]],
+          ["הבית מבחוץ והיציע", ["aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling"]],
+          ["הבית מבפנים", ["potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout"]],
+          ["בית שלמה", ["forestHouse", "throneVersion"]]
+        ];
+        const byId = {};
+        for (const r of OPS) if (r && r.id && !byId[r.id]) byId[r.id] = r;
+        const used = new Set();
+        const lists = [];
+        for (const [name, ids] of GROUPS) {
+          const rows = [];
+          for (const id of ids) {
+            const r = byId[id];
+            if (r && !used.has(r)) { used.add(r); rows.push(r); }
+          }
+          if (rows.length) lists.push([name, rows]);
+        }
+        const rest = OPS.filter((r) => r && !used.has(r));
+        if (rest.length) lists.push(["עוד", rest]);
         OPS.length = 0;
-        for (const r of sorted) { OPS.push(r); if (r.box) opsBox.appendChild(r.box); }
+        for (const [name, rows] of lists) {
+          const det = document.createElement("details");
+          det.className = "tm-opg";
+          const body = document.createElement("div");
+          body.className = "tm-opg-b";
+          let n = 0;
+          for (const r of rows) {
+            OPS.push(r);
+            r.group = name;
+            if (r.box && !r.cardOnly) { body.appendChild(r.box); n++; }
+          }
+          if (!n) continue;   // a group of card rows only: no empty group in the table
+          const sm = document.createElement("summary");
+          sm.textContent = name;
+          const cnt = document.createElement("span");
+          cnt.className = "n";
+          cnt.textContent = "(" + n + ")";
+          sm.appendChild(cnt);
+          det.appendChild(sm);
+          det.appendChild(body);
+          opsBox.appendChild(det);
+        }
       }
       // ===== viewing tools (SPEC 9.6; 1.0.1 FIXES F.2; 1.0.1-H: sources on the rows) =====
       // 1.0.1-K: the removal rows (the cutaway, the chambers, the ulam, the boards, the cloud) left the panel for the on-model pills (the

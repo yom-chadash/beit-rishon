@@ -1226,7 +1226,7 @@ body.tm-measuring #tm-tour-box{bottom:96px}
           // reading has its slide
           const def = row.cur != null && row.options.some((o) => o[0] === row.cur) ? row.cur : row.options[0][0];
           for (const [key, label, info, infoRefs] of row.options.filter((o) => o[0] !== def)) {
-            out.push({ kind: "opinion", part: 1, row, key, def, title: label, sub: row.cap, text: info || "", refs: infoRefs || row.refs || [],
+            out.push({ kind: "opinion", part: 1, group: row.group || "", row, key, def, title: label, sub: row.cap, text: info || "", refs: infoRefs || row.refs || [],
               then: optThen(row, key), out: tour_OUT });
           }
         }
@@ -1463,7 +1463,8 @@ body.tm-measuring #tm-tour-box{bottom:96px}
       const partLabel = (s) => {
         if (mode.key === "continuous") return "מצגת רציפה · סבב " + round;
         if (s.kind === "verse") return "לפי סדר הפסוקים · מלכים א " + tour_heb(s.ch);
-        return "לפי הנושאים · " + (s.part ? "שיטות נוספות" : s.group || "מבטים");   // 1.0.1-L: the panel's group
+        // OPS_GROUPS_303: a reading of the opinions table says its group of the table
+        return "לפי הנושאים · " + (s.part ? "שיטות נוספות" + (s.group ? " · " + s.group : "") : s.group || "מבטים");   // 1.0.1-L: the panel's group
       };
       const renderVerses = (list) => {
         elVs.textContent = "";

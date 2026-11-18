@@ -64683,11 +64683,12 @@ void main() {
   var ui_AUTO_OFF_S = 15;   // 1.0.1-L (L.27): a feature a PLACE switched on goes off by itself after this many seconds //
   // 1.0.2 (C): the window "מה חדש" - shown once for this version (ver = manifest.json's version); short plain Hebrew, one line a feature //
   var UI_NEWS = { //
-    ver: "2.0.11",   // tools/assemble.mjs writes manifest.json's version here //
-    items: ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**חדש: המסיבה ובית הטבילה** — הדרך שבה כהן שאירע לו קרי בלילה יורד מבית המוקד לטבול (תמיד א, א): מעלות סביב עמוד יורדות מן הלשכה הצפונית מערבית אל מחילה שמתחת לקרקע, ונרות דולקים משני צדיה; בסופה המדורה, בית כסא של כבוד, ודלתו פתוחה, ובית הטבילה. במקום ״המסיבה ובית הטבילה״ (בקבוצת ״לשכות״) הקרקע נעשית שקופה, ורואים את כל הדרך מלמעלה. ובהדגמה החדשה ״הכהן יורד לבית הטבילה״ (בקבוצת ״הדגמות״) — ההליכה כולה, בגובה העיניים.", "**ספלי הניסוך — צוירו מחדש, בשתי השיטות** — שני הספלים שבראש המזבח, בקרן דרומית מערבית, קבועים עכשיו בגג המזבח. בשיטת רש״י: חוטם לכל ספל, ונקב בגג המזבח לכל אחד. בשיטת התוספות: נקב בתחתית כל ספל, ספל המים תחתיתו עבה, ומעל כל נקב כיסוי קטן כמין חוטם (״ושמא כמין בליטת חוטם״). במקום ״ספלי הניסוך״ פינת המזבח נעשית שקופה, ורואים את הנקבים יורדים אל השיתין. ובהדגמת ״סדר עבודת הבוקר״ הכהן מנסך את היין כשהוא עומד מצפון לספלים — עד עכשיו עמד בתוך ספל המים.", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**השער הגדול — הכהן יוצא מן המבט** — בהדגמות ״הכניסה בפשפש״ ו״פתיחת השער הגדול״, אחרי שהשער נפתח, הכהן נכנס להיכל, פונה צפונה לאורך הכותל המזרחי, ויוצא מן המבט לפני סוף ההדגמה. עד עכשיו הוא הלך באמצע ההיכל, מול העין, ונעלם פתאום כשההדגמה נגמרה."] //
+    ver: "2.0.12",   // tools/assemble.mjs writes manifest.json's version here //
+    items: ["**שיטות ומחלוקות — בקבוצות** — הרשימה ״שיטות ומחלוקות״ שבתפריט מחולקת עכשיו לעשר קבוצות לפי המקומות, מבחוץ פנימה: ״הר הבית והחיל״, ״עזרת נשים״, ״העזרה״, ״לשכות העזרה ובית המוקד״, ״המזבח, הכבש והכיור״, ״האולם״, ״בניין ההיכל, התאים והעלייה״, ״כלי ההיכל״, ״הפרוכות״ ו״סדר העבודה ובגדי הכהנים״. כל קבוצה נפתחת בלחיצה, ובכותרתה מספר המחלוקות שבה. החיפוש שבראש התפריט פותח לבד את הקבוצה של מה שנמצא, ושם של קבוצה מוצא את כל המחלוקות שבה. גם במצגת, כל שיטה נוספת מראה את שם הקבוצה שלה.", "**האור החוזר מהקירות — בוטל** — השורה ״אור חוזר מהקירות (כבד מאוד)״ ירדה מן ההגדרות. כשסימנו אותה יחד עם ״צל רך בפינות״, כל המבט התעמעם באפור, והופיעו כתמים על הרצפה ועל הקירות. ״צל רך בפינות״ נשאר: הוא מוסיף צל עדין רק בפינות, בחיבורים ובתחתית הקירות."]   // OPS_GROUPS_303, GI_OFF_303 //
   }; //
   // what is new by version, newest first - one who saw a version is shown only the versions after it //
   var UI_NEWS_VERS = [ //
+    ["2.0.12", ["**שיטות ומחלוקות — בקבוצות** — הרשימה ״שיטות ומחלוקות״ שבתפריט מחולקת עכשיו לעשר קבוצות לפי המקומות, מבחוץ פנימה: ״הר הבית והחיל״, ״עזרת נשים״, ״העזרה״, ״לשכות העזרה ובית המוקד״, ״המזבח, הכבש והכיור״, ״האולם״, ״בניין ההיכל, התאים והעלייה״, ״כלי ההיכל״, ״הפרוכות״ ו״סדר העבודה ובגדי הכהנים״. כל קבוצה נפתחת בלחיצה, ובכותרתה מספר המחלוקות שבה. החיפוש שבראש התפריט פותח לבד את הקבוצה של מה שנמצא, ושם של קבוצה מוצא את כל המחלוקות שבה. גם במצגת, כל שיטה נוספת מראה את שם הקבוצה שלה.", "**האור החוזר מהקירות — בוטל** — השורה ״אור חוזר מהקירות (כבד מאוד)״ ירדה מן ההגדרות. כשסימנו אותה יחד עם ״צל רך בפינות״, כל המבט התעמעם באפור, והופיעו כתמים על הרצפה ועל הקירות. ״צל רך בפינות״ נשאר: הוא מוסיף צל עדין רק בפינות, בחיבורים ובתחתית הקירות."]],   // OPS_GROUPS_303, GI_OFF_303 //
     ["2.0.11", ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**חדש: המסיבה ובית הטבילה** — הדרך שבה כהן שאירע לו קרי בלילה יורד מבית המוקד לטבול (תמיד א, א): מעלות סביב עמוד יורדות מן הלשכה הצפונית מערבית אל מחילה שמתחת לקרקע, ונרות דולקים משני צדיה; בסופה המדורה, בית כסא של כבוד, ודלתו פתוחה, ובית הטבילה. במקום ״המסיבה ובית הטבילה״ (בקבוצת ״לשכות״) הקרקע נעשית שקופה, ורואים את כל הדרך מלמעלה. ובהדגמה החדשה ״הכהן יורד לבית הטבילה״ (בקבוצת ״הדגמות״) — ההליכה כולה, בגובה העיניים.", "**ספלי הניסוך — צוירו מחדש, בשתי השיטות** — שני הספלים שבראש המזבח, בקרן דרומית מערבית, קבועים עכשיו בגג המזבח. בשיטת רש״י: חוטם לכל ספל, ונקב בגג המזבח לכל אחד. בשיטת התוספות: נקב בתחתית כל ספל, ספל המים תחתיתו עבה, ומעל כל נקב כיסוי קטן כמין חוטם (״ושמא כמין בליטת חוטם״). במקום ״ספלי הניסוך״ פינת המזבח נעשית שקופה, ורואים את הנקבים יורדים אל השיתין. ובהדגמת ״סדר עבודת הבוקר״ הכהן מנסך את היין כשהוא עומד מצפון לספלים — עד עכשיו עמד בתוך ספל המים.", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**השער הגדול — הכהן יוצא מן המבט** — בהדגמות ״הכניסה בפשפש״ ו״פתיחת השער הגדול״, אחרי שהשער נפתח, הכהן נכנס להיכל, פונה צפונה לאורך הכותל המזרחי, ויוצא מן המבט לפני סוף ההדגמה. עד עכשיו הוא הלך באמצע ההיכל, מול העין, ונעלם פתאום כשההדגמה נגמרה."]], //
     ["2.0.10", ["**מבט במקום — גם כלפי מטה** — בתוך מבנה מקורה, ובמצב הליכה, אפשר עכשיו להוריד את המבט כמעט עד למטה ממש. עד עכשיו, כשהמבט ירד הרבה ושחררו את העכבר, המצלמה קפצה ממקומה והמבט הסתובב; ובמצב הליכה העין החליקה לאחור ושקעה.", "**מעבר חלק אל כל מקום** — כל מעבר — בלחיצה על מקום, על מבט, או במצגת — עובר עכשיו בדרך חלקה מתחילתו ועד סופו. עד עכשיו, במעבר שעבר מעל המקום, המבט קפץ והתמונה הסתובבה בבת אחת באמצע הדרך.", "**עצירת מעבר באמצעו** — לחיצה על המודל, גלגלת העכבר, מקש או כפתור ניווט בזמן מעבר עוצרים אותו במקום שבו הוא נמצא, ומשם אפשר להסתובב ולהתקרב מיד. עד עכשיו גרירה בזמן מעבר לא נקלטה, ושארית שלה המשיכה להזיז את המבט אחרי סוף המעבר.", "**התקרבות לכלי** — כשמתקרבים מאוד לכלי — בכפתור ״+״, במקש + או בצביטה — הכלי כבר אינו נחתך.", "**מצב הליכה עולה ויורד עם הרצפה** — בהליכה העין שומרת על גובהה מעל הרצפה שתחתיה: עולה במדרגות ויורדת מהן. עד עכשיו, במעבר מן החצר אל מקום גבוה ממנה, העין נכנסה לתוך הרצפה.", "**הדגמות במצגת הרציפה** — כשמסתכלים סביב בזמן הדגמה במצגת הרציפה, ההדגמה נעצרת והמבט חופשי; כשהמצגת ממשיכה, גם ההדגמה ממשיכה מאותו רגע. עד עכשיו ההדגמה המשיכה להוביל את המבט, ואי אפשר היה להסתובב עד סופה.", "**המצפן** — לחיצה על מקום מיד אחרי לחיצה על אות במצפן כבר אינה מעקמת את המעבר.", "**צביטה במסך מגע** — צביטה בשתי אצבעות בתוך מבנה מקורה מקרבת ומרחיקה את המבט. עד עכשיו היא הרעידה אותו.", "**קבוצת ״הדגמות״** — בראש רשימת המקומות יש עכשיו קבוצה חדשה, ״הדגמות״, ובה כל ההדגמות של הבית במקום אחד.", "**כפתורי ההדגמה בצד** — הכפתורים ״השהה״ ו״עצור״, שמופיעים בזמן הדגמה, עברו לצד שמאל, מעל המצפן. עד עכשיו הם עמדו באמצע המסך והסתירו את המודל.", "**קולות בהדגמות** — בעוד הדגמות נשמעים עכשיו קולות, בעוצמה נמוכה. השהיה או עצירה של ההדגמה משתיקות אותם מיד. אפשר לכבות את כל הקולות בהגדרות, בשורה ״קולות בהדגמות״.", "**מדידה באמות** — נקודת מדידה נקבעת עכשיו רק על מה שרואים: לא על חלק שהחתך הסתיר, ולא על משהו שקרוב מדי לעין. עד עכשיו נקודה יכלה ליפול על חלק שאינו נראה, והמידה יצאה שגויה.", "**סדר עבודת הבוקר — המבט הנע** — בהדגמה, המבט הנע מכוון עכשיו בדיוק אל מה שמוצג. עד עכשיו, במבט שכמעט מעל המקום, הוא נטה כחמש מעלות הצידה.", "**פרחי כהונה צעירים** — בהדגמת שמחת בית השואבה, פרחי הכהונה נראים עכשיו צעירים: שיער כהה וזקן קצר. עד עכשיו היה להם שיער לבן.", "**שתי הסנהדראות הקטנות** — המקום ״שתי הסנהדראות הקטנות״ מראה עכשיו את שתיהן במבט אחד. עד עכשיו נראתה רק אחת.", "**פרוכת השער** — כשבוחרים שער שיש בו פרוכת, למשל ״שער הבכורות״, הפרוכת מורמת, וכך רואים את הפתח. עד עכשיו הפרוכת נשארה סגורה והסתירה אותו.", "**הכהן הגדול נכנס בקטורת** — בהדגמה, הכהן הגדול הולך עכשיו בדרך חלקה ואינו נכנס לתוך הכתלים. הדרך עצמה, בכל שיטה, לא השתנתה.", "**הטבת הנרות** — בעבודת הבוקר, יד הכהן מגיעה עכשיו אל כל נר שהוא מטיב. בשיטת הרמב״ם, כתובית בתחילת ״הטבת שתי נרות״ מסבירה למה כל שבעת הנרות דולקים.", "**הקולות בהדגמות של בית שני** — קול השער הגדול כשהוא נפתח, דלת הפשפש, גלגל המוכני והמים כשהכיור יורד לבור ועולה, צעדי הכהנים בפייסות ובכניסת הכהן הגדול, וקול הקטורת על הגחלים. רעש האש בעבודת הבוקר שקט עכשיו יותר."]],   // CAM_219 //
     ["2.0.9", ["**תוספות יום טוב — אפשרות שלישית במתג ״פריפת הפרוכות״** — לפי תוספות יום טוב (יומא ה, א), הפרוכת הייתה ארוכה מרוחב הבית, וקצה ״יצאת לחוץ לתוך ההיכל ונאחזת בכותל הדרום בקרס״. במודל: הפינה התחתונה של הפרוכת מורמת, נמשכת אל הכותל ונאחזת בו בקרס של זהב, והכהן הגדול נכנס מתחתיה. בכרטיס — גם קושיית הרש״ש על פירוש זה.", "**דרך הכהן הגדול לשיטת רבי מאיר** — בהדגמה ״הכהן הגדול נכנס בקטורת״ יש עכשיו דרך שלישית. רבי מאיר אומר: ״בין שלחן למזבח״, ו״לעולם כרבי יוסי סבירא ליה״ — הפתח בצפון (יומא נא:). במודל: פרוכת אחת, והכהן הגדול הולך בין השולחן למזבח, ואחרי השולחן פונה לצפון. בוחרים בה במתג ״הפרוכות ודרך הכהן הגדול״.", "**מתג חדש: סידור הלחם והדלקת הנרות בכלי שלמה** — כשמוצגים עשרת השולחנות ועשר המנורות של שלמה, אפשר לבחור: כתנא קמא ורבי יוסי ברבי יהודה — לחם ונרות רק בשל משה (ברירת המחדל); או כרבי אלעזר בן שמוע (מנחות צט.) — ״על כולם היו מסדרין... ובכולן היו מדליקין״. בכרטיס — גם פירוש רש״י: ״פעמים בזה פעמים בזה״.", "**פרוכות בשערים, בפתח ההיכל ובפתח האולם** — ״שלש עשרה פרכות היו במקדש שני״ (כתובות קו.; רמב״ם כלי המקדש ז, יז). עד עכשיו צוירו רק שתי הפרוכות שבין הקודש לקודש הקדשים. עכשיו מצוירות גם שבע הפרוכות של שערי העזרה, פרוכת פתח ההיכל ופרוכת פתח האולם — תלויות מבחוץ, לפני הפתח. הן פרוסות, ומתג ״פרוכות הפתחים״ מגביה אותן. בזמן הדגמה, וכשהמבט עובר דרך פתח, הפרוכת שלו מוגבהת מעצמה.", "**שתי הפרוכות שבעלייה** — גם בעלייה, מעל ההיכל וקודש הקדשים, יש עכשיו שתי פרוכות. מתג ״הפרוכות שבעלייה״: מכותל לכותל, כתוספות יום טוב (ברירת המחדל); או באמצע בלבד, וראשי הפספסין מן הכתלים — כלחם שמים.", "**מקום חדש: שלוש עשרה הפרוכות** — ברשימת המקומות, תחת ״ההיכל ופנים״: כל הפרוכות שבמקדש השני, ומקורותיהן.", "**סרגל במסך הבחירה** — במסך הפתיחה, שבו בוחרים בית ראשון או בית שני, יש עכשיו סרגל בתחתית. באוצריא יש בו מתג לכפתור ״פתח בתוסף בית המקדש״, שבסרגל העליון של ספרים כמו מלכים, דברי הימים ומידות: אפשר להסתיר את הכפתור ולהחזיר אותו, בלי לבטל הרשאה. מתג לכפתור שבשדה החיפוש יפעל מגרסה 0.9.99 של אוצריא. בקובץ לצפייה בלי אוצריא נמצא בסרגל הזה כפתור ״בדיקת עדכונים״ — עד עכשיו הוא היה בסוף התפריט."]], //
@@ -64767,6 +64768,13 @@ details.tm-pl .tm-cnt{position:absolute;left:3px;top:-7px;min-width:17px;height:
 #tm-ops .tm-op button:hover{background:rgba(201,168,76,.28)}
 #tm-ops .tm-op button.on{background:rgba(201,168,76,.42);color:#fff2c8;border-color:rgba(201,168,76,.7)}
 #tm-ops .tm-op button:disabled{opacity:.45;cursor:default}
+#tm-ops details.tm-opg{border-bottom:1px solid rgba(201,168,76,.2)}
+#tm-ops details.tm-opg:last-child{border-bottom:0}
+#tm-ops details.tm-opg>summary{cursor:pointer;font-size:12px;font-weight:600;color:#e8dcae;padding:6px 0 5px}
+#tm-ops details.tm-opg>summary:hover{color:#fff2c8}
+#tm-ops details.tm-opg[open]>summary{color:#f3dc9a}
+#tm-ops details.tm-opg>summary .n{font-weight:400;font-size:10.5px;color:#b9ac82;margin-right:5px}
+#tm-ops .tm-opg-b{margin:0 4px 7px 0;padding-right:8px;border-right:2px solid rgba(201,168,76,.28)}
 #tm-panel label.row{display:flex;align-items:center;gap:7px;margin:5px 0;cursor:pointer;user-select:none;flex-wrap:wrap}
 #tm-panel label.row input{accent-color:#c9a84c;margin:0}
 #tm-panel label.row input:disabled+span{color:#7d7560}
@@ -65520,6 +65528,7 @@ body.tm-measuring canvas{cursor:crosshair}
         } //
         box.appendChild(bb); //
         if (!row.cardOnly) opsBox.appendChild(box);   // 1.9.2: a card's own switch is not in the table //
+        row.box = box;   // OPS_GROUPS_303: kept - the rows go into their groups after the last of them (below) //
         mark(row.current); //
         return { mark }; //
       }; //
@@ -66133,7 +66142,8 @@ body.tm-measuring canvas{cursor:crosshair}
         const hit = (el, q) => textHit(el.textContent, q) || textHit(el.title, q); //
         // the buttons and the switches' rows; an opinion row's caption finds all its options //
         const ITEMS = "button, label"; //
-        const itemHit = (b, q) => { const op = b.closest(".tm-op"), cap = op && op.querySelector(".cap"); return hit(b, q) || (!!cap && hit(cap, q)); }; //
+        // OPS_GROUPS_303: the name of a group of the opinions table finds all its rows //
+        const itemHit = (b, q) => { const op = b.closest(".tm-op"), cap = op && op.querySelector(".cap"), g = op && op.closest("details.tm-opg"), gs = g && g.querySelector("summary"); return hit(b, q) || (!!cap && hit(cap, q)) || (!!gs && hit(gs, q)); }; //
         let savedTop = 0; //
         let saved = null;  // the state before the search: the blocks' display and the groups' open //
         const run = () => { //
@@ -66178,8 +66188,17 @@ body.tm-measuring canvas{cursor:crosshair}
             } //
           } //
           } //
+          // OPS_GROUPS_303: a group inside a group (the groups of the opinions table) opens when it holds a match and steps aside //
+          // when it holds none; a row of the table without a match steps aside too (its caption alone was left). saved: back //
           for (const d of panel.querySelectorAll("details details")) { //
-            if (Array.from(d.querySelectorAll(ITEMS)).some((b) => b.style.display !== "none")) d.open = true; //
+            if (!saved.has(d)) saved.set(d, { display: d.style.display, open: d.open }); //
+            const has = Array.from(d.querySelectorAll(ITEMS)).some((b) => b.style.display !== "none"); //
+            d.style.display = has ? saved.get(d).display : "none"; //
+            if (has) d.open = true; //
+          } //
+          for (const r of panel.querySelectorAll("#tm-ops .tm-op")) { //
+            if (!saved.has(r)) saved.set(r, { display: r.style.display }); //
+            r.style.display = Array.from(r.querySelectorAll(ITEMS)).some((b) => b.style.display !== "none") ? saved.get(r).display : "none"; //
           } //
           none.style.display = total ? "none" : "block"; //
         }; //
@@ -67705,7 +67724,7 @@ body.tm-measuring canvas{cursor:crosshair}
       secOps.appendChild(opsSum); //
       const opsNote = document.createElement("div"); //
       opsNote.className = "s"; //
-      opsNote.textContent = "בכל שורה: הנושא והדעות. הלחיצה מחליפה את המודל, מסבירה את הדעה ועפה אליה. המקורות — בכרטיס ההסבר."; //
+      opsNote.textContent = "המחלוקות מחולקות לקבוצות לפי המקומות; לחיצה על קבוצה פותחת אותה. בכל שורה: הנושא והדעות. הלחיצה מחליפה את המודל, מסבירה את הדעה ועפה אליה. המקורות — בכרטיס ההסבר.";   // OPS_GROUPS_303 //
       secOps.appendChild(opsNote); //
       secOps.appendChild(opsBox); //
       panel.appendChild(secOps); //
@@ -68254,6 +68273,64 @@ body.tm-measuring canvas{cursor:crosshair}
           onPick: (k) => { if (ctx.shared.tadi && typeof ctx.shared.tadi.set === "function") ctx.shared.tadi.set(k === "o1" ? "zekufot" : "mutot"); }, //
           fly: (k) => { const c = {"o0": [[55, 16, -224], [55, 14, -174.5]], "o1": [[55, 16, -224], [55, 14, -174.5]]}[k]; if (c && c[0] && c[1]) fly(c[0], c[1]); if (c && c[1] && ctx.shared.fadeHold) ctx.shared.fadeHold.set(c[1]); } //
         }); //
+      } //
+      // OPS_GROUPS_303 (the user, 18.11.2026: "שימת המחלוקות מאוד ארוכה, הייתי מציע לחלק אותה לקטגוריות כגון <הר הבית> <עזרת נשים> //
+      // <לשכות העזרה> <המזבח> וכו'. ע"י כך זה יהיה מסודר יותר ויהיה קל יותר לשימוש"; on the groups proposed: "החלוקה מצוינת תתחיל //
+      // לעבוד עליה"; a numbering of סימנים and סעיפים: "לא מעניין - בשביל זה יש חיפוש"): THE TABLE IN GROUPS BY PLACE, from outside in. //
+      // Each group is a closed <details> inside #tm-ops, its title with the number of its rows; inside a group the rows of one place //
+      // stand together (the order of one walk, 1.3.5). OPS (the readings of the presentation, 75-tour.js) goes by the same order, and //
+      // every row knows its group (row.group - the line above a reading's slide). A row that no group lists (one added later) is not //
+      // lost: it stands after the groups, in "עוד". A row of a card only (row.cardOnly) keeps its place in OPS and is not counted. //
+      { //
+        const GROUPS = [ //
+          ["הר הבית והחיל", ["sh0", "sh1", "sh2", "sh55", "sh3"]], //
+          ["עזרת נשים", ["sh4", "sh5", "sh6"]], //
+          ["העזרה", ["sh9", "sh54", "sh8", "sh11", "sh10", "sh14", "sh15"]], //
+          ["לשכות העזרה ובית המוקד", ["sh7", "sh50", "sh51", "sh52", "sh53"]], //
+          ["המזבח, הכבש והכיור", ["sh16", "sh17", "sh18", "sh19", "sh20", "sh21", "sh23", "sh24", "sh25", "sh26"]], //
+          ["האולם", ["sh27", "sh28", "sh29", "sh30", "sh31", "sh32"]], //
+          ["בניין ההיכל, התאים והעלייה", ["sh33", "sh34", "sh35", "sh36", "sh37", "sh38", "sh39", "sh40", "sh41"]], //
+          ["כלי ההיכל", ["sh42", "sh43", "sh44", "sh45", "sh57", "sh46", "sh48"]], //
+          ["הפרוכות", ["sh47", "sh56", "sh58", "sh59", "sh49"]], //
+          ["סדר העבודה ובגדי הכהנים", ["sh12", "sh22", "sh13"]] //
+        ]; //
+        const byId = {}; //
+        for (const r of OPS) if (r && r.id && !byId[r.id]) byId[r.id] = r; //
+        const used = new Set(); //
+        const lists = []; //
+        for (const [name, ids] of GROUPS) { //
+          const rows = []; //
+          for (const id of ids) { //
+            const r = byId[id]; //
+            if (r && !used.has(r)) { used.add(r); rows.push(r); } //
+          } //
+          if (rows.length) lists.push([name, rows]); //
+        } //
+        const rest = OPS.filter((r) => r && !used.has(r)); //
+        if (rest.length) lists.push(["עוד", rest]); //
+        OPS.length = 0; //
+        for (const [name, rows] of lists) { //
+          const det = document.createElement("details"); //
+          det.className = "tm-opg"; //
+          const body = document.createElement("div"); //
+          body.className = "tm-opg-b"; //
+          let n = 0; //
+          for (const r of rows) { //
+            OPS.push(r); //
+            r.group = name; //
+            if (r.box && !r.cardOnly) { body.appendChild(r.box); n++; } //
+          } //
+          if (!n) continue;   // a group of card rows only: no empty group in the table //
+          const sm = document.createElement("summary"); //
+          sm.textContent = name; //
+          const cnt = document.createElement("span"); //
+          cnt.className = "n"; //
+          cnt.textContent = "(" + n + ")"; //
+          sm.appendChild(cnt); //
+          det.appendChild(sm); //
+          det.appendChild(body); //
+          opsBox.appendChild(det); //
+        } //
       } //
       // ===== viewing tools (SPEC 9.6; 1.0.1 FIXES F.2; 1.0.1-H: sources on the rows) ===== //
       // 1.0.1-K: the removal rows (the cutaway, the chambers, the ulam, the boards, the cloud) left the panel for the on-model pills (the //
@@ -71938,7 +72015,7 @@ body.tm-measuring #tm-tour-box{bottom:96px}
           // reading has its slide //
           const def = row.cur != null && row.options.some((o) => o[0] === row.cur) ? row.cur : row.options[0][0]; //
           for (const [key, label, info, infoRefs] of row.options.filter((o) => o[0] !== def)) { //
-            out.push({ kind: "opinion", part: 1, row, key, def, title: label, sub: row.cap, text: info || "", refs: infoRefs || row.refs || [], //
+            out.push({ kind: "opinion", part: 1, group: row.group || "", row, key, def, title: label, sub: row.cap, text: info || "", refs: infoRefs || row.refs || [], //
               then: optThen(row, key), out: tour_OUT }); //
           } //
         } //
@@ -72215,7 +72292,8 @@ body.tm-measuring #tm-tour-box{bottom:96px}
         if (mode.key === "continuous") return "מצגת רציפה · סבב " + round; //
         if (s.kind === "verse") return "לפי סדר המשניות · מידות פרק " + tour_heb(s.ch); //
         if (s.kind === "tamid") return "סדר עבודת הבוקר · מסכת תמיד";   // 2.0 (55-tamid.js) //
-        return "לפי הנושאים · " + (s.part ? "שיטות נוספות" : s.group || "מבטים");   // 1.0.1-L: the panel's group //
+        // OPS_GROUPS_303: a reading of the opinions table says its group of the table //
+        return "לפי הנושאים · " + (s.part ? "שיטות נוספות" + (s.group ? " · " + s.group : "") : s.group || "מבטים");   // 1.0.1-L: the panel's group //
       }; //
       const renderVerses = (list) => { //
         elVs.textContent = ""; //
@@ -75254,7 +75332,13 @@ body.tm-measuring #tm-tour-box{bottom:96px}
     shared: { //
       walkMode: { on: false, set: (on) => ent_walkModeSet(on) },                                    // 1.6.0 //
       section: { on: false, axis: "z", v: 0, set: (on, axis, v) => ent_sectionSet(on, axis, v) },   // 1.6.0 //
-      hq: { get ao() { return ent_hq.S.ao; }, get gi() { return ent_hq.S.gi; }, giReady: true, set: (aoOn, giOn) => ent_hq.set(aoOn, giOn) }   // HQ_302 //
+      // GI_OFF_303 (the user, 18.11.2026, over a picture of the heichal: "טכנולוגיית האור החוזר אתה מבטל עכשיו! לא לזה התכוונתי, אא\"כ //
+      // זה באג"; "תראה את העמעום מה זה האפור הזה?"): with both light rows on, the bounce's own ambient occlusion (radius 12 amot, 2 //
+      // slices of 6 steps a pixel, no filter over time) took the place of the soft corner shadow, and every floor and wall came out //
+      // dimmed grey in blotches, the bounced light itself speckled - not a slip of the code but the method at a cost a weak computer //
+      // can bear. The row "אור חוזר מהקירות" is gone (giReady false: 70-ui.js builds no row and reads no stored "tm.hq.gi") and the //
+      // bounce is never drawn, whatever is asked; "צל רך בפינות" (GTAO) stays. The GI code stays in 85-hq.js, idle. //
+      hq: { get ao() { return ent_hq.S.ao; }, get gi() { return false; }, giReady: false, set: (aoOn) => ent_hq.set(aoOn, false) }   // HQ_302; GI_OFF_303 //
     }, //
     flyTo, //
     camIndoors: cam_indoors,   // 1.2.0: mode "look" - 70-ui.js's nav buttons and keys turn in place //
