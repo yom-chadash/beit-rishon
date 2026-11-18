@@ -1,9 +1,11 @@
 # apply the hunks of the First Temple's source diff (git diff -U<n> of the given files) to the Second Temple's plain bundle
-import sys, subprocess, re, json
+import sys, subprocess, re, json, os
 repo, plain, out, ctxn = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 files = sys.argv[5:]
 s = open(plain, encoding='utf-8').read()
-diff = subprocess.run(['git', '-C', repo, 'diff', '-U' + ctxn, '--'] + files, capture_output=True, text=True).stdout
+# the base: 2.0.18 (2409ca0), whose Second Temple bundle is the patch's input (not HEAD: this round's work is committed on release-3.0)
+base = os.environ.get('HUNKS_BASE', '2409ca0')
+diff = subprocess.run(['git', '-C', repo, 'diff', '-U' + ctxn, base, '--'] + files, capture_output=True, text=True).stdout
 hunks, cur = [], None
 for line in diff.split('\n'):
     if line.startswith('@@'):

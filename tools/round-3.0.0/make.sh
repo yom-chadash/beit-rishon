@@ -11,7 +11,8 @@ python3 -I $W/hunks.py $R $W/sheni-plain.js $W/sheni-p1.js 2 src/90-entry.js src
 python3 -I $W/sheni_extra.py $W/sheni-p1.js $W/sheni-p4.js
 python3 -I $W/sheni_tamid.py $W/sheni-p4.js $W/sheni-p5.js
 if [ -f $W/sheni_sounds.py ]; then python3 -I $W/sheni_sounds.py $W/sheni-p5.js $W/sheni-p6.js; else cp $W/sheni-p5.js $W/sheni-p6.js; fi
-cp $W/sheni-p6.js $W/sheni-219.js
+python3 -I $W/sheni_hp.py $W/sheni-p6.js $W/sheni-p7.js
+cp $W/sheni-p7.js $W/sheni-219.js
 node tools/safe-lines.mjs $W/sheni-219.js
 node --check $W/sheni-219.js
 # SIZE_300: the Second Temple ships minified (the readable bundle stays the source of the next patch: sheni-src/bundle.js in the repo)

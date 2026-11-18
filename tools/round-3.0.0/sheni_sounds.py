@@ -229,12 +229,10 @@ rep('payis steps',
       // the count: the mark over the finger of the one now counted, and the number in the caption
 """)
 rep('payis stop',
-"""      const R = RUN;
-      RUN = null;
+"""      RUN = null;
       g.visible = false;
 """,
-"""      const R = RUN;
-      RUN = null;
+"""      RUN = null;
       try { if (R.steps) R.steps.stop(); } catch (_) {}   // SOUNDS_300 (item 16)
       g.visible = false;
 """)

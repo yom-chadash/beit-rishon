@@ -1284,10 +1284,13 @@
   ctx.shared.demoSlow = ctx.shared.demoSlow || 1.5;
   ctx.shared.demoStops = ctx.shared.demoStops || [];
   ctx.shared.stopDemos = (except) => {
+    let any = false;
     for (const d of ctx.shared.demoStops) {
       if (except && d.id === except) continue;
-      try { if (d.running()) d.stop(); } catch (_) {}
+      try { if (d.running()) { d.stop(); any = true; } } catch (_) {}
     }
+    // SOUNDS_300: what a stopped demonstration sounds stops with it (a one-shot already playing - the gate, the wheel - is cut, not left to end)
+    if (any && typeof ctx.shared.sfxCut === "function") ctx.shared.sfxCut();
   };
   // DEMO_PAUSE_207 (the user, 12.11.2026 20:34: "יש סיכוי להשהות"): a demonstration may pause - its entry has pause(), resume(), paused()
   // (and restart()). A press on the model pauses it; the bar below resumes it from the same second, starts it again or ends it.
@@ -1352,7 +1355,9 @@
       const rs = L.some((d) => fnc(d.restart));
       bR.style.display = rs ? "" : "none";
     };
-    ctx.shared.demoPause = () => { const L = live(); for (const d of L) if (!isPaused(d)) { try { d.pause(); } catch (_) {} } paint(); return L.length > 0; };
+    ctx.shared.demoPause = () => { const L = live(); for (const d of L) if (!isPaused(d)) { try { d.pause(); } catch (_) {} } paint();
+      if (L.length && typeof ctx.shared.sfxCut === "function") ctx.shared.sfxCut();   // SOUNDS_300: a pause is silent at once
+      return L.length > 0; };
     ctx.shared.demoResume = () => { for (const d of live()) if (isPaused(d)) { try { d.resume(); } catch (_) {} } paint(); };
     ctx.shared.demoPaused = () => live().some(isPaused);
     setInterval(paint, 300);
@@ -1557,6 +1562,7 @@
       return L;
     };
     (ctx.shared.soundStops || (ctx.shared.soundStops = [])).push(cut);
+    ctx.shared.sfxCut = cut;   // (stopDemos and demoPause above: a stop or a pause cuts what sounds now)
   })();
   document.addEventListener("click", (ev) => {
     const t = ev.target && ev.target.closest ? ev.target.closest("button, input, select, [role='button'], .tm-op a") : null;

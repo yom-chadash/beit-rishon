@@ -43,11 +43,29 @@ The second house's bundle carries the same 90-entry.js (its entry section is the
 9. "קטגוריה נפרדת להדגמות": DEMOS_GROUP_300 - the group "הדגמות" at the head of the panel in both houses (ui_demosList per house),
    noTour; checked: every item starts its demonstration.
 10. בית שני, the morning service, "הטבת... הוא לא באמת מטיב שם, הוא מתעסק שם למעלה": LAMPS_HANDS_219 (an agent's analysis;
-    sheni_tamid.py) - the pose "reach" held his hands 1.3 amot over the lamps; now the hand goes to each lamp (reach() IK).
-    The lamps' states (Rambam's reading: seven burn at the second dressing, the eastern one only dimmed) - a question of reading, put
-    to the user, not changed.
-11. Open: the High Priest's walk on Yom Kippur ("נתקע בקיר"), the walk up the לולים ("בורחת מעבר לסיבוב") - agents investigating;
-    the loading time; the projector's MP4 (to be made again from 3.0 at the end).
+    sheni_tamid.py) - the pose "reach" held his hands 1.3 amot over the lamps; now the hand goes to each lamp (reach() IK); checked in
+    the browser from the side (lampscheck2.mjs). "חלק מהנרות דולקים... הוא בא להדליק": by the sources (Tamid 3:9 "ומצא שני נרות מזרחיים
+    דולקים"; the Rambam, Temidin 3, "והדלקת הנרות היא הטבתם" - seven burn at the second dressing) - put to the user as a question of
+    reading; his answer (03:18): "א+ג" - the lamp he fixes dims and comes back (as it was), and a caption at the stage's start in the
+    Rambam's reading: LAMPS_CAP_300 (tamid_edits.json, the 7th edit: slideOf, the first caption; the Mishnah's first words at 3.6).
+11. "עלייה בלולים... בורחת מעבר לסיבוב": the eye never stood on the stair (it backed east through it, out of the chamber, 4.6 beyond the
+    cut, and only rose there) - an agent's simulation; 50-heichal.js: the keys on the stair itself (onRing/stepTop), LAG 3, RE 1.9,
+    EYE 3.0; the card's words and the comment. No sound (the user).
+12. "הכהן גדול נכנס לקטורת... נתקע בקיר, אחר כך מתקן": the walk's waypoints 0.13 from the gold (made when the parochet had a 1-amah gap
+    at the wall; PAROCHET_217 replaced it), snap turns at every corner (a broken line), a swerve inserted in 2.0.18, camera keys outside
+    the room, the heading frozen on slow legs at high refresh rates - an agent's simulation (all routes x folds x 60/240/360 Hz):
+    HP_WALK_219 (sheni_hp.py, hp_edits.json: 12 replacements - PATH/BACK of the three routes rounded and off the walls, KEYS.two's eye
+    inside, the heading by the way ahead). The routes of R. Yehuda / R. Yose / R. Meir unchanged; inside the Holy of Holies he walks ~2
+    amot south along the parochet ("מהלך לשמאלו עם הפרכת"; the eye does not see it). Checked in the browser (v3check.mjs).
+13. Sounds of the Second Temple (sheni_sounds.py, an agent; 18 replacements): the High Priest's steps and the incense's hiss, the
+    mukhni's wheel and water, the wicket (the gate's scrape at the same swing removed - it drowned the wicket), the great gate's
+    bigGate per pair of doors (instead of its door sound), the lots' steps; the morning service's fire x0.37. The fix found on the way:
+    55-tamid.js set SH.sfx = {play, stop} over SOUNDS_300's function - every new sound of the house was silent. sfxCut on a pause or a
+    stop (90-entry.js, both houses).
+14. The loading time (the user: "תבדוק אם אפשר לקצר את הטעינה"): measured, 2.0.18 against 3.0.0, alternating, headless (loadtime.mjs):
+    rishon 6.5/5.5 s -> 6.0/6.2 s, sheni 8.1/7.8 s -> 8.0/7.2 s - about the same; the time is the scene's building, the paint yields and
+    the first frame, not the file's size. Not changed further before the release (told the user).
+15. Open: the projector's MP4 (to be made again from 3.0 at the end).
 
 ## The build (tools/round-3.0.0/make.sh; paths of the session's workspace)
 rishon: node tools/build.mjs. sheni: the 2.0.18 bundle (git HEAD) -> strip.py (the " //" ends off; round-trip checked byte for byte)
