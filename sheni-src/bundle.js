@@ -51683,15 +51683,31 @@ void main() {
       // south side (Tiferet Yisrael, Tamid 7:3) - the western for the water, the eastern for the wine, of silver (R. Yehuda: of lime), "pierced //
       // like two thin nostrils", the wine's wider. Two readings of the holes (ctx2.shared.sfalim): "rashi" (Rashi, Bartenura) - a spout out of //
       // each bowl, the libation runs on the top to a hole that leads to the shitin; "tosafot" (Tosafot, Rosh, Ritva, Meiri) - the holes in the //
-      // bowls' bottoms, straight down to the shitin. Sizes and the exact spot: model choices. The shitin themselves are the hollow under the //
-      // corner (Sukkah 49a) - told on the card. //
+      // bowls' bottoms, straight down to the shitin. Sizes and the exact spot: model choices. //
+      // SFALIM_303 (the user, 18.11.2026: "תעשה את שניהם" - the proposal he took): the bowls fixed in lime in both readings - Tosafot's answer //
+      // "דספלים היו קבועים בסיד" (Tosafot Yom Tov, Sukkah 4:9) and Tiferet Yisrael's "מחוברין בסיד במזבח"; set 0.35 east, clear of the //
+      // south-west horn (x 41.5..42.5, z 9.5..10.5 - the western bowl's rim stood in it); Rashi's reading: each spout long and plain, sloping //
+      // down toward its hole in the top, the holes wider and ringed; Tosafot's: the holes in the bowls' bottoms, and the wine's bowl with a //
+      // thick bottom (the Mishnah's "אחד מעבה ואחד דק"); under the corner the shitin (Rashi, Sukkah 49a: "חלל שתחת המזבח כנגד מקום הנסכים"), //
+      // and the ways down to them of the reading shown - seen when the corner is drawn as glass (SFSEE, below; the place "ספלי הניסוך"). //
+      // Sizes, the hollow's measures and depth: model choices. //
       const bowlPts = [[0.02, 0], [0.22, 0], [0.3, 0.1], [0.34, 0.28], [0.3, 0.36]]; //
-      const sil = new MeshStandardMaterial({ color: 0xE8E8EC, metalness: 0.8, roughness: 0.3 }); //
-      const BX = [42.7, 43.6], BZ = 9.4; //
+      const sil = new MeshStandardMaterial({ color: 0xE8E8EC, metalness: 0.8, roughness: 0.3, side: DoubleSide });   // SFALIM_303: two-sided - from above, the bowl's inside and bottom were not drawn //
+      const BX = [43.05, 43.95], BZ = 9.4;   // SFALIM_303: was 42.7 and 43.6 //
       const sfG = new Group();   // 1.9.1: the bowls and their holes - R. Yose's first altar moves them to its own south-west horn //
       mv.add(sfG); //
       ctx2.shared.__sfG = sfG; //
       for (const x of BX) H2.lathe(sfG, bowlPts, sil, x, TOP + 0.05, BZ, 16); //
+      // SFALIM_303: the lime round each bowl's foot - a ring, open in the middle (a whole cylinder's top covered the bowl's floor and the //
+      // hole in it): its top from the bowl's side out, then down to the top of the altar //
+      const lime = new MeshStandardMaterial({ color: 0xEEEADF, roughness: 0.95, metalness: 0, side: DoubleSide }); //
+      const limeGeo = new LatheGeometry([new Vector2(0.27, 0.12), new Vector2(0.31, 0.12), new Vector2(0.41, 0)], 20); //
+      for (const x of BX) { //
+        const m = new Mesh(limeGeo, lime); //
+        m.position.set(x, TOP, BZ); //
+        m.castShadow = m.receiveShadow = true; //
+        sfG.add(m); //
+      } //
       const sfR = new Group(), sfT = new Group(); //
       sfG.add(sfR); //
       sfG.add(sfT); //
@@ -51700,15 +51716,312 @@ void main() {
       ctx2.layers.sfalimRashi = sfR; //
       ctx2.layers.sfalimTosafot = sfT; //
       const dark = new MeshBasicMaterial({ color: 0x120e08 }); //
+      // the ways down of each reading (shown only with the glass corner, SFSEE): from the hole to the top of the shitin, the bottom of the //
+      // court's floor slab (30-courts.js: the slab is 2.65 thick) //
+      const DOWN = F - 2.65; //
+      const wayM = new MeshBasicMaterial({ color: 0x2b1f13 }); //
+      const wayR = new Group(), wayT = new Group(); //
+      wayR.visible = wayT.visible = false; //
+      sfR.add(wayR); //
+      sfT.add(wayT); //
+      const way = (grp, x, z, r, yTop) => { const m = H2.cyl(grp, r, r, yTop - DOWN, wayM, x, DOWN, z, 14); m.castShadow = m.receiveShadow = false; return m; }; //
+      // Rashi: "חוטם אחד בספל ונקב אחד בחוטמו... ויורדין דרך החוטמין על גב המזבח, ובמזבח היה נקב שבו המים והיין יורדין לשיתין". The spout //
+      // leaves the bowl's south wall a little above its floor and slopes down; the hole in the top lies a little beyond its mouth, where the //
+      // libation falls. A hole for each (the user, 18.11.2026: "כוונת רשי היא נקב אחד לכל סוג אחד למים ואחד ליין ולכן אין מח' בינו לבין //
+      // התפאי" - Tiferet Yisrael on Middot 3:1: two holes from the top to the shitin); ONE_HOLE (one for both, the two spouts turned to it) //
+      // is kept for the other reading of Rashi's "נקב" //
+      const ONE_HOLE = false; //
+      const HZ = BZ + 0.86; //
+      const rimM = new MeshStandardMaterial({ color: 0xD8D0BF, roughness: 0.85, metalness: 0 }); //
+      const holes = ONE_HOLE ? [[(BX[0] + BX[1]) / 2, HZ, 0.1]] : BX.map((x, i) => [x, HZ, i ? 0.09 : 0.07]);   // the wine's hole the wider //
+      for (const [hx, hz, hr] of holes) { //
+        H2.cyl(sfR, hr + 0.045, hr + 0.045, 0.012, rimM, hx, TOP, hz, 20); //
+        H2.cyl(sfR, hr, hr, 0.016, dark, hx, TOP, hz, 20); //
+        way(wayR, hx, hz, hr * 0.92, TOP); //
+      } //
+      const UP = new Vector3(0, 1, 0); //
       BX.forEach((x, i) => { //
-        const sp = H2.cyl(sfR, i ? 0.045 : 0.03, i ? 0.045 : 0.03, 0.3, sil, x, TOP + 0.2, BZ + 0.42, 8);   // the spout, over the south rim (the wine's thicker) //
-        sp.rotation.x = Math.PI / 2; //
-        H2.cyl(sfR, 0.06, 0.06, 0.02, dark, x, TOP + 0.01, BZ + 0.75, 8);                                    // the hole in the top the libation runs to //
-        H2.cyl(sfT, i ? 0.05 : 0.035, i ? 0.05 : 0.035, 0.02, dark, x, TOP + 0.01, BZ, 8);                   // the hole in the bowl's bottom //
+        const hole = ONE_HOLE ? holes[0] : holes[i]; //
+        const h = new Vector3(hole[0] - x, 0, hole[1] - BZ); //
+        const dh = h.length(); //
+        h.normalize(); //
+        const tilt = 0.2, y0 = TOP + 0.05 + 0.13, r0 = 0.27, len = (dh - r0 - 0.12) / Math.cos(tilt); //
+        const d = new Vector3(h.x * Math.cos(tilt), -Math.sin(tilt), h.z * Math.cos(tilt)); //
+        const rB = i ? 0.075 : 0.055, rT = i ? 0.058 : 0.042;   // the wine's spout the thicker ("נקב היין עבה ושל המים דק", Bartenura) //
+        const sp = new Mesh(new CylinderGeometry(rT, rB, len, 14), sil); //
+        sp.quaternion.setFromUnitVectors(UP, d); //
+        sp.position.set(x + h.x * r0, y0, BZ + h.z * r0).addScaledVector(d, len / 2); //
+        sp.castShadow = sp.receiveShadow = true; //
+        sfR.add(sp); //
+        const mouth = new Mesh(new CylinderGeometry(rT * 0.62, rT * 0.62, 0.012, 12), dark);   // "ונקב אחד בחוטמו" //
+        mouth.quaternion.copy(sp.quaternion); //
+        mouth.position.set(x + h.x * r0, y0, BZ + h.z * r0).addScaledVector(d, len + 0.004); //
+        sfR.add(mouth); //
+      }); //
+      // Tosafot (Sukkah 48b; 1903, lines 504-505): "דלמא הוא דמנקב הספלים יורדין לשיתין כמין שני נקבי החוטם ולא שהיה בולט כמין חוטם" - //
+      // the holes in the bowls' bottoms, straight down; and "אחד מעובה ואחד דק": "ולשון מעובה משמע ששולי הספל היו עבים ומתוך כך אין //
+      // המשקה ממהר לצאת" - one bowl's bottom thick, the holes alike. Which bowl Tosafot do not say: THICK - the water's, as the water is the //
+      // one that runs out fast ("שהמים ממהרים לצאת", Rashi 48b, from the Gemara's "חמרא סמיך מיא קליש"), or the wine's - asked of the //
+      // user, 18.11.2026 //
+      const THICK = 0;   // the index in BX: 0 the water's (western), 1 the wine's (eastern) //
+      BX.forEach((x, i) => { //
+        let floorY = TOP + 0.05; //
+        if (i === THICK) { //
+          const thick = 0.09; //
+          H2.cyl(sfT, 0.288, 0.216, thick, sil, x, TOP + 0.05, BZ, 20);   // the thick bottom: fills the bowl's foot //
+          floorY += thick; //
+        } //
+        const hr = 0.045; //
+        H2.cyl(sfT, hr, hr, 0.008, dark, x, floorY, BZ, 16); //
+        way(wayT, x, BZ, hr, TOP + 0.05); //
       }); //
       ctx2.shared.sfalim = { mode: "rashi", set(m) { this.mode = m === "tosafot" ? "tosafot" : "rashi"; sfR.visible = this.mode === "rashi"; sfT.visible = this.mode === "tosafot"; } }; //
-      ctx2.labels.push({ text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: 43.2, y: TOP + 1.1, z: 9.4, size: 0.8, layer: "altarBody32" }, //
-        { text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: 47.2, y: TOP + 1.1, z: 5.4, size: 0.8, layer: "altarBody28" }); //
+      ctx2.labels.push({ text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: 43.5, y: TOP + 1.1, z: 9.4, size: 0.8, layer: "altarBody32" }, //
+        { text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: 47.5, y: TOP + 1.1, z: 5.4, size: 0.8, layer: "altarBody28" }); //
+      const SHITIN_SEE = "השיתין — ״חלל שתחת המזבח כנגד מקום הנסכים״ (רש״י סוכה מט.)";   // apart from the yesod's "שני הנקבים... והן הנקראין שיתין" (SHITIN_LABEL, below: the Rambam's name for the yesod's two holes) //
+      // drawn on top (l.onTop): it stands in the hollow, and the stone round the glass would hide most of it //
+      ctx2.labels.push({ text: SHITIN_SEE, x: 43.8, y: F - 5.6, z: 9.6, size: 0.62, layers: ["sfalimSee", "altarBody32"], moveWithAltar: true, onTop: true }, //
+        { text: SHITIN_SEE, x: 47.8, y: F - 5.6, z: 5.6, size: 0.62, layers: ["sfalimSee", "altarBody28"], moveWithAltar: true, onTop: true }); //
+      // SFALIM_303: SFSEE - THE CORNER AS GLASS (ctx2.shared.features.sfalimSee; the place "ספלי הניסוך", 70-ui.js - on while it shows). //
+      // A box round the south-west corner, from under the shitin to over the horn (C, in sfG's frame: R. Yose's altar and the Tannaim's //
+      // places move it with the bowls). Every plain box of the altar and of the court's floor that meets it is drawn with a clone of its //
+      // material that leaves the box out (LULHOLE's way, 50-heichal.js). Inside the box, built anew each time from those boxes: the glass - //
+      // only the outer surface of their union (a face, or the part of it, that lies against another box is not drawn: nine faces lay one //
+      // over another under the bowls, and the glass came out all but opaque) - with its edges; and on the box's own faces, where they lie in //
+      // stone, the cut, facing into the box: from outside the near ones are not seen, the far ones are the cut stone - and under the //
+      // floor's slab the hollow's dark walls. The ways down of the reading shown go from the holes to the hollow. //
+      const SFSEE = (() => { //
+        const C = { x0: 40.7, x1: 45.3, y0: F - 7, y1: TOP + 1.3, z0: 8.3, z1: 12.3 }; //
+        const outP = []; //
+        for (let k = 0; k < 6; k++) outP.push(new Plane(new Vector3(1, 0, 0), 1e7)); //
+        const seeW = new Group(); //
+        seeW.name = "sfalimSee"; //
+        seeW.visible = false; //
+        ctx2.root.add(seeW); //
+        const flag = new Group();   // the layer of the shitin's label //
+        flag.visible = false; //
+        ctx2.layers.sfalimSee = flag; //
+        const ghostM = new MeshBasicMaterial({ color: 0xF1E9D6, transparent: true, opacity: 0.15, depthWrite: false, side: DoubleSide }); //
+        const edgeM = new LineBasicMaterial({ color: 0x5e4a2e, transparent: true, opacity: 0.8, depthWrite: false }); //
+        const pitM = new MeshBasicMaterial({ vertexColors: true }); //
+        const clones = new Map(); //
+        const Cw = new Box3(), tmp = new Vector3(); //
+        const noRay = () => {}; //
+        let on = false, paused = false, live = []; //
+        const setPlanes = () => { //
+          ctx2.root.updateMatrixWorld(true); //
+          Cw.min.copy(sfG.localToWorld(tmp.set(C.x0, C.y0, C.z0))); //
+          Cw.max.copy(sfG.localToWorld(tmp.set(C.x1, C.y1, C.z1))); //
+          const n = [[-1, 0, 0, Cw.min.x], [1, 0, 0, -Cw.max.x], [0, -1, 0, Cw.min.y], [0, 1, 0, -Cw.max.y], [0, 0, -1, Cw.min.z], [0, 0, 1, -Cw.max.z]]; //
+          n.forEach(([a, b, c, d], k) => { //
+            outP[k].normal.set(a, b, c); //
+            outP[k].constant = d; //
+          }); //
+        }; //
+        // the boxes that meet C: plain boxes of the altar and of the courts, opaque, shown, not the bowls' own //
+        const cands = () => { //
+          const out = []; //
+          for (const top of ctx2.root.children) { //
+            if (top.name !== "altar" && top.name !== "courts") continue; //
+            top.traverse((o) => { //
+              if (!o.isMesh || o.isInstancedMesh || !o.geometry || o.geometry.type !== "BoxGeometry" || Array.isArray(o.material)) return; //
+              for (let p = o; p; p = p.parent) if (p === sfG || !p.visible) return; //
+              const m = o.material; //
+              if (!m || m.transparent || !(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) return; //
+              if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); //
+              const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld), e = 1e-3; //
+              if (b.max.x <= Cw.min.x + e || b.min.x >= Cw.max.x - e || b.max.y <= Cw.min.y + e || b.min.y >= Cw.max.y - e || b.max.z <= Cw.min.z + e || b.min.z >= Cw.max.z - e) return; //
+              out.push([o, b]); //
+            }); //
+          } //
+          return out; //
+        }; //
+        const cutOf = (m) => { //
+          const orig = m.userData && m.userData.__sfseeOrig ? m.userData.__sfseeOrig : m; //
+          let c = clones.get(orig); //
+          if (!c) { //
+            c = orig.clone(); //
+            c.clippingPlanes = outP; //
+            c.clipIntersection = true; //
+            c.userData = Object.assign({}, orig.userData, { __sfseeOrig: orig }); //
+            clones.set(orig, c); //
+          } //
+          return c; //
+        }; //
+        // quads on axis-aligned planes: axis a ("x" | "y" | "z") at v, over [u0, u1] x [w0, w1] of the other two (x: z, y; y: x, z; z: x, y), //
+        // facing sign sg along a; texture coordinates in amot (as uvWorldBox) //
+        const OTHER = { x: ["z", "y"], y: ["x", "z"], z: ["x", "y"] }; //
+        const quads = () => ({ pos: [], nrm: [], uv: [], col: [] }); //
+        const PT = (a, v, u, w) => (a === "x" ? [v, w, u] : a === "y" ? [u, v, w] : [u, w, v]); //
+        const quad = (q, a, v, u0, u1, w0, w1, sg, colY) => { //
+          const c = [PT(a, v, u0, w0), PT(a, v, u1, w0), PT(a, v, u1, w1), PT(a, v, u0, w1)], t = [[u0, w0], [u1, w0], [u1, w1], [u0, w1]]; //
+          const nat = a === "z" ? 1 : -1, n = a === "x" ? [sg, 0, 0] : a === "y" ? [0, sg, 0] : [0, 0, sg]; //
+          for (const k of sg === nat ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]) { //
+            q.pos.push(...c[k]); //
+            q.nrm.push(...n); //
+            q.uv.push(...t[k]); //
+            if (colY) q.col.push(...colY(c[k][1])); //
+          } //
+        }; //
+        const mesh = (q, mat) => { //
+          const g = new BufferGeometry(); //
+          g.setAttribute("position", new Float32BufferAttribute(q.pos, 3)); //
+          g.setAttribute("normal", new Float32BufferAttribute(q.nrm, 3)); //
+          g.setAttribute("uv", new Float32BufferAttribute(q.uv, 2)); //
+          if (q.col.length) g.setAttribute("color", new Float32BufferAttribute(q.col, 3)); //
+          const m = new Mesh(g, mat); //
+          m.castShadow = m.receiveShadow = false; //
+          m.raycast = noRay; //
+          m.userData.noPick = true; //
+          m.userData.__sfseeOwn = true; //
+          seeW.add(m); //
+          return m; //
+        }; //
+        // the cuts of [lo, hi] along axis ax by the boxes' sides, sorted //
+        const cuts = (boxes, ax, lo, hi, skip) => { //
+          const t = [lo, hi]; //
+          boxes.forEach((o, i) => { //
+            if (i === skip) return; //
+            for (const x of [o.min[ax], o.max[ax]]) if (x > lo + 1e-4 && x < hi - 1e-4) t.push(x); //
+          }); //
+          return Array.from(new Set(t.map((x) => Math.round(x * 1e4) / 1e4))).sort((x, y) => x - y); //
+        }; //
+        const inBox = (o, p) => p.x > o.min.x + 1e-4 && p.x < o.max.x - 1e-4 && p.y > o.min.y + 1e-4 && p.y < o.max.y - 1e-4 && p.z > o.min.z + 1e-4 && p.z < o.max.z - 1e-4; //
+        const pitCol = (y) => {   // the hollow's walls: dark brown under the slab, black at the bottom //
+          const t = Math.max(0, Math.min(1, (y - Cw.min.y) / Math.max(0.01, DOWN - Cw.min.y))), k = t * t; //
+          return [0.015 + 0.2 * k, 0.011 + 0.15 * k, 0.008 + 0.1 * k]; //
+        }; //
+        const build = (list) => { //
+          const boxes = list.map((x) => x[1]), mats = list.map((x) => x[2]), pit = boxes.map((b) => b.max.y <= DOWN + 0.05);   // the courts' fill: the hollow //
+          const P = new Vector3(), G = quads(), E = []; //
+          // the glass: each face of each box, inside C, cell by cell between the other boxes' sides; a cell is drawn when the point just //
+          // outside it lies in no other box; its edges where the next cell of the face is not drawn (or the face ends) //
+          boxes.forEach((b, i) => { //
+            if (pit[i]) return; //
+            for (const a of ["x", "y", "z"]) for (const s of [-1, 1]) { //
+              const v = s > 0 ? b.max[a] : b.min[a]; //
+              if (v <= Cw.min[a] + 1e-4 || v >= Cw.max[a] - 1e-4) continue; //
+              const [ua, wa] = OTHER[a]; //
+              const u0 = Math.max(b.min[ua], Cw.min[ua]), u1 = Math.min(b.max[ua], Cw.max[ua]), w0 = Math.max(b.min[wa], Cw.min[wa]), w1 = Math.min(b.max[wa], Cw.max[wa]); //
+              if (u1 - u0 < 1e-3 || w1 - w0 < 1e-3) continue; //
+              const us = cuts(boxes, ua, u0, u1, i), ws = cuts(boxes, wa, w0, w1, i); //
+              const ex = us.slice(1).map((_, j) => ws.slice(1).map((__, k) => { //
+                P[a] = v + s * 0.003; //
+                P[ua] = (us[j] + us[j + 1]) / 2; //
+                P[wa] = (ws[k] + ws[k + 1]) / 2; //
+                return !boxes.some((o, m) => m !== i && inBox(o, P)); //
+              })); //
+              const X = (j, k) => j >= 0 && k >= 0 && j < ex.length && k < ex[0].length && ex[j][k]; //
+              for (let j = 0; j < ex.length; j++) for (let k = 0; k < ex[0].length; k++) { //
+                if (!ex[j][k]) continue; //
+                quad(G, a, v, us[j], us[j + 1], ws[k], ws[k + 1], s); //
+                if (!X(j - 1, k)) E.push(PT(a, v, us[j], ws[k]), PT(a, v, us[j], ws[k + 1])); //
+                if (!X(j + 1, k)) E.push(PT(a, v, us[j + 1], ws[k]), PT(a, v, us[j + 1], ws[k + 1])); //
+                if (!X(j, k - 1)) E.push(PT(a, v, us[j], ws[k]), PT(a, v, us[j + 1], ws[k])); //
+                if (!X(j, k + 1)) E.push(PT(a, v, us[j], ws[k + 1]), PT(a, v, us[j + 1], ws[k + 1])); //
+              } //
+            } //
+          }); //
+          if (G.pos.length) mesh(G, ghostM).renderOrder = 3; //
+          if (E.length) { //
+            const eg = new BufferGeometry(); //
+            eg.setAttribute("position", new Float32BufferAttribute(E.flat(), 3)); //
+            const el = new LineSegments(eg, edgeM); //
+            el.raycast = noRay; //
+            el.userData.noPick = true; //
+            el.userData.__sfseeOwn = true; //
+            el.renderOrder = 4; //
+            seeW.add(el); //
+          } //
+          // the cut: on each face of C, the boxes that cross it, cell by cell; a cell takes the smallest box that holds it (the sovev's //
+          // slab over the body), so that no two plates lie one on another //
+          const byMat = new Map(), PQ = quads(); //
+          for (const [a, v, s] of [["x", Cw.min.x, 1], ["x", Cw.max.x, -1], ["z", Cw.min.z, 1], ["z", Cw.max.z, -1], ["y", Cw.min.y, 1], ["y", Cw.max.y, -1]]) { //
+            const cross = []; //
+            boxes.forEach((o, i) => { if (o.min[a] < v - 1e-4 && o.max[a] > v + 1e-4) cross.push(i); }); //
+            if (!cross.length) continue; //
+            const [ua, wa] = OTHER[a]; //
+            const sub = cross.map((i) => boxes[i]); //
+            const us = cuts(sub, ua, Cw.min[ua], Cw.max[ua], -1), ws = cuts(sub, wa, Cw.min[wa], Cw.max[wa], -1); //
+            for (let j = 0; j + 1 < us.length; j++) for (let k = 0; k + 1 < ws.length; k++) { //
+              P[a] = v; //
+              P[ua] = (us[j] + us[j + 1]) / 2; //
+              P[wa] = (ws[k] + ws[k + 1]) / 2; //
+              let best = -1, bv = Infinity; //
+              for (const i of cross) { //
+                const o = boxes[i]; //
+                if (!(P[ua] > o.min[ua] && P[ua] < o.max[ua] && P[wa] > o.min[wa] && P[wa] < o.max[wa])) continue; //
+                const vol = (o.max.x - o.min.x) * (o.max.y - o.min.y) * (o.max.z - o.min.z); //
+                if (vol < bv) { bv = vol; best = i; } //
+              } //
+              if (best < 0) continue; //
+              if (pit[best]) quad(PQ, a, v, us[j], us[j + 1], ws[k], ws[k + 1], s, pitCol); //
+              else { //
+                if (!byMat.has(mats[best])) byMat.set(mats[best], quads()); //
+                quad(byMat.get(mats[best]), a, v, us[j], us[j + 1], ws[k], ws[k + 1], s); //
+              } //
+            } //
+          } //
+          for (const [m, q] of byMat) mesh(q, m); //
+          if (PQ.pos.length) mesh(PQ, pitM); //
+        }; //
+        const show = () => { //
+          setPlanes(); //
+          for (const c of clones.values()) { c.clippingPlanes = outP; c.clipIntersection = true; }   // after a section (it gives null back) //
+          ghostM.side = DoubleSide; //
+          if (ctx2.renderer && !ctx2.renderer.localClippingEnabled) ctx2.renderer.localClippingEnabled = true; //
+          const list = []; //
+          for (const [o, b] of cands()) { //
+            const m = o.material; //
+            live.push([o, m]); //
+            o.material = cutOf(m); //
+            list.push([o, b, o.material.userData.__sfseeOrig]); //
+          } //
+          build(list); //
+          seeW.visible = flag.visible = wayR.visible = wayT.visible = true; //
+        }; //
+        const hide = () => { //
+          for (const [o, m] of live) if (o.material && o.material.userData && o.material.userData.__sfseeOrig) o.material = m; //
+          live = []; //
+          for (const c of seeW.children.slice()) { //
+            seeW.remove(c); //
+            if (c.userData.__sfseeOwn && c.geometry) c.geometry.dispose(); //
+          } //
+          seeW.visible = flag.visible = wayR.visible = wayT.visible = false; //
+        }; //
+        // a section (90-entry.js) gives every material its own plane and takes it back as null: while it is on the corner is whole //
+        ctx2.animated.push(() => { //
+          if (!on) return; //
+          const S = ctx2.shared.section; //
+          if (S && S.on) { if (!paused) { paused = true; hide(); } return; } //
+          if (paused) { paused = false; show(); } //
+        }); //
+        // the programs, compiled with the rest at load (the renderer's compile walks the hidden objects too): the glass, the edges, the //
+        // hollow's walls and the cut clone of each material the corner meets now (the 32 body; R. Yose's is of the same materials) //
+        if (ctx2.renderer) ctx2.renderer.localClippingEnabled = true; //
+        { //
+          const warm = new Group(); //
+          warm.name = "sfalimSeeWarm"; //
+          warm.visible = false; //
+          ctx2.root.add(warm); //
+          setPlanes(); //
+          const tg = new BoxGeometry(0.01, 0.01, 0.01); //
+          for (const [o] of cands()) warm.add(new Mesh(tg, cutOf(o.material))); //
+          warm.add(new Mesh(tg, ghostM)); //
+          warm.add(new LineSegments(new EdgesGeometry(tg), edgeM)); //
+          const pg = new BoxGeometry(0.01, 0.01, 0.01); //
+          pg.setAttribute("color", new Float32BufferAttribute(new Float32Array(pg.attributes.position.count * 3), 3)); //
+          warm.add(new Mesh(pg, pitM)); //
+        } //
+        ctx2.shared.features = ctx2.shared.features || {}; //
+        ctx2.shared.features.sfalimSee = { key: "sfalimSee", timed: false, isOn: () => on, //
+          on: () => { if (on) return; on = true; paused = false; show(); }, //
+          off: () => { if (!on) return; on = false; paused = false; hide(); } }; //
+        // ctx.shared.sfalimSee: refresh() after the bowls moved; set(v) / on - the presentation's way to a place's feature (75-tour.js featureOf) //
+        const FS = ctx2.shared.features.sfalimSee; //
+        return { refresh: () => { if (on && !paused) { hide(); show(); } }, set: (v) => (v ? FS.on() : FS.off()), get on() { return on; } }; //
+      })(); //
+      ctx2.shared.sfalimSee = SFSEE; //
     } //
     { //
       // 1.5.0 (the user: "להציג את כל המידות מה-32 ועד 28 וכן לשאר השיטות"): THE ALTAR'S MEASURES as thin frames, each at its own //
@@ -51904,6 +52217,7 @@ void main() {
         rampG.position.set(y ? 2 : 0, 0, y ? -4 : 0); //
         if (ctx2.shared.__smallRampsY) ctx2.shared.__smallRampsY(y);   // SMALL_RAMPS3_211 //
         if (ctx2.shared.__sfG) ctx2.shared.__sfG.position.set(y ? 4 : 0, 0, y ? -4 : 0); //
+        if (ctx2.shared.sfalimSee) ctx2.shared.sfalimSee.refresh();   // SFALIM_303: the glass corner with the bowls //
         yoseFit(topG, y); //
         yoseFit(ctx2.layers.tapuachRaavad, y); //
       } }; //
@@ -52819,6 +53133,7 @@ void main() {
           const dz = this.dz[key]; //
           mv.position.z = dz; //
           mv.updateMatrixWorld(true); //
+          if (ctx2.shared.sfalimSee) ctx2.shared.sfalimSee.refresh();   // SFALIM_303: the glass corner with the altar //
           let lg = null; //
           try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {} //
           mine.forEach((l, i) => { //
@@ -61363,12 +61678,13 @@ void main() {
       a.go("sg", A(46.0, 40.0), 1, 13, { yaw: -HP }); //
       { const tb = tableAt("marble"); a.go("tr1", [tb[0] - 1.3, tb[1] - 0.4], 1.5, 13.5, { yaw: HP }); a.go("tr2", [tb[0] - 1.3, tb[1] + 0.4], 2, 13.8, { yaw: HP }); } //
     }; //
+    const SFALIM_POUR = [44.4, 7.45];   // SFALIM_303: where the priest of the libations stands to pour into the wine's bowl (40-altar.js: x 43.95, z 9.4) - the jug in his right hand, west of him and 1.95 before him, over its middle //
     SC.nesachim = (a) => { //
       // the wine at the south-west horn (the libation bowls there); the deputy on the horn with the flags; two priests with silver //
       // trumpets on the marble table (the table of the fats, Rambam 2:15), then beside Ben Arza at the duchan (model choice: its middle) //
       a.go("s13", [48.9, onRamp(8)[1] + 0.6], 0, 2.6, { yaw: -HP }); //
       a.hold("s13", "p9", "R", 2.8); //
-      a.walk("s13", [[48.9, onRamp(8)[1] + 0.6], A(59.6, (onRamp(8)[1] + 0.6 - D + 12.2) / 2), A(59.4, 12.0), A(50.8, 9.8), A(44, 9.6), A(42.7, 9.5)], 3, 7, { carry: true, yaw: -Math.PI * 0.75 });   // EAST_UP_211: up the east side, and at the top to his left, to the south-west horn //
+      a.walk("s13", [[48.9, onRamp(8)[1] + 0.6], A(59.6, (onRamp(8)[1] + 0.6 - D + 12.2) / 2), A(59.4, 12.0), A(50.8, 9.8), A(46.6, 8.6), A(45.0, 8.05), A(SFALIM_POUR[0], SFALIM_POUR[1])], 3, 7, { carry: true, yaw: 0 });   // EAST_UP_211: up the east side, and at the top to his left, to the south-west horn; SFALIM_303: north of the bowls, to the wine's, facing it //
       a.hold("sg", "flags", "R", 0); //
       a.go("sg", A(42.4, 7.4), 0, 6, { hold: true, yaw: -Math.PI * 0.75 }); //
       // SHULCHAN_210: the marble table stands by the altar's south-west corner (40-altar.js, ctx2.shared.rampTables - the Ra'avad); the //
@@ -63092,6 +63408,9 @@ void main() {
   // for its place by the Mishnah (ctx.shared.altarPlace "middot", centre z 9) and its 32 amot; they follow the place now chosen and, for //
   // R. Yose's first altar of 28 (ctx.shared.altarMeasures "yose"), the part's own shift in 40-altar.js: the body and its top 2 east and 2 //
   // north (its north-east corner fixed), the ramps 2 east and 4 north, the libation bowls 4 east and 4 north //
+  // SFALIM_303: the place "ספלי הניסוך" - the target between the bowls and the shitin, the eye high in the south-south-west (the floor in //
+  // front of the corner stays whole: the hollow is seen down through the glass top and the glass floor) //
+  var SFALIM_TG = [43.5, 18.0, 22.4], SFALIM_CAM = [40.0, 34.5, 31.0]; //
   function ui_altarCam(ctx, p, part) { //
     const P = ctx && ctx.shared ? ctx.shared.altarPlace : null, M = ctx && ctx.shared ? ctx.shared.altarMeasures : null; //
     const dz = P && P.dz && P.dz[P.current] != null && P.dz.middot != null ? P.dz[P.current] - P.dz.middot : 0; //
@@ -65726,7 +66045,7 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "השיתין — שני הנקבים וטבלת השיש", tg: [40.0, 16.8, 25.0], cam: [35.0, 20.4, 27.2], info: "לשון המשנה (מידות ג, ב): ״ובקרן מערבית דרומית היו שני נקבים, כמין שני חטמין דקין, שהדמים הנתנין על יסוד מערבי ועל יסוד דרומי, יורדין בהן ומתערבין באמה, ויוצאין לנחל קדרון״.\n**הרמב״ם** (בית הבחירה ב, יא): ״ובקרן מערבית דרומית היו שני נקבים כמין שני חטמין דקין. והן הנקראין שיתין שהדמים יורדין בהן ומתערבין באותה הקרן באמה ויוצאין לנחל קדרון״.\nולמטה מהם (מידות ג, ג): ״למטה ברצפה באותה הקרן, מקום היה שם אמה על אמה, וטבלא של שיש, וטבעת היתה קבועה בה, שבו יורדין לשית ומנקין אותו״; והרמב״ם (ב, יב): ״שבו יורדין לשיתין ומנקין אותו״.\nבמודל: שני הנקבים בראש היסוד, בקרן המערבית־דרומית, זה בצד זה; וברצפה שלידה טבלת השיש והטבעת. מקומם המדויק בתוך הקרן, וגודלם — בחירת מודל.", refs: [["מידות ג, ב", "Mishnah_Middot.3.2"], ["מידות ג, ג", "Mishnah_Middot.3.3"], ["רמב״ם בית הבחירה ב, יא", "Mishneh_Torah,_The_Chosen_Temple.2.11"], ["רמב״ם בית הבחירה ב, יב", "Mishneh_Torah,_The_Chosen_Temple.2.12"]] }, //
           { t: "הטבעות", tg: [52, 14, -27], cam: [52, 46, -4], info: "לשון המשנה (מידות ג, ה): ״וטבעות היו לצפונו של מזבח, ששה סדרים של ארבע ארבע, ויש אומרים, ארבעה של שש שש, שעליהן שוחטין את הקדשים״; (ה, ב): ״מקום הטבעות עשרים וארבע״.\nבקצרה — ״ששה סדרים של ארבע ארבע, ויש אומרים, ארבעה של שש שש״ (מידות ג, ה): לר׳ שמעיה, בתוספות יום טוב — אלו ואלו עשרים וארבע; במודל — ששה סדרים של ארבע.\n**ברטנורא:** לפי שלא היו כופתים את התמיד, התקין יוחנן כהן גדול עשרים וארבע טבעות לעשרים וארבעה משמרות כהונה, קבועות ברצפה ועשויות כמין קשת, שמכניסים בהן צוואר הבהמה בשעת שחיטה ונועצים ראש הטבעת בארץ; בצפון — שקדשי קדשים שחיטתן בצפון (ברטנורא מידות ג, ה).\n**תוספות יום טוב:** ששה סדרים בשורה אחת ובכל סדר ארבע — כ״ד, ויש אומרים ארבעה סדרים של שש — גם כן כ״ד (ר׳ שמעיה); ועל כפיתת התמיד — בתחילת פרק ד של תמיד (תוספות יום טוב מידות ג, ה).\n**תפארת ישראל:** קבועות ברצפה בצפון המזבח, להכניס בהן צוואר הקרבנות בשעת שחיטה; ולדעתו שימשו רק לבהמה גסה, שהיא חזקה ומפרפרת, וראשה יהיה מונח בהשקט בשעת קבלת הדם — ותמה על הר״ב, שהרי התמיד נכפת יד עם רגל, ובסוטה (מח.) התקנה משום עגלי הקרבן (תפארת ישראל מידות ג, ה).\nבמודל: עשרים וארבע טבעות ברצפה בצפון המזבח, ששה סדרים של ארבע; צורתן — בחירת מודל.", refs: [["מידות ג, ה", "Mishnah_Middot.3.5"], ["ברטנורא ג, ה", "Bartenura_on_Mishnah_Middot.3.5"], ["תוי״ט ג, ה", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.5"], ["תפא״י ג, ה", "Yachin_on_Mishnah_Middot.3.5"], ["מידות ה, ב", "Mishnah_Middot.5.2"], ["רמב״ם בית הבחירה ה, יד", "Mishneh_Torah,_The_Chosen_Temple.5.14"], ["תמיד ד, א", "Mishnah_Tamid.4.1"]] }, //
           { t: "בית המטבחים", tg: [52, 14, -48], cam: [52, 78, -18], info: "לשון המשנה (מידות ג, ה): ״בית המטבחים היה לצפונו של מזבח, ועליו שמנה עמודים ננסין, ורביעין של ארז על גביהן, ואנקליות של ברזל היו קבועין בהם, ושלשה סדרים היו לכל אחד ואחד, שבהם תולין. ומפשיטין על שלחנות של שיש שבין העמודים״; (שקלים ו, ד): ״שלשה עשר שלחנות היו במקדש, שמונה של שיש בבית המטבחים, שעליהן מדיחין את הקרבים״; (ה, ב): ״מן הטבעות לשלחנות ארבע, מן השלחנות ולננסין ארבע. מן הננסין לכתל העזרה שמנה אמות״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״בית המטבחים — העמודים והאונקליות״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• ברטנורא (ברירת המחדל): ״חתיכות מרבעות של ארז היו על העמודים״, והאונקליות בהן.\n• המאירי: ״כעין קורות קצרות באים מעמוד לעמוד״.\n• הראבי״ה: שמונה העמודים בשורה אחת ממזרח למערב, והשולחנות בשורה משלהם לפניהם.\n• הגר״א: שורה אחת מצפון לדרום, ושולחן בין עמוד לעמוד; השמיני, ארבע אמות אורכו, בראש השורה.\n**ברטנורא:** ״עמודים ננסים״ — עמודי אבן נמוכים; ״רביעין של ארז״ — חתיכות מרובעות של ארז על העמודים; ״אנקליות״ — כעין מזלגות, קבועים ברביעין, ותולים בהם את הבהמה; שלושה סדרים של אנקליות זה למעלה מזה, לבהמה גדולה או קטנה; שולחנות של שיש — ״ולא עשאום של כסף או של זהב דהא אין עניות במקום עשירות, לפי שהזהב והכסף מרתיחים ומסריחים והשיש מצנן ושומר הבשר שלא יסריח״ (ברטנורא מידות ג, ה; ברטנורא שקלים ו, ד).\n**תוספות יום טוב:** ״ועליו״ — באותו מקום (ר׳ שמעיה); הראבי״ה — האנקליות בשלושת הצדדים, מזרח צפון ודרום, ולא למערב, שלא יהפכו המפשיטים אחוריהם לקודש הקדשים; והשולחנות ״שבין העמודים״ — בין המזבח לעמודים, שמונה עמודים ושמונה שולחנות (תוספות יום טוב מידות ג, ה).\n**תפארת ישראל:** לא בית מוקף כתלים — שאם כן אין שוחטים ״על ירך המזבח צפונה״ — אלא כל מקום קבוע קרוי בית; הרביעין מונחים על העמודים ולא מחוברים בהם, משום ״לא תטע לך אשרה כל עץ״; האנקליות לשלושה צדדים ולא למערב; ״על שולחנות״ — אצל השולחנות מפשיטים, ומניחים עליהם את הסכין, ולתוספות (יומא טז.) את תחתית הבהמה הגדולה; ושמונה שולחנות של שיש — ״כדי שיקרר הבשר שיניחו עליו, ולא יסריח״ (תפארת ישראל מידות ג, ה; תפארת ישראל שקלים ו, ד).\nבמודל: בצפון המזבח — שמונה עמודים ננסים, ועליהם הארז והאונקליות, ושמונה שולחנות שיש; מקומם ביחס לטבעות — כמידות ה, ב. ברירת המחדל — כברטנורא: חתיכת ארז מרובעת על כל עמוד, ובה שלושה סדרים של אונקליות. הכפתור ״האונקליות״ שעל המודל מקרב את המבט ומסמן אותן בצבע צף ל־15 שניות. גובה העמודים ומקום האונקליות — בחירת מודל.", refs: [["מידות ג, ה", "Mishnah_Middot.3.5"], ["ברטנורא ג, ה", "Bartenura_on_Mishnah_Middot.3.5"], ["תוי״ט ג, ה", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.5"], ["תפא״י ג, ה", "Yachin_on_Mishnah_Middot.3.5"], ["מידות ה, ב", "Mishnah_Middot.5.2"], ["שקלים ו, ד", "Mishnah_Shekalim.6.4"], ["ברטנורא ו, ד", "Bartenura_on_Mishnah_Shekalim.6.4"], ["תפא״י ו, ד", "Yachin_on_Mishnah_Shekalim.6.4"], ["רמב״ם בית הבחירה ה, יג", "Mishneh_Torah,_The_Chosen_Temple.5.13"], ["מאירי מידות ג, ה", "Meiri_on_Middot.3.5"], ["ביאור הגר״א מידות ה, ב", "Gra_on_Middot.5.2"]] }, //
-          { t: "ספלי הניסוך", tg: () => ui_altarCam(ctx, [43.2, 25.3, 21.9], "cups"), cam: () => ui_altarCam(ctx, [48, 29.5, 17], "cups"), info: "לשון המשנה (סוכה ד, ט): ״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם. רבי יהודה אומר, של סיד היו, אלא שהיו משחרין פניהם מפני היין. ומנקבין כמין שני חטמין דקין, אחד מעבה ואחד דק, כדי שיהו שניהם כלין בבת אחת. מערבי של מים, מזרחי של יין״; (מידות ג, א): ״וכשעלו בני הגולה, הוסיפו עליו ארבע אמות מן הדרום וארבע אמות מן המערב, כמין גמא״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״נקבי ספלי הניסוך״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• לרש״י ולברטנורא — ״כמין שני חוטמין״ (ברירת המחדל).\n• לתוספות, לריטב״א ולמאירי — הנקבים בתחתית הספלים.\n**ברטנורא:** ״ופנה לשמאלו״ — שהנסכים נעשים בקרן מערבית־דרומית, וכשפונה לשמאלו היא הראשונה; ״כמין שני חטמין״ — חוטם אחד בכל ספל ונקב אחד בחוטמו, הכהן מערה בפי הספלים, והנסכים מקלחים ויורדים דרך החוטמים על גג המזבח, ״ובמזבח היה נקב שבו היין והמים יורדין לשתין של מזבח, שהן חלולים ועמקים מאד״; נקב היין עבה ושל המים דק, שהמים ממהרים לצאת; ״הספלים היו נתונים אצל הקרן סמוכים זה לזה, זה לפני זה, אחד לצד מערב ואחד לפנים ממנו״ (ברטנורא סוכה ד, ט).\n**תוספות יום טוב:** ״ופנה לשמאלו״ — טעמו בזבחים ו, ג; התוספות הקשו — היאך מורידים בקודש מצלוחית של זהב לספלים של כסף? ותירצו: ״די״ל דספלים היו קבועים בסיד. ולא כלים נינהו דנחשבים כגופו של מזבח״; ״משחרין״ — שאם עירה של יין לתוך של מים, של מים בא להשחיר (תוספות יום טוב סוכה ד, ט).\n**תפארת ישראל:** ״שני ספלים... מחוברין בסיד במזבח, א׳ ליין וא׳ למים״; הכהן מערה בזמן אחד את המים ואת היין, כל אחד לספלו, ומשם דרך החוטם לגג המזבח, ״ומשם דרך נקב שבגג יורדין לשיתין. והוא חלול עמוק מאוד שתחת המזבח״; ומן המזבח (מידות ג, א): בני הגולה השאירו בבניין שני נקבים מגגו לשיתין בעזרת קנה ארוך, ובבועז (מידות ג, ב) — התנא לא הזכירם, שהם בכלל שטח המזבח (תפארת ישראל סוכה ד, ט; תפארת ישראל מידות ג, א).\nבמודל: שני הספלים בראש המזבח בקרן דרומית־מערבית, קבועים בגג, המערבי של מים והמזרחי של יין; מהם יורדים הנסכים אל השיתין שתחת הקרן, היורדים עד התהום (סוכה מט.). צורת הנקבים — חוטם בולט (רש״י וברטנורא) או נקב בתחתית (תוספות) — בתפריט, תחת ״שיטות ומחלוקות״.", refs: [["סוכה ד, ט", "Mishnah_Sukkah.4.9"], ["ברטנורא ד, ט", "Bartenura_on_Mishnah_Sukkah.4.9"], ["תוי״ט ד, ט", "Tosafot_Yom_Tov_on_Mishnah_Sukkah.4.9"], ["תפא״י ד, ט", "Yachin_on_Mishnah_Sukkah.4.9"], ["מידות ג, א", "Mishnah_Middot.3.1"], ["ברטנורא ג, א", "Bartenura_on_Mishnah_Middot.3.1"], ["תפא״י ג, א", "Yachin_on_Mishnah_Middot.3.1"], ["בועז ג, ב", "Boaz_on_Mishnah_Middot.3.2"], ["סוכה מח:", "Sukkah.48b"], ["סוכה מט.", "Sukkah.49a"], ["זבחים סא:", "Zevachim.61b"], ["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["רמב״ם תמידין ומוספין י, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.10.7"], ["תוי״ט ג, א", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.1"], ["סוכה מח.", "Sukkah.48a"]] }, //
+          { t: "ספלי הניסוך", feature: (ctx.shared.features || {})["sfalimSee"] || null, tg: () => ui_altarCam(ctx, SFALIM_TG, "cups"), cam: () => ui_altarCam(ctx, SFALIM_CAM, "cups"), info: "לשון המשנה (סוכה ד, ט): ״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם. רבי יהודה אומר, של סיד היו, אלא שהיו משחרין פניהם מפני היין. ומנקבין כמין שני חטמין דקין, אחד מעבה ואחד דק, כדי שיהו שניהם כלין בבת אחת. מערבי של מים, מזרחי של יין״; (מידות ג, א): ״וכשעלו בני הגולה, הוסיפו עליו ארבע אמות מן הדרום וארבע אמות מן המערב, כמין גמא״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״נקבי ספלי הניסוך״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• לרש״י ולברטנורא — ״כמין שני חוטמין״ (ברירת המחדל).\n• לתוספות, לריטב״א ולמאירי — הנקבים בתחתית הספלים.\n**ברטנורא:** ״ופנה לשמאלו״ — שהנסכים נעשים בקרן מערבית־דרומית, וכשפונה לשמאלו היא הראשונה; ״כמין שני חטמין״ — חוטם אחד בכל ספל ונקב אחד בחוטמו, הכהן מערה בפי הספלים, והנסכים מקלחים ויורדים דרך החוטמים על גג המזבח, ״ובמזבח היה נקב שבו היין והמים יורדין לשתין של מזבח, שהן חלולים ועמקים מאד״; נקב היין עבה ושל המים דק, שהמים ממהרים לצאת; ״הספלים היו נתונים אצל הקרן סמוכים זה לזה, זה לפני זה, אחד לצד מערב ואחד לפנים ממנו״ (ברטנורא סוכה ד, ט).\n**תוספות יום טוב:** ״ופנה לשמאלו״ — טעמו בזבחים ו, ג; התוספות הקשו — היאך מורידים בקודש מצלוחית של זהב לספלים של כסף? ותירצו: ״די״ל דספלים היו קבועים בסיד. ולא כלים נינהו דנחשבים כגופו של מזבח״; ״משחרין״ — שאם עירה של יין לתוך של מים, של מים בא להשחיר (תוספות יום טוב סוכה ד, ט).\n**תפארת ישראל:** ״שני ספלים... מחוברין בסיד במזבח, א׳ ליין וא׳ למים״; הכהן מערה בזמן אחד את המים ואת היין, כל אחד לספלו, ומשם דרך החוטם לגג המזבח, ״ומשם דרך נקב שבגג יורדין לשיתין. והוא חלול עמוק מאוד שתחת המזבח״; ומן המזבח (מידות ג, א): בני הגולה השאירו בבניין שני נקבים מגגו לשיתין בעזרת קנה ארוך, ובבועז (מידות ג, ב) — התנא לא הזכירם, שהם בכלל שטח המזבח (תפארת ישראל סוכה ד, ט; תפארת ישראל מידות ג, א).\nבמודל: שני הספלים בראש המזבח בקרן דרומית־מערבית, קבועים בגג, המערבי של מים והמזרחי של יין; מהם יורדים הנסכים אל השיתין שתחת הקרן, היורדים עד התהום (סוכה מט.). צורת הנקבים — חוטם בולט (רש״י וברטנורא) או נקב בתחתית (תוספות) — בתפריט, תחת ״שיטות ומחלוקות״.\nבמקום הזה פינת המזבח נעשית שקופה, וגם הרצפה שתחתיה: רואים את הנקבים יורדים מראש המזבח אל השיתין — ״חלל שתחת המזבח כנגד מקום הנסכים״ (רש״י סוכה מט.). הספלים קבועים בגג בסיד, כדברי התוספות והתפארת ישראל. בשיטת רש״י: חוטם לכל ספל, ונקב בגג לכל אחד — אחד למים ואחד ליין (וכך גם לתפארת ישראל במידות ג, א), מעט אחרי פי החוטם, במקום שהנסך נופל. בשיטת התוספות: הנקב בתחתית כל ספל, ויורד ממנו ישר; ״ולשון מעובה משמע ששולי הספל היו עבים ומתוך כך אין המשקה ממהר לצאת״ (תוספות סוכה מח:) — במודל, בשיטה זו, ספל המים תחתיתו עבה: המים ממהרים לצאת מן היין (״שהמים ממהרים לצאת״, רש״י שם), והתחתית העבה משווה ביניהם; והנקבים שווים. גודל הספלים, מקומם המדויק, וגודל השיתין ועומקם — בחירת מודל.", refs: [["סוכה ד, ט", "Mishnah_Sukkah.4.9"], ["ברטנורא ד, ט", "Bartenura_on_Mishnah_Sukkah.4.9"], ["תוי״ט ד, ט", "Tosafot_Yom_Tov_on_Mishnah_Sukkah.4.9"], ["תפא״י ד, ט", "Yachin_on_Mishnah_Sukkah.4.9"], ["מידות ג, א", "Mishnah_Middot.3.1"], ["ברטנורא ג, א", "Bartenura_on_Mishnah_Middot.3.1"], ["תפא״י ג, א", "Yachin_on_Mishnah_Middot.3.1"], ["בועז ג, ב", "Boaz_on_Mishnah_Middot.3.2"], ["סוכה מח:", "Sukkah.48b"], ["סוכה מט.", "Sukkah.49a"], ["זבחים סא:", "Zevachim.61b"], ["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["רמב״ם תמידין ומוספין י, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.10.7"], ["תוי״ט ג, א", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.1"], ["סוכה מח.", "Sukkah.48a"], ["רש״י סוכה מט.", { book: 2163, index: 2307 }], ["תוספות סוכה מח:", { book: 1903, index: 504 }], ["תוספות סוכה מח. (בסיד)", { book: 1903, index: 502 }]] }, //
           { t: "כבשים קטנים — רש״י", action: () => { const r = OPS_BY_ID["sh25"]; if (r) { r.mark("o0"); try { r.onPick("o0"); } catch (_) {} } }, tg: () => ui_altarCam(ctx, [42, 17, 30], "ramp"), cam: () => ui_altarCam(ctx, [26, 45, 48], "ramp"), info: "לשון המשנה (מידות ג, ג): ״וכבש היה לדרומו של מזבח, שלשים ושתים על רחב שש עשרה״ — הכבשים הקטנים אינם במשנה אלא בגמרא: ״שני כבשים קטנים יוצאין מן הכבש, שבהן פונים ליסוד ולסובב, ומובדלין מן המזבח מלא נימא״ (זבחים סב:).\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״הכבשים הקטנים״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• לרש״י — שני כבשים קטנים, לסובב וליסוד (ברירת המחדל).\n• לתוספות — גם שלישי.\n**רש״י** (זבחים סב: ד״ה שני כבשים): אחד לסובב ממזרח הכבש הגדול, מימין, ואחד ליסוד ממערבו, משמאל, אל היסוד הדרומי ששם שופכים שיירי החטאת.\nברטנורא ותפארת ישראל (מידות ג, ג): על הכבש הגדול בלבד — גשר משופע, שאין עולים למזבח במעלות; התפארת ישראל מוסיף שראש הכבש רחוק קצת מגג המזבח (תוספות זבחים סב:).\nבמודל: שני כבשים קטנים כרש״י; רוחבם ושיפועם — בחירת מודל. \nשני הכבשים הקטנים יוצאים מגוף הכבש הגדול (״יוצאים ממנו״, רמב״ם ב, יד). רש״י (זבחים סב:): ״אותו שפונין בו לסובב יצא במזרחו של כבש לימין ויוצא ומתחיל בשפולו של כבש ונמשך ועולה באלכסון עד שמגיע לסובב״.\n**הכבש העולה לסובב** (ולתוספות — שני הכבשים העולים לסובב), במודל: הוא יוצא מצד הכבש הגדול בשליש התחתון שלו, ״בשפולו של כבש״. בתחילתו הוא צמוד לכבש הגדול ובגובה הילוכו; משם הוא פונה ממנו באלכסון ועולה במתינות, ובינו לבין הכבש הגדול אוויר גמור עד הרצפה. קצהו העליון חתוך לאורך שפת הסובב ובגובהה — כהמשך לסובב — ובכל זאת ״ומובדלין מן המזבח מלא נימא״. כמה הוא נוטה ורוחבו — בחירת מודל.\n**הכבש היורד ליסוד — לרש״י:** ״והפונה ליסוד יוצא למערבו... פונה לשמאלו ליסוד דרומי, ומתחיל לצאת בשיפולו של כבש רחוק מן המזבח, כדי שיהא נוח לשפע ולירד ליסוד״. במודל הוא הולך באלכסון מצלעו המערבית של הכבש הגדול אל אמת היסוד שבקרן הדרומית־מערבית (מידות ג, א: ״ואוכל בדרום אמה אחת״), כציור התוספות יום טוב והתפארת ישראל.\n**הכבש היורד ליסוד — לתוספות,** כביאור התוספות יום טוב (זבחים ו, ג): הוא צמוד לכבש השלישי מבחוץ, לאורכו, מאותו שליש עד הקרן הדרומית־מערבית של היסוד — כבש אחד רחב, ומקצתו מוגבה עד הסובב.\n**שלא צויר:** כבש ליסוד הצמוד לכבש הגדול — אינו מוכרח מן המקורות, ואין לו דרך להגיע אל אמת היסוד.", refs: [["מידות ג, ג", "Mishnah_Middot.3.3"], ["ברטנורא ג, ג", "Bartenura_on_Mishnah_Middot.3.3"], ["תפא״י ג, ג", "Yachin_on_Mishnah_Middot.3.3"], ["זבחים סב:", "Zevachim.62b"], ["רמב״ם בית הבחירה ב, יד", "Mishneh_Torah,_The_Chosen_Temple.2.14"], ["מידות ג, א", "Mishnah_Middot.3.1"], ["רש״י זבחים סב:", {"book": 2191, "index": 3022}]] }, //
           { t: "כבשים קטנים — תוספות", action: () => { const r = OPS_BY_ID["sh25"]; if (r) { r.mark("o1"); try { r.onPick("o1"); } catch (_) {} } }, tg: () => ui_altarCam(ctx, [42, 17, 30], "ramp"), cam: () => ui_altarCam(ctx, [26, 45, 48], "ramp"), info: "לשון המשנה (מידות ג, ג): ״וכבש היה לדרומו של מזבח, שלשים ושתים על רחב שש עשרה״ — הכבשים הקטנים אינם במשנה אלא בגמרא (זבחים סב:).\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״הכבשים הקטנים״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• לרש״י — שני כבשים קטנים, לסובב וליסוד (ברירת המחדל).\n• לתוספות — גם שלישי.\n**תוספות** (זבחים סד. ד״ה יותר מל״א אמות): הקונטרס (רש״י) סובר שבמערב לא היה כבש קטן לסובב, ותוספות מסיקים ״נראה דהיה שם כבש״ — גם במערב היה כבש קטן לסובב, ולכן שלושה כבשים קטנים.\nברטנורא ותפארת ישראל (מידות ג, ג): על הכבש הגדול בלבד — גשר משופע, שאין עולים למזבח במעלות.\nבמודל: כבש שלישי במערב הכבש הגדול העולה לסובב; מקומו ומידותיו — בחירת מודל. \nשני הכבשים הקטנים יוצאים מגוף הכבש הגדול (״יוצאים ממנו״, רמב״ם ב, יד). רש״י (זבחים סב:): ״אותו שפונין בו לסובב יצא במזרחו של כבש לימין ויוצא ומתחיל בשפולו של כבש ונמשך ועולה באלכסון עד שמגיע לסובב״.\n**הכבש העולה לסובב** (ולתוספות — שני הכבשים העולים לסובב), במודל: הוא יוצא מצד הכבש הגדול בשליש התחתון שלו, ״בשפולו של כבש״. בתחילתו הוא צמוד לכבש הגדול ובגובה הילוכו; משם הוא פונה ממנו באלכסון ועולה במתינות, ובינו לבין הכבש הגדול אוויר גמור עד הרצפה. קצהו העליון חתוך לאורך שפת הסובב ובגובהה — כהמשך לסובב — ובכל זאת ״ומובדלין מן המזבח מלא נימא״. כמה הוא נוטה ורוחבו — בחירת מודל.\n**הכבש היורד ליסוד — לרש״י:** ״והפונה ליסוד יוצא למערבו... פונה לשמאלו ליסוד דרומי, ומתחיל לצאת בשיפולו של כבש רחוק מן המזבח, כדי שיהא נוח לשפע ולירד ליסוד״. במודל הוא הולך באלכסון מצלעו המערבית של הכבש הגדול אל אמת היסוד שבקרן הדרומית־מערבית (מידות ג, א: ״ואוכל בדרום אמה אחת״), כציור התוספות יום טוב והתפארת ישראל.\n**הכבש היורד ליסוד — לתוספות,** כביאור התוספות יום טוב (זבחים ו, ג): הוא צמוד לכבש השלישי מבחוץ, לאורכו, מאותו שליש עד הקרן הדרומית־מערבית של היסוד — כבש אחד רחב, ומקצתו מוגבה עד הסובב.\n**שלא צויר:** כבש ליסוד הצמוד לכבש הגדול — אינו מוכרח מן המקורות, ואין לו דרך להגיע אל אמת היסוד.", refs: [["מידות ג, ג", "Mishnah_Middot.3.3"], ["ברטנורא ג, ג", "Bartenura_on_Mishnah_Middot.3.3"], ["תפא״י ג, ג", "Yachin_on_Mishnah_Middot.3.3"], ["זבחים סד.", "Zevachim.64a"], ["זבחים סב:", "Zevachim.62b"], ["רמב״ם בית הבחירה ב, יד", "Mishneh_Torah,_The_Chosen_Temple.2.14"], ["מידות ג, א", "Mishnah_Middot.3.1"], ["רש״י זבחים סב:", {"book": 2191, "index": 3022}], ["תוספות זבחים סד.", {"book": 1936, "index": 681}]] }, //
           { t: "הכבש הגדול", tg: () => ui_altarCam(ctx, [55.5, 18, 38], "ramp"), cam: () => ui_altarCam(ctx, [96, 46, 56], "ramp"), info: "לשון המשנה (מידות ג, ג): ״וכבש היה לדרומו של מזבח, שלשים ושתים על רחב שש עשרה, ורבובה היתה לו במערבו, ששם היו נותנים פסולי חטאת העוף״; (ה, ב): ״הכבש והמזבח ששים ושתים״.\nבקצרה — המחלוקות בכרטיס זה (הפירוט — במתגים שבתפריט, תחת ״שיטות ומחלוקות״):\n• **הרווח שבין הכבש למזבח:** לרש״י ולרמב״ם — כחוט השערה, ״אויר מעט״ (ברירת המחדל); לתוספות — אויר גדול וניכר; לרבינו חיים — יותר מאמת הסובב.\n• **הכבשים הקטנים:** לרש״י — שני כבשים קטנים, לסובב וליסוד (ברירת המחדל); לתוספות — גם שלישי.\n**ברטנורא:** כמין גשר משופע ועשוי מדרון, שבו עולים ויורדים מן המזבח, שאי אפשר לעלות לו במעלות — ״ולא תעלה במעלות על מזבחי״; אורכו מדרום לצפון ורוחבו ממזרח למערב; הרבובה — כמין חלון חלול, אמה על אמה, במערבו של הכבש עצמו, ״רבובה״ כמו נבובה; פסולי חטאת העוף מונחים בה עד שיבואו לידי נותר, ואחר כך יוצאים לבית השרפה (ברטנורא מידות ג, ג).\n**תוספות יום טוב:** הכבש בדרום — כל פינות שאתה פונה לא יהו אלא דרך ימין, ואין רוח ראויה לכך אלא דרום (זבחים סב:); הרבובה — לא חלול מפולש לכל רוחב הכבש אלא כחלונות שבתמיד (ה, ג), ואינה נראית אלא במערבו, ולכן נשתנה שמה מנבובה (תוספות יום טוב מידות ג, ג).\n**תפארת ישראל:** גשר משופע, אטום מתחתיו, עולה ל״ב אמה בשיפוע מן הרצפה אל גג המזבח; בראשו רחוק קצת מגג המזבח ריחוק ניכר (תוספות זבחים סב:), והכהן זורק את הנתחים מעל המרחק אל האש; שפה גבוהה קצת בשתי שפתיו שלא ייפלו הכהנים; באמצע רוחב המזבח — שמונה אמות מכל צד למטה ושש למעלה; הרבובה — גומא מרובעת בגג הכבש במערבו, סמוך לגג המזבח, אמה על אמה ועמוקה כאורך זרוע; ובבועז — לרש״י (פסחים לד.) הגומא ברצפת העזרה ממערב לכבש, ולרמב״ם ולראב״ד בגוף הכבש, והראב״ד: ״רבובה״ מלשון ארובה — בגג הכבש (תפארת ישראל מידות ג, ג; בועז ג, ג).\nבמודל: הכבש ל״ב על ט״ז בדרום המזבח, עולה תשע אמות, וראשו מובדל מן המזבח ב״אויר מעט״ (זבחים סב:; רמב״ם בית הבחירה ב, יג); שתי האמות העליונות פורחות על כניסת היסוד והסובב, ולכן הכבש והמזבח ששים ושתים (ה, ב); הרבובה — חלון בצד המערבי (כרמב״ם וברטנורא). שני הכבשים הקטנים — בתפריט, תחת ״שיטות ומחלוקות״ (רש״י או תוספות); מידותיהם ומקומם — בחירת מודל.\nשלושה רובדין: בבית יוסף (אורח חיים קכג) בשם רבינו האי: ״ובין כבש למזבח היו שלש רובדין של אבן, ויורד בהם ג׳ פסיעות על עקב״. ובבנין ציון (סימן יב) ביאר את מקומם: אחד במקום שהכבש פורח על הסובב, אחד במקום שהוא פורח על היסוד, ואחד כנגד אוויר הקרקע. במודל: שלושה חריצים בראש הכבש, בחציו המזרחי, ובינם שלושה רובדין המחוברים בצידם אל אמצע הכבש; צורת החריצים, רוחבם ומקומם — בחירת מודל.", refs: [["מידות ג, ג", "Mishnah_Middot.3.3"], ["ברטנורא ג, ג", "Bartenura_on_Mishnah_Middot.3.3"], ["תוי״ט ג, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.3"], ["תפא״י ג, ג", "Yachin_on_Mishnah_Middot.3.3"], ["מידות ה, ב", "Mishnah_Middot.5.2"], ["בועז ג, ג", "Boaz_on_Mishnah_Middot.3.3"], ["רמב״ם בית הבחירה ב, יג", "Mishneh_Torah,_The_Chosen_Temple.2.13"], ["רמב״ם בית הבחירה ב, יד", "Mishneh_Torah,_The_Chosen_Temple.2.14"], ["זבחים סב:", "Zevachim.62b"], ["בית יוסף, אורח חיים קכג", "Beit_Yosef_OC.123"], ["בנין ציון, יב", "Binyan_Tzion.12"]] }, //
@@ -66838,8 +67157,8 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["סוכה מח:", "Sukkah.48b"], ["סוכה ד, ט", "Mishnah_Sukkah.4.9"]], //
           options: [["o0", "ברטנורא", "רש״י (סוכה מח: ד״ה כמין שני חוטמין): \"חוטם אחד בספל ונקב אחד בחוטמו, והכהן מערה בפי הספלים, והנסכים מקלחין ויורדין דרך החוטמין על גב המזבח, ובמזבח היה נקב שבו המים והיין יורדין לשיתין\". וכן הברטנורא (סוכה ד, ט).", [["סוכה מח:", "Sukkah.48b"], ["סוכה ד, ט", "Mishnah_Sukkah.4.9"]]], ["o1", "ראשונים", "תוספות (סוכה מח: ד״ה כמין): \"וזו תימה גדולה, מנין לו כל אותו הענין... דלמא הוא דמנקב הספלים יורדין לשיתין, כמין שני נקבי החוטם, ולא שהיה בולט כמין חוטם\"; הריטב״א: \"שהספלים האלו מחוברין היו במזבח... הנקבים היו בתחתיות הספלים מכוונין כנגד השיתין\"; וכן המאירי: \"ספלים אלו מחוברים היו למזבח והרי הם כקרקע המזבח\".", [["סוכה מח:", "Sukkah.48b"]]]], //
           current: "o0", //
-          onPick: (k) => { if (ctx.shared.sfalim && typeof ctx.shared.sfalim.set === "function") ctx.shared.sfalim.set(k === "o1" ? "tosafot" : "rashi"); }, //
-          fly: (k) => { const c = {"o0": [[47.5, 29, 16.5], [43.2, 25.3, 21.9]], "o1": [[47.5, 29, 16.5], [43.2, 25.3, 21.9]]}[k]; if (c && c[0] && c[1]) fly(ui_altarCam(ctx, c[0], "cups"), ui_altarCam(ctx, c[1], "cups")); } //
+          onPick: (k) => { if (ctx.shared.sfalim && typeof ctx.shared.sfalim.set === "function") ctx.shared.sfalim.set(k === "o1" ? "tosafot" : "rashi"); const FS = (ctx.shared.features || {}).sfalimSee; if (FS) { try { const wasS = !!FS.isOn(); autoOff.run(FS); if (!wasS) leaveFeat = FS; } catch (_) {} } }, //
+          fly: (k) => { const c = {"o0": [SFALIM_CAM, SFALIM_TG], "o1": [SFALIM_CAM, SFALIM_TG]}[k]; if (c && c[0] && c[1]) fly(ui_altarCam(ctx, c[0], "cups"), ui_altarCam(ctx, c[1], "cups")); } //
         }); //
         opRow({ //
           id: "sh24", short: "הרווח שבין הכבש למזבח", cardFly: true, //
@@ -70354,7 +70673,7 @@ body.tm-measuring #tm-tour-box{bottom:96px}
       // back through their own set() (OWN_FEAT), and the parts' labels follow the explode; the other layers are restored as before //
       // 1.0.1-L: + yatziaWhole (the section's set), mechonaPurpose and mechonaWash (the demonstration), the ulam tables' groups (ulamTables.set), forestBoards (a //
       // palace hook keeps it equal to the boards) and the throne's version groups (throneVersion.set) //
-      const OWNED = new Set(["yatziaDims", "yatziaWhole", "wallLayers", "altarLayers", "mechonaParts", "mechonaPurpose", "mechonaWash", "ulamTables", "ulamTablesRyby", "ulamTablesMishnah", "forestBoards", "kelim", "arkInside", "arkLid"]); //
+      const OWNED = new Set(["sfalimSee", "yatziaDims", "yatziaWhole", "wallLayers", "altarLayers", "mechonaParts", "mechonaPurpose", "mechonaWash", "ulamTables", "ulamTablesRyby", "ulamTablesMishnah", "forestBoards", "kelim", "arkInside", "arkLid"]); //
       const OWN_FEAT = ["yatziaSection", "wallLayers", "altarLayers", "mechonaExplode", "kelim", "arkInside"];   // (1.0.1-L: kelim, arkInside: a press of their pills during the tour) //
       const layerVis = () => Object.keys(ctx.layers || {}).filter((n) => !OWNED.has(n) && n.indexOf("throne") !== 0).map((n) => [n, layerOn(n)]); //
       const featState = (k) => { //
