@@ -1,4 +1,4 @@
-  // ===== HQ_302: the library part - three.js r160's GTAO (ground-truth ambient occlusion) and Poisson denoise shaders, verbatim from
+  // ===== HQ_302: the library part - three.js r187's GTAO (ground-truth ambient occlusion) and Poisson denoise shaders, verbatim from
   // examples/jsm/shaders/GTAOShader.js and PoissonDenoiseShader.js (MIT, as the rest of the bundled three.js); written by
   // tools/round-3.0.2/gen-hq-lib.mjs. Only HQ_make (below) uses them.
   var HQ_LIB = (function () {
@@ -10,7 +10,6 @@
         PERSPECTIVE_CAMERA: 1,
         SAMPLES: 16,
         NORMAL_VECTOR_TYPE: 1,
-        DEPTH_SWIZZLING: 'x',
         SCREEN_SPACE_RADIUS: 0,
         SCREEN_SPACE_RADIUS_SCALE: 100.0,
         SCENE_CLIP_BOX: 0,
@@ -53,7 +52,7 @@
         uniform float cameraNear;
         uniform float cameraFar;
         uniform mat4 cameraProjectionMatrix;
-        uniform mat4 cameraProjectionMatrixInverse;		
+        uniform mat4 cameraProjectionMatrixInverse;
         uniform mat4 cameraWorldMatrix;
         uniform float radius;
         uniform float distanceExponent;
@@ -72,18 +71,22 @@
         #define FRAGMENT_OUTPUT vec4(vec3(ao), 1.)
         #endif
 
-        vec3 getViewPosition(const in vec2 screenPosition, const in float depth) {
-          vec4 clipSpacePosition = vec4(vec3(screenPosition, depth) * 2.0 - 1.0, 1.0);
+        vec3 getViewPosition( const in vec2 screenPosition, const in float depth ) {
+          #ifdef USE_REVERSED_DEPTH_BUFFER
+            vec4 clipSpacePosition = vec4( vec2( screenPosition ) * 2.0 - 1.0, depth, 1.0 );
+          #else
+            vec4 clipSpacePosition = vec4( vec3( screenPosition, depth ) * 2.0 - 1.0, 1.0 );
+          #endif
           vec4 viewSpacePosition = cameraProjectionMatrixInverse * clipSpacePosition;
           return viewSpacePosition.xyz / viewSpacePosition.w;
         }
 
-        float getDepth(const vec2 uv) {  
-          return textureLod(tDepth, uv.xy, 0.0).DEPTH_SWIZZLING;
+        float getDepth(const vec2 uv) {
+          return textureLod(tDepth, uv.xy, 0.0).r;
         }
 
-        float fetchDepth(const ivec2 uv) {   
-          return texelFetch(tDepth, uv.xy, 0).DEPTH_SWIZZLING;
+        float fetchDepth(const ivec2 uv) {
+          return texelFetch(tDepth, uv.xy, 0).r;
         }
 
         float getViewZ(const in float depth) {
@@ -135,10 +138,19 @@
 
         void main() {
           float depth = getDepth(vUv.xy);
-          if (depth >= 1.0) {
-            discard;
-            return;
-          }
+
+          #ifdef USE_REVERSED_DEPTH_BUFFER
+            if (depth <= 0.0) {
+              discard;
+              return;
+            }
+          #else
+            if (depth >= 1.0) {
+              discard;
+              return;
+            }
+          #endif
+
           vec3 viewPos = getViewPosition(vUv, depth);
           vec3 viewNormal = getViewNormal(vUv);
 
@@ -169,14 +181,18 @@
 
           const int DIRECTIONS = SAMPLES < 30 ? 3 : 5;
           const int STEPS = (SAMPLES + DIRECTIONS - 1) / DIRECTIONS;
-          float ao = 0.0, totalWeight = 0.0;
+          float ao = 0.0;
           for (int i = 0; i < DIRECTIONS; ++i) {
 
             float angle = float(i) / float(DIRECTIONS) * PI;
-            vec4 sampleDir = vec4(cos(angle), sin(angle), 0., 0.5 + 0.5 * noiseTexel.w); 
+            vec4 sampleDir = vec4(cos(angle), sin(angle), 0., 0.5 + 0.5 * noiseTexel.w);
             sampleDir.xyz = normalize(kernelMatrix * sampleDir.xyz);
 
-            vec3 viewDir = normalize(-viewPos.xyz);
+            #if PERSPECTIVE_CAMERA == 1
+              vec3 viewDir = normalize(-viewPos.xyz);
+            #else
+              vec3 viewDir = vec3(0., 0., 1.);
+            #endif
             vec3 sliceBitangent = normalize(cross(sampleDir.xyz, viewDir));
             vec3 sliceTangent = cross(sliceBitangent, viewDir);
             vec3 normalInSlice = normalize(viewNormal - sliceBitangent * dot(viewNormal, sliceBitangent));
@@ -185,7 +201,7 @@
             vec2 cosHorizons = vec2(dot(viewDir, tangentToNormalInSlice), dot(viewDir, -tangentToNormalInSlice));
 
             for (int j = 0; j < STEPS; ++j) {
-              vec3 sampleViewOffset = sampleDir.xyz * radiusToUse * sampleDir.w * pow(float(j + 1) / float(STEPS), distanceExponent);	
+              vec3 sampleViewOffset = sampleDir.xyz * radiusToUse * sampleDir.w * pow(float(j + 1) / float(STEPS), distanceExponent);
 
               vec3 sampleSceneUvDepth = getSceneUvAndDepth(viewPos + sampleViewOffset);
               vec3 sampleSceneViewPos = getViewPosition(sampleSceneUvDepth.xy, sampleSceneUvDepth.z);
@@ -193,7 +209,7 @@
               if (abs(viewDelta.z) < thickness) {
                 float sampleCosHorizon = dot(viewDir, normalize(viewDelta));
                 cosHorizons.x += max(0., (sampleCosHorizon - cosHorizons.x) * mix(1., 2. / float(j + 2), distanceFallOff));
-              }		
+              }
 
               sampleSceneUvDepth = getSceneUvAndDepth(viewPos - sampleViewOffset);
               sampleSceneViewPos = getViewPosition(sampleSceneUvDepth.xy, sampleSceneUvDepth.z);
@@ -213,7 +229,7 @@
             ao += occlusion;
           }
 
-          ao = clamp(ao / float(DIRECTIONS), 0., 1.);		
+          ao = clamp(ao / float(DIRECTIONS), 0., 1.);
         #if SCENE_CLIP_BOX == 1
           ao = mix(ao, 1., smoothstep(0., radiusToUse, boxDistance));
         #endif
@@ -316,7 +332,6 @@
         'SAMPLES': 16,
         'SAMPLE_VECTORS': generatePdSamplePointInitializer( 16, 2, 1 ),
         'NORMAL_VECTOR_TYPE': 1,
-        'DEPTH_VALUE_SOURCE': 0,
       },
 
       uniforms: {
@@ -375,26 +390,22 @@
 
         const vec3 poissonDisk[SAMPLES] = SAMPLE_VECTORS;
 
-        vec3 getViewPosition(const in vec2 screenPosition, const in float depth) {
-          vec4 clipSpacePosition = vec4(vec3(screenPosition, depth) * 2.0 - 1.0, 1.0);
+        vec3 getViewPosition( const in vec2 screenPosition, const in float depth ) {
+          #ifdef USE_REVERSED_DEPTH_BUFFER
+            vec4 clipSpacePosition = vec4( vec2( screenPosition ) * 2.0 - 1.0, depth, 1.0 );
+          #else
+            vec4 clipSpacePosition = vec4( vec3( screenPosition, depth ) * 2.0 - 1.0, 1.0 );
+          #endif
           vec4 viewSpacePosition = cameraProjectionMatrixInverse * clipSpacePosition;
           return viewSpacePosition.xyz / viewSpacePosition.w;
         }
 
         float getDepth(const vec2 uv) {
-        #if DEPTH_VALUE_SOURCE == 1    
-          return textureLod(tDepth, uv.xy, 0.0).a;
-        #else
           return textureLod(tDepth, uv.xy, 0.0).r;
-        #endif
         }
 
         float fetchDepth(const ivec2 uv) {
-          #if DEPTH_VALUE_SOURCE == 1    
-            return texelFetch(tDepth, uv.xy, 0).a;
-          #else
-            return texelFetch(tDepth, uv.xy, 0).r;
-          #endif
+          return texelFetch(tDepth, uv.xy, 0).r;
         }
 
         vec3 computeNormalFromDepth(const vec2 uv) {
@@ -451,8 +462,8 @@
         }
 
         void main() {
-          float depth = getDepth(vUv.xy);	
-          vec3 viewNormal = getViewNormal(vUv);	
+          float depth = getDepth(vUv.xy);
+          vec3 viewNormal = getViewNormal(vUv);
           if (depth == 1. || dot(viewNormal, viewNormal) == 0.) {
             discard;
             return;
@@ -476,7 +487,7 @@
             denoiseSample(center, viewNormal, viewPos, sampleUv, denoised, totalWeight);
           }
 
-          if (totalWeight > 0.) { 
+          if (totalWeight > 0.) {
             denoised /= totalWeight;
           }
           gl_FragColor = FRAGMENT_OUTPUT;

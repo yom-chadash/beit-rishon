@@ -110,7 +110,9 @@
   var viewWH = viewSize();
   renderer.setSize(viewWH[0], viewWH[1]);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  // LIB187_302: PCFSoftShadowMap was removed from three.js (it warns and falls back to PCFShadowMap); the softness of its edge is
+  // sun.shadow.radius below
+  renderer.shadowMap.type = PCFShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.95;
   var mainEl = document.getElementById("main");
@@ -121,8 +123,15 @@
   ent_mark("renderer + scene", performance.now() - ent_load.tEntry);
   var ent_t = performance.now();
   var pmrem = new PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  // LIB187_302: in three.js 160 RoomEnvironment's main light was 5 when no renderer was passed (as here), and 900 only for a renderer
+  // without legacy lights; from 163 on it is always 900, which washed the whole model out. 187 also lowers the room by 3.5, which 160
+  // did not. Keep the look the model was tuned with: the light 5, the room where it was.
+  var ent_room = new RoomEnvironment();
+  ent_room.position.y = 0;
+  ent_room.traverse((o) => { if (o.isPointLight) o.intensity = 5; });
+  scene.environment = pmrem.fromScene(ent_room, 0.04).texture;
   var sky = new Sky();
+  sky.material.uniforms.cloudCoverage.value = 0;   // LIB187_302: three.js 187's Sky draws clouds (0.4 by default); 160's had none
   sky.scale.setScalar(6e3);
   scene.add(sky);
   ent_mark("PMREM environment + sky", performance.now() - ent_t);

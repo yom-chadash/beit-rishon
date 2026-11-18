@@ -1124,6 +1124,8 @@
       try {
         if (!(ctx.renderer && typeof PMREMGenerator === "function" && typeof RoomEnvironment === "function")) return;
         const room = new RoomEnvironment();
+        room.position.y = 0;   // LIB187_302: as the scene's (90-entry.js) - three.js 187 lowers the room by 3.5 and lights it at 900
+        room.traverse((o) => { if (o.isPointLight) o.intensity = 5; });
         room.scale.z = -1;
         room.updateMatrixWorld(true);
         const pm = new PMREMGenerator(ctx.renderer);

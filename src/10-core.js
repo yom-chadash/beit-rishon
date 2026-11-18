@@ -1,3 +1,11 @@
+  // LIB187_302 (three.js 160 -> 187; the user, 18.11.2026: "תעדכן ספריה"): THE ENVIRONMENT LIGHT AS IN THREE.JS 160 - 160 applied a
+  // material's envMapIntensity to the scene's environment map too; since 163 only to the material's own envMap (else
+  // scene.environmentIntensity, 1). The materials here tune it (stone and paving 0.5-0.7, gold and bronze 1.1-1.3): a standard material
+  // without an envMap of its own whose envMapIntensity is not 1 reports the scene's current environment map as its envMap, so its
+  // envMapIntensity counts again (the WebGPU round's accessor)
+  Object.defineProperty(Material.prototype, "envMap", { configurable: true,
+    get() { if (this._tmEnvMap) return this._tmEnvMap; return this.isMeshStandardMaterial && this.envMapIntensity !== 1 && typeof scene !== "undefined" && scene ? scene.environment : null; },
+    set(v) { this._tmEnvMap = v && !(typeof scene !== "undefined" && scene && v === scene.environment) ? v : null; } });
   // Levels (y, in amot above the mount platform). Model choice, see DEV_NOTES.md: the inner court is 12 steps (6 amot)
   // above the great court (as Middot 2:3 for the ascent from the Hel), the house floor 12 steps (6 amot) above the inner court
   // (Middot 3:6 for the ulam steps). Kings I gives no levels.
