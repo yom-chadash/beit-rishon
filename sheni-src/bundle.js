@@ -47254,7 +47254,22 @@ void main() {
       terrain.receiveShadow = true; //
       g.add(terrain); //
     } //
-    H2.box(g, CO.HAR, 1.5, CO.HAR, M2.pave, CX, -1.5, CZ); //
+    // MESIBAH_303: the mount's floor in four pieces round the mouth of the way down to the bath (30-courts.js: the stair's shaft under //
+    // Beit HaMoked's north-west chamber, x -30..-26.5, z -75..-71.5); each piece's texture as the whole floor's //
+    { //
+      const hx0 = -30, hx1 = -26.5, hz0 = -75, hz1 = -71.5, h5 = CO.HAR / 2, x0 = CX - h5, x1 = CX + h5, z0 = CZ - h5, z1 = CZ + h5; //
+      for (const [a, b, c, d] of [[x0, hx0, z0, z1], [hx1, x1, z0, z1], [hx0, hx1, z0, hz0], [hx0, hx1, hz1, z1]]) { //
+        const m = H2.box(g, b - a, 1.5, d - c, M2.pave, (a + b) / 2, -1.5, (c + d) / 2); //
+        const p = m.geometry.attributes.position, n = m.geometry.attributes.normal, uv = m.geometry.attributes.uv, o = m.position; //
+        for (let i = 0; i < p.count; i++) { //
+          const x = p.getX(i) + o.x, y = p.getY(i) + o.y, z = p.getZ(i) + o.z, nx = n.getX(i), ny = n.getY(i), nz = n.getZ(i); //
+          if (nx > 0.5) uv.setXY(i, z1 - z, y + 1.5); else if (nx < -0.5) uv.setXY(i, z - z0, y + 1.5); //
+          else if (ny > 0.5) uv.setXY(i, x - x0, z1 - z); else if (ny < -0.5) uv.setXY(i, x - x0, z - z0); //
+          else if (nz > 0.5) uv.setXY(i, x - x0, y + 1.5); else uv.setXY(i, x1 - x, y + 1.5); //
+        } //
+        uv.needsUpdate = true; //
+      } //
+    } //
     const fndN = H2.occ(H2.box(g, 505, 30, T, M2.stone, CX, -30, CO.harN)); //
     const fndS = H2.occ(H2.box(g, 505, 30, T, M2.stone, CX, -30, CO.harS)); //
     const fndE = H2.occ(H2.box(g, T, 30, 495, M2.stone, CO.harE, -30, CZ)); //
@@ -48409,6 +48424,18 @@ void main() {
         if (z1 - zc > 1e-3) made.push(H2.box(parent, b - a, h, z1 - zc, mat, mid, y, (zc + z1) / 2)); //
       } //
       return made; //
+    }; //
+    // MESIBAH_303: the pieces of a box cut round a hole (boxHoles) - their texture as the whole box's (BoxGeometry's faces in amot, as //
+    // uvWorldBox; the box's extent x0..x1, y0..y1, z0..z1; the group unmoved) //
+    const uvLike = (m, x0, x1, y0, y1, z0, z1) => { //
+      const p = m.geometry.attributes.position, n = m.geometry.attributes.normal, uv = m.geometry.attributes.uv, o = m.position; //
+      for (let i = 0; i < p.count; i++) { //
+        const x = p.getX(i) + o.x, y = p.getY(i) + o.y, z = p.getZ(i) + o.z, nx = n.getX(i), ny = n.getY(i), nz = n.getZ(i); //
+        if (nx > 0.5) uv.setXY(i, z1 - z, y - y0); else if (nx < -0.5) uv.setXY(i, z - z0, y - y0); //
+        else if (ny > 0.5) uv.setXY(i, x - x0, z1 - z); else if (ny < -0.5) uv.setXY(i, x - x0, z - z0); //
+        else if (nz > 0.5) uv.setXY(i, x - x0, y - y0); else uv.setXY(i, x1 - x, y - y0); //
+      } //
+      uv.needsUpdate = true; //
     }; //
     // 1.9.1 (the mukhni): the laver's well - through the court's podium and pave (40-altar.js lines it and hangs the laver over it) //
     const KPIT = ctx2.shared.KPIT = { x: 22, z: 57, w: 6.4, d: 6.4 }; //
@@ -50114,7 +50141,9 @@ void main() {
       // ("אחד פתוח לחיל", 1:7) a landing, and a flight of 27 steps down eastwards along the house's north face (2.3 wide: the soreg //
       // stands 2.5 amot from the wall there). The Rosh's second explanation (the gate in the east wall): a landing east of it and a //
       // flight down eastwards along the court's wall. Model choices, as the other gates' steps. //
-      H2.box(g, W, 13.5, 7.5, M2.stone, X, 0, -73.75); //
+      // MESIBAH_303: the mouth of the way down to the bath (the north-west chamber) goes through the base as well - the base in pieces //
+      // round it, its stone's texture as one //
+      { const [hx, hz] = chC(-1, -1); for (const m of boxHoles(g, W, 13.5, 7.5, M2.stone, X, 0, -73.75, [{ x: hx, z: hz, w: 3.5, d: 3.5 }])) uvLike(m, X - W / 2, X + W / 2, 0, 13.5, -77.5, -70); } //
       { //
         const z0 = -79.8, z1 = Z - D / 2; //
         H2.box(mokedDef, 12, 13.5, z1 - z0, M2.stoneSmooth, X, 0, (z0 + z1) / 2); //
@@ -50130,7 +50159,7 @@ void main() {
       { //
         const [nwx, nwz] = chC(-1, -1); //
         const RG = { x: X + W / 2 - 1 - 1.25, z: -73.3, w: 2.5, d: 5 };   // inside the Rosh's gate (z -75.8..-70.8) //
-        boxHoles(g, W - 2, FL - 13.5, D / 2 - 1, M2.pave, X, 13.5, Z - (D / 2 - 1) / 2, [{ x: X, z: Z - D / 2 + 1 + 1.25, w: 10, d: 2.5 }, { x: nwx, z: nwz, w: 2.2, d: 3.2 }, RG]); //
+        boxHoles(g, W - 2, FL - 13.5, D / 2 - 1, M2.pave, X, 13.5, Z - (D / 2 - 1) / 2, [{ x: X, z: Z - D / 2 + 1 + 1.25, w: 10, d: 2.5 }, { x: nwx, z: nwz, w: 3.5, d: 3.5 }, RG]); //
         H2.box(mokedDef, RG.w, FL - 13.5, RG.d, M2.pave, RG.x, 13.5, RG.z);   // the default reading: no gate there - the floor is whole //
         for (let k = 0; k < 5; k++) { //
           H2.box(g, 10, 0.5 * (k + 1), 0.5, M2.stoneSmooth, X, 13.5, Z - D / 2 + 1 + 0.25 + 0.5 * k); //
@@ -50395,9 +50424,404 @@ void main() {
         const light = new PointLight(16748608, 14, 30, 2); light.position.set(X, FL + 3.5, Z); g.add(light); //
         ctx2.animated.push((t) => { light.intensity = 13 + Math.sin(t * 0.013) * 3 + Math.sin(t * 0.041) * 1.5; }); //
         lbl("המוקד — אש גדולה להתחמם בה", X, FL + 6, Z + 3, 1.1); //
-        const [dx, dz] = chC(-1, -1);   // the north-west chamber: the way down - a mouth in the floor (FLOOR_211), dark below, and the first steps //
-        H2.box(g, 2.2, 0.06, 3.2, darkMat, dx, 13.52, dz); //
-        H2.stairs(g, { width: 2, totalRise: 2.2, steps: 5, dir: "N", x: dx, y: FL - 2.2, z: dz + 1.6, tread: 0.5 }); //
+        // ===== MESIBAH_303 (the user, 18.11.2026: "תפרסם רק אחרי המסיבה ובית הטבילה" - the plan he took): THE WAY DOWN TO THE BATH. //
+        // Tamid 1:1 (book 88, line 2): "ארע קרי לאחד מהן, יוצא והולך לו במסבה ההולכת תחת הבירה, והנרות דולקין מכאן ומכאן, עד שהוא מגיע //
+        // לבית הטבילה. ומדורה היתה שם, ובית כסא של כבוד... ירד וטבל, עלה ונסתפג ונתחמם כנגד המדורה"; Middot 1:6 (89, line 7): "צפונית //
+        // מערבית, בה יורדים לבית הטבילה". The Mefaresh on Tamid 26a (book 2105, lines 17-22): the mesibah - "עמוד של בנין שעולין ויורדין בו //
+        // ע"י גלגול"; its one end open to the chamber of Beit HaMoked, the other "חוץ לעזרה אל מקום הטבילה"; "ולכך עשו מחילה דמחילות לא //
+        // נתקדשו"; the lamps "במחילה כדי להאיר לו"; the fire "במחילה סמוך לבית הטבילה"; on 26b (line 44), of the bath over the water gate: //
+        // "כמין חקיקה אמה על אמה ברום שלש אמות". So: from the mouth in the north-west chamber's floor a winding stair round a pillar, down to //
+        // a tunnel's floor seven amot under the mount's; the tunnel south, under the house's holy half, and west along the court's //
+        // north-west, under its west wall and the chel, to the bath - a room, and in it a pool of an amah by an amah, three deep, with steps //
+        // down into it; a lamp on each side every four amot; the fire in a niche on the south side by the bath, the toilet opposite, its //
+        // door open ("פתוח, יודע שאין שם אדם"). The light under the ground is drawn into the surfaces (the lamps' and the fire's - vertex //
+        // colours on plain materials): no light is added to the scene. ctx2.shared.mesibah - for the demonstration (50-heichal.js, //
+        // MESIBAH_DEMO); ctx2.shared.features.mesibahSee - the way seen through the ground (an x-ray: each piece's twin is drawn only where //
+        // the ground hides it). The course, the depth, the breadth (2) and the height (4), the rooms, the lamps' and the fire's form - //
+        // model choices. (The mouth's hole goes through the floor, the house's base and the mount's floor: FLOOR_211 above, 20-mount.js.) //
+        { //
+          const [MX, MZ] = chC(-1, -1);                                   // the north-west chamber's middle: the mouth (-28.25, -73.25) //
+          const YF = -7, YC = -3, YR = -2.5, SH = 1.74, COLR = 0.35, NST = 45, RISE = 0.5;   // the floors and ceilings; the stair's half-breadth (in the mouth's 1.75), pillar, steps //
+          const root = new Group(); //
+          root.name = "mesibah"; //
+          g.add(root); //
+          const noRay = () => {}; //
+          // ---- the lamps and the fire first: every surface's light is drawn from them //
+          const LAMPS = []; //
+          const lamp = (wx, y, wz, nx, nz) => LAMPS.push({ wx, y, wz, nx, nz }); //
+          for (const z of [-69.5, -65.5, -61.5]) { lamp(MX - 1, YF + 2.2, z, 1, 0); lamp(MX + 1, YF + 2.2, z, -1, 0); }   // the tunnel, south //
+          for (let x = -31.25; x > -96; x -= 4) { lamp(x, YF + 2.2, -59, 0, 1); lamp(x, YF + 2.2, -57, 0, -1); }      // and west //
+          for (const k of [9, 15, 21, 27, 33, 39]) { const e = (k - 9) % 12 === 0; lamp(e ? MX + SH : MX - SH, 17.95 - RISE * k, MZ, e ? -1 : 1, 0); }   // the stair: every half turn //
+          lamp(MX + SH, -4.3, MZ, -1, 0);                                 // at the stair's foot, by its last step (east) //
+          lamp(-103.2, YF + 2.4, -61.2, 0, 1); lamp(-101.2, YF + 2.4, -54.8, 0, -1); lamp(-98, YF + 2.4, -60.5, -1, 0);   // the bath //
+          lamp(-97.6, YF + 2.2, -60.6, 1, 0);                             // the toilet //
+          for (const L of LAMPS) L.f = [L.wx + L.nx * 0.24, L.y + 0.07, L.wz + L.nz * 0.24];   // the flame, at the lamp's nozzle //
+          const FIRE = { x: -96.6, z: -56.3 }; //
+          const LIT = LAMPS.map((L) => [L.f[0], L.f[1] + 0.06, L.f[2], 0.8, 1.05]).concat([[FIRE.x, YF + 0.8, FIRE.z, 2.2, 2.0]]);   // [x, y, z, strength, reach] //
+          const AMB = [0.022, 0.022, 0.028]; //
+          const inShaft = (x, z) => Math.abs(x - MX) < SH + 0.05 && Math.abs(z - MZ) < SH + 0.05; //
+          const shade = (x, y, z, nx, ny, nz) => { //
+            let r = AMB[0], gg = AMB[1], b = AMB[2]; //
+            if (inShaft(x, z) && y > 6) { const k = Math.min(1, (y - 6) / 10), d = 0.32 * k * k * k; r += d; gg += d * 0.97; b += d * 0.92; }   // the day, from the chamber above //
+            for (const L of LIT) { //
+              const dx = L[0] - x, dy = L[1] - y, dz = L[2] - z, d2 = dx * dx + dy * dy + dz * dz; //
+              if (d2 > 49) continue; //
+              const d = Math.sqrt(d2) || 1e-4, ndl = (nx * dx + ny * dy + nz * dz) / d; //
+              if (ndl <= 0) continue; //
+              const f = L[3] * (0.25 + 0.75 * ndl) * Math.exp(-d2 / (2 * L[4] * L[4]));   // a pool of light round each flame //
+              r += f; gg += f * 0.74; b += f * 0.46; //
+            } //
+            return [Math.min(1.15, r), Math.min(1.05, gg), Math.min(0.9, b)]; //
+          }; //
+          // ---- the surfaces: in buffers by material, each face cut to half an amah (that its light is smooth) //
+          const mWall = new MeshBasicMaterial({ map: M2.stoneSmooth.map, vertexColors: true }); //
+          const mFloor = new MeshBasicMaterial({ map: M2.stone.map, vertexColors: true }); //
+          const BUF = new Map(); //
+          const buf = (m) => { let b = BUF.get(m); if (!b) { b = { pos: [], col: [], uv: [], idx: [] }; BUF.set(m, b); } return b; }; //
+          const put = (B, p, n, u, v) => { //
+            B.pos.push(p[0], p[1], p[2]); //
+            const c = shade(p[0], p[1], p[2], n[0], n[1], n[2]); //
+            B.col.push(c[0], c[1], c[2]); //
+            B.uv.push(u, v); //
+            return B.pos.length / 3 - 1; //
+          }; //
+          // a rectangle on the plane ax = v, over [u0, u1] x [w0, w1] of the other two (x: z, y; y: x, z; z: x, y), facing sg along ax //
+          const WALLS = [];   // (for the walk: the walls' solid slabs, below) //
+          const rect = (m, ax, v, u0, u1, w0, w1, sg) => { //
+            if (u1 - u0 < 1e-4 || w1 - w0 < 1e-4) return; //
+            if (ax !== "y") WALLS.push([ax, v, u0, u1, w0, w1, sg]); //
+            const B = buf(m), nu = Math.max(1, Math.ceil((u1 - u0) / 0.5 - 1e-6)), nw = Math.max(1, Math.ceil((w1 - w0) / (ax === "y" ? 0.5 : 0.6) - 1e-6)); //
+            const n = ax === "x" ? [sg, 0, 0] : ax === "y" ? [0, sg, 0] : [0, 0, sg], i0 = B.pos.length / 3; //
+            for (let j = 0; j <= nw; j++) for (let i = 0; i <= nu; i++) { //
+              const u = u0 + (u1 - u0) * i / nu, w = w0 + (w1 - w0) * j / nw; //
+              put(B, ax === "x" ? [v, w, u] : ax === "y" ? [u, v, w] : [u, w, v], n, u, w); //
+            } //
+            const flip = sg !== (ax === "z" ? 1 : -1); //
+            for (let j = 0; j < nw; j++) for (let i = 0; i < nu; i++) { //
+              const a = i0 + j * (nu + 1) + i, b = a + 1, c = a + nu + 1, d = c + 1; //
+              if (flip) B.idx.push(a, d, b, a, c, d); else B.idx.push(a, b, d, a, d, c); //
+            } //
+          }; //
+          // four points of one plane, wound to face n //
+          const quad4 = (m, P, n, uvs) => { //
+            const B = buf(m); //
+            const e1 = [P[1][0] - P[0][0], P[1][1] - P[0][1], P[1][2] - P[0][2]], e2 = [P[2][0] - P[0][0], P[2][1] - P[0][1], P[2][2] - P[0][2]]; //
+            const cx = e1[1] * e2[2] - e1[2] * e2[1], cy = e1[2] * e2[0] - e1[0] * e2[2], cz = e1[0] * e2[1] - e1[1] * e2[0]; //
+            const k = P.map((p, i) => put(B, p, n, uvs[i][0], uvs[i][1])); //
+            if (cx * n[0] + cy * n[1] + cz * n[2] >= 0) B.idx.push(k[0], k[1], k[2], k[0], k[2], k[3]); else B.idx.push(k[0], k[2], k[1], k[0], k[3], k[2]); //
+          }; //
+          // ---- the rooms: boxes in plan, one floor (YF), each its ceiling; the walls where a room meets the rock or a lower ceiling //
+          const ROOMS = [ //
+            { x0: MX - SH, x1: MX + SH, z0: MZ - SH, z1: MZ + SH, c: FL, open: true },   // the stair's shaft, open to the chamber //
+            { x0: MX - 1, x1: MX + 1, z0: MZ + SH, z1: -57, c: YC },                      // the tunnel, south, under the house's holy half //
+            { x0: -98, x1: MX + 1, z0: -59, z1: -57, c: YC },                              // and west, along the court's north-west, under its west wall and the chel //
+            { x0: -97.6, x1: -95.6, z0: -57, z1: -55.6, c: YC },                          // the fire's niche //
+            { x0: -97.6, x1: -95.4, z0: -61.7, z1: -59.3, c: YC },                        // the toilet //
+            { x0: -97.1, x1: -95.9, z0: -59.3, z1: -59, c: YF + 3.3 },                    // its doorway //
+            { x0: -104.4, x1: -98, z0: -61.2, z1: -54.8, c: YR }                          // the bath //
+          ]; //
+          const POOL = { x0: -104.4, x1: -100.4, z0: -58.5, z1: -57.5 }; //
+          const r3 = (v) => Math.round(v * 1000) / 1000; //
+          const cutsOf = (a0, a1, extra) => Array.from(new Set(ROOMS.map((r) => r[a0]).concat(ROOMS.map((r) => r[a1]), extra).map(r3))).sort((p, q) => p - q); //
+          const XS = cutsOf("x0", "x1", [POOL.x0, POOL.x1]), ZS = cutsOf("z0", "z1", [POOL.z0, POOL.z1]); //
+          const CELL = XS.slice(1).map((_, i) => ZS.slice(1).map((__, j) => { //
+            const xm = (XS[i] + XS[i + 1]) / 2, zm = (ZS[j] + ZS[j + 1]) / 2, rs = ROOMS.filter((r) => xm > r.x0 && xm < r.x1 && zm > r.z0 && zm < r.z1); //
+            if (!rs.length) return null; //
+            return { c: Math.max(...rs.map((r) => r.c)), open: rs.some((r) => r.open), pool: xm > POOL.x0 && xm < POOL.x1 && zm > POOL.z0 && zm < POOL.z1 }; //
+          })); //
+          const cellAt = (i, j) => (i < 0 || j < 0 || i >= XS.length - 1 || j >= ZS.length - 1 ? null : CELL[i][j]); //
+          for (let i = 0; i + 1 < XS.length; i++) for (let j = 0; j + 1 < ZS.length; j++) { //
+            const C = CELL[i][j]; //
+            if (!C) continue; //
+            const x0 = XS[i], x1 = XS[i + 1], z0 = ZS[j], z1 = ZS[j + 1]; //
+            if (!C.pool) rect(mFloor, "y", YF, x0, x1, z0, z1, 1); //
+            if (!C.open) rect(mWall, "y", C.c, x0, x1, z0, z1, -1); //
+            for (const [di, dj, ax, v, sg] of [[-1, 0, "x", x0, 1], [1, 0, "x", x1, -1], [0, -1, "z", z0, 1], [0, 1, "z", z1, -1]]) { //
+              const nb = cellAt(i + di, j + dj), bot = !nb ? YF : nb.c < C.c - 1e-4 ? nb.c : null; //
+              if (bot === null) continue; //
+              if (ax === "x") rect(mWall, "x", v, z0, z1, bot, C.c, sg); else rect(mWall, "z", v, x0, x1, bot, C.c, sg); //
+            } //
+          } //
+          // ---- the pool: five steps down from the east (half an amah each, risers of 0.525), then its floor, an amah and a half long - //
+          // the water 3 deep over an amah by an amah ("ברום שלש אמות"), its face just under the room's floor //
+          const PB = YF - 3.15, RP = 0.525; //
+          { //
+            let xe = POOL.x1; //
+            for (let i = 0; i < 5; i++) { //
+              const xw = xe - 0.5, top = YF - RP * (i + 1); //
+              rect(mFloor, "y", top, xw, xe, POOL.z0, POOL.z1, 1); //
+              rect(mWall, "x", xe, POOL.z0, POOL.z1, top, YF - RP * i, -1); //
+              rect(mWall, "z", POOL.z0, xw, xe, top, YF, 1); //
+              rect(mWall, "z", POOL.z1, xw, xe, top, YF, -1); //
+              xe = xw; //
+            } //
+            rect(mFloor, "y", PB, POOL.x0, xe, POOL.z0, POOL.z1, 1); //
+            rect(mWall, "x", xe, POOL.z0, POOL.z1, PB, YF - RP * 5, -1); //
+            rect(mWall, "z", POOL.z0, POOL.x0, xe, PB, YF, 1); //
+            rect(mWall, "z", POOL.z1, POOL.x0, xe, PB, YF, -1); //
+            rect(mWall, "x", POOL.x0, POOL.z0, POOL.z1, PB, YF, 1); //
+          } //
+          // ---- the stair: 45 steps of half an amah round the pillar (30 degrees each, going down sunwise: in from the south edge of the //
+          // mouth westward, out at the foot on the east side southward - to the tunnel); each a slab from the pillar to the shaft's walls //
+          const D2R = Math.PI / 180; //
+          const onSq = (a) => { const s = Math.sin(a), c = Math.cos(a), t = SH / Math.max(Math.abs(s), Math.abs(c)); return [MX + t * s, MZ + t * c]; }; //
+          const onCol = (a) => [MX + COLR * Math.sin(a), MZ + COLR * Math.cos(a)]; //
+          for (let k = 0; k < NST; k++) { //
+            const a0 = -(k + 1) * 30, a1 = -k * 30, top = FL - RISE * (k + 1), bot = top - RISE; //
+            const A = [a0, a0 + 10, a0 + 20, a1]; //
+            for (let c = 45 - 90 * 20; c < 400; c += 90) if (c > a0 + 1e-6 && c < a1 - 1e-6) A.push(c);   // a corner of the square within the step //
+            A.sort((p, q) => p - q); //
+            const R = A.map((d) => d * D2R); //
+            for (let q = 0; q + 1 < R.length; q++) { //
+              const i0 = onCol(R[q]), i1 = onCol(R[q + 1]), o0 = onSq(R[q]), o1 = onSq(R[q + 1]); //
+              for (const [y, n] of [[top, [0, 1, 0]], [bot, [0, -1, 0]]]) { //
+                quad4(mFloor, [[i0[0], y, i0[1]], [o0[0], y, o0[1]], [o1[0], y, o1[1]], [i1[0], y, i1[1]]], n, [[i0[0], i0[1]], [o0[0], o0[1]], [o1[0], o1[1]], [i1[0], i1[1]]]); //
+              } //
+            } //
+            for (const [d, sg] of [[a0, -1], [a1, 1]]) {   // its two ends: the riser (toward the step below) and the end under the step above //
+              const r = d * D2R, i0 = onCol(r), o0 = onSq(r), n = [sg * Math.cos(r), 0, -sg * Math.sin(r)], L = Math.hypot(o0[0] - i0[0], o0[1] - i0[1]); //
+              quad4(mWall, [[i0[0], bot, i0[1]], [o0[0], bot, o0[1]], [o0[0], top, o0[1]], [i0[0], top, i0[1]]], n, [[0, bot], [L, bot], [L, top], [0, top]]); //
+            } //
+          } //
+          // the toilet's seat: a stone bench along its north wall, its hole dark //
+          { //
+            const sx0 = -97.35, sx1 = -95.65, sz0 = -61.7, sz1 = -61.05, sy = YF + 0.9; //
+            rect(mWall, "y", sy, sx0, sx1, sz0, sz1, 1); //
+            rect(mWall, "z", sz1, sx0, sx1, YF, sy, 1); //
+            rect(mWall, "x", sx0, sz0, sz1, YF, sy, -1); //
+            rect(mWall, "x", sx1, sz0, sz1, YF, sy, 1); //
+          } //
+          let floorMesh = null;   // the floors and the treads: solid for the walk (90-entry.js ent_solids) - one walks down the stair and along the way //
+          for (const [m, B] of BUF) { //
+            const geo = new BufferGeometry(); //
+            geo.setAttribute("position", new Float32BufferAttribute(B.pos, 3)); //
+            geo.setAttribute("color", new Float32BufferAttribute(B.col, 3)); //
+            geo.setAttribute("uv", new Float32BufferAttribute(B.uv, 2)); //
+            geo.setIndex(B.idx); //
+            geo.computeBoundingSphere(); //
+            const mesh = new Mesh(geo, m); //
+            if (m === mFloor) floorMesh = mesh; //
+            root.add(mesh); //
+          } //
+          // ---- the pillar, round, from the tunnel's floor to the chamber's floor //
+          { //
+            const H = FL + 0.04 - YF, cg = new CylinderGeometry(COLR, COLR, H, 16, Math.ceil(H / 0.6), true); //
+            cg.translate(MX, YF + H / 2, MZ); //
+            const p = cg.attributes.position, nr = cg.attributes.normal, uv = cg.attributes.uv, col = new Float32Array(p.count * 3); //
+            for (let i = 0; i < p.count; i++) { //
+              col.set(shade(p.getX(i), p.getY(i), p.getZ(i), nr.getX(i), nr.getY(i), nr.getZ(i)), i * 3); //
+              uv.setXY(i, uv.getX(i) * 2.2, uv.getY(i) * H); //
+            } //
+            cg.setAttribute("color", new Float32BufferAttribute(col, 3)); //
+            root.add(new Mesh(cg, mWall)); //
+            const cap = new Mesh(new CircleGeometry(COLR, 16).rotateX(-HP), new MeshBasicMaterial({ map: M2.stoneSmooth.map, color: 0xa39a88 })); //
+            cap.position.set(MX, FL + 0.04, MZ); //
+            root.add(cap); //
+          } //
+          // ---- the water, and a ring on it (the demonstration's) //
+          const water = new Mesh(new PlaneGeometry(POOL.x1 - POOL.x0, POOL.z1 - POOL.z0).rotateX(-HP), new MeshBasicMaterial({ color: 0x2a4c58, transparent: true, opacity: 0.72, depthWrite: false })); //
+          water.position.set((POOL.x0 + POOL.x1) / 2, YF - 0.15, (POOL.z0 + POOL.z1) / 2); //
+          water.renderOrder = 3; //
+          root.add(water); //
+          const ripple = new Mesh(new RingGeometry(0.16, 0.24, 28).rotateX(-HP), new MeshBasicMaterial({ color: 0xcfe6ee, transparent: true, opacity: 0, depthWrite: false })); //
+          ripple.position.set(POOL.x0 + 0.75, YF - 0.14, (POOL.z0 + POOL.z1) / 2); //
+          ripple.visible = false; //
+          ripple.renderOrder = 4; //
+          root.add(ripple); //
+          // ---- the lamps: a stone shelf on the wall, a clay lamp on it, its flame; a glow round each flame //
+          const m4 = new Matrix4(), q4 = new Quaternion(), qI = new Quaternion(), s3 = new Vector3(), v3 = new Vector3(), YAX = new Vector3(0, 1, 0); //
+          const nL = LAMPS.length; //
+          const shelfI = new InstancedMesh(uvWorldBox(new BoxGeometry(0.3, 0.07, 0.24), 0.3, 0.07, 0.24), new MeshBasicMaterial({ color: 0x9c876a, map: M2.stoneSmooth.map }), nL); //
+          const bodyG = new SphereGeometry(0.1, 10, 6); //
+          bodyG.scale(1, 0.48, 1.35); //
+          const bodyI = new InstancedMesh(bodyG, new MeshBasicMaterial({ color: 0x9a5a34 }), nL); //
+          const flameG = new ConeGeometry(0.03, 0.11, 7); //
+          flameG.translate(0, 0.055, 0); //
+          const flameI = new InstancedMesh(flameG, new MeshBasicMaterial({ color: 0xffd27a }), nL); //
+          LAMPS.forEach((L, i) => { //
+            q4.setFromAxisAngle(YAX, Math.atan2(L.nx, L.nz)); //
+            shelfI.setMatrixAt(i, m4.compose(v3.set(L.wx + L.nx * 0.12, L.y - 0.035, L.wz + L.nz * 0.12), q4, s3.set(1, 1, 1))); //
+            bodyI.setMatrixAt(i, m4.compose(v3.set(L.wx + L.nx * 0.13, L.y + 0.045, L.wz + L.nz * 0.13), q4, s3.set(1, 1, 1))); //
+            flameI.setMatrixAt(i, m4.compose(v3.set(L.f[0], L.f[1], L.f[2]), qI, s3.set(1, 1, 1))); //
+          }); //
+          for (const I of [shelfI, bodyI, flameI]) { I.computeBoundingSphere(); root.add(I); } //
+          const glowTex = (() => { //
+            const c = document.createElement("canvas"); //
+            c.width = c.height = 64; //
+            const x = c.getContext("2d"), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); //
+            gr.addColorStop(0, "rgba(255,226,160,1)"); //
+            gr.addColorStop(0.22, "rgba(255,176,80,0.55)"); //
+            gr.addColorStop(1, "rgba(255,120,30,0)"); //
+            x.fillStyle = gr; //
+            x.fillRect(0, 0, 64, 64); //
+            return new CanvasTexture(c); //
+          })(); //
+          const glows = [0, 1, 2].map((s) => { //
+            const pts = []; //
+            LAMPS.forEach((L, i) => { if (i % 3 === s) pts.push(L.f[0], L.f[1] + 0.05, L.f[2]); }); //
+            const geo = new BufferGeometry(); //
+            geo.setAttribute("position", new Float32BufferAttribute(pts, 3)); //
+            const P = new Points(geo, new PointsMaterial({ size: 1.3, map: glowTex, transparent: true, depthWrite: false, blending: AdditiveBlending, color: 0xffb060, opacity: 0.8 })); //
+            P.renderOrder = 5; //
+            root.add(P); //
+            return P; //
+          }); //
+          // ---- the fire: a ring of stones, the embers, the logs; its flames are the altar's (40-altar.js, ctx2.shared.tevilaFire) //
+          { //
+            const stI = new InstancedMesh(new BoxGeometry(0.26, 0.2, 0.2), new MeshBasicMaterial({ color: 0x6a5c4e, map: M2.stoneSmooth.map }), 9); //
+            for (let i = 0; i < 9; i++) { //
+              const a = i / 9 * Math.PI * 2; //
+              q4.setFromAxisAngle(YAX, a); //
+              stI.setMatrixAt(i, m4.compose(v3.set(FIRE.x + Math.sin(a) * 0.55, YF + 0.1, FIRE.z + Math.cos(a) * 0.55), q4, s3.set(1, 1, 1))); //
+            } //
+            stI.computeBoundingSphere(); //
+            root.add(stI); //
+            const emb = new Mesh(new CylinderGeometry(0.45, 0.48, 0.06, 16), new MeshBasicMaterial({ color: 0xff5a14 })); //
+            emb.position.set(FIRE.x, YF + 0.03, FIRE.z); //
+            root.add(emb); //
+            const logM = new MeshBasicMaterial({ color: 0x3a2414 }); //
+            for (let i = 0; i < 4; i++) { //
+              const lg = new Mesh(new CylinderGeometry(0.06, 0.07, 0.85, 7), logM); //
+              lg.position.set(FIRE.x, YF + 0.12 + (i % 2) * 0.09, FIRE.z); //
+              lg.rotation.set(0, i * Math.PI / 4, HP, "YXZ"); //
+              root.add(lg); //
+            } //
+            ctx2.shared.tevilaFire = { x: FIRE.x, y: YF + 0.14, z: FIRE.z }; //
+            const fg = new BufferGeometry(); //
+            fg.setAttribute("position", new Float32BufferAttribute([FIRE.x, YF + 0.75, FIRE.z], 3)); //
+            const fp = new Points(fg, new PointsMaterial({ size: 5, map: glowTex, transparent: true, depthWrite: false, blending: AdditiveBlending, color: 0xff8a3a, opacity: 0.85 })); //
+            fp.renderOrder = 5; //
+            root.add(fp); //
+            glows.push(fp); //
+          } //
+          // ---- the toilet: its seat's hole; its door, standing open into it //
+          { //
+            const hole = new Mesh(new CircleGeometry(0.17, 18).rotateX(-HP), new MeshBasicMaterial({ color: 0x0d0b09 })); //
+            hole.scale.set(1, 1, 0.75); //
+            hole.position.set(-96.5, YF + 0.905, -61.4); //
+            root.add(hole); //
+          } //
+          const door = new Group(); //
+          door.position.set(-95.9, YF, -59.3); //
+          door.rotation.y = -1.75; //
+          root.add(door); //
+          { //
+            const leaf = new Mesh(uvWorldBox(new BoxGeometry(1.18, 3.25, 0.08), 1.18, 3.25, 0.08), new MeshBasicMaterial({ map: M2.cedar.map, color: 0x9a7650 })); //
+            leaf.position.set(-0.6, 1.625, -0.05); //
+            door.add(leaf); //
+            const ring = new Mesh(new TorusGeometry(0.07, 0.016, 6, 14), new MeshBasicMaterial({ color: 0x6e5a32 })); //
+            ring.position.set(-1.0, 1.55, -0.12); //
+            door.add(ring); //
+          } //
+          // ---- the towel ("ונסתפג"), on a peg on the bath's north wall by the pool; and its twin for the priest's hand //
+          const towelM = new MeshBasicMaterial({ color: 0xd9d2c2, map: TEX.plaster.map }); //
+          const towel = new Mesh(new BoxGeometry(0.5, 0.85, 0.03), towelM); //
+          towel.position.set(-100.9, YF + 2.3 - 0.47, -61.17); //
+          root.add(towel); //
+          { //
+            const peg = new Mesh(new CylinderGeometry(0.025, 0.025, 0.14, 6).rotateX(HP), new MeshBasicMaterial({ color: 0x5a3e24 })); //
+            peg.position.set(-100.9, YF + 2.32, -61.13); //
+            root.add(peg); //
+          } //
+          const towelProp = new Mesh(new BoxGeometry(0.42, 0.8, 0.03).translate(0, -0.38, 0), towelM); //
+          towelProp.userData.noPick = true; //
+          // ---- the names, seen with the ground made clear (the layer "mesibahSee") //
+          const seeFlag = new Group(); //
+          seeFlag.visible = false; //
+          ctx2.layers.mesibahSee = seeFlag; //
+          for (const [text, x, y, z] of [["המסבה — ״עמוד של בנין שעולין ויורדין בו ע״י גלגול״ (המפרש)", MX, 2, MZ - 2.6], //
+                                         ["המחילה — ״והנרות דולקין מכאן ומכאן״", -62, -1.2, -58], //
+                                         ["המדורה — ״ונתחמם כנגד המדורה״", FIRE.x, -2.4, -54.6], //
+                                         ["בית כסא של כבוד — פתוח: ״יודע שאין שם אדם״", -96.5, -1.2, -62.6], //
+                                         ["בית הטבילה — אמה על אמה, ברום שלש אמות", -102.4, -0.6, -58]]) { //
+            ctx2.labels.push({ text, x, y, z, size: 1.05, layer: "mesibahSee", onTop: true }); //
+          } //
+          // ---- the x-ray: a twin of every piece, drawn only where something is in front of it (GreaterDepth), lighter //
+          const XR = [], xrMats = new Map(); //
+          const xrOf = (m) => { //
+            let x = xrMats.get(m); //
+            if (!x) { //
+              x = m.clone(); //
+              x.transparent = true; //
+              x.opacity = (m.transparent ? m.opacity : 1) * (m.blending === AdditiveBlending ? 0.9 : 0.55); //
+              x.depthWrite = false; //
+              x.depthTest = true; //
+              x.depthFunc = GreaterDepth; //
+              xrMats.set(m, x); //
+            } //
+            return x; //
+          }; //
+          const pieces = []; //
+          root.traverse((o) => { if ((o.isMesh || o.isPoints) && o !== towelProp) pieces.push(o); }); //
+          for (const o of pieces) { //
+            o.castShadow = o.receiveShadow = false; //
+            if (o !== floorMesh) { o.userData.noPick = true; o.raycast = noRay; } //
+            let t; //
+            if (o.isInstancedMesh) { t = new InstancedMesh(o.geometry, xrOf(o.material), o.count); t.instanceMatrix = o.instanceMatrix; t.boundingSphere = o.boundingSphere; } //
+            else if (o.isPoints) t = new Points(o.geometry, xrOf(o.material)); //
+            else t = new Mesh(o.geometry, xrOf(o.material)); //
+            t.visible = false; //
+            t.renderOrder = 30 + (o.renderOrder || 0); //
+            t.raycast = noRay; //
+            t.userData.noPick = true; //
+            t.castShadow = t.receiveShadow = false; //
+            o.add(t); //
+            XR.push(t); //
+          } //
+          // the walls, solid for the walk (90-entry.js ent_solids: the eye in the walking mode keeps to the way) - thin slabs behind them, //
+          // drawn neither in colour nor in depth; under the mount's floor only (above it its own pieces bound the mouth) //
+          { //
+            const parts = []; //
+            for (const [ax, v, u0, u1, w0, w1, sg] of WALLS) { //
+              const y1 = Math.min(w1, -1.5); //
+              if (y1 - w0 < 0.05) continue; //
+              const L = u1 - u0, c = (u0 + u1) / 2, off = v - sg * 0.06; //
+              const bg = ax === "x" ? new BoxGeometry(0.12, y1 - w0, L) : new BoxGeometry(L, y1 - w0, 0.12); //
+              bg.translate(ax === "x" ? off : c, (w0 + y1) / 2, ax === "x" ? c : off); //
+              parts.push(bg); //
+            } //
+            const cm = new Mesh(mergeGeometries(parts), new MeshBasicMaterial({ colorWrite: false, depthWrite: false })); //
+            cm.name = "mesibahWalls"; //
+            cm.castShadow = cm.receiveShadow = false; //
+            root.add(cm); //
+          } //
+          // the flames flicker (each its own way); the glows breathe, in three sets //
+          const PH = LAMPS.map((_, i) => [((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1, ((Math.sin(i * 78.233) * 12543.123) % 1 + 1) % 1]); //
+          let seeOn = false; //
+          // far from the way (and not seen through, nor walked) it is not drawn at all: nothing of it can be seen from there //
+          const BB = { x0: -106, x1: -24, y0: -11, y1: 17, z0: -77, z1: -53 }; //
+          ctx2.animated.push((t) => { //
+            const cam = ctx2.camera; //
+            if (cam) { //
+              const p = cam.position, dx = Math.max(BB.x0 - p.x, 0, p.x - BB.x1), dy = Math.max(BB.y0 - p.y, 0, p.y - BB.y1), dz = Math.max(BB.z0 - p.z, 0, p.z - BB.z1); //
+              const want = dx * dx + dy * dy + dz * dz < 150 * 150 || seeOn || !!(ctx2.shared.mesibahDemo && ctx2.shared.mesibahDemo.on); //
+              if (root.visible !== want) root.visible = want; //
+            } //
+            if (!root.visible) return; //
+            const s = t * 0.001; //
+            LAMPS.forEach((L, i) => { //
+              const a = PH[i][0] * 6.283, b = PH[i][1] * 6.283, k = 1 + 0.2 * Math.sin(s * (7 + 3 * PH[i][0]) + a) + 0.1 * Math.sin(s * (17 + 5 * PH[i][1]) + b); //
+              flameI.setMatrixAt(i, m4.compose(v3.set(L.f[0], L.f[1], L.f[2]), qI, s3.set(1.05 - 0.1 * k, k, 1.05 - 0.1 * k))); //
+            }); //
+            flameI.instanceMatrix.needsUpdate = true; //
+            glows.forEach((P, i) => { P.material.opacity = (i === 3 ? 0.78 : 0.72) + 0.12 * Math.sin(s * (5.3 + i * 1.7) + i * 2.1) + 0.06 * Math.sin(s * (13.1 + i) + i); }); //
+          }); //
+          // ---- the feature: the way seen through the ground (the place "המסיבה ובית הטבילה", 70-ui.js - on while it shows) //
+          const setSee = (v) => { seeOn = !!v; seeFlag.visible = seeOn; for (const t of XR) t.visible = seeOn; }; //
+          ctx2.shared.features = ctx2.shared.features || {}; //
+          ctx2.shared.features.mesibahSee = { key: "mesibahSee", timed: false, isOn: () => seeOn, on: () => setSee(true), off: () => setSee(false) }; //
+          const FS = ctx2.shared.features.mesibahSee; //
+          ctx2.shared.mesibahSee = { set: (v) => (v ? FS.on() : FS.off()), get on() { return seeOn; } };   // the presentation's way (75-tour.js featureOf) //
+          // ---- for the demonstration (50-heichal.js MESIBAH_DEMO) //
+          ctx2.shared.mesibah = { //
+            MX, MZ, YF, YC, YR, FL, SH, NST, RISE, COLR, POOL, PB, RP, WATER: YF - 0.15, FIRE, //
+            TOWEL: [towel.position.x, towel.position.y, towel.position.z], //
+            stepTop: (k) => FL - RISE * (k + 1), //
+            towel, towelProp, ripple, door, root, //
+            see: (v) => setSee(v), //
+            get seeOn() { return seeOn; } //
+          }; //
+        } //
       } //
       // the marble tablet with its ring, in the floor by the north-west chamber (the keys under it, 1:9) //
       // KEY_SLAB_211 (stage ב; the user, 14.11.2026 22:22: the sleeping in Beit HaMoked and the key - into the demo as well): "ומקום היה //
@@ -51661,7 +52085,7 @@ void main() {
     // place, ctx2.shared.mokedFire) and under the Nazirites' pot (ctx2.shared.nazirFire); in g, not in mv - they do not move with the altar //
     for (const [F, list] of [[ctx2.shared.mokedFire, [[0, 0, 0.95, 2.7, 0.85], [0.7, 0.45, 0.65, 1.9, 0.8], [-0.65, -0.4, 0.7, 2.1, 0.8], [0.25, -0.7, 0.5, 1.5, 0.75], [-0.3, 0.75, 0.55, 1.6, 0.75]]], //
                              [ctx2.shared.nazirFire, [[0, 0, 0.75, 1.6, 0.8], [0.55, 0.3, 0.5, 1.2, 0.75], [-0.5, -0.3, 0.5, 1.3, 0.75]]], //
-                             [ctx2.shared.ovenFire, [[0, 0.75, 0.3, 0.6, 0.7], [0.1, -0.8, 0.3, 0.6, 0.7], [-1.0, 0, 0.28, 0.55, 0.65], [1.05, 0.1, 0.28, 0.55, 0.65]]]]) {   // LECHEM_211: low flames round the two moulds in the showbread's oven (30-courts.js) //
+                             [ctx2.shared.ovenFire, [[0, 0.75, 0.3, 0.6, 0.7], [0.1, -0.8, 0.3, 0.6, 0.7], [-1.0, 0, 0.28, 0.55, 0.65], [1.05, 0.1, 0.28, 0.55, 0.65]]], [ctx2.shared.tevilaFire, [[0, 0, 0.55, 1.45, 0.95], [0.25, 0.15, 0.38, 1.05, 0.85], [-0.22, -0.14, 0.4, 1.15, 0.85]]]]) {   // LECHEM_211: low flames round the two moulds in the showbread's oven (30-courts.js) //
       if (!F) continue; //
       list.forEach(([dx, dz, r, h, op], i) => (F.flames || (F.flames = [])).push(addFlame(F.x + dx, F.y, F.z + dz, r, h, [16742942, 16758832, 16769162][i % 3], op, g)));   // 1.9.3: kept - the Nazirites' fire moves with its chamber (30-courts.js, eznChambers) //
     } //
@@ -57253,6 +57677,336 @@ void main() {
       } //
       ctx2.shared.features = ctx2.shared.features || {}; //
       ctx2.shared.features.pishWay = { key: "pishWay", isOn: () => root.visible, on: () => { root.visible = true; }, off: () => { root.visible = false; } }; //
+    } //
+    // ===== MESIBAH_303 (the user, 18.11.2026 - the plan he took): THE DEMONSTRATION "הכהן יורד לבית הטבילה" - Tamid 1:1 (book 88, //
+    // line 2), walked: the priest rises by his bed in Beit HaMoked, goes into the north-west chamber and down the winding stair round //
+    // its pillar (the Mefaresh, 2105, line 17: "עמוד של בנין שעולין ויורדין בו ע"י גלגול"), along the tunnel between the lamps, past the //
+    // toilet's open door ("פתוח, יודע שאין שם אדם") and the fire, into the bath: down the steps, immersed, up; dried with the towel, //
+    // warmed before the fire; and back up, to his brothers asleep in the hall. The eye at a man's height, in cuts (its own clock and //
+    // its own captions, as the walk's - DW - draws them; the time written in demo seconds, run at SLOW). He is in his own clothes: //
+    // "ובגדי קדש לא היו ישנים בהן... ומתכסין בכסות עצמן" (the same Mishnah) - the Levites' look of the morning's service (55-tamid.js: //
+    // a plain robe, a cap, no belt). The ways, the times and the figures' forms - model choices. The underground: 30-courts.js //
+    // MESIBAH_303 (ctx2.shared.mesibah). //
+    { //
+      const MS = () => ctx2.shared.mesibah; //
+      const HP = Math.PI / 2; //
+      const RW = 1.05;                                   // the stair's walking line, from the pillar's axis //
+      const cl = (v, a, b) => Math.max(a, Math.min(b, v)); //
+      const sm = (u) => { u = cl(u, 0, 1); return u * u * (3 - 2 * u); }; //
+      const lerp3 = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u]; //
+      // a broken line of [x, y, z], walked by its length in the plan //
+      const poly = (pts) => { //
+        const L = [0]; //
+        for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][2] - pts[i - 1][2])); //
+        const seg = (s) => { s = cl(s, 0, L[L.length - 1]); let i = 0; while (i < L.length - 2 && s > L[i + 1]) i++; return [i, s]; }; //
+        return { len: L[L.length - 1], //
+          at(s) { const [i, q] = seg(s); return lerp3(pts[i], pts[i + 1], (q - L[i]) / Math.max(1e-6, L[i + 1] - L[i])); }, //
+          yaw(s) { const [i] = seg(s); return Math.atan2(pts[i + 1][0] - pts[i][0], pts[i + 1][2] - pts[i][2]); } }; //
+      }; //
+      // on the stair: theta in degrees (0 - south, 90 - east; going down it decreases), its height by the step under him //
+      const sp = (th) => { const M = MS(), r = th * Math.PI / 180; return [M.MX + RW * Math.sin(r), M.FL - M.RISE * (-th / 30) - 0.25, M.MZ + RW * Math.cos(r)]; }; //
+      // in the pool: the five steps down westward and the floor (30-courts.js: POOL, RP) //
+      const spYaw = (th) => { const r = th * Math.PI / 180; return Math.atan2(-Math.cos(r), Math.sin(r)); }; //
+      const poolY = (x) => { const M = MS(); return M.YF - M.RP * cl((M.POOL.x1 - x) / 0.5 + 0.5, 0, 6); }; //
+      let built = null; //
+      const build = () => { //
+        if (built) return built; //
+        const M = MS(); //
+        if (!M) return null; //
+        const F0 = M.FL; //
+        // the hall: his place and his brothers asleep (Tamid 1:1 "ומתכסין בכסות עצמן"; their garments folded under their heads) //
+        const sleepG = new Group(); //
+        sleepG.name = "mesibahSleepers"; //
+        sleepG.visible = false; //
+        g.add(sleepG); //
+        const blank = [0x6f5a45, 0x5d6470, 0x7a6a52, 0x5f5446, 0x6b5f6e].map((c) => new MeshStandardMaterial({ color: c, roughness: 0.95 })); //
+        const skin = new MeshStandardMaterial({ color: 0xc9a07c, roughness: 0.8 }), capM = new MeshStandardMaterial({ color: 0x2a2520, roughness: 0.9 }); //
+        const white = new MeshStandardMaterial({ color: 0xf1eee6, roughness: 0.85 }); //
+        const body = new CapsuleGeometry(0.42, 2.0, 4, 10).rotateX(HP), headG = new SphereGeometry(0.2, 10, 8), capG = new SphereGeometry(0.21, 10, 6, 0, Math.PI * 2, 0, HP); //
+        const pileG = new BoxGeometry(0.62, 0.16, 0.42); //
+        [[-15.4, F0, -72.6, HP], [-20.6, F0, -61.3, -HP], [-12.4, F0, -67.5, Math.PI], [-31.6, F0 + 1, -67.5, 0], [-4.4, F0 + 1, -67.5, 0], [-28.6, F0, -65.9, HP]].forEach(([x, y, z, yaw], i) => { //
+          const s = new Group(); //
+          const b = new Mesh(body, blank[i % blank.length]); //
+          b.scale.set(1, 0.62, 1); //
+          b.position.y = 0.26; //
+          s.add(b); //
+          const h = new Mesh(headG, skin); h.position.set(0, 0.32, 1.45); s.add(h); //
+          const c = new Mesh(capG, capM); c.rotation.x = HP; c.position.set(0, 0.32, 1.5); s.add(c); //
+          const p = new Mesh(pileG, white); p.position.set(0, 0.08, 1.86); s.add(p); //
+          s.position.set(x, y, z); //
+          s.rotation.y = yaw; //
+          for (const m of s.children) m.castShadow = true; //
+          sleepG.add(s); //
+        }); //
+        {   // his own place, empty: his cover thrown back, his garments folded at its head //
+          const s = new Group(); //
+          const cv = new Mesh(new BoxGeometry(0.95, 0.07, 2.3), blank[2]); cv.position.set(0, 0.035, 0); s.add(cv); //
+          const fold = new Mesh(new BoxGeometry(0.95, 0.12, 0.5), blank[2]); fold.position.set(0.05, 0.1, -0.95); fold.rotation.y = 0.08; s.add(fold); //
+          const p = new Mesh(pileG, white); p.position.set(0, 0.08, 1.4); s.add(p); //
+          s.position.set(-28.0, F0, -67.5); //
+          s.rotation.y = HP; //
+          sleepG.add(s); //
+        } //
+        // the caption, as the walk's (DW) //
+        const cap = document.createElement("div"); //
+        cap.id = "tm-mes-cap"; //
+        cap.setAttribute("dir", "rtl"); //
+        Object.assign(cap.style, { position: "fixed", left: "50%", bottom: "64px", transform: "translateX(-50%)", maxWidth: "min(760px, 74vw)", //
+          background: "rgba(14,17,28,0.8)", color: "#f4ead0", font: "17px/1.55 var(--font-main, inherit)", padding: "8px 18px", //
+          borderRadius: "10px", zIndex: "40", pointerEvents: "none", textAlign: "center", userSelect: "none", boxShadow: "0 2px 10px rgba(0,0,0,0.35)", display: "none" }); //
+        document.body.appendChild(cap); //
+        // ---- his ways (the screen's seconds; a cut may jump him on - "a jump is no step", KOH) //
+        const A = poly([[-27.4, F0, -68.7], [-25.6, F0, -69.1], [-25.0, F0, -69.8], [-25.4, F0, -70.6], [-26.8, F0, -71.05], [-27.8, F0, -71.25], sp(-15)]); //
+        const B = poly([sp(-1335), [-27.6, M.YF, -72.4], [M.MX, M.YF, -71.0], [M.MX, M.YF, -58.6], [M.MX - 0.6, M.YF, -58.0], [-34.5, M.YF, -58.0]]); //
+        const BV = poly([sp(-1335), [-27.6, M.YF, -72.4], [M.MX, M.YF, -71.0], [M.MX, M.YF, -58.6], [M.MX - 0.6, M.YF, -58.0], [-60, M.YF, -58.0]]);   // the eye's way, ahead of him //
+        const T = { a0: 0.9, a1: 0.9 + A.len / 1.35, s1: 0, s2: 0 }; //
+        T.s1 = T.a1; //
+        T.s2 = T.s1 + 3.6; //
+        const SPD = 1.3 * 180 / Math.PI / RW;   // degrees a second on the stair //
+        const t4 = T.s2 + 185 / SPD, tB = t4 + B.len / 1.35; //
+        const LEGS = [ //
+          [0, T.a0, () => ({ p: A.at(0), yaw: 2.0 })], //
+          [T.a0, T.a1, (t) => ({ p: A.at((t - T.a0) * 1.35), yaw: A.yaw((t - T.a0) * 1.35) })], //
+          [T.s1, T.s2, (t) => ({ p: sp(-15 - (t - T.s1) * SPD), yaw: spYaw(-15 - (t - T.s1) * SPD) })], //
+          [T.s2, t4, (t) => ({ p: sp(-1150 - (t - T.s2) * SPD), yaw: spYaw(-1150 - (t - T.s2) * SPD) })], //
+          [t4, tB, (t) => ({ p: B.at((t - t4) * 1.35), yaw: B.yaw((t - t4) * 1.35) })] //
+        ]; //
+        // the end of the tunnel, the toilet's door, the bath //
+        const E = poly([[-88, M.YF, -58.0], [-95.3, M.YF, -58.0]]), E2 = poly([[-95.3, M.YF, -58.0], [-100.2, M.YF, -58.0]]); //
+        const tE0 = tB, tE1 = tE0 + E.len / 1.35, tE2 = tE1 + 1.6, tE3 = tE2 + E2.len / 1.35; //
+        LEGS.push([tE0, tE1, (t) => ({ p: E.at((t - tE0) * 1.35), yaw: -HP })], //
+          [tE1, tE2, () => ({ p: E.at(E.len), yaw: -2.4 })],                    // his face to the toilet's open door //
+          [tE2, tE3, (t) => ({ p: E2.at((t - tE2) * 1.35), yaw: -HP })]); //
+        const xP = -103.7, tP0 = tE3, tP1 = tP0 + 3.9, tD0 = tP1 + 0.3, tD1 = tD0 + 1.4, tP2 = tD1 + 0.3, tP3 = tP2 + 3.9; //
+        LEGS.push([tP0, tP1, (t) => { const x = -100.2 + (xP + 100.2) * sm((t - tP0) / (tP1 - tP0)); return { p: [x, poolY(x), -58.0], yaw: -HP }; }], //
+          [tP1, tP2, (t) => { const u = cl((t - tD0) / (tD1 - tD0), 0, 1), d = Math.sin(Math.PI * u); return { p: [xP, M.PB - 0.68 * d * d, -58.0], yaw: -HP }; }], //
+          [tP2, tP3, (t) => { const x = xP + (-100.2 - xP) * sm((t - tP2) / (tP3 - tP2)); return { p: [x, poolY(x), -58.0], yaw: HP }; }]); //
+        // the towel: to the peg, taken, dried, hung back //
+        const tw = M.TOWEL, W1 = poly([[-100.2, M.YF, -58.0], [-100.9, M.YF, -60.35]]); //
+        const tT0 = tP3, tT1 = tT0 + W1.len / 1.2, tT2 = tT1 + 1.0, tT3 = tT2 + 3.0, tT4 = tT3 + 0.6; //
+        LEGS.push([tT0, tT1, (t) => ({ p: W1.at((t - tT0) * 1.2), yaw: W1.yaw((t - tT0) * 1.2) })], //
+          [tT1, tT2, (t) => ({ p: W1.at(W1.len), yaw: Math.PI, armR: { p: [tw[0] + 0.05, tw[1] + 0.3, tw[2] + 0.05], w: sm((t - tT1) / 0.5) * (1 - sm((t - tT1 - 0.6) / 0.4)) }, towel: t >= tT1 + 0.55 })], //
+          [tT2, tT3, (t) => ({ p: W1.at(W1.len), yaw: -0.5, towel: true, dry: (t - tT2) / (tT3 - tT2) })], //
+          [tT3, tT4, (t) => ({ p: W1.at(W1.len), yaw: Math.PI, towel: t < tT3 + 0.35 })]); //
+        // to the fire, and warmed before it //
+        const Fw = poly([[-100.9, M.YF, -60.35], [-99.2, M.YF, -58.2], [-97.4, M.YF, -58.0], [M.FIRE.x, M.YF, -57.85]]); //
+        const tF0 = tT4, tF1 = tF0 + Fw.len / 1.3, tF2 = tF1 + 4.2; //
+        LEGS.push([tF0, tF1, (t) => ({ p: Fw.at((t - tF0) * 1.3), yaw: Fw.yaw((t - tF0) * 1.3) })], //
+          [tF1, tF2, (t) => { const w = 0.85 * sm((t - tF1) / 0.7) * (1 - sm((t - tF2 + 0.5) / 0.5)); return { p: Fw.at(Fw.len), yaw: 0, armR: { p: [M.FIRE.x - 0.16, M.YF + 1.75, M.FIRE.z - 0.55], w }, armL: { p: [M.FIRE.x + 0.16, M.YF + 1.75, M.FIRE.z - 0.55], w } }; }]); //
+        // and back: up the last half turn, out of the chamber, to his place by his brothers //
+        const tU0 = tF2, tU1 = tU0 + 0.6, A2 = poly([[-26.8, F0, -71.05], [-25.4, F0, -70.6], [-25.0, F0, -69.8], [-25.6, F0, -69.1], [-27.4, F0, -68.7]]); //
+        const tU2 = tU1 + A2.len / 1.35, tEnd = tU2 + 4.0; //
+        LEGS.push([tU0, tU1, () => ({ p: A2.at(0), yaw: 1.2 })], //
+          [tU1, tU2, (t) => ({ p: A2.at((t - tU1) * 1.35), yaw: A2.yaw((t - tU1) * 1.35) })], //
+          [tU2, tEnd, () => ({ p: A2.at(A2.len), yaw: -1.9 })]); //
+        // ---- the eye: shots [t0, t1, eye(t), look(t) | null - at him]; between them a cut //
+        const head = (o, up) => [o.p[0], o.p[1] + (up == null ? 2.6 : up), o.p[2]]; //
+        // through the keys by time, smooth (the walk's centripetal Catmull-Rom, DW) //
+        const crc = (P0, P1, P2, P3, u) => { //
+          const d = (a, b) => Math.max(1e-4, Math.sqrt(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]))); //
+          const t1 = d(P0, P1), t2 = t1 + d(P1, P2), t3 = t2 + d(P2, P3), tt = t1 + u * (t2 - t1); //
+          const L = (a, b, ta, tb) => a.map((v, q) => ((tb - tt) * v + (tt - ta) * b[q]) / (tb - ta)); //
+          const A1 = L(P0, P1, 0, t1), A2 = L(P1, P2, t1, t2), A3 = L(P2, P3, t2, t3); //
+          return L(L(A1, A2, 0, t2), L(A2, A3, t1, t3), t1, t2); //
+        }; //
+        const keys = (K) => (t) => { //
+          let i = 0; //
+          while (i < K.length - 2 && t > K[i + 1][0]) i++; //
+          const u = cl((t - K[i][0]) / Math.max(1e-6, K[i + 1][0] - K[i][0]), 0, 1), P = (j) => K[Math.max(0, Math.min(K.length - 1, j))][1]; //
+          return K.length < 3 ? lerp3(K[0][1], K[1][1], u) : crc(i ? P(i - 1) : lerp3(P(0), P(1), -0.3), P(i), P(i + 1), i + 2 < K.length ? P(i + 2) : lerp3(P(i), P(i + 1), 1.3), u); //
+        }; //
+        const WEST = [-32.5, F0 + 5.4, -64.9];   // the hall's west end, over the bench: his place, his brothers, the chamber's door //
+        const sC = 15.97;                          // (on his way B: where he is round the corner, in the tunnel west) //
+        const tC = t4 + 12.0 / 1.35;               // the cut from the tunnel south to the tunnel west //
+        const SHOTS = [ //
+          [0, T.a1 - 1.2, keys([[0, WEST], [T.a1 - 1.2, [-31.9, F0 + 5.0, -65.6]]]), null], //
+          [T.a1 - 1.2, T.s2, keys([[T.a1 - 1.2, [-25.3, F0 + 4.9, -71.0]], [T.a1 + 1.8, [-26.0, F0 + 5.1, -75.5]], [T.s2, [-27.4, F0 + 5.3, -74.9]]]), null], //
+          [T.s2, t4 + 1.2, keys([[T.s2, [M.MX + 0.3, M.YF + 2.7, -69.9]], [t4, [M.MX + 0.15, M.YF + 2.8, -69.4]], [t4 + 1.2, [M.MX, M.YF + 3.0, -68.0]]]), null], //
+          // the tunnel south: the eye ahead of him, never past its end (the corner's wall would stand between them) //
+          [t4 + 1.2, tC, (t) => { const s = Math.min((t - t4) * 1.35 + 4.6, 15.0), p = BV.at(s); return [p[0], M.YF + 3.65, p[2]]; }, null], //
+          // the tunnel west: the eye ahead of him, waiting at first for him to come round the corner //
+          [tC, tB, (t) => { const s = (t - t4) * 1.35, x = s < sC ? -34.6 : Math.min(-34.6, -28.85 - (s - sC) - 5.75); return [x, M.YF + 3.6, -58.0]; }, //
+            (t, o) => ((t - t4) * 1.35 < 14.9 ? [M.MX - 0.4, M.YF + 2.4, -58.3] : head(o, 2.45))], //
+          [tE0, tE2 + 1.0, keys([[tE0, [-98.6, M.YF + 3.55, -58.0]], [tE2, [-98.6, M.YF + 3.55, -58.0]], [tE2 + 1.0, [-99.2, M.YF + 3.8, -59.6]]]), null], //
+          [tE2 + 1.0, tT4, keys([[tE2 + 1.0, [-103.6, M.YF + 4.0, -55.4]], [tP1, [-103.4, M.YF + 3.7, -55.8]], [tP3, [-103.5, M.YF + 3.9, -55.5]], [tT4, [-103.3, M.YF + 4.0, -55.6]]]), //
+            (t, o) => (t >= tD0 - 0.4 && t <= tD1 + 0.6 ? [xP, M.WATER - 0.4, -58.0] : head(o, 2.2))], //
+          [tT4, tF2, keys([[tT4, [-94.4, M.YF + 3.4, -58.8]], [tF2, [-94.6, M.YF + 3.45, -58.85]]]), (t, o) => (t > tF1 - 0.5 ? [M.FIRE.x, M.YF + 1.2, M.FIRE.z] : head(o, 2.2))], //
+          [tF2, tEnd, keys([[tF2, WEST], [tEnd, [-32.2, F0 + 5.2, -65.3]]]), (t, o) => (t < tU1 + 0.3 ? [-25.0, F0 + 1.8, -69.8] : head(o, 2.3))] //
+        ]; //
+        const CAPS = [[0, "״ארע קרי לאחד מהן, יוצא והולך לו במסבה ההולכת תחת הבירה״ (תמיד א, א)"], //
+          [T.a1 - 1.2, "״צפונית מערבית, בה יורדים לבית הטבילה״ (מידות א, ו)"], //
+          [T.s2, "המסבה: ״עמוד של בנין שעולין ויורדין בו ע״י גלגול״ (המפרש לתמיד)"], //
+          [t4 + 1.2, "״והנרות דולקין מכאן ומכאן, עד שהוא מגיע לבית הטבילה״ (תמיד א, א)"], //
+          [tE0, "״ומדורה היתה שם, ובית כסא של כבוד״"], //
+          [tE1 - 0.6, "״וזה היה כבודו, מצאו נעול, יודע שיש שם אדם. פתוח, יודע שאין שם אדם״"], //
+          [tP0, "״ירד וטבל״"], //
+          [tP2, "״עלה ונסתפג״"], //
+          [tF0 + 0.6, "״ונתחמם כנגד המדורה״"], //
+          [tF2, "״בא וישב לו אצל אחיו הכהנים עד שהשערים נפתחים, יוצא והולך לו״ (תמיד א, א)"]]; //
+        built = { sleepG, cap, LEGS, SHOTS, CAPS, tEnd, tD0, tD1, wet: [tD0 + 0.25, tD0 + 2.0], //
+          marks: { a1: T.a1, s2: T.s2, t4, tB, tE1, tE2, tE3, tP1, tD0, tD1, tP3, tT1, tT2, tT3, tT4, tF1, tF2, tU1, tU2, tEnd } }; //
+        return built; //
+      }; //
+      // ---- his own clothes (the Levites' look of the morning's service) on the one priest who walks (KOH), and back //
+      const own = { saved: null, mat: null, cap: null }; //
+      const ownOn = () => { //
+        const a = KOH.actor; //
+        if (!a || own.saved) return; //
+        const K = a.K, S = a.lean.children.find((o) => o.isGroup && o.children.some((m) => m.geometry === K.gRobeBody)); //
+        if (!S) return; //
+        if (!own.mat) { //
+          own.mat = typeof K.mat === "function" ? K.mat(0xc4b79a, { vertexColors: true, roughness: 0.95 }) : new MeshStandardMaterial({ color: 0xc4b79a, roughness: 0.95, vertexColors: true }); //
+          own.mat.emissive = new Color(0x2a1a0c); //
+          own.mat.emissiveIntensity = 0.55; //
+          own.cap = new Mesh(K.gCap, new MeshStandardMaterial({ color: 0x2a2520, roughness: 0.9 })); //
+          own.cap.position.y = K.HEAD_Y; //
+          own.cap.castShadow = true; //
+          own.cap.userData.noPick = true; //
+        } //
+        const bodyM = S.children.find((m) => m.geometry === K.gRobeBody), hat = S.children.find((m) => m.geometry === K.gHat); //
+        const arms = [a.L.meshes[0], a.L.meshes[1], a.R.meshes[0], a.R.meshes[1]]; //
+        own.saved = { S, bodyM, hat, hatV: hat ? hat.visible : true, sashV: a.sash.visible, body: bodyM ? bodyM.material : null, arms: arms.map((m) => [m, m.material]) }; //
+        if (bodyM) bodyM.material = own.mat; //
+        for (const m of arms) m.material = own.mat; //
+        if (hat) hat.visible = false; //
+        a.sash.visible = false; //
+        S.add(own.cap); //
+      }; //
+      const ownOff = () => { //
+        const s = own.saved; //
+        if (!s) return; //
+        own.saved = null; //
+        if (s.bodyM) s.bodyM.material = s.body; //
+        for (const [m, mt] of s.arms) m.material = mt; //
+        if (s.hat) s.hat.visible = s.hatV; //
+        const a = KOH.actor; //
+        if (a) a.sash.visible = s.sashV; //
+        if (own.cap && own.cap.parent) own.cap.parent.remove(own.cap); //
+      }; //
+      // ---- the run //
+      const D = { run: false, t0: 0, pausedAt: null, blend: null, look: null, shot: -1, saved: null }; //
+      const tNow = () => ((D.pausedAt != null ? D.pausedAt : performance.now()) - D.t0) / 1000 / SLOW; //
+      const setFov = (v) => { const cam = ctx2.camera; if (cam && cam.isPerspectiveCamera && Math.abs(cam.fov - v) > 0.01) { cam.fov = v; cam.updateProjectionMatrix(); } }; //
+      const stop = () => { //
+        if (!D.run) return; //
+        D.run = false; //
+        D.pausedAt = null; //
+        D.blend = null; //
+        const B = built, M = MS(); //
+        if (B) { B.sleepG.visible = false; B.cap.style.display = "none"; } //
+        kohSteps(-1); //
+        KOH.pose({ x: 0, y: -400, z: 0, props: null }); //
+        KOH.hide(); //
+        ownOff(); //
+        if (M) { M.towel.visible = true; M.ripple.visible = false; } //
+        const s = D.saved; //
+        D.saved = null; //
+        if (s) { //
+          if (s.fov) setFov(s.fov); //
+          const lg = ctx2.scene && ctx2.scene.getObjectByName("labels"); //
+          if (lg && s.labels != null) lg.visible = s.labels; //
+          if (M && s.see) M.see(true); //
+        } //
+      }; //
+      const start = () => { //
+        stop(); //
+        const M = MS(), B = build(); //
+        if (!M || !B || !KOH.dims()) return; //
+        if (typeof ctx2.shared.stopDemos === "function") { try { ctx2.shared.stopDemos("mes-tevila-demo"); } catch (_) {} } //
+        const lg = ctx2.scene && ctx2.scene.getObjectByName("labels"); //
+        D.saved = { fov: ctx2.camera && ctx2.camera.isPerspectiveCamera ? ctx2.camera.fov : 0, labels: lg ? lg.visible : null, see: M.seeOn }; //
+        if (lg) lg.visible = false;   // (as the morning's service: the model's names aside while it runs) //
+        M.see(false);                 // the eye walks inside: no x-ray through the walls //
+        setFov(66); //
+        B.sleepG.visible = true; //
+        D.shot = -1; //
+        D.look = null; //
+        D.t0 = performance.now(); //
+        D.run = true; //
+      }; //
+      DEMO_STOPS.push({ id: "mes-tevila-demo", running: () => D.run, stop, //
+        pause: () => { if (D.run && D.pausedAt == null) D.pausedAt = performance.now(); }, //
+        resume: () => { //
+          if (D.pausedAt == null) return; //
+          D.t0 += performance.now() - D.pausedAt; //
+          D.pausedAt = null; //
+          const cam = ctx2.camera, c = ctx2.controls; //
+          if (cam && c && c.target) D.blend = { pos: cam.position.toArray(), tg: c.target.toArray(), at: performance.now() }; //
+        }, //
+        paused: () => D.pausedAt != null, //
+        restart: () => start() }); //
+      ctx2.shared.mesibahDemo = { start, stop, get on() { return D.run; }, //
+        seek(t) { if (D.run) { D.t0 = (D.pausedAt != null ? D.pausedAt : performance.now()) - t * 1000 * SLOW; D.shot = -1; } },   // (the tests' way to a moment) //
+        get length() { const B = build(); return B ? B.tEnd : 0; }, get marks() { const B = build(); return B ? B.marks : null; } }; //
+      const towelOn = { v: false }; //
+      ctx2.animated.push(() => { //
+        if (!D.run) return; //
+        const B = built, M = MS(); //
+        if (!B || !M) { stop(); return; } //
+        if (D.pausedAt != null) { kohSteps(0); D.lastMs = 0; return; } //
+        const t = tNow(); //
+        if (t >= B.tEnd + 0.4) { stop(); return; } //
+        // the priest //
+        let leg = B.LEGS[B.LEGS.length - 1]; //
+        for (const L of B.LEGS) if (t >= L[0] && t < L[1]) { leg = L; break; } //
+        const o = leg[2](t); //
+        const tw = !!o.towel; //
+        if (tw !== towelOn.v) { towelOn.v = tw; M.towel.visible = !tw; } //
+        const pose = { x: o.p[0], y: o.p[1], z: o.p[2], base: tw ? "hold" : "rest", props: tw ? { r: M.towelProp } : null }; //
+        if (o.yaw != null) pose.yaw = o.yaw; //
+        if (o.armR) pose.armR = o.armR; //
+        if (o.armL) pose.armL = o.armL; //
+        if (o.dry != null) {   // the towel over his face and his breast: a round of the right hand, twice //
+          const a = (o.dry * 2) * Math.PI * 2, yw = o.yaw, c = Math.cos(yw), s = Math.sin(yw); //
+          const lx = -0.04 + 0.16 * Math.cos(a), ly = 2.45 + 0.32 * Math.sin(a), lz = 0.32; //
+          pose.armR = { p: [o.p[0] + lx * c + lz * s, o.p[1] + ly, o.p[2] - lx * s + lz * c], w: Math.min(1, o.dry * 6, (1 - o.dry) * 6) }; //
+        } //
+        KOH.pose(pose); //
+        if (!own.saved) ownOn(); //
+        kohSteps(1); //
+        // the water over him, and its ring //
+        { const u = (t - B.wet[0]) / (B.wet[1] - B.wet[0]), on = u >= 0 && u <= 1, R = M.ripple; R.visible = on; if (on) { R.scale.setScalar(1 + 3.2 * u); R.material.opacity = 0.75 * (1 - u); } } //
+        // the eye //
+        let si = B.SHOTS.length - 1; //
+        for (let i = 0; i < B.SHOTS.length; i++) if (t >= B.SHOTS[i][0] && t < B.SHOTS[i][1]) { si = i; break; } //
+        const S = B.SHOTS[si], cut = si !== D.shot; //
+        D.shot = si; //
+        const e = S[2](t), want = S[3] ? S[3](t, o) : [o.p[0], o.p[1] + 2.45, o.p[2]]; //
+        const nowMs = performance.now(), dt = D.lastMs ? Math.min(0.25, (nowMs - D.lastMs) / 1000) : 0; //
+        D.lastMs = nowMs; //
+        if (cut || !D.look) D.look = want.slice(); //
+        else { const k = 1 - Math.exp(-dt * 7); for (let q = 0; q < 3; q++) D.look[q] += (want[q] - D.look[q]) * k; }   // (by the clock: the same at any frame rate) //
+        let E2 = e, L2 = D.look; //
+        if (D.blend) { //
+          const w0 = Math.min(1, (performance.now() - D.blend.at) / 900), w = w0 * w0 * (3 - 2 * w0); //
+          E2 = lerp3(D.blend.pos, e, w); //
+          L2 = lerp3(D.blend.tg, D.look, w); //
+          if (w0 >= 1) D.blend = null; //
+        } //
+        const cam = ctx2.camera, c = ctx2.controls; //
+        if (cam) { //
+          cam.position.set(E2[0], E2[1], E2[2]); //
+          if (c && c.target) c.target.set(L2[0], L2[1], L2[2]); //
+          cam.lookAt(L2[0], L2[1], L2[2]); //
+        } //
+        let txt = ""; //
+        for (const [ct, x] of B.CAPS) if (t >= ct) txt = x; //
+        if (B.cap.textContent !== txt) B.cap.textContent = txt; //
+        B.cap.style.display = txt ? "block" : "none"; //
+      }); //
+      { //
+        const MB = Array.isArray(ctx2.shared.modelButtons) ? ctx2.shared.modelButtons : (ctx2.shared.modelButtons = []); //
+        MB.push({ //
+          id: "mes-tevila-demo", label: "הדגמה: הכהן יורד לבית הטבילה", labelOn: "עצור את ההדגמה", maxDist: 150, //
+          title: "״ארע קרי לאחד מהן, יוצא והולך לו במסבה ההולכת תחת הבירה... ירד וטבל, עלה ונסתפג ונתחמם כנגד המדורה״ (תמיד א, א) — בהליכה, בגובה העיניים: מבית המוקד, במעלות שסביב העמוד, במחילה שבין הנרות, אל בית הטבילה, ובחזרה אל אחיו הכהנים.", //
+          anchor: () => { //
+            const p = ctx2.camera && ctx2.camera.position, M = MS(); //
+            return p && M && p.z < -20 && p.x < 20 && p.x > -120 && p.y < 160 ? [M.MX, 40, M.MZ] : null; //
+          }, //
+          get: () => D.run, //
+          set: (on) => { if (on) start(); else stop(); } //
+        }); //
+      } //
     } //
     // 1.4.0: the cedar beams across the ulam, from the house's wall (x 1.5) to the ulam's front wall (x 12.5), near its ceiling (Middot 3:8) //
     const beamG = new CylinderGeometry(0.35, 0.35, 11, 10); //
@@ -63930,11 +64684,11 @@ void main() {
   // 1.0.2 (C): the window "מה חדש" - shown once for this version (ver = manifest.json's version); short plain Hebrew, one line a feature //
   var UI_NEWS = { //
     ver: "2.0.11",   // tools/assemble.mjs writes manifest.json's version here //
-    items: ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**השער הגדול — הכהן יוצא מן המבט** — בהדגמות ״הכניסה בפשפש״ ו״פתיחת השער הגדול״, אחרי שהשער נפתח, הכהן נכנס להיכל, פונה צפונה לאורך הכותל המזרחי, ויוצא מן המבט לפני סוף ההדגמה. עד עכשיו הוא הלך באמצע ההיכל, מול העין, ונעלם פתאום כשההדגמה נגמרה."] //
+    items: ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**חדש: המסיבה ובית הטבילה** — הדרך שבה כהן שאירע לו קרי בלילה יורד מבית המוקד לטבול (תמיד א, א): מעלות סביב עמוד יורדות מן הלשכה הצפונית מערבית אל מחילה שמתחת לקרקע, ונרות דולקים משני צדיה; בסופה המדורה, בית כסא של כבוד, ודלתו פתוחה, ובית הטבילה. במקום ״המסיבה ובית הטבילה״ (בקבוצת ״לשכות״) הקרקע נעשית שקופה, ורואים את כל הדרך מלמעלה. ובהדגמה החדשה ״הכהן יורד לבית הטבילה״ (בקבוצת ״הדגמות״) — ההליכה כולה, בגובה העיניים.", "**ספלי הניסוך — צוירו מחדש, בשתי השיטות** — שני הספלים שבראש המזבח, בקרן דרומית מערבית, קבועים עכשיו בגג המזבח. בשיטת רש״י: חוטם לכל ספל, ונקב בגג המזבח לכל אחד. בשיטת התוספות: נקב בתחתית כל ספל, ספל המים תחתיתו עבה, ומעל כל נקב כיסוי קטן כמין חוטם (״ושמא כמין בליטת חוטם״). במקום ״ספלי הניסוך״ פינת המזבח נעשית שקופה, ורואים את הנקבים יורדים אל השיתין. ובהדגמת ״סדר עבודת הבוקר״ הכהן מנסך את היין כשהוא עומד מצפון לספלים — עד עכשיו עמד בתוך ספל המים.", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**השער הגדול — הכהן יוצא מן המבט** — בהדגמות ״הכניסה בפשפש״ ו״פתיחת השער הגדול״, אחרי שהשער נפתח, הכהן נכנס להיכל, פונה צפונה לאורך הכותל המזרחי, ויוצא מן המבט לפני סוף ההדגמה. עד עכשיו הוא הלך באמצע ההיכל, מול העין, ונעלם פתאום כשההדגמה נגמרה."] //
   }; //
   // what is new by version, newest first - one who saw a version is shown only the versions after it //
   var UI_NEWS_VERS = [ //
-    ["2.0.11", ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**השער הגדול — הכהן יוצא מן המבט** — בהדגמות ״הכניסה בפשפש״ ו״פתיחת השער הגדול״, אחרי שהשער נפתח, הכהן נכנס להיכל, פונה צפונה לאורך הכותל המזרחי, ויוצא מן המבט לפני סוף ההדגמה. עד עכשיו הוא הלך באמצע ההיכל, מול העין, ונעלם פתאום כשההדגמה נגמרה."]], //
+    ["2.0.11", ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**חדש: המסיבה ובית הטבילה** — הדרך שבה כהן שאירע לו קרי בלילה יורד מבית המוקד לטבול (תמיד א, א): מעלות סביב עמוד יורדות מן הלשכה הצפונית מערבית אל מחילה שמתחת לקרקע, ונרות דולקים משני צדיה; בסופה המדורה, בית כסא של כבוד, ודלתו פתוחה, ובית הטבילה. במקום ״המסיבה ובית הטבילה״ (בקבוצת ״לשכות״) הקרקע נעשית שקופה, ורואים את כל הדרך מלמעלה. ובהדגמה החדשה ״הכהן יורד לבית הטבילה״ (בקבוצת ״הדגמות״) — ההליכה כולה, בגובה העיניים.", "**ספלי הניסוך — צוירו מחדש, בשתי השיטות** — שני הספלים שבראש המזבח, בקרן דרומית מערבית, קבועים עכשיו בגג המזבח. בשיטת רש״י: חוטם לכל ספל, ונקב בגג המזבח לכל אחד. בשיטת התוספות: נקב בתחתית כל ספל, ספל המים תחתיתו עבה, ומעל כל נקב כיסוי קטן כמין חוטם (״ושמא כמין בליטת חוטם״). במקום ״ספלי הניסוך״ פינת המזבח נעשית שקופה, ורואים את הנקבים יורדים אל השיתין. ובהדגמת ״סדר עבודת הבוקר״ הכהן מנסך את היין כשהוא עומד מצפון לספלים — עד עכשיו עמד בתוך ספל המים.", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**השער הגדול — הכהן יוצא מן המבט** — בהדגמות ״הכניסה בפשפש״ ו״פתיחת השער הגדול״, אחרי שהשער נפתח, הכהן נכנס להיכל, פונה צפונה לאורך הכותל המזרחי, ויוצא מן המבט לפני סוף ההדגמה. עד עכשיו הוא הלך באמצע ההיכל, מול העין, ונעלם פתאום כשההדגמה נגמרה."]], //
     ["2.0.10", ["**מבט במקום — גם כלפי מטה** — בתוך מבנה מקורה, ובמצב הליכה, אפשר עכשיו להוריד את המבט כמעט עד למטה ממש. עד עכשיו, כשהמבט ירד הרבה ושחררו את העכבר, המצלמה קפצה ממקומה והמבט הסתובב; ובמצב הליכה העין החליקה לאחור ושקעה.", "**מעבר חלק אל כל מקום** — כל מעבר — בלחיצה על מקום, על מבט, או במצגת — עובר עכשיו בדרך חלקה מתחילתו ועד סופו. עד עכשיו, במעבר שעבר מעל המקום, המבט קפץ והתמונה הסתובבה בבת אחת באמצע הדרך.", "**עצירת מעבר באמצעו** — לחיצה על המודל, גלגלת העכבר, מקש או כפתור ניווט בזמן מעבר עוצרים אותו במקום שבו הוא נמצא, ומשם אפשר להסתובב ולהתקרב מיד. עד עכשיו גרירה בזמן מעבר לא נקלטה, ושארית שלה המשיכה להזיז את המבט אחרי סוף המעבר.", "**התקרבות לכלי** — כשמתקרבים מאוד לכלי — בכפתור ״+״, במקש + או בצביטה — הכלי כבר אינו נחתך.", "**מצב הליכה עולה ויורד עם הרצפה** — בהליכה העין שומרת על גובהה מעל הרצפה שתחתיה: עולה במדרגות ויורדת מהן. עד עכשיו, במעבר מן החצר אל מקום גבוה ממנה, העין נכנסה לתוך הרצפה.", "**הדגמות במצגת הרציפה** — כשמסתכלים סביב בזמן הדגמה במצגת הרציפה, ההדגמה נעצרת והמבט חופשי; כשהמצגת ממשיכה, גם ההדגמה ממשיכה מאותו רגע. עד עכשיו ההדגמה המשיכה להוביל את המבט, ואי אפשר היה להסתובב עד סופה.", "**המצפן** — לחיצה על מקום מיד אחרי לחיצה על אות במצפן כבר אינה מעקמת את המעבר.", "**צביטה במסך מגע** — צביטה בשתי אצבעות בתוך מבנה מקורה מקרבת ומרחיקה את המבט. עד עכשיו היא הרעידה אותו.", "**קבוצת ״הדגמות״** — בראש רשימת המקומות יש עכשיו קבוצה חדשה, ״הדגמות״, ובה כל ההדגמות של הבית במקום אחד.", "**כפתורי ההדגמה בצד** — הכפתורים ״השהה״ ו״עצור״, שמופיעים בזמן הדגמה, עברו לצד שמאל, מעל המצפן. עד עכשיו הם עמדו באמצע המסך והסתירו את המודל.", "**קולות בהדגמות** — בעוד הדגמות נשמעים עכשיו קולות, בעוצמה נמוכה. השהיה או עצירה של ההדגמה משתיקות אותם מיד. אפשר לכבות את כל הקולות בהגדרות, בשורה ״קולות בהדגמות״.", "**מדידה באמות** — נקודת מדידה נקבעת עכשיו רק על מה שרואים: לא על חלק שהחתך הסתיר, ולא על משהו שקרוב מדי לעין. עד עכשיו נקודה יכלה ליפול על חלק שאינו נראה, והמידה יצאה שגויה.", "**סדר עבודת הבוקר — המבט הנע** — בהדגמה, המבט הנע מכוון עכשיו בדיוק אל מה שמוצג. עד עכשיו, במבט שכמעט מעל המקום, הוא נטה כחמש מעלות הצידה.", "**פרחי כהונה צעירים** — בהדגמת שמחת בית השואבה, פרחי הכהונה נראים עכשיו צעירים: שיער כהה וזקן קצר. עד עכשיו היה להם שיער לבן.", "**שתי הסנהדראות הקטנות** — המקום ״שתי הסנהדראות הקטנות״ מראה עכשיו את שתיהן במבט אחד. עד עכשיו נראתה רק אחת.", "**פרוכת השער** — כשבוחרים שער שיש בו פרוכת, למשל ״שער הבכורות״, הפרוכת מורמת, וכך רואים את הפתח. עד עכשיו הפרוכת נשארה סגורה והסתירה אותו.", "**הכהן הגדול נכנס בקטורת** — בהדגמה, הכהן הגדול הולך עכשיו בדרך חלקה ואינו נכנס לתוך הכתלים. הדרך עצמה, בכל שיטה, לא השתנתה.", "**הטבת הנרות** — בעבודת הבוקר, יד הכהן מגיעה עכשיו אל כל נר שהוא מטיב. בשיטת הרמב״ם, כתובית בתחילת ״הטבת שתי נרות״ מסבירה למה כל שבעת הנרות דולקים.", "**הקולות בהדגמות של בית שני** — קול השער הגדול כשהוא נפתח, דלת הפשפש, גלגל המוכני והמים כשהכיור יורד לבור ועולה, צעדי הכהנים בפייסות ובכניסת הכהן הגדול, וקול הקטורת על הגחלים. רעש האש בעבודת הבוקר שקט עכשיו יותר."]],   // CAM_219 //
     ["2.0.9", ["**תוספות יום טוב — אפשרות שלישית במתג ״פריפת הפרוכות״** — לפי תוספות יום טוב (יומא ה, א), הפרוכת הייתה ארוכה מרוחב הבית, וקצה ״יצאת לחוץ לתוך ההיכל ונאחזת בכותל הדרום בקרס״. במודל: הפינה התחתונה של הפרוכת מורמת, נמשכת אל הכותל ונאחזת בו בקרס של זהב, והכהן הגדול נכנס מתחתיה. בכרטיס — גם קושיית הרש״ש על פירוש זה.", "**דרך הכהן הגדול לשיטת רבי מאיר** — בהדגמה ״הכהן הגדול נכנס בקטורת״ יש עכשיו דרך שלישית. רבי מאיר אומר: ״בין שלחן למזבח״, ו״לעולם כרבי יוסי סבירא ליה״ — הפתח בצפון (יומא נא:). במודל: פרוכת אחת, והכהן הגדול הולך בין השולחן למזבח, ואחרי השולחן פונה לצפון. בוחרים בה במתג ״הפרוכות ודרך הכהן הגדול״.", "**מתג חדש: סידור הלחם והדלקת הנרות בכלי שלמה** — כשמוצגים עשרת השולחנות ועשר המנורות של שלמה, אפשר לבחור: כתנא קמא ורבי יוסי ברבי יהודה — לחם ונרות רק בשל משה (ברירת המחדל); או כרבי אלעזר בן שמוע (מנחות צט.) — ״על כולם היו מסדרין... ובכולן היו מדליקין״. בכרטיס — גם פירוש רש״י: ״פעמים בזה פעמים בזה״.", "**פרוכות בשערים, בפתח ההיכל ובפתח האולם** — ״שלש עשרה פרכות היו במקדש שני״ (כתובות קו.; רמב״ם כלי המקדש ז, יז). עד עכשיו צוירו רק שתי הפרוכות שבין הקודש לקודש הקדשים. עכשיו מצוירות גם שבע הפרוכות של שערי העזרה, פרוכת פתח ההיכל ופרוכת פתח האולם — תלויות מבחוץ, לפני הפתח. הן פרוסות, ומתג ״פרוכות הפתחים״ מגביה אותן. בזמן הדגמה, וכשהמבט עובר דרך פתח, הפרוכת שלו מוגבהת מעצמה.", "**שתי הפרוכות שבעלייה** — גם בעלייה, מעל ההיכל וקודש הקדשים, יש עכשיו שתי פרוכות. מתג ״הפרוכות שבעלייה״: מכותל לכותל, כתוספות יום טוב (ברירת המחדל); או באמצע בלבד, וראשי הפספסין מן הכתלים — כלחם שמים.", "**מקום חדש: שלוש עשרה הפרוכות** — ברשימת המקומות, תחת ״ההיכל ופנים״: כל הפרוכות שבמקדש השני, ומקורותיהן.", "**סרגל במסך הבחירה** — במסך הפתיחה, שבו בוחרים בית ראשון או בית שני, יש עכשיו סרגל בתחתית. באוצריא יש בו מתג לכפתור ״פתח בתוסף בית המקדש״, שבסרגל העליון של ספרים כמו מלכים, דברי הימים ומידות: אפשר להסתיר את הכפתור ולהחזיר אותו, בלי לבטל הרשאה. מתג לכפתור שבשדה החיפוש יפעל מגרסה 0.9.99 של אוצריא. בקובץ לצפייה בלי אוצריא נמצא בסרגל הזה כפתור ״בדיקת עדכונים״ — עד עכשיו הוא היה בסוף התפריט."]], //
     ["2.0.8", ["**שתי הפרוכות — מכותל לכותל** — כל אחת משתי הפרוכות שבין ההיכל לקודש הקדשים מגיעה עכשיו מן הכותל הצפוני עד הכותל הדרומי. עד עכשיו צוירה כל פרוכת קצרה יותר, ובין קצה הפרוכת לכותל נשאר רווח — בחיצונה בדרום, ובפנימית בצפון — ובו היה הפתח.", "**מתג חדש: פריפת הפרוכות — רש״י או תוספות רי״ד** — המשנה (יומא ה, א): ״החיצונה היתה פרופה מן הדרום, והפנימית מן הצפון״. ברירת המחדל, כרש״י (יומא נב:): הפינה התחתונה של הפרוכת, ליד הכותל, כפולה כלפי חוץ ונאחזת בקרס של זהב, ומתחתיה הפתח. האפשרות השנייה, כתוספות רי״ד (יומא נב:): הפרוכת סגורה, ומחוברת לשני הכתלים בקרסים ובלולאות לכל גובהה; ליד הפתח הלולאות רפויות, ובהדגמת כניסת הכהן הגדול ביום הכיפורים הפינה נפתחת כשהוא מגיע אליה, ונסגרת אחריו.", "**שולחנות שלמה — בצורת שולחן משה** — כשבמתג ״שולחנות שלמה ומנורותיו — בבית שני״ נבחרה האפשרות של רש״י, עשרת השולחנות מצוירים עכשיו כמו שולחן לחם הפנים, וכמו בבית ראשון: עם הסניפים, הקנים ושני הבזיכים. אבל בלי לחם ובלי לבונה — ״ולא היו מסדרין אלא על של משה״ (מנחות צט.). עד עכשיו צוירו כשולחנות פשוטים."]], //
@@ -65980,6 +66734,7 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "הכניסה בפשפש", pill: "hei-pish-demo" }, //
           { t: "הכהן הגדול נכנס בקטורת", place: "הכהן הגדול נכנס בקטורת — הדגמה" }, //
           { t: "הליכה במסיבה", place: "הליכה במסיבה — הדגמה" }, //
+          { t: "הכהן יורד לבית הטבילה", pill: "mes-tevila-demo" }, //
           { t: "שמחת בית השואבה — מנורות של זהב", place: "מנורות של זהב — שמחת בית השואבה" } //
         ]; //
       } //
@@ -66036,7 +66791,8 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "לשכת עושי לחם הפנים", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: [-7.6, 17.2, -62.2], cam: [-8.4, 27.5, -58.3], info: "לשון המשנה (מידות א, ו): ״דרומית מזרחית, היא היתה לשכת עושי לחם הפנים״; (תמיד ג, ג): ״ואחת לשכה שהיו עושין בה לחם הפנים״. **ברטנורא:** ״בית גרמו היו עושים לחם הפנים שם״.\n**האפייה** (מנחות יא, א): ״לחם הפנים נלוש אחד אחד, ונאפה שנים שנים. ובטפוס היה עושה אותן. וכשהוא רדן, נותנן בטפוס, כדי שלא יתקלקלו״. ובגמרא (מנחות צד.): ״שלשה דפוסין הם: נותנה לדפוס ועדיין היא בצק, וכמין דפוס היה לה בתנור, וכשהוא רודה נותנה בדפוס כדי שלא תתקלקל״. **הרמב״ם** (תמידין ומוספין ה, ח): ״ושלשה דפוסין של זהב היו להם״.\n**התנור:** ״תנור של מקדש – של מתכת היה״ (זבחים צה:). דפוס התנור: ״כמין כוורת היה לה בתנור״ (מנחות צה.), ו**תוספות** שם: ״מנוקב ככוורת של קנים שישלוט האור בכולו״. בית גרמו (יומא לח.): ״מסיקין מבפנים ואופין מבפנים״, ו״אין פיתן מתעפשת״.\nבקצרה — המחלוקת, מה נעשה בלשכה: במשנה (מנחות יא, ב) ״לישתן ועריכתן בחוץ, ואפיתן בפנים... רבי יהודה אומר, כל מעשיהם בפנים״. לתנא קמא, וכן פסק הרמב״ם, בלשכה שבחצי המקודש אופים בלבד; ולרבי יהודה גם לשים בה. התוספות יום טוב כתב שהלשכה ״אתיא כמ״ד אפייתן בפנים״, וכן היכין — ״ואתיא כמ״ד דלחה״פ נאפות בפנים״ — אלא שפתח: ״שם לשין ואופין אותן במקום הקודש״. בוחרים בין השתיים במתג ״לשכת עושי לחם הפנים — מה נעשה בה״, שבסוף כרטיס זה.\n**העושים — לויים:** ״ומן בני הקהתי מן אחיהם על לחם המערכת להכין שבת שבת״ (דברי הימים א ט, לב); **רלב״ג** שם: ״מן אחי הממונים על מעשה החבתים היו ממונים על לחם המערכה והוא לחם הפנים להכין אותו בכל שבת ושבת והנה הוא נאפה קודם השבת״. ובתוספתא (שקלים ב, ו): ״בית גרמו היו עושין מעשה לחם הפנים... נוטלין שכרן מתרומת הלשכה״. שבית גרמו עצמם לויים אינו כתוב במפורש — כך עולה מצירוף הפסוק עם דברי הברטנורא.\nבמודל: התנור בפינת הלשכה, ובפיו שתי חלות בדפוסיהן המנוקבים; על השולחן הדפוס הראשון, ובו בצק, והשלישי, ובו חלה שנרדתה; עשר חלות מוכנות על דף ושתיים בתנור — שתים עשרה; ואופה, לוי, רודה חלה במרדה. צורת החלה כבשולחן שבהיכל — לפי המתג ״צורת לחם הפנים״: ״כמין ספינה רוקדת״ (רבי יוחנן, ברירת המחדל) או ״כמין תיבה פרוצה״ (רבי חנינא); הדפוסים — תיבות פתוחות בשתיהן, בחירת מודל. הלויים בבגד פשוט ולא בבגדי כהונה; צורת בגדם וצבעו, מקומם של כל אלה בלשכה, מראה התנור וגודלו, הדף, העצים ומספר העושים — בחירת מודל. ״פתח את הלשכות״ מסיר את התקרה ואת גג הבית.", refs: [["מידות א, ו", {"book": 89, "index": 7}], ["תמיד ג, ג", {"book": 88, "index": 15}], ["ברטנורא מידות א, ו", {"book": 643, "index": 38}], ["מנחות יא, א", {"book": 81, "index": 80}], ["מנחות יא, ב", {"book": 81, "index": 81}], ["מנחות צד.", {"book": 131, "index": 3361}], ["מנחות צה.", {"book": 131, "index": 3372}], ["תוספות מנחות צה.", {"book": 1933, "index": 1123}], ["זבחים צה:", {"book": 130, "index": 3121}], ["יומא לח.", {"book": 107, "index": 905}], ["רמב״ם תמידין ומוספין ה, ז", {"book": 344, "index": 76}], ["רמב״ם תמידין ומוספין ה, ח", {"book": 344, "index": 77}], ["תוספות יום טוב מידות א, ו", {"book": 948, "index": 47}], ["יכין מידות א, ו", {"book": 819, "index": 98}], ["דברי הימים א ט, לב", {"book": 38, "index": 404}], ["תוספתא שקלים ב, ו", {"book": 193, "index": 16}], ["רלב״ג דברי הימים א ט, לב", {"book": 3634, "index": 253}], ["מנחות צד:", {"book": 131, "index": 3364}]] }, //
           { t: "לשכת החותמות — בבית המוקד", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: () => { const b = ctx.shared.mokedTamid && ctx.shared.mokedTamid.mode === "b", r = b && ctx.shared.mokedGates && ctx.shared.mokedGates.mode === "adjacent"; return b ? [-6.0 + (r ? -6.5 : 0), 17, -73.3] : [-33.8, 17, -73.3]; }, cam: () => { const b = ctx.shared.mokedTamid && ctx.shared.mokedTamid.mode === "b", r = b && ctx.shared.mokedGates && ctx.shared.mokedGates.mode === "adjacent"; return b ? [-5.6 + (r ? -6.5 : 0), 31, -67.8] : [-33.4, 31, -67.8]; }, info: "לשון המשנה (תמיד ג, ג): ״וארבע לשכות היו שם, אחת לשכת הטלאים, ואחת לשכת החותמות, ואחת לשכת בית המוקד, ואחת לשכה שהיו עושין בה לחם הפנים״.\n**החותמות** (שקלים ה, ג): ״ארבעה חותמות היו במקדש, וכתוב עליהן, עגל, זכר, גדי, חוטא״. (ה, ד): ״מי שהוא מבקש נסכים הולך לו אצל יוחנן שהוא ממנה על החותמות, נותן לו מעות ומקבל ממנו חותם. בא לו אצל אחיה שהוא ממנה על הנסכים, ונותן לו חותם ומקבל ממנו נסכים״. (ה, ה): ״ושם היום כתוב עליהן מפני הרמאין״.\nבקצרה — המחלוקות:\n• מניין החותמות: לתנא קמא ארבעה. ״בן עזאי אומר, חמשה היו, וארמית כתוב עליהן, עגל, זכר, גדי, חוטא דל, וחוטא עשיר״ (שקלים ה, ג). במודל — ארבעה.\n• מקום הלשכה: לרש״י, לתוספות רי״ד ולריטב״א — בצפונית מערבית. לברטנורא, למאירי, ליכין ולמפרש — במזרחית צפונית, היא הלשכה שבה נגנזו אבני המזבח. בוחרים בין השיטות במתג ״שמות הלשכות שבבית המוקד — לפי משנת תמיד״, והחותמות עוברים עם הבחירה.\nבמודל: שולחן אצל הכותל, ועליו ארבע קערות — בכל אחת חותמות, ומעליה הכתוב שעליהם. צורת החותמות, השולחן ומקומו בלשכה — בחירת מודל. ״פתח את הלשכות״ מסיר את התקרה ואת גג הבית.", refs: [["תמיד ג, ג", {"book": 88, "index": 15}], ["שקלים ה, ג", {"book": 54, "index": 33}], ["שקלים ה, ד", {"book": 54, "index": 34}], ["שקלים ה, ה", {"book": 54, "index": 35}], ["מידות א, ו", {"book": 89, "index": 7}], ["רש״י יומא יז:", {"book": 2157, "index": 533}], ["תוספות רי״ד יומא יז.", {"book": 2109, "index": 50}], ["ברטנורא מידות א, ו", {"book": 643, "index": 39}], ["מאירי מידות א, ו", {"book": 6033, "index": 16}], ["יכין תמיד ג, ג", {"book": 818, "index": 252}], ["המפרש לתמיד ל.", {"book": 2105, "index": 247}]] }, //
           { t: "לשכת אבני המזבח — בבית המוקד", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: () => { const r = ctx.shared.mokedGates && ctx.shared.mokedGates.mode === "adjacent"; return [-9.2 + (r ? -6.5 : 0), 17, -73.4]; }, cam: () => { const r = ctx.shared.mokedGates && ctx.shared.mokedGates.mode === "adjacent"; return [-9.0 + (r ? -6.5 : 0), 31, -67.8]; }, info: "לשון המשנה (מידות א, ו): ״מזרחית צפונית, בה גנזו בני חשמונאי את אבני המזבח ששקצום מלכי יון״.\nאבני המזבח (מידות ג, ד) — מבקעת בית כרם: ״ומביאים משם אבנים שלמות, שלא הונף עליהן ברזל, שהברזל פוסל בנגיעה״.\nבקצרה — שמה במשנת תמיד (ג, ג): לרש״י, לתוספות רי״ד ולריטב״א היא ״לשכת בית המוקד״; לברטנורא, למאירי, ליכין ולמפרש — ״לשכת החותמות״ (המתג ״שמות הלשכות שבבית המוקד״).\nבמודל: ערמה של אבנים שלמות, שאינן מסותתות. מספרן, גודלן ומקומן בלשכה — בחירת מודל. כשבוחרים במתג ״שערי בית המוקד״ את הפירוש השני של הרא״ש, הלשכה עומדת שש אמות וחצי מערבה, כי השער הפתוח לחיל עומד במקומה.", refs: [["מידות א, ו", {"book": 89, "index": 7}], ["מידות ג, ד", {"book": 89, "index": 22}], ["תמיד ג, ג", {"book": 88, "index": 15}], ["רש״י יומא יז:", {"book": 2157, "index": 533}], ["תוספות רי״ד יומא יז.", {"book": 2109, "index": 50}], ["ברטנורא מידות א, ו", {"book": 643, "index": 39}], ["מאירי מידות א, ו", {"book": 6033, "index": 16}], ["יכין תמיד ג, ג", {"book": 818, "index": 252}], ["המפרש לתמיד ל.", {"book": 2105, "index": 247}]] }, //
-          { t: "הירידה לבית הטבילה — בבית המוקד", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: [-30.0, 16.5, -73.3], cam: [-29.8, 31, -67.8], info: "לשון המשנה (מידות א, ו): ״צפונית מערבית, בה יורדים לבית הטבילה״.\n(תמיד א, א): ״ארע קרי לאחד מהן, יוצא והולך לו במסבה ההולכת תחת הבירה, והנרות דולקין מכאן ומכאן, עד שהוא מגיע לבית הטבילה. ומדורה היתה שם, ובית כסא של כבוד״.\nבקצרה — שמה במשנת תמיד (ג, ג): לרש״י, לתוספות רי״ד ולריטב״א היא ״לשכת החותמות״; לברטנורא, למאירי, ליכין ולמפרש — ״לשכת בית המוקד״ (המתג ״שמות הלשכות שבבית המוקד״).\nבמודל: פתח ברצפת הלשכה, וראש המעלות היורדות. המסיבה שתחת הבירה, בית הטבילה, המדורה ובית הכיסא אינם מצוירים.", refs: [["מידות א, ו", {"book": 89, "index": 7}], ["תמיד א, א", {"book": 88, "index": 2}], ["תמיד ג, ג", {"book": 88, "index": 15}], ["רש״י יומא יז:", {"book": 2157, "index": 533}], ["תוספות רי״ד יומא יז.", {"book": 2109, "index": 50}], ["ברטנורא מידות א, ו", {"book": 643, "index": 39}], ["מאירי מידות א, ו", {"book": 6033, "index": 16}], ["יכין תמיד ג, ג", {"book": 818, "index": 252}], ["המפרש לתמיד ל.", {"book": 2105, "index": 247}]] }, //
+          { t: "הירידה לבית הטבילה — בבית המוקד", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: [-30.0, 16.5, -73.3], cam: [-29.8, 31, -67.8], info: "לשון המשנה (מידות א, ו): ״צפונית מערבית, בה יורדים לבית הטבילה״.\n(תמיד א, א): ״ארע קרי לאחד מהן, יוצא והולך לו במסבה ההולכת תחת הבירה, והנרות דולקין מכאן ומכאן, עד שהוא מגיע לבית הטבילה. ומדורה היתה שם, ובית כסא של כבוד״.\nבקצרה — שמה במשנת תמיד (ג, ג): לרש״י, לתוספות רי״ד ולריטב״א היא ״לשכת החותמות״; לברטנורא, למאירי, ליכין ולמפרש — ״לשכת בית המוקד״ (המתג ״שמות הלשכות שבבית המוקד״).\nבמודל: פתח ברצפת הלשכה, ובו מעלות היורדות סביב עמוד אל המחילה שתחת הקרקע. הדרך כולה, עד בית הטבילה — במקום ״המסיבה ובית הטבילה״, ובהדגמה ״הכהן יורד לבית הטבילה״.", refs: [["מידות א, ו", {"book": 89, "index": 7}], ["תמיד א, א", {"book": 88, "index": 2}], ["תמיד ג, ג", {"book": 88, "index": 15}], ["רש״י יומא יז:", {"book": 2157, "index": 533}], ["תוספות רי״ד יומא יז.", {"book": 2109, "index": 50}], ["ברטנורא מידות א, ו", {"book": 643, "index": 39}], ["מאירי מידות א, ו", {"book": 6033, "index": 16}], ["יכין תמיד ג, ג", {"book": 818, "index": 252}], ["המפרש לתמיד ל.", {"book": 2105, "index": 247}]] }, //
+          { t: "המסיבה ובית הטבילה", feature: (ctx.shared.features || {})["mesibahSee"] || null, action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: [-62.0, -4.0, -62.0], cam: [-46.0, 86.0, -12.0], info: "לשון המשנה (תמיד א, א): ״ארע קרי לאחד מהן, יוצא והולך לו במסבה ההולכת תחת הבירה, והנרות דולקין מכאן ומכאן, עד שהוא מגיע לבית הטבילה. ומדורה היתה שם, ובית כסא של כבוד. וזה היה כבודו, מצאו נעול, יודע שיש שם אדם. פתוח, יודע שאין שם אדם. ירד וטבל, עלה ונסתפג ונתחמם כנגד המדורה. בא וישב לו אצל אחיו הכהנים עד שהשערים נפתחים, יוצא והולך לו״.\n(מידות א, ו): ״צפונית מערבית, בה יורדים לבית הטבילה״.\nהמפרש (תמיד כו.): המסבה היא ״עמוד של בנין שעולין ויורדין בו ע״י גלגול״; ראשה האחד פתוח ללשכת בית המוקד, וראשה האחר ״חוץ לעזרה אל מקום הטבילה״; ״ולכך עשו מחילה דמחילות לא נתקדשו״; הנרות ״במחילה כדי להאיר לו״; והמדורה ״במחילה סמוך לבית הטבילה״.\nבית הטבילה — כמו שכתב המפרש (תמיד כו:) על בית הטבילה שעל גבי שער המים: ״כמין חקיקה אמה על אמה ברום שלש אמות״.\nבשיטות נוספות: רבי אליעזר בן יעקב (מידות א, ט): ״במסבה ההולכת תחת החיל יוצא והולך לו בטדי״. הרמב״ם (בית הבחירה ה): ״במסבה ההולכת תחת המקדש כלו״. ובמפרש (תמיד ל.), על ״לשכת בית המוקד״ שבמשנה (תמיד ג, ג): הכהן הטובל ״מיד כשעולה מבית הטבילה היה מתחמם באותה לשכה ומסתפג״; ושבתי טבילה הרבה היו להם.\nבמודל: מן הפתח שברצפת הלשכה הצפונית מערבית יורדות מעלות סביב עמוד, עד מחילה שבע אמות מתחת לרצפת הר הבית. המחילה הולכת דרומה, תחת חציו הקדוש של בית המוקד, ומערבה לאורך צפון העזרה, תחת כותלה המערבי והחיל, עד בית הטבילה: חדר, ובו מקווה של אמה על אמה ברום שלש אמות, ומעלות יורדות לתוכו. משני צדי המחילה — נר בכל ארבע אמות. המדורה — בגומחה בצד דרום, סמוך לבית הטבילה; ובית הכסא כנגדה, ודלתו פתוחה.\nבמקום הזה הקרקע נעשית שקופה, ורואים את כל הדרך מלמעלה. ההליכה כולה, בגובה העיניים — בהדגמה ״הכהן יורד לבית הטבילה״.\nמהלך הדרך, עומקה, רוחבה (שתי אמות) וגובהה (ארבע אמות), צורת המעלות, הנרות, המדורה ובית הכסא — בחירת מודל.", refs: [["תמיד א, א", {"book": 88, "index": 2}], ["מידות א, ו", {"book": 89, "index": 7}], ["מידות א, ט", {"book": 89, "index": 10}], ["רמב״ם בית הבחירה ה", {"book": 337, "index": 86}], ["המפרש לתמיד כו.", {"book": 2105, "index": 17}], ["המפרש לתמיד כו:", {"book": 2105, "index": 44}], ["המפרש לתמיד ל.", {"book": 2105, "index": 247}]] }, //
           { t: "עליית שער הניצוץ", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: [-78, 41.5, -67.5], cam: [-78, 62, -62.5], info: "לשון המשנה (מידות א, ה): ״וכמין אכסדרה היה, ועליה בנויה על גביו, שהכהנים שומרים מלמעלן והלוים מלמטן, ופתח היה לו לחיל״.\n**ברטנורא:** העלייה בנויה על שני הכתלים הבולטים משני צדי השער לצד הר הבית; הכהנים שומרים בעלייה והלויים למטה, שהלויים טפלים לכהנים — ״וילוו עליך וישרתוך״ (במדבר יח) (ברטנורא מידות א, ה; א, ט).\n**תוספות יום טוב:** ״פתח היה לו לחיל״ — ולא שער, ולכן לא נמנה עליו שומר נוסף (תמיד כז.) (תוספות יום טוב מידות א, ז).\n**תפארת ישראל:** עלייה שאינה מקורה, על שני כתלים שבצד פנים; פתחה לחיל ולא לעזרה, ואצל הפתח מדרגות היורדות לחיל; עליות לא נתקדשו, ולכן יכול השומר לשבת בה (תפארת ישראל מידות א, ה).\nבמודל: עלייה מעל השער, ופתח מן העלייה אל החיל עם מדרגות לצדו — כתפארת ישראל; הבלטה לצד הר הבית (ברטנורא) אינה מצוירת. העלייה חלולה, ובה ספסלי השומרים ומנורה — בחירת מודל; בלחיצה כאן — מבט מלמעלה, והגג נפתח ל־15 שניות.", refs: [["מידות א, ה", "Mishnah_Middot.1.5"], ["ברטנורא א, ה", "Bartenura_on_Mishnah_Middot.1.5"], ["תוי״ט א, ה", "Tosafot_Yom_Tov_on_Mishnah_Middot.1.5"], ["תפא״י א, ה", "Yachin_on_Mishnah_Middot.1.5"], ["מידות א, א", "Mishnah_Middot.1.1"], ["רמב״ם בית הבחירה ח, ה", "Mishneh_Torah,_The_Chosen_Temple.8.5"]] }, //
           { t: "לשכת בית אבטינס — על גבי שער המים", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: [-18, 44, 67.5], cam: [-18, 82, 56], info: "לשון המשנה (מידות א, א): ״בשלשה מקומות הכהנים שומרים בבית המקדש, בבית אבטינס, ובבית הניצוץ, ובבית המוקד״; (יומא א, ה): ״מסרוהו זקני בית דין לזקני כהנה, והעלוהו לעלית בית אבטינס, והשביעוהו ונפטרו והלכו להם״.\n**ברטנורא:** בית אבטינס ובית הניצוץ — שתי עליות בנויות בצד שערי העזרה; ״בית אבטינס — הם העשים את הקטרת וכותשים אותה ומערבין סממניה״; זקני כהונה מעלים אליה את כהן גדול ללמדו חפינת הקטורת, ״ועבדה קשה היתה״; ומשביעים אותו שלא יהא צדוקי לתקן את הקטורת על המחתה מבחוץ (ברטנורא מידות א, א; ברטנורא יומא א, ה).\n**תוספות יום טוב:** ״עוד עיין על לשכה זו בסוף מסכת מדות״, ובמידות: ״שם תמצא מקום לשכה זו לשכת בית אבטינס״ — בסוף המסכת (ה, ד) דן בשתי לשכותיו של כהן גדול, ומעלה אף את האפשרות שלשכת כהן גדול שבמשנה היא של בית אבטינס, שבה למד כל שבעת הימים את החפינה, ומסיק כר״ב והרמב״ם שהיא לשכת פרהדרין; ובציור הבית שבמשניות (אות מ״ה, לפי הבועז) צייר את בית אבטינס במזרח שער המים (תוספות יום טוב יומא א, ה; תוספות יום טוב מידות א, א; ה, ד).\n**תפארת ישראל:** עלייה על גבי שער המים בדרום העזרה, ושם מרקחים את הקטורת, ובית הטבילה בצדה על גבי השער (כרמב״ם); ״ששם אחר שישביעוהו זקני ב״ד, ילמדוהו זקני כהונה, חפינת הקטורת, דעבודה קשה היתה״; ובבועז — מלשון הגמרא ״בצד לשכתו״ משמע שבית הטבילה ואבטינס שתיהן על גבי השער, ואבטינס, שקדוש יותר, ממעל לשער לצד מערב ולא כתוי״ט; ולא נמנתה בלשכות העזרה (ה, ג) לפי שעלייה הייתה ולא שייך לומר שהייתה בעזרה (תפארת ישראל מידות א, א; תפארת ישראל יומא א, ה; בועז מידות א, ב; ה, ב).\nבמודל: עלייה על החומה מעל שער המים, ולצדה בית הטבילה של הטבילה הראשונה ביום הכיפורים — ״היתה בחול, על גבי שער המים, ובצד לשכתו היתה״ (יומא יט.; לא.); ״שתי לשכות היו לו לכהן גדול, אחת לשכת פרהדרין ואחת לשכת בית אבטינס, אחת בצפון ואחת בדרום״ (יומא יט.); בפנים מכתש וכדים (בחירת מודל).\n**הרובים** (תמיד א, א): ״בית אבטינס ובית הניצוץ היו עליות, והרובים שומרים שם״; הרא״ש שם: ״ילדים כדמתרגם ילד רביא שלא הגיעו לעבודה והם זריזים לעלות בעליות״; ובגמרא (תמיד כז.): ״התם דלא מטו למעבד עבודה קרי להו רובים, הכא דמטו להו למעבד עבודה קרי להו פרחי״.\n**המשנה** (יומא ג, יא) מונה אותם בין הנזכרים לגנאי: ״של בית אבטינס לא רצו ללמד על מעשה הקטורת״. **ובגמרא** (יומא לח.) — טעמם: ״יודעין היו של בית אבא שבית זה עתיד ליחרב, אמרו: שמא ילמוד אדם שאינו מהוגן וילך ויעבוד עבודה זרה בכך. ועל דבר זה מזכירין אותן לשבח״; ורבי עקיבא: ״מעתה אסור לספר בגנותן של אלו״.\nבמודל: אחד מבית אבטינס עומד אצל המכתש, ושני רובים צעירים שומרים ליד הפתח. הדמויות ומקומן — בחירת מודל.", refs: [["מידות א, א", "Mishnah_Middot.1.1"], ["ברטנורא א, א", "Bartenura_on_Mishnah_Middot.1.1"], ["תוי״ט א, א", "Tosafot_Yom_Tov_on_Mishnah_Middot.1.1"], ["תפא״י א, א", "Yachin_on_Mishnah_Middot.1.1"], ["יומא א, ה", "Mishnah_Yoma.1.5"], ["ברטנורא א, ה", "Bartenura_on_Mishnah_Yoma.1.5"], ["תוי״ט א, ה", "Tosafot_Yom_Tov_on_Mishnah_Yoma.1.5"], ["תפא״י א, ה", "Yachin_on_Mishnah_Yoma.1.5"], ["בועז א, ב", "Boaz_on_Mishnah_Middot.1.2"], ["תוי״ט ה, ד", "Tosafot_Yom_Tov_on_Mishnah_Middot.5.4"], ["בועז ה, ב", "Boaz_on_Mishnah_Middot.5.2"], ["שקלים ה, א", "Mishnah_Shekalim.5.1"], ["יומא יט.", "Yoma.19a"], ["יומא לא.", "Yoma.31a"], ["תמיד א, א", {"book": 88, "index": 2}], ["פירוש הרא״ש תמיד כה:", {"book": 2224, "index": 8}], ["תוי״ט תמיד א, א", {"book": 944, "index": 18}], ["יומא לח.", {"book": 107, "index": 903}], ["יומא ג, יא", {"book": 55, "index": 29}], ["יומא לח. (טעמם)", {"book": 107, "index": 910}], ["יומא לח. (רבי עקיבא)", {"book": 107, "index": 913}], ["תמיד כז.", {"book": 138, "index": 28}]] }, //
           { t: "לשכת המדיחין", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: [35, 17, 60], cam: [36, 60, 46], info: "לשון המשנה (מידות ה, ג): ״לשכת המדיחין, ששם היו מדיחין קרבי הקדשים. ומשם מסבה עולה לגג בית הפרוה״.\n**ברטנורא:** ״מסיבה״ — בניין אבנים, מעלות מגולגלות וסובבות, לעלות לגג בית הפרוה (ברטנורא מידות ה, ג).\n**תוספות יום טוב:** והלא בשקלים (ו, ד) שנינו שעל שולחנות השיש מדיחים את הקרביים? — המפרש לתמיד: הקרביים נידחים תחילה בלשכת המדיחין בצנעה, שמלוכלכים בפרש, ואחר כך על השולחנות; ולדעתו שני פתחים ללשכה — אחד למלאכת ההדחה ואחד סמוך לפרוה, ובו המסיבה, שלא יעלה כהן גדול לבית טבילתו דרך מקום ההדחה, ומחיצה במעלותיה (תוספות יום טוב מידות ה, ג).\n**תפארת ישראל:** מדיחים שם את הכרס והקיבה המלאים רפש, ושאר בני המעיים — על שולחנות השיש שאצל הננסים; המסיבה — כמין כבש בלי מעלות, הולכת בעיגול, מבחוץ לבית המדיחין ועולה מעליו עד גג הפרוה (תפארת ישראל מידות ה, ג).\nבמודל: השלישית בלשכות הדרום; בפנים — שולחנות ההדחה ובור מים בנוי ברצפה, ובו מדיחים (״והכרס מדיחין אותה בבית מדיחין כל צרכה״, תמיד ד, ב); הבור וגודלו — בחירת מודל. בכותל המזרחי פתח אל המסיבה, ״ומשם מסבה עולה לגג בית הפרוה״ — מדרגות מגולגלות סביב עמוד, מן הפתח ועד הגג (צורתה — בחירת מודל).\nבמודל: כהן עומד על שפת הבור ומדיח את הכרס. ושאר הקרביים — ״והקרבים מדיחין אותן שלשה פעמים במעוטה, על שלחנות של שיש שבין העמודים״ (תמיד ד, ב): לברטנורא ולתפארת ישראל — שם בלבד, ליד בית המטבחיים; ולמפרש שהביא התוספות יום טוב — ״מדיחין פעם ראשונה בלשכת מדיחין בצנעה... ואח״כ מדיחין ג״כ עוד במיעוט שלחנות״. במודל מצוירת כאן הדחת הכרס בלבד. הדמות ומקומה — בחירת מודל.", refs: [["מידות ה, ג", "Mishnah_Middot.5.3"], ["ברטנורא ה, ג", "Bartenura_on_Mishnah_Middot.5.3"], ["תוי״ט ה, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.5.3"], ["תפא״י ה, ג", "Yachin_on_Mishnah_Middot.5.3"], ["רמב״ם בית הבחירה ה, יז", "Mishneh_Torah,_The_Chosen_Temple.5.17"], ["שקלים ו, ד", "Mishnah_Shekalim.6.4"], ["תמיד ד, ב", "Mishnah_Tamid.4.2"], ["תוי״ט מידות ה, ג", {"book": 948, "index": 198}]] }, //
@@ -66467,6 +67223,11 @@ body.tm-measuring canvas{cursor:crosshair}
           "לשכת עושי לחם הפנים": {"p": "בית המוקד"}, //
           "לשכת אבני המזבח שגנזו בני חשמונאי": {"p": "לשכת אבני המזבח — בבית המוקד"}, //
           "הירידה לבית הטבילה": {"p": "הירידה לבית הטבילה — בבית המוקד"}, //
+          "המסבה — ״עמוד של בנין שעולין ויורדין בו ע״י גלגול״ (המפרש)": {"p": "המסיבה ובית הטבילה"}, //
+          "המחילה — ״והנרות דולקין מכאן ומכאן״": {"p": "המסיבה ובית הטבילה"}, //
+          "המדורה — ״ונתחמם כנגד המדורה״": {"p": "המסיבה ובית הטבילה"}, //
+          "בית כסא של כבוד — פתוח: ״יודע שאין שם אדם״": {"p": "המסיבה ובית הטבילה"}, //
+          "בית הטבילה — אמה על אמה, ברום שלש אמות": {"p": "המסיבה ובית הטבילה"}, //
           "רובדין של אבן — זקני בית אב ישנים שם": {"p": "בית המוקד"}, //
           "טבלא של שיש וטבעת — המפתחות": {"p": "בית המוקד"}, //
           "בור הגולה והגלגל": {"p": "לשכת הגולה"}, //
