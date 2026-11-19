@@ -855,7 +855,7 @@
           : [[AX + 1.6, s * 1.1], [AX + 2.8, s * 0.62], [9.6, s * 0.62], [10.4, s * 1.6]];
         p.len = [0];
         for (let i = 1; i < p.path.length; i++) p.len.push(p.len[i - 1] + Math.hypot(p.path[i][0] - p.path[i - 1][0], p.path[i][1] - p.path[i - 1][1]));
-        p.v = front ? 4.4 : 4.0;
+        p.v = front ? 3.8 : 3.5;   // EXIT_BACK_304: "מהלך אחורנית מעט מעט" - a little slower than the walk in (4.4 / 4.0 until 1.4.12)
         g.add(p.g);
         P.push(p);
       }
@@ -987,14 +987,15 @@
           const u = t - T.lower1, d = p.v * (u < 1 ? (u * u) / 2 : u - 0.5);
           const [px, pz, yaw, done] = pathAt(p, d);
           p.g.position.set(px, floorAt(px), pz);
-          if (done) {
-            const tEnd = T.lower1 + 0.5 + p.len[p.len.length - 1] / p.v, w = ease((t - tEnd) / 0.6);
-            p.g.rotation.y = yaw + (-Math.PI / 2 - yaw) * w;
-            walkPose(p, 0, 0, false, 0);
-          } else {
-            p.g.rotation.y = yaw;
-            walkPose(p, (d * Math.PI) / 0.85 + (p.front ? 0 : Math.PI), u < 0.3 ? u / 0.3 : 1, false, 0);
-          }
+          // EXIT_BACK_304 (the user, 19.11.2026: "כשיוצאים מבית קה"ק צריך לצאת ואחוריהם לאולם ופניהם לקה"ק"): all the way out - round
+          // the staffs' ends and through the heichal - each priest faces west, to the Holy of Holies, as he stood when the ark was set
+          // down, and goes BACKWARD: the Rambam, Beit HaBechira 7:4 "כל שהשלים עבודה ונסתלק לו אינו יוצא ואחוריו להיכל, אלא מהלך
+          // אחורנית מעט מעט"; Avodat Yom HaKippurim 4:1 (the High Priest) "פניו לקדש ואחוריו להיכל". Until 1.4.12 he turned to the way
+          // he went (yaw), his back to the house, and turned back to it only at the end.
+          void yaw;
+          p.g.rotation.y = -Math.PI / 2;
+          if (done) walkPose(p, 0, 0, false, 0);
+          else walkPose(p, (d * Math.PI) / 0.85 + (p.front ? 0 : Math.PI), u < 0.3 ? u / 0.3 : 1, false, 0);
         }
       }
       // the cloud
@@ -1046,7 +1047,7 @@
       [T.open1, "״ויבאו הכהנים את ארון ברית ה׳ אל מקומו אל דביר הבית אל קדש הקדשים אל תחת כנפי הכרובים״ (מלכים א ח, ו)"],
       [62.9, "״כי הכרובים פרשים כנפים אל מקום הארון ויסכו הכרבים על הארון ועל בדיו מלמעלה״ (מלכים א ח, ז)"],
       [T.ext0, "״ויארכו הבדים ויראו ראשי הבדים מן הקדש על פני הדביר ולא יראו החוצה״ (מלכים א ח, ח)"],
-      [T.cloud0, "״ויהי בצאת הכהנים מן הקדש והענן מלא את בית ה׳״ (מלכים א ח, י)"],
+      [T.cloud0, "״ויהי בצאת הכהנים מן הקדש והענן מלא את בית ה׳״ (מלכים א ח, י). והכהנים יוצאים לאחוריהם, פניהם אל הקודש: ״אינו יוצא ואחוריו להיכל, אלא מהלך אחורנית מעט מעט״ (רמב״ם, בית הבחירה ז, ד)"],   // EXIT_BACK_304
       [79.0, "״ולא יכלו הכהנים לעמד לשרת מפני הענן כי מלא כבוד ה׳ את בית ה׳״ (מלכים א ח, יא)"]
     ];
     // the model before and after: saved at the start, given back at the end or at any stop

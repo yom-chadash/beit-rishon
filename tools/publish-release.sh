@@ -18,8 +18,8 @@
 set -e
 REPO=yoniny/beit-rishon
 DIR="${REPO_DIR:-/home/claude/beit-rishon}"
-TRAILER="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01ERwCyzXVQFiuZdHM1MCRZn"
+TRAILER="${TRAILER:-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01ERwCyzXVQFiuZdHM1MCRZn}"
 cmd="$1"; VER="$2"; HTML="$3"
 echo "$VER" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "bad version: $VER"; exit 1; }
 [ -f "$HTML" ] || { echo "no file: $HTML"; exit 1; }
