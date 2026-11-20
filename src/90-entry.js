@@ -668,23 +668,43 @@
   // over the floor under it - the height it had when the walk began (3 amot, unless PageUp / PageDown changed it) - eased, a step or a
   // stair climbed and a drop descended in about a third of a second. The floor is found by a ray down from a knee's height over the feet
   // (a ledge higher than 1.2 is a wall, not a step); a new ray every 90 ms or half an amah, the easing every frame.
+  // WALK_STAIRS_306 (a report sent on to the user, 20.11.2026: walking in the women's court up to the steps of Nikanor's gate, the view
+  // went into the steps instead of climbing them): the ray went down from a knee over the eye's eased feet, which on a stair at a walking
+  // pace lag the floor by about an amah - the knee fell under the next step's face, the ray began inside the stairs and found the floor
+  // under them. Now the floor is followed along the way walked since the last ray, a third of an amah at a time, each ray from a knee over
+  // the floor found before it: a stair under a knee is climbed at any pace, a ledge higher than 1.2 is still a wall. Up eases in 60 ms,
+  // down in 110.
   var cam_wf = { h: NaN, rayAt: -1e9, x: NaN, z: NaN, fy: NaN, o: new Vector3() };
   function cam_walkFloor(dt) {
     const p = camera.position, q = controls.target, F = cam_wf, now = performance.now();
-    if (!Number.isFinite(F.h)) F.rayAt = -1e9;   // a new walk (ent_walkStep: the walk stood): its height over the floor is taken afresh
-    if (now - F.rayAt >= 90 || Math.hypot(p.x - F.x, p.z - F.z) > 0.5) {
+    if (!Number.isFinite(F.h)) { F.rayAt = -1e9; F.x = NaN; }   // a new walk (ent_walkStep: the walk stood): its height over the floor is taken afresh
+    const moved = Number.isFinite(F.x) ? Math.hypot(p.x - F.x, p.z - F.z) : 0;
+    if (now - F.rayAt >= 90 || moved > 0.3) {
       F.rayAt = now;
-      const feet = Number.isFinite(F.h) ? p.y - F.h : p.y - ent_wm.eye;
+      const ray = cam.ray || (cam.ray = new Raycaster());
+      ray.camera = camera;
+      ray.near = 0;
+      ray.far = 400;
+      const solids = ent_solids(false);
+      const down = (x, z, from) => {
+        try {
+          ray.set(F.o.set(x, from, z), CAM_DOWN);
+          const h = ray.intersectObjects(solids, false);
+          return h.length ? h[0].point.y : NaN;
+        } catch (_) { return NaN; }
+      };
       let fy = NaN;
-      try {
-        const ray = cam.ray || (cam.ray = new Raycaster());
-        ray.camera = camera;
-        ray.set(F.o.set(p.x, feet + 1.2, p.z), CAM_DOWN);
-        ray.near = 0;
-        ray.far = 400;
-        const h = ray.intersectObjects(ent_solids(false), false);
-        if (h.length) fy = h[0].point.y;
-      } catch (_) {}
+      if (!Number.isFinite(F.x) || !Number.isFinite(F.fy)) {
+        fy = down(p.x, p.z, (Number.isFinite(F.h) ? p.y - F.h : p.y - ent_wm.eye) + 1.2);
+      } else {
+        const n = Math.min(24, Math.max(1, Math.ceil(moved / 0.33)));
+        let base = F.fy;
+        fy = base;
+        for (let i = 1; i <= n; i++) {
+          const u = i / n, y = down(F.x + (p.x - F.x) * u, F.z + (p.z - F.z) * u, base + 1.2);
+          if (Number.isFinite(y)) base = fy = y;
+        }
+      }
       F.x = p.x;
       F.z = p.z;
       F.fy = fy;
@@ -693,7 +713,7 @@
     if (!Number.isFinite(F.fy) || !Number.isFinite(F.h)) return;
     const want = F.fy + F.h, dy = want - p.y;
     if (Math.abs(dy) < 0.003) return;
-    const s = dy * (1 - Math.exp(-Math.max(1, dt) / 110));
+    const s = dy * (1 - Math.exp(-Math.max(1, dt) / (dy > 0 ? 60 : 110)));
     p.y += s;
     q.y += s;
   }
@@ -1713,7 +1733,6 @@
       { name: "courts.js", build: buildCourts },
       { name: "altar.js", build: buildAltar },
       { name: "vessels.js", build: buildVessels },
-      { name: "shitin.js", build: buildShitinDemo },   // DAVID_SHITIN_305 (46-shitin.js): "בשעה שכרה דוד שיתין" - built on first use
       { name: "heichal.js", build: buildHeichal },
       { name: "interior.js", build: buildInterior },
       { name: "kelim.js", build: buildKelim },   // 1.0.1-L (L.88): the vessels of I Kings 7 (57-kelim.js); before ui.js, it reads the labels
@@ -1729,7 +1748,6 @@
       "טוען את חצר הכהנים ושעריה",
       "טוען את מזבח הנחושת",
       "טוען את הים, המכונות ויכין ובועז",
-      "מכין את הדגמת השיתין",
       "טוען את האולם, ההיכל והיציע",
       "טוען את הקודש וקודש הקדשים",
       "טוען את כלי הבית",

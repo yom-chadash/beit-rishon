@@ -1,0 +1,3 @@
+walk_stairs_patch
+barkai_light_patch
+behind_doors_patch
