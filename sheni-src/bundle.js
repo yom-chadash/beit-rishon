@@ -48134,16 +48134,60 @@ void main() {
       o.z = r * Math.cos(a) * 1.06; //
       o.c = (1 - on * (0.3 * edge + 0.05 * f)) * (1 - 0.22 * line); //
     }), 0, 0.06, 0); //
-    const SASH_C = [new Color(0x3d62ab), new Color(0x8e1f34), new Color(0xc5432b)]; //
-    const sashK = (yo) => { //
-      const out = SASH_C.map((col, k) => tint(surf(14, 1, (u, v, o) => { //
-        const y = 1.27 + k * 0.034 + v * 0.034, a = u * TAU + Math.PI; //
-        o.x = spl(bX, y) * 1.035 * Math.sin(a); o.y = y + yo; o.z = spl(bZ, y) * 1.035 * Math.cos(a); o.c = 1; //
-      }), col)); //
-      out.push(tint(at(new BoxGeometry(0.045, 0.4, 0.014), 0.035, 1.08 + yo, spl(bZ, 1.1) * 1.07), SASH_C[0])); //
-      out.push(tint(at(new BoxGeometry(0.045, 0.34, 0.014), -0.03, 1.11 + yo, spl(bZ, 1.1) * 1.08), SASH_C[1])); //
-      return out; //
-    }; //
+    // AVNET_305 (the user, 19.11.2026 23:36: "יש בעיה עם האבנט של הכהנים בשמחת בית השואבה הוא לא מה שיצרנו כבר"): the avnet of the //
+    // lottery's priest (55-payis.js AVNET_211) - one band at the elbows' height ("כנגד אצילי ידיו", Klei HaMikdash 10:1), three turns //
+    // "כרך על גבי כרך" (8:19), each rounded; its threads twined, their colours melting into one hue - tekhelet, argaman, tola'at shani //
+    // and white (8:1, 8:13) - or all white in "של בוץ" (Yoma 12b; the row "אבנטו של כהן הדיוט": ctx.shared.peopleAvnet.set). Its own //
+    // InstancedMesh, near and mid (none from afar). Until 3.0.4: three separate stripes at the waist and two ends hanging before him. //
+    const AVN = ctx.shared.peopleAvnet || (ctx.shared.peopleAvnet = (() => { //
+      const weave = (pal, seed) => {   // as the lottery's priest's: fine threads, twined - every row leans the other way //
+        const cv = document.createElement("canvas"); //
+        cv.width = 256; //
+        cv.height = 48; //
+        const c = cv.getContext("2d"); //
+        let q = seed >>> 0; //
+        const r = () => { q = (q * 1664525 + 1013904223) >>> 0; return q / 4294967296; }; //
+        c.fillStyle = pal[0][0]; //
+        c.fillRect(0, 0, 256, 48); //
+        const rows = 12, rh = 48 / rows, tot = pal.reduce((t, x) => t + x[1], 0); //
+        const pick = () => { let x = r() * tot; for (const y of pal) { x -= y[1]; if (x <= 0) return y[0]; } return pal[0][0]; }; //
+        c.lineCap = "round"; //
+        c.lineWidth = 3.1; //
+        for (let k = 0; k < rows; k++) { //
+          const lean = (k % 2 ? 1 : -1) * rh * 0.9, y = k * rh; //
+          for (let x = -8; x < 264; x += 4) { //
+            c.strokeStyle = pick(); //
+            c.globalAlpha = 0.8 + r() * 0.2; //
+            for (const dx of [0, 256, -256]) { c.beginPath(); c.moveTo(x + dx, y + 0.6); c.lineTo(x + dx + lean, y + rh - 0.6); c.stroke(); } //
+          } //
+        } //
+        c.globalAlpha = 1; //
+        const t = new CanvasTexture(cv); //
+        t.wrapS = t.wrapT = RepeatWrapping; //
+        t.colorSpace = SRGBColorSpace; //
+        t.repeat.set(5, 1); //
+        t.anisotropy = 4; //
+        return t; //
+      }; //
+      const mat = (pal, seed) => new MeshStandardMaterial({ color: 0xffffff, map: weave(pal, seed), vertexColors: true, roughness: 0.88 }); //
+      const D = mat([["#3d62ab", 4.2], ["#8e1f34", 3.1], ["#c5432b", 1.3], ["#e6e1d3", 1]], 20261119); //
+      const Wt = mat([["#f7f5ee", 4], ["#e0dbcc", 3], ["#ffffff", 2], ["#cfc9b7", 1]], 20261120); //
+      const P = { //
+        white: false, meshes: [], //
+        mat() { const Y = ctx.shared.payis; if (Y && Y.avnet) P.white = Y.avnet === "butz"; return P.white ? Wt : D; }, //
+        set(m) { P.white = m === "butz"; const M = P.white ? Wt : D; for (const im of P.meshes) im.material = M; return P.white ? "butz" : "rambam"; } //
+      }; //
+      return P; //
+    })()); //
+    const AV0 = 1.312, AV1 = 1.462;   // the lottery's priest's band (SY0, SY1) //
+    const avnet = (yo, nu, nv) => surf(nu, nv, (u, v, o) => { //
+      const tv = (v * 3) % 1, e = Math.max(0, Math.sin(Math.PI * tv)) * (0.55 + 0.45 * Math.sin(Math.PI * v)); //
+      const y = AV0 + v * (AV1 - AV0), a = u * TAU + Math.PI, th = 0.004 + 0.017 * Math.pow(e, 0.35); //
+      o.x = (spl(bX, y) + th) * Math.sin(a); //
+      o.y = y + yo; //
+      o.z = (spl(bZ, y) + th) * Math.cos(a); //
+      o.c = 0.88 + 0.12 * e; //
+    }); //
     const kippah = (ws, hs) => shade(at(rot(sph(HR[0] * 1.09, HR[1] * 1.09, HR[2] * 1.09, ws || 10, hs || 3, 0, TAU, 0, 0.99), -0.14), 0, 0.002, -0.004), 0.45); //
     // ---------- the body: the robe's breadth and depth at each height of a standing man (the priest's table); a sitting man is //
     // the table from OFF up, with the lap before it //
@@ -48190,8 +48234,8 @@ void main() {
     // and the pen only when it is a scribe (kind "worker": the same body, its two hands before it) //
     const clothOf = {}; //
     const clothMat = (robe) => (robe == null ? mCloth : clothOf[robe] || (clothOf[robe] = (() => { const m = mCloth.clone(); m.color.setHex(robe); return m; })())); //
-    const build = (pose, L, kind, robeCol, young) => {   // YOUNG_300: young - a short beard (the young priests of the water-drawing) //
-      const key = pose + "|" + L.toFixed(3) + "|" + kind + "|" + (robeCol == null ? "" : robeCol) + (young ? "|young" : ""); //
+    const build = (pose, L, kind, robeCol, young, noArms) => {   // YOUNG_300: young - a short beard (the young priests of the water-drawing); MUSICIANS_305: noArms //
+      const key = pose + "|" + L.toFixed(3) + "|" + kind + "|" + (robeCol == null ? "" : robeCol) + (young ? "|young" : "") + (noArms ? "|na" : ""); //
       if (cache[key]) return cache[key]; //
       const seated = pose !== "stand", HY = HEAD_Y - (seated ? OFF : 0), SY = 1.728 - (seated ? OFF : 0), cloth = [], skin = []; //
       const headT = (q) => at(q, 0, HY, 0); //
@@ -48209,8 +48253,8 @@ void main() {
         } else { //
           // (a man facing +z: his left is at +x) the left hand under the tablet, the right hand on it with the pen //
           const W = sd > 0 ? [0.11, 1.4, 0.25] : [-0.1, 1.46, 0.27]; //
-          for (const q of arm([sd * 0.25, SY - 0.01, 0], [sd * 0.275, 1.4, 0.02], W)) cloth.push(q); //
-          skin.push(hand(sd, sd > 0 ? [0.1, 1.395, 0.26] : [-0.09, 1.475, 0.27], -sd * 0.3)); //
+          if (!noArms) for (const q of arm([sd * 0.25, SY - 0.01, 0], [sd * 0.275, 1.4, 0.02], W)) cloth.push(q);   // MUSICIANS_305 //
+          if (!noArms) skin.push(hand(sd, sd > 0 ? [0.1, 1.395, 0.26] : [-0.09, 1.475, 0.27], -sd * 0.3)); //
           cloth.push(shade(at(sph(0.05, 0.03, 0.1, 5, 3), sd * 0.1, 0.03, 0.07), 0.4)); //
         } //
       } //
@@ -48221,7 +48265,7 @@ void main() {
         cloth.push(shade(limb([-0.07, 1.5, 0.36], [-0.11, 1.6, 0.33], 0.006, 0.004, 5), 0.5));                          // and his pen //
       } //
       cloth.push(headT(kind === "kohen" ? hatK() : kippah(14, 3))); //
-      if (kind === "kohen") for (const q of sashK(seated ? -OFF : 0)) cloth.push(q); //
+      const avG = kind === "kohen" ? avnet(seated ? -OFF : 0, 40, 12) : null;   // AVNET_305 //
       for (const q of headParts()) skin.push(headT(q)); //
       skin.push(skinPart(at(new CylinderGeometry(0.066, 0.072, 0.1, 8, 1, true), 0, HY - 0.15, 0))); //
       const base = () => brows().concat(hairCap(kind === "student")).map(headT); //
@@ -48239,13 +48283,13 @@ void main() {
       for (const sd of [-1, 1]) { //
         const E = pose === "bench" ? [sd * 0.27, 0.43, 0.03] : pose === "ground" ? [sd * 0.285, 0.44, -0.02] : [sd * 0.275, 1.4, 0.02]; //
         const W = pose === "bench" ? [sd * 0.15, 0.225, 0.26] : pose === "ground" ? [sd * 0.262, 0.225, 0.15] : (sd > 0 ? [0.11, 1.4, 0.25] : [-0.1, 1.46, 0.27]); //
-        mc.push(shade(limb([sd * 0.245, SY - 0.01, 0], E, 0.074, 0.06, 5), 0.95)); //
-        mc.push(shade(limb(E, W, 0.058, 0.048, 5), 0.9)); //
-        ms.push(skinPart(at(sph(0.032, 0.016, 0.05, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.05))); //
+        if (!noArms) mc.push(shade(limb([sd * 0.245, SY - 0.01, 0], E, 0.074, 0.06, 5), 0.95)); //
+        if (!noArms) mc.push(shade(limb(E, W, 0.058, 0.048, 5), 0.9)); //
+        if (!noArms) ms.push(skinPart(at(sph(0.032, 0.016, 0.05, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.05))); //
       } //
       if (pose === "stand" && kind === "scribe") ms.push(shade(flatUV(at(rot(new BoxGeometry(0.21, 0.016, 0.27), -0.5), 0.01, 1.455, 0.37), 0.92, 0.86), 1)); //
       mc.push(headT(kind === "kohen" ? hatK(8, 4) : kippah(10, 2))); //
-      if (kind === "kohen") mc.push(sashK(seated ? -OFF : 0)[1]); //
+      const avM = kind === "kohen" ? avnet(seated ? -OFF : 0, 16, 9) : null;   // AVNET_305 //
       { //
         const k = new SphereGeometry(1, 10, 6), p = k.attributes.position; //
         for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), j = y < 0 ? y * y : 0; p.setXYZ(i, x * HR[0] * (1 - 0.2 * j), y * HR[1], z * HR[2] * (1 - 0.1 * j)); } //
@@ -48257,7 +48301,7 @@ void main() {
         mh.push(headT(shade(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 8, 2, 0, TAU, 0, 0.8), 0.92))); //
         for (const sd of [-1, 1]) mh.push(headT(shade(at(sph(0.015, 0.07, 0.018, 4, 3), sd * 0.123, -0.05, 0.05), 0.95))); //
       } else mh.push(headT(beard(young ? 0.05 : 0.2, 2.2, 8, 3))); //
-      const mid = { cloth: mergeGeometries(mc), skin: mergeGeometries(ms), hair: mergeGeometries(mh) }; //
+      const mid = { cloth: mergeGeometries(mc), skin: mergeGeometries(ms), hair: mergeGeometries(mh), avnet: avM }; //
       // from afar: the robe, the head and the kippah, plain //
       const cR = robeCol == null ? new Color(0x26262c) : new Color(robeCol).multiplyScalar(0.9), cS = new Color(0xcfa07a), cK = robeCol == null ? new Color(0x121215) : new Color(robeCol).multiplyScalar(0.97), far = []; //
       if (!seated) far.push(tint(at(new CylinderGeometry(0.17, 0.21, 1.8, 6), 0, 1.0, 0), cR)); //
@@ -48270,24 +48314,28 @@ void main() {
       } //
       far.push(tint(at(sph(HR[0], HR[1], HR[2], 6, 4), 0, HY, 0), cS)); //
       far.push(tint(at(sph(HR[0] * 1.09, HR[1] * 1.09, HR[2] * 1.09, 6, 2, 0, TAU, 0, 0.92), 0, HY, -0.004), cK)); //
-      return (cache[key] = { cloth: mergeGeometries(cloth), skin: mergeGeometries(skin), hair, mid, far: mergeGeometries(far) }); //
+      return (cache[key] = { cloth: mergeGeometries(cloth), skin: mergeGeometries(skin), hair, mid, far: mergeGeometries(far), avnet: avG }); //
     }; //
     const LOD = [], m4 = new Matrix4(), qt = new Quaternion(), sc = new Vector3(), ps = new Vector3(), up = new Vector3(0, 1, 0), c3 = new Color(), wp = new Vector3(); //
     const crowd = (parent, pts, o) => { //
-      const n = pts.length, L = o.pose === "bench" ? o.seat / o.s : 0, G = build(o.pose, L, o.kind, o.robe, !!o.young), mCl0 = clothMat(o.robe); //
+      const n = pts.length, L = o.pose === "bench" ? o.seat / o.s : 0, G = build(o.pose, L, o.kind, o.robe, !!o.young, o.arms === false), mCl0 = clothMat(o.robe); //
       const near = new Group(), mid = new Group(), far = new Group(), anchor = new Group(); //
       const mk = (g, m) => { const im = new InstancedMesh(g, m, n); im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; if (o.name) im.name = o.name; return im; };   // (PEOPLE_KIT_205: no figure casts a shadow) //
       const cloth = mk(G.cloth, mCl0), skin = mk(G.skin, mSkin), hairs = G.hair.map((g) => mk(g, mHair)), cnt = hairs.map(() => 0), fm = mk(G.far, mFar); //
       const mCl = mk(G.mid.cloth, mCl0), mSk = mk(G.mid.skin, mSkin), mHr = mk(G.mid.hair, mHair); //
+      const avN = G.avnet ? mk(G.avnet, AVN.mat()) : null, avD = G.mid.avnet ? mk(G.mid.avnet, AVN.mat()) : null;   // AVNET_305 //
+      if (avN) AVN.meshes.push(avN, avD); //
       let ax = 0, az = 0; //
       for (const p of pts) { ax += p[0] / n; az += p[1] / n; } //
       let R = 0; //
+      const slots = [];   // MUSICIANS_305: each figure's hair - its mesh and place there //
       pts.forEach(([x, z, yaw], i) => { //
         const big = o.big === i, j0 = big ? 0 : rnd(), s = o.s * (big ? 1.08 : o.exact ? 1 : 0.97 + j0 * 0.06), fw = o.fwd || 0;   // NAZIR_LOCKS_211: o.exact - the size and the turn as given //
         const jy = (rnd() - 0.5) * (o.pose === "bench" ? 0.16 : 0.3); //
         qt.setFromAxisAngle(up, yaw + (o.exact ? 0 : jy)); //
         m4.compose(ps.set(x + Math.sin(yaw) * fw, o.y, z + Math.cos(yaw) * fw), qt, sc.set(s, s, s)); //
         for (const im of [cloth, skin, fm, mCl, mSk, mHr]) im.setMatrixAt(i, m4); //
+        if (avN) { avN.setMatrixAt(i, m4); avD.setMatrixAt(i, m4); }   // AVNET_305 //
         c3.setHex(SKINS[(i * 5 + 1) % SKINS.length]); //
         skin.setColorAt(i, c3); //
         mSk.setColorAt(i, c3); //
@@ -48296,21 +48344,82 @@ void main() {
         hairs[k].setMatrixAt(cnt[k], m4); //
         hairs[k].setColorAt(cnt[k], c3); //
         mHr.setColorAt(i, c3); //
+        slots[i] = [k, cnt[k]]; //
         cnt[k]++; //
         R = Math.max(R, Math.hypot(x - ax, z - az)); //
       }); //
       hairs.forEach((h, k) => { h.count = cnt[k]; }); //
-      for (const im of [cloth, skin, fm, mCl, mSk, mHr].concat(hairs)) { //
+      for (const im of [cloth, skin, fm, mCl, mSk, mHr].concat(hairs, avN ? [avN, avD] : [])) {   // AVNET_305 //
         im.instanceMatrix.needsUpdate = true; //
         if (im.instanceColor) im.instanceColor.needsUpdate = true; //
-        if (im.count > 0) (im === fm ? far : im === mCl || im === mSk || im === mHr ? mid : near).add(im); //
+        if (im.count > 0) (im === fm ? far : im === mCl || im === mSk || im === mHr || im === avD ? mid : near).add(im); //
       } //
       near.visible = false; //
       far.visible = false; //
       anchor.position.set(ax, o.y, az); //
       for (const q of [near, mid, far, anchor]) parent.add(q); //
       LOD.push({ near, mid, far, anchor, R: R * 1.0, lv: 1, k: o.lodK > 0 ? o.lodK : 1, min: o.minLv | 0 });   // PEOPLE_LOD_304: lodK, minLv (this house's copy) //
+      // MUSICIANS_305: the crowd's handle - its level of detail, and a figure moved (its matrix: place, turn, scale) //
+      const lodE = LOD[LOD.length - 1], allIm = [cloth, skin, fm, mCl, mSk, mHr].concat(avN ? [avN, avD] : []);   // AVNET_305 //
+      near.userData.crowd = { //
+        lod: lodE, //
+        pose(i, m) { for (const im of allIm) im.setMatrixAt(i, m); const sl = slots[i]; if (sl) hairs[sl[0]].setMatrixAt(sl[1], m); }, //
+        done() { for (const im of allIm.concat(hairs)) im.instanceMatrix.needsUpdate = true; } //
+      }; //
       return near; //
+    }; //
+    // MUSICIANS_305 (the user, 19.11.2026 21:08: "צריך גם לעשות את הלוויים מנגנים... אם הם מנגנים, לא יכולים לעמוד כמו פסלים"; 21:10: //
+    // "ידיים של הכוהנים תופסות את החצוצרה, אי אפשר בלי"): ARMS THAT MOVE, for the figures of a crowd built with o.arms === false (their //
+    // own arms are left out, near and mid). rig(parent, n, o) - o = { robe (the sleeves' colour), skin(i) (the hand's tint, as the //
+    // crowd's SKINS index) } -> { g, arm(i, side, M, S, E, W), done() }: the arm `side` (+1 the left, at +x; -1 the right) of figure //
+    // i; M its matrix (place, turn, scale, in the parent's frame); S, E, W - the shoulder, the elbow and the wrist in the figure's own //
+    // units (its face to +z). The upper arm and the forearm are tubes from joint to joint, the joints round, the hand along the //
+    // forearm, its thumb inward. Every part one InstancedMesh; no shadows; not culled (the matrices change every frame). //
+    // This house's copy only. //
+    const rig = (parent, n, o) => { //
+      const g = new Group(); //
+      g.name = "peopleRig"; //
+      const mk = (geo, m, c) => { const im = new InstancedMesh(geo, m, c); im.castShadow = false; im.receiveShadow = true; im.frustumCulled = false; im.userData.noPick = true; g.add(im); return im; }; //
+      const tube = (r0, r1) => shade(new CylinderGeometry(r1, r0, 1, 6, 1, true).translate(0, 0.5, 0), 0.93); //
+      const mC = clothMat(o.robe); //
+      const uA = mk(tube(0.072, 0.06), mC, 2 * n), fA = mk(tube(0.058, 0.048), mC, 2 * n), jA = mk(shade(new SphereGeometry(1, 7, 5), 0.95), mC, 4 * n); //
+      const handG = (sd) => skinPart(mergeGeometries([at(sph(0.03, 0.0135, 0.042, 5, 3), 0, 0, 0.04), at(sph(0.027, 0.011, 0.03, 5, 3), 0, -0.006, 0.085), //
+        at(sph(0.01, 0.01, 0.024, 4, 2), -sd * 0.026, 0.004, 0.03)])); //
+      const hA = { 1: mk(handG(1), mSkin, n), "-1": mk(handG(-1), mSkin, n) }; //
+      const cH = new Color(); //
+      for (let i = 0; i < n; i++) { //
+        cH.setHex(SKINS[((o.skin ? o.skin(i) : i) * 5 + 1) % SKINS.length]); //
+        hA[1].setColorAt(i, cH); //
+        hA[-1].setColorAt(i, cH); //
+      } //
+      for (const k of [1, -1]) if (hA[k].instanceColor) hA[k].instanceColor.needsUpdate = true; //
+      const Z0 = new Matrix4().makeScale(0, 0, 0), mL = new Matrix4(), mW = new Matrix4(), qA = new Quaternion(), qI = new Quaternion(), vA = new Vector3(), vS = new Vector3(); //
+      const YV = new Vector3(0, 1, 0), ZV = new Vector3(0, 0, 1); //
+      for (const im of [uA, fA]) for (let j = 0; j < 2 * n; j++) im.setMatrixAt(j, Z0);   // until a figure's arm is set, it is not drawn //
+      for (let j = 0; j < 4 * n; j++) jA.setMatrixAt(j, Z0); //
+      for (let j = 0; j < n; j++) { hA[1].setMatrixAt(j, Z0); hA[-1].setMatrixAt(j, Z0); } //
+      const put = (im, j, P, Q, sx, sy, sz, M) => { mL.compose(P, Q, vS.set(sx, sy, sz)); mW.multiplyMatrices(M, mL); im.setMatrixAt(j, mW); }; //
+      parent.add(g); //
+      return { //
+        g, //
+        arm(i, side, M, S, E, W) { //
+          const j = 2 * i + (side > 0 ? 1 : 0); //
+          vA.subVectors(E, S); //
+          const lu = vA.length() || 1e-6; //
+          qA.setFromUnitVectors(YV, vA.multiplyScalar(1 / lu)); //
+          put(uA, j, S, qA, 1, lu, 1, M); //
+          vA.subVectors(W, E); //
+          const lf = vA.length() || 1e-6; //
+          vA.multiplyScalar(1 / lf); //
+          qA.setFromUnitVectors(YV, vA); //
+          put(fA, j, E, qA, 1, lf, 1, M); //
+          put(jA, 2 * j, S, qI, 0.074, 0.074, 0.074, M); //
+          put(jA, 2 * j + 1, E, qI, 0.06, 0.06, 0.06, M); //
+          qA.setFromUnitVectors(ZV, vA); //
+          put(hA[side > 0 ? 1 : -1], i, W, qA, 1, 1, 1, M); //
+        }, //
+        done() { for (const im of [uA, fA, jA, hA[1], hA[-1]]) im.instanceMatrix.needsUpdate = true; } //
+      }; //
     }; //
     // PEOPLE_KIT_205: the level by the eye's distance from the crowd's edge (as it would be at a 45-degree lens); a tenth of slack //
     // both ways, so that a level does not flicker at its border //
@@ -48339,7 +48448,7 @@ void main() {
     }); //
     // the beards along a row of n judges: white by the one in the middle, grey further, black-brown at the two ends //
     const age = (n) => (i) => { const d = Math.abs(i - (n - 1) / 2) / ((n - 1) / 2); return d < 0.34 ? 0 : d < 0.67 ? 1 : 2; }; //
-    return (ctx.__tmPeople = { crowd, facing, age }); //
+    return (ctx.__tmPeople = { crowd, facing, age, rig }); //
   } //
   // ===== PEOPLE_KIT_204 END //
   async function build2(ctx2) { //
@@ -53332,11 +53441,26 @@ void main() {
       const geo = new TorusGeometry(0.5, 0.09, 8, 24); //
       const inst = new InstancedMesh(geo, M2.bronze, 24); //
       const m42 = new Matrix4(); //
-      let k = 0; //
-      for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { //
-        m42.makeTranslation(42 + i * 4, F + 0.35, -18 - j * 6);   // 1.5.0: the rings' place -39..-15 (Rambam 5:14-15: 24 amot, 8 from the altar at -7) //
-        inst.setMatrixAt(k++, m42); //
-      } //
+      // RINGS_305 (the user, 20.11.2026 01:25 / 01:30): the arrangement - "ששה סדרים של ארבע ארבע" (the first Tanna, the default: six //
+      // rows north-south, four rings in each - each order one row, as Rabbeinu Shemaya: "היו הטבעות בשורה אחת ובכל סדר ארבעה טבעות") or //
+      // "ויש אומרים, ארבעה של שש שש" (four rows of six) - both in the rings' 24 amot (Middot 5:2; 1.5.0: z -39..-15, 8 from the altar //
+      // at -7, Rambam 5:14-15); the row "סידור הטבעות" (sh62). R. Yose's place (the switch below) keeps its single row of six. //
+      let ringsMode = "six4", ringsOne = false; //
+      const ringsApply = () => { //
+        const zero = new Matrix4().makeScale(0, 0, 0); //
+        let k = 0; //
+        if (ringsOne) { for (let i = 0; i < 24; i++) { if (i < 6) { m42.makeTranslation(42 + i * 4, F + 0.35, -42); inst.setMatrixAt(k++, m42); } else inst.setMatrixAt(k++, zero); } } //
+        else if (ringsMode === "four6") { for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) { m42.makeTranslation(42 + i * 20 / 3, F + 0.35, -17 - j * 4); inst.setMatrixAt(k++, m42); } } //
+        else { for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { m42.makeTranslation(42 + i * 4, F + 0.35, -18 - j * 6); inst.setMatrixAt(k++, m42); } } //
+        inst.instanceMatrix.needsUpdate = true; //
+        inst.computeBoundingSphere(); //
+      }; //
+      ringsApply(); //
+      ctx2.shared.ringsLayout = { //
+        get current() { return ringsMode; }, //
+        set(m) { ringsMode = m === "four6" ? "four6" : "six4"; ringsApply(); return ringsMode; }, //
+        one(b) { ringsOne = !!b; ringsApply(); } //
+      }; //
       inst.castShadow = inst.receiveShadow = true; //
       g.add(inst); //
       ringsInst = inst; //
@@ -53665,14 +53789,8 @@ void main() {
           // (z -42), and the tables and the pillars after it, five amot further north (model choices: no source gives his slaughter place). //
           // R. Yehuda's and the other readings keep the place as drawn (no source moves it). //
           if (ringsInst) { //
-            const one = key === "north", mm = new Matrix4(), zero = new Matrix4().makeScale(0, 0, 0); //
-            let kk = 0; //
-            for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { //
-              if (one && j > 0) ringsInst.setMatrixAt(kk++, zero); //
-              else { mm.makeTranslation(42 + i * 4, F + 0.35, one ? -42 : -18 - j * 6); ringsInst.setMatrixAt(kk++, mm); } //
-            } //
-            ringsInst.instanceMatrix.needsUpdate = true; //
-            ringsInst.computeBoundingSphere(); //
+            const one = key === "north"; //
+            if (ctx2.shared.ringsLayout) ctx2.shared.ringsLayout.one(one);   // RINGS_305: R. Yose's row and the arrangement together //
             slaughterG.position.z = one ? -5 : 0; //
             const rl = ctx2.labels.find((l) => l.text === "הטבעות"); //
             if (rl) { //
@@ -54368,7 +54486,11 @@ void main() {
     g.name = "vessels"; //
     ctx2.root.add(g); //
     const FL = LV.HEI + houseRise(-37);   // 1.9.3: the menorah and the table stand at x -37, on the sloping floor (10-core.js houseRise) //
-    const LAMP_R = 0.27; //
+    // MENOROT_305 (the user, 19.11.2026 23:41: "רוחב מנורות - א - בתנאי שאתה לא פוגע בעיצוב"): 0.27 until 3.0.4 - the menorah 1.67 wide //
+    // (1.88), so that five north-south fit the south half with a way between them and the tables' heads, as R. Meir's walk needs //
+    // (the Ritva, Yoma 51b: "ונכנס בצד סוף השלחן הסמוך לו בין שלחן למנורה והולך לצפון"); its breadth is not given (Menachot 28b: //
+    // its height alone). The form and the height as they were; the lamps and their nozzles narrower in the same proportion (0.889) //
+    const LAMP_R = 0.24; //
     const TBL_TOP = 1.5, TBL_BOARD = 0.08, TBL_LEG = 0.12; //
     const STACK_X = 3.5 * INT_TEF;          // 0.583: a stack's centre (1 tefach of the middle air + half of the loaf's 5) //
     const LOAF_X = 2.5 * INT_TEF, LOAF_Z = 0.5, LOAF_T = 0.5 * INT_TEF, LOAF_H = 2 * INT_TEF;   // half-width 0.417 (5 tef.), half-length 0.5 (6 tef.) //
@@ -54500,17 +54622,17 @@ void main() {
           group3(top, up, q);                                                          // its three cups, knob and flower //
         } //
       }); //
-      for (const dx of [-3, -2, -1, 0, 1, 2, 3]) add(new CylinderGeometry(0.13, 0.08, 0.16, 8), dx * LAMP_R, 3.08, 0);   // the seven lamps ("נרתיה") //
+      for (const dx of [-3, -2, -1, 0, 1, 2, 3]) add(new CylinderGeometry(0.115, 0.071, 0.16, 8), dx * LAMP_R, 3.08, 0);   // the seven lamps ("נרתיה"); MENOROT_305: 0.13, 0.08 until 3.0.4 //
       // LAMPS_MIDDLE_211 (stage ב, point 25; the user: V): "'אל מול פני המנורה יאירו שבעת הנרות' - מלמד שהיו מצדדין פניהם כלפי נר //
       // אמצעי" (Menachot 98b); Rashi: the middle one "פי הפתילה כלפי מערב", "ושאר הפתילות מצודדות פיהן כלפי האמצעי". Each side lamp has //
       // a spout (its wick's mouth) toward the middle; the middle lamp's spout (toward the west) is drawn apart (midSpout), for it turns //
       // otherwise than the menorah when the menorah's direction changes. The spouts' form and size - model choices. //
-      // NOZZLE_211b: the lamps stand LAMP_R (0.27) apart and their tops are 0.26 wide, so a spout cannot reach out sideways (the first //
+      // NOZZLE_211b: the lamps stand LAMP_R (0.24; MENOROT_305) apart and their tops are 0.23 wide, so a spout cannot reach out sideways (the first //
       // try put each side flame in its neighbour's lamp) - each is a short nozzle rising out of its own lamp's top on the side of its //
-      // face, from 0.04 to 0.125 off the lamp's centre, the wick's mouth at the rim (the flame on it: SPT below) //
+      // face, from 0.035 to 0.111 off the lamp's centre (MENOROT_305; 0.04 to 0.125 until 3.0.4), the wick's mouth at the rim (the flame on it: SPT below) //
       const spout = (dirX, dirZ, x) => { //
-        const B = new Vector3(x + dirX * 0.04, 3.13, dirZ * 0.04), T = new Vector3(x + dirX * 0.125, 3.205, dirZ * 0.125), v = T.clone().sub(B); //
-        const sg = new CylinderGeometry(0.02, 0.034, v.length(), 8); //
+        const B = new Vector3(x + dirX * 0.035, 3.13, dirZ * 0.035), T = new Vector3(x + dirX * 0.111, 3.205, dirZ * 0.111), v = T.clone().sub(B); //
+        const sg = new CylinderGeometry(0.018, 0.03, v.length(), 8); //
         sg.applyQuaternion(new Quaternion().setFromUnitVectors(UPV, v.clone().normalize())); //
         sg.translate((B.x + T.x) / 2, (B.y + T.y) / 2, (B.z + T.z) / 2); //
         return sg; //
@@ -54551,7 +54673,9 @@ void main() {
     // ---- the places (Rambam 1:7, 3:17; Yoma 33b). The kodesh: x -4.5 (its door) .. -44.5 (the parochet), z +-10; the inner third from x -31.2 //
     const MEN = { x: -37, z: 6.5, rot: Math.PI / 2 };     // the menorah in the south, 2.5 from the wall to its lamps' row (Yoma 33b), the lamps north-south //
     const TBL = { x: -37, z: -7, rot: 0 };               // the table in the north, 2.5 from the wall, its length along the house (Rambam 3:12) //
-    const ALT = { x: -33.5, z: 0 };                      // the golden altar between them, drawn outward (east) a little //
+    // ALTAR_EAST_305 (the user, 19.11.2026 22:41): 1.25 further east (x -33.5 until 2.0.13) - a way between it and the east row of //
+    // Solomon's tables when they lie north-south, as Rashi's answer on Yoma 51b: "שאין המזבח מכוון כנגד השולחן אלא משוך קימעא כלפי חוץ" //
+    const ALT = { x: -32.25, z: 0 };                     // the golden altar between them, drawn outward (east) a little //
     const FLA = LV.HEI + houseRise(ALT.x);               // 1.9.3: the floor under the golden altar //
     // the table //
     const tM = [int_part(TBL.x, FL, TBL.z, TBL.rot, 0, 0, 0)]; //
@@ -54586,7 +54710,7 @@ void main() {
     const lampX = [-3, -2, -1, 0, 1, 2, 3].map((i) => i * LAMP_R); //
     // LAMPS_MIDDLE_211 (NOZZLE_211b): each flame on its nozzle's mouth, in its own lamp - the side ones SPT toward the middle, the middle //
     // one SPT west (-x) in both directions; its foot FLY over the floor (the lamps' tops 3.16, the nozzles' mouths 3.205) //
-    const SPT = 0.115, FLY = 3.17; //
+    const SPT = 0.102, FLY = 3.17;   // MENOROT_305: 0.115 until 3.0.4 //
     // LAMPS_REBBI_211: east-west (rot 0) every flame SPT west of its lamp's middle - "ופיות כל הנרות לצד מערב זה לאחור זה" //
     const flameXZ = (dx, rot, z) => { const ew = Math.abs(rot) < 1e-6, d = ew ? dx - SPT : dx === 0 ? 0 : dx - Math.sign(dx) * SPT; return [MEN.x + d * Math.cos(rot) - (!ew && dx === 0 ? SPT : 0), z - d * Math.sin(rot)]; }; //
     const flameAt = (rot) => lampX.map((dx) => { const q = flameXZ(dx, rot, MEN.z); return [q[0], FL + FLY, q[1]]; }); //
@@ -54802,7 +54926,8 @@ void main() {
     //   אמות ומחצה"), 2.5, the south row - each five head to head along the house; Moses' table west of them, on the line of the air //
     //   between the rows (1.75 south of its own place), the rows beginning half an amah east of its head. //
     // The menorahs: as the tables, in the south (the Meiri: "כשם שנחלקו בשלחנות לצד הצפון כך נחלקו במנורות לצד //
-    // דרום") - two rows of five, two amot apart, about Moses' menorah, which does not move (the morning's service goes to it). //
+    // דרום") - two rows of five about Moses' menorah, which does not move (the morning's service goes to it); north-south they stand from //
+    // the south wall (MENOROT_305, below). //
     // The floor rises westward (10-core.js houseRise): each vessel stands on the floor at its own x - "כתלמיד היושב לפני רבו, נמוך //
     // הימנו... דבית המקדש היה משופע ולצד מערב מגביה יותר" (Rashi 99a). Not lit, nothing on them; their metal follows vesselMetal. //
     const SOL = { on: false }; //
@@ -54851,7 +54976,9 @@ void main() {
         const tables = [], mens = []; //
         let mt = [SOL.TBL0.x, SOL.TBL0.z]; //
         if (tNS) { //
-          const xW = -44.5 + 2.5 + 0.5, xM = xW + 3.5, xE = xM + 3.5 - 0.06; //
+          // ALTAR_EAST_305: the east row at 2.5 from Moses' table as the west row (Rashi 99a "כו'"); until 2.0.13 0.06 west of that, //
+          // touching the altar - now an amah and a quarter from it //
+          const xW = -44.5 + 2.5 + 0.5, xM = xW + 3.5, xE = xM + 3.5; //
           for (const x of [xW, xE]) for (let i = 0; i < 5; i++) tables.push([x, -9 + 2 * i, Math.PI / 2]); //
           mt = [xM, SOL.TBL0.z]; //
         } else { //
@@ -54861,7 +54988,11 @@ void main() {
         } //
         { //
           const xM = MEN.x, zM = MEN0.z; //
-          if (!mEW) { for (const x of [xM - 3.5, xM + 3.5]) for (let i = 0; i < 5; i++) mens.push([x, 1 + 2 * i, Math.PI / 2]); } //
+          // MENOROT_305: north-south - the five of a row from the south wall toward the middle, a little air between them and from the //
+          // wall (0.05); the east row 2.5 east of Moses' menorah, before the tables' east row (3.5 until 3.0.4 - it stood in the way //
+          // between the altar and the tables), the west row 3.5 west of it (the golden stands at x -42); between the tables' heads //
+          // (z 0) and the menorahs' (z 1.4) R. Meir's way - "בין שלחן למנורה" (the Ritva, Yoma 51b). Until 3.0.4: two amot apart from z 1 //
+          if (!mEW) { const h = 3 * LAMP_R + 0.115, gp = 0.05; for (const x of [xM - 3.5, xM + 2.5]) for (let i = 0; i < 5; i++) mens.push([x, 10 - gp - h - i * (2 * h + gp), Math.PI / 2]); } //
           else { const zN = zM - 1.75, zS = zM + 1.75, x0 = xM + 2.5; for (const z of [zN, zS]) for (let i = 0; i < 5; i++) mens.push([x0 + 2 * i, z, 0]); } //
         } //
         return { tables, mens, mt }; //
@@ -54886,6 +55017,9 @@ void main() {
         const mEW = ctx2.shared.menorahDir && ctx2.shared.menorahDir.current === "ew"; //
         SOL.mMidNS.visible = SOL.mSideNS.visible = !mEW; //
         SOL.mMidEW.visible = SOL.mSideEW.visible = mEW; //
+        SOL.mBody.visible = !SOL.menOff;   // MEIR_TABLES_305 //
+        if (SOL.menOff) SOL.mMidNS.visible = SOL.mSideNS.visible = SOL.mMidEW.visible = SOL.mSideEW.visible = false; //
+        SOL.flames.visible = SOL.lit && !SOL.menOff; //
         for (const im of [...SOL.tParts, SOL.mBody, SOL.mMidNS, SOL.mSideNS, SOL.mMidEW, SOL.mSideEW]) { //
           im.instanceMatrix.needsUpdate = true; //
           if (im.computeBoundingSphere) im.computeBoundingSphere(); //
@@ -54939,6 +55073,8 @@ void main() {
         // את הדרך"). At its end they are back. Moses' table and menorah stay where the reading put them. //
         held: false, //
         hold(on) { this.held = !!on; sg.visible = SOL.on && !this.held; }, //
+        // MEIR_TABLES_305: Solomon's menorahs alone hidden (R. Meir's walk shows the ten tables, 50-heichal.js ykEntry) //
+        menHold(on) { SOL.menOff = !!on; SOL.place(); }, //
         layout: () => SOL.layout(),   // (tests) //
         // SOLOMON_LIT_218: the bread, the frankincense and the lamps on all ten (the row "סידור הלחם והדלקת הנרות בכלי שלמה") //
         lit: false, //
@@ -58859,12 +58995,17 @@ void main() {
           // Tov, 898:156: "אליבא דר"מ דס"ל כר' יוסי שלא היה אלא פרוכת אחת"). His way: west between the table and the altar, past the table //
           // turned north, along the north wall to the opening (the Ritva, 1940:789: "שבא מדרום המזבח ונכנס בין השלחן שבצפון ולמזבח ויוצא //
           // ונכנס בפתח שבצפון"); inside as R. Yose's //
-          meir: [[0, -7.5, -1.2], [2.6, -15.5, -2.4], [7.6, -31.5, -3.4], [9.4, -37, -3.6], [10.15, -38.8, -4.4], [10.92, -40.3, -5.8], [11.62, -41.5, -7.2], [12.07, -42.5, -7.8], [12.47, -43.5, -8.15], [12.85, -44.5, -8.3], [13.07, -44.86, -8.27], [13.29, -45.18, -8.05], [13.49, -45.32, -7.76], [13.6, -45.35, -7.57], [16.6, -45.35, -0.5], [17.4, -46.95, 0]] //
+          // MEIR_TABLES_305: by Rashi (Yoma 51b) among Solomon's ten - "הלכך מפסקי שולחנות את הדרך ולא מתעייל ליה בין שולחן לכותל", //
+          // and "שאין המזבח מכוון כנגד השולחן אלא משוך קימעא כלפי חוץ": north of the altar (its west face x -32.75), between it and the //
+          // east row's southern head (its east face -34; ALTAR_EAST_305), west along the heads (z 0), between the west row (-42) and the //
+          // parochet north to the opening, and in as before (2.75 s later). The same way clears the tables east-west. Until 2.0.13 he //
+          // went west along z -3.4 and turned north past Moses' table (one table) //
+          meir: [[0, -7.5, -1.2], [2.6, -15.5, -1.3], [7.0, -29.5, -1.3], [8.0, -32.3, -1.35], [8.45, -33.2, -1.25], [8.85, -33.4, -0.6], [9.25, -33.4, 0.55], [9.7, -34.5, 0.7], [11.5, -40.0, 0.7], [12.4, -42.7, 0.5], [12.8, -43.3, -0.3], [14.9, -43.6, -6.9], [15.4, -44.2, -8.2], [15.6, -44.5, -8.3], [15.82, -44.86, -8.27], [16.04, -45.18, -8.05], [16.24, -45.32, -7.76], [16.35, -45.35, -7.57], [19.35, -45.35, -0.5], [20.15, -46.95, 0]] //
         }; //
         const BACK = { //
           two: [[26.0, -45.0, 3.0, NORTH], [28.0, -45.0, 8.5, NORTH], [28.8, -43.6, 8.5, WESTY], [30.0, -41.6, 7.0, WESTY]], //
           one: [[20.0, -45.35, -5.0, 0], [21.2, -45.35, -8.66, 0], [22.0, -43.5, -8.66, WESTY], [23.2, -41.6, -7.6, WESTY]], //
-          meir: [[20.8, -45.35, -5.0, 0], [22.0, -45.35, -8.66, 0], [22.8, -43.5, -8.66, WESTY], [24.0, -41.0, -6.6, WESTY]] //
+          meir: [[23.55, -45.35, -5.0, 0], [24.75, -45.35, -8.66, 0], [25.55, -43.5, -8.66, WESTY], [26.75, -41.0, -6.6, WESTY]]   // MEIR_TABLES_305: 2.75 later //
         }; //
         const KEYS = { //
           two: [ //
@@ -58896,17 +59037,19 @@ void main() {
             [24.4, [-37.6, E(-37.6, 3.6), -3.2], [-42.0, E(-42, 2.3), -7.6]], //
             [26.4, [-37.6, E(-37.6, 3.6), -3.2], [-42.0, E(-42, 2.3), -7.6]] //
           ], //
-          meir: [ //
+          meir: [   // MEIR_TABLES_305: the eye behind him and a little up - the altar and the rows' heads, the way between them, the corridor //
             [0, [-5.6, E(-5.6, 3.6), 1.0], [-12, E(-12, 2.4), -1.6]], //
-            [2.8, [-10.0, E(-10, 3.6), -0.6], [-18, E(-18, 2.3), -2.8]], //
-            [7.6, [-24.5, E(-24.5, 3.7), -1.8], [-33, E(-33, 2.3), -3.6]], //
-            [9.6, [-30.0, E(-30, 3.7), -2.4], [-39, E(-39, 2.3), -4.6]], //
-            [11.4, [-34.5, E(-34.5, 3.6), -3.6], [-43.0, E(-43, 2.3), -8.6]], //
-            [13.4, [-40.6, E(-40.6, 3.5), -7.4], [-45.2, E(-45, 2.3), -9.1]], //
-            [18.9, [-40.9, E(-40.9, 3.5), -7.2], [-45.2, E(-45, 2.3), -9.1]], //
-            [20.1, [-38.5, E(-38.5, 3.6), -4.0], [-44.4, E(-44.4, 2.3), -9.0]], //
-            [24.9, [-37.6, E(-37.6, 3.6), -3.2], [-42.0, E(-42, 2.3), -7.6]], //
-            [26.9, [-37.6, E(-37.6, 3.6), -3.2], [-42.0, E(-42, 2.3), -7.6]] //
+            [2.8, [-10.0, E(-10, 3.6), 0.4], [-18, E(-18, 2.3), -1.6]], //
+            [6.8, [-21.5, E(-21.5, 4.4), 2.6], [-31.5, E(-31.5, 1.8), -1.6]], //
+            [8.8, [-27.0, E(-27, 4.8), 4.2], [-34.2, E(-34.2, 1.6), -0.8]], //
+            [10.6, [-30.5, E(-30.5, 4.6), 5.0], [-39.5, E(-39.5, 1.8), 0.2]], //
+            [12.6, [-36.5, E(-36.5, 4.4), 4.4], [-43.6, E(-43.6, 2.0), -1.0]], //
+            [14.6, [-39.8, E(-39.8, 3.8), -1.6], [-44.6, E(-44.6, 2.3), -8.0]], //
+            [16.15, [-40.6, E(-40.6, 3.5), -7.4], [-45.2, E(-45, 2.3), -9.1]], //
+            [21.65, [-40.9, E(-40.9, 3.5), -7.2], [-45.2, E(-45, 2.3), -9.1]], //
+            [22.85, [-38.5, E(-38.5, 3.6), -4.0], [-44.4, E(-44.4, 2.3), -9.0]], //
+            [27.65, [-37.6, E(-37.6, 3.6), -3.2], [-42.0, E(-42, 2.3), -7.6]], //
+            [29.65, [-37.6, E(-37.6, 3.6), -3.2], [-42.0, E(-42, 2.3), -7.6]] //
           ] //
         }; //
         const C0 = "״נטל את המחתה בימינו ואת הכף בשמאלו. היה מהלך בהיכל״ (יומא ה, א)"; //
@@ -58920,7 +59063,8 @@ void main() {
         const C_EVEN = "״משנטל הארון, אבן היתה שם מימות נביאים ראשונים, ושתיה היתה נקראת, גבוהה מן הארץ שלש אצבעות, ועליה היה נותן״ (יומא ה, ב)"; //
         const C_IN = "״צבר את הקטרת על גבי גחלים, ונתמלא כל הבית כלו עשן״"; //
         const C_OUT = "״יצא ובא לו בדרך בית כניסתו, ומתפלל תפלה קצרה בבית החיצון, ולא היה מאריך בתפלתו, שלא להבעית את ישראל״"; //
-        const HOLD = { two: 4, one: 4.6, meir: 4.6 }, HOLD_FROM = { two: 21.4, one: 18.4, meir: 18.9 }; //
+        const MEIR_EW_T = 12.6;   // MEIR_TABLES_305: the second answer's caption - the tables turn east-west //
+        const HOLD = { two: 4, one: 4.6, meir: 4.6 }, HOLD_FROM = { two: 21.4, one: 18.4, meir: 21.65 };   // (meir 18.9 until 2.0.13) //
         for (const k of ["two", "one", "meir"]) { //
           const h = HOLD[k], K = KEYS[k], i = K.findIndex((q) => q[0] === HOLD_FROM[k]); //
           KEYS[k] = K.slice(0, i + 1).concat([[HOLD_FROM[k] + h, K[i][1], K[i][2]]], K.slice(i + 1).map((q) => [q[0] + h, q[1], q[2]])); //
@@ -58950,10 +59094,11 @@ void main() {
                 [12.4, C_ARON.replace("״הגיע לצפון, הופך", "״הופך")], //
                 [16.4, C_EVEN], [16.4 + 4.2, C_IN], [19.4 + HOLD.one, C_OUT]], //
           meir: [[0, C0], [2.8, "״רבי מאיר אומר: בין שלחן למזבח״ — ״לעולם כרבי יוסי סבירא ליה״: הפתח בצפון (יומא נא:)"], //
-                [6.6, "״שולחנות צפון ודרום מונחין, ומפסקא ליה שלחן ולא מתעייל ליה״"], //
-                [9.8, "״ואיבעית אימא: לעולם מזרח ומערב מונחין, ומשום שכינה לאו אורח ארעא למיעל להדיא״ (יומא נא:–נב.)"], //
-                [13.2, C_ARON.replace("״הגיע לצפון, הופך", "״הופך")], //
-                [17.2, C_EVEN], [17.2 + 4.2, C_IN], [20.2 + HOLD.meir, C_OUT]] //
+                [5.2, "״שולחנות צפון ודרום מונחין, ומפסקא ליה שלחן ולא מתעייל ליה״ — רש״י: ״עשר שולחנות עשה שלמה... חמש בשורה אחת... ועל כרחך צריך היה לסמוך ראש השולחן הצפוני לכותל... הלכך מפסקי שולחנות את הדרך״"], //
+                [8.3, "רש״י: ״ואם תאמר אף בין המזבח לשולחן אין דרך... שאין המזבח מכוון כנגד השולחן, אלא משוך קימעא כלפי חוץ״"], //
+                [MEIR_EW_T, "״ואיבעית אימא: לעולם מזרח ומערב מונחין, ומשום שכינה לאו אורח ארעא למיעל להדיא״ (יומא נא:–נב.) — השולחנות ממזרח למערב"], //
+                [15.95, C_ARON.replace("״הגיע לצפון, הופך", "״הופך")], //
+                [19.95, C_EVEN], [19.95 + 4.2, C_IN], [22.95 + HOLD.meir, C_OUT]] //
         }; //
         const at = (pts, t) => { //
           if (t <= pts[0][0]) return pts[0]; //
@@ -58963,19 +59108,37 @@ void main() {
         // YK_SOLOMON_215 (the user, 16.11.2026 21:43: "אפשרות ב"): Solomon's ten vessels (the row "שולחנות שלמה ומנורותיו") are hidden //
         // while he walks - his way stays as it is - and back at the end (45-vessels.js, solomonVessels.hold) //
         const solHold = (on) => { const S = ctx2.shared.solomonVessels; if (S && typeof S.hold === "function") { try { S.hold(on); } catch (_) {} } }; //
+        // MEIR_TABLES_305 (the user, 22:21, 22:36): in R. Meir's reading the ten tables stand whatever the row "שולחנות שלמה ומנורותיו" //
+        // holds (the Tosafot Rid's one table is a reading against R. Meir), north-south with Moses' table until the second answer's //
+        // caption (MEIR_EW_T), then east-west; Solomon's menorahs are hidden while he walks; at the end both rows as they were //
+        // MENOROT_305 (the user, 19.11.2026 23:26: "כנים הכוונה לכן... יש לנו מתג על זה"): the golden stands (kanim; one or two by their //
+        // row) stand in the heichal while R. Meir's walk runs - put back off at its end, if they were off //
+        const kanimFor = (on) => { //
+          const FK = (ctx2.shared.features || {}).kanim; //
+          if (!FK) return; //
+          try { if (on) { Y.kanimWas = FK.isOn(); if (!Y.kanimWas) FK.on(); } else if (Y.kanimWas === false) { FK.off(); Y.kanimWas = null; } } catch (_) {} //
+        }; //
+        const meirSol = (on) => { //
+          const S = ctx2.shared.solomonVessels, TD = ctx2.shared.tableDir; //
+          if (!S || !TD) return; //
+          try { //
+            if (on) { Y.solSaved = { sol: S.current, dir: TD.current }; S.hold(false); S.set("ten"); TD.set("ns"); kanimFor(true); }   // MENOROT_305: the menorahs stay //
+            else if (Y.solSaved) { const v = Y.solSaved; Y.solSaved = null; kanimFor(false); TD.set(v.dir); S.set(v.sol); } //
+          } catch (_) {} //
+        }; //
         Y.stop = (fromWalk) => { //
           if (Y.t0 < 0) return; //
           Y.t0 = -1; //
           KOH.hide(); //
           kohSteps(-1);   // SOUNDS_300 (item 7) //
-          solHold(false); //
+          if (Y.solSaved) meirSol(false); else solHold(false);   // MEIR_TABLES_305 //
           { const PF = ctx2.shared.parochetFold; if (PF) PF.near(null); }   // PAROCHET_217 //
           if (!fromWalk) DW.stop(); //
         }; //
         Y.start = () => { //
           Y.stop(); //
-          solHold(true); //
           { const pc = ctx2.shared.parochotCount; Y.mode = pc && (pc.mode === "one" || pc.mode === "meir" || pc.mode === "rashba") ? pc.mode : "two"; }   // MEIR_218, RASHBA_304 //
+          if (Y.mode === "meir") meirSol(true); else solHold(true);   // MEIR_TABLES_305 //
           if (!props) props = mkProps(); //
           DW.run(KEYS[Y.mode], CAPS[Y.mode], () => Y.stop(true)); //
           Y.t0 = performance.now(); //
@@ -58988,6 +59151,7 @@ void main() {
           if (Y.t0 < 0) return; //
           if (!DW.on) { Y.stop(true); return; } //
           const t = DW.now(), P = PATH[Y.mode], B = BACK[Y.mode], tin = P[P.length - 1][0]; //
+          if (Y.solSaved) { const TD = ctx2.shared.tableDir, want = t >= MEIR_EW_T ? "ew" : "ns"; if (TD && TD.current !== want) { try { TD.set(want); } catch (_) {} } }   // MEIR_TABLES_305 //
           let hp = null; //
           if (t <= tin + 0.45) { //
             const p = at(P, Math.max(0, t)), o = { x: p[1], y: FY(p[1]), z: p[2], base: "carry", white: true, props }; //
@@ -60370,7 +60534,7 @@ void main() {
   } //
   // plugin/js/tamid-data.js //
   // ===== 56-tamid-data.js — GENERATED by tools/tamid_200.py from the library's texts (Mishnah Tamid 88, the Rambam 344, Yoma 107); do not edit ===== //
-  var TAMID_DATA = {"stages": {"moked": {"id": "moked", "title": "בלילה — בית המוקד", "dur": 16, "v": [{"lbl": "תמיד א, א", "w": "בִּשְׁלשָׁה מְקוֹמוֹת הַכֹּהֲנִים שׁוֹמְרִים בְּבֵית הַמִּקְדָּשׁ. בְּבֵית אַבְטִינָס, בְּבֵית הַנִּיצוֹץ וּבְבֵית הַמּוֹקֵד. בֵּית אַבְטִינָס וּבֵית הַנִּיצוֹץ הָיוּ עֲלִיּוֹת, וְהָרוֹבִים שׁוֹמְרִים שָׁם. בֵּית הַמּוֹקֵד, כִּפָּה, וּבַיִת גָּדוֹל הָיָה, מֻקָּף רוֹבָדִים שֶׁל אֶבֶן, וְזִקְנֵי בֵית אָב יְשֵׁנִים שָׁם, וּמַפְתְּחוֹת הָעֲזָרָה בְּיָדָם. וּפִרְחֵי כְהֻנָּה אִישׁ כִּסְתּוֹ בָאָרֶץ. לֹא הָיוּ יְשֵׁנִים בְּבִגְדֵי קֹדֶשׁ, אֶלָּא פוֹשְׁטִין וּמְקַפְּלִין וּמַנִּיחִים אוֹתָן תַּחַת רָאשֵׁיהֶן, וּמִתְכַּסִּין בִּכְסוּת עַצְמָן"}], "vr": [], "caps": [[1, "בֵּית הַמּוֹקֵד, כִּפָּה, וּבַיִת גָּדוֹל הָיָה"], [6, "וְזִקְנֵי בֵית אָב יְשֵׁנִים שָׁם, וּמַפְתְּחוֹת הָעֲזָרָה בְּיָדָם"], [11, "וּפִרְחֵי כְהֻנָּה אִישׁ כִּסְתּוֹ בָאָרֶץ"]], "text": "הלילה שלפני העבודה. בית המוקד פתוח מלמעלה כדי לראות פנימה: הזקנים ישנים על רובדי האבן שלאורך הכתלים, והצעירים על הרצפה, כל אחד על כסתו. באמצע המוקד, האש שבה התחממו. ליד הלשכה הצפונית־מערבית, טבלת השיש שבריצפה, והמפתחות תלויים בשלשלת שתחתיה; והישן עליה, וכסותו עליה (מידות א, ט) — לתוספות יום טוב הוא הכהן שנעל, וכך בהדגמה; ולרבינו שמעיה — בן הלוי: \"ונתן בן לוי כסותו עליה חזר וישן לו\". מקום הטבלה בבית המוקד — בחירת מודל.", "refs": [["תמיד א, א", "Mishnah_Tamid.1.1"], ["מידות א, ט", "Mishnah_Middot.1.9"], ["תוספות יום טוב מידות א, ט", {"book": 948, "index": 58}], ["רבינו שמעיה מידות א, ט", {"book": 645, "index": 40}]], "lamps": null}, "lot1": {"id": "lot1", "title": "הפייס הראשון — מי תורם את המזבח", "dur": 18, "v": [{"lbl": "תמיד א, ב", "w": "מִי שֶׁהוּא רוֹצֶה לִתְרֹם אֶת הַמִּזְבֵּחַ, מַשְׁכִּים וְטוֹבֵל עַד שֶׁלֹּא יָבֹא הַמְמֻנֶּה. וְכִי בְאֵיזוֹ שָׁעָה הַמְמֻנֶּה בָא. לֹא כָל הָעִתִּים שָׁווֹת, פְּעָמִים שֶׁהוּא בָא מִקְרִיאַת הַגֶּבֶר, אוֹ סָמוּךְ לוֹ מִלְּפָנָיו אוֹ מִלְּאַחֲרָיו. הַמְמֻנֶּה בָא וְדוֹפֵק עֲלֵיהֶם, וְהֵם פָּתְחוּ לוֹ. אָמַר לָהֶן, מִי שֶׁטָּבַל יָבֹא וְיָפִיס. הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה:"}], "vr": [{"lbl": "רמב״ם תמידין ו, א", "w": "וְכָל הַכֹּהֲנִים שֶׁשָּׁם כְּבָר טָבְלוּ קֹדֶם שֶׁיָּבוֹא הַמְמֻנֶּה וְלָבְשׁוּ בִּגְדֵי כְּהֻנָּה. וְיָבוֹאוּ וְיַעַמְדוּ בְּלִשְׁכַּת הַגָּזִית. וְיָפִיסוּ פַּיִס רִאשׁוֹן וְשֵׁנִי וְיִזְכֶּה כָּל אֶחָד בִּמְלַאכְתּוֹ כְּמוֹ שֶׁבֵּאַרְנוּ"}], "caps": [[1, "הַמְמֻנֶּה בָא וְדוֹפֵק עֲלֵיהֶם, וְהֵם פָּתְחוּ לוֹ"], [7, "מִי שֶׁטָּבַל יָבֹא וְיָפִיס"], [13, "הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה"]], "text": "הממונה דופק על בית המוקד, ופותחים לו. מי שטבל עומד בהקף, ומוציא אצבע אחת או שתיים; הממונה מונה על האצבעות עד המספר שהוסכם, ומי שהמספר נגמר אצלו — זכה (רמב״ם תמידין ד, ג). הזוכה מסומן.", "refs": [["תמיד א, ב", "Mishnah_Tamid.1.2"], ["רמב״ם תמידין ומוספין ד, ג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.3"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"]], "lamps": null, "capsR": [[1, "וְכָל הַכֹּהֲנִים שֶׁשָּׁם כְּבָר טָבְלוּ קֹדֶם שֶׁיָּבוֹא הַמְמֻנֶּה וְלָבְשׁוּ בִּגְדֵי כְּהֻנָּה"], [6.5, "וְיָבוֹאוּ וְיַעַמְדוּ בְּלִשְׁכַּת הַגָּזִית"], [11, "וְיָפִיסוּ פַּיִס רִאשׁוֹן וְשֵׁנִי וְיִזְכֶּה כָּל אֶחָד בִּמְלַאכְתּוֹ"]]}, "patrol": {"id": "patrol", "title": "שתי כתות עם אבוקות", "dur": 37, "v": [{"lbl": "תמיד א, ג", "w": "נָטַל אֶת הַמַּפְתֵּחַ וּפָתַח אֶת הַפִּשְׁפָּשׁ, וְנִכְנַס מִבֵּית הַמּוֹקֵד לָעֲזָרָה, וְנִכְנְסוּ אַחֲרָיו וּשְׁתֵּי אֲבוּקוֹת שֶׁל אוּר בְּיָדָם. וְנֶחְלְקוּ לִשְׁתֵּי כִתּוֹת, אֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמִּזְרָח, וְאֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמַּעֲרָב. הָיוּ בוֹדְקִין וְהוֹלְכִין עַד שֶׁמַּגִּיעִין לִמְקוֹם בֵּית עוֹשֵׂי חֲבִתִּים. הִגִּיעוּ אֵלּוּ וָאֵלּוּ, אָמְרוּ שָׁלוֹם, הַכֹּל שָׁלוֹם. הֶעֱמִידוּ עוֹשֵׂי חֲבִתִּים לַעֲשׂוֹת חֲבִתִּים:"}], "vr": [{"lbl": "רמב״ם תמידין ו, א", "w": "סָמוּךְ לַעֲלוֹת הַשַּׁחַר יָבוֹא הַמְמֻנֶּה שֶׁעַל הַפְּיָסוֹת וְיַקִּישׁ עַל הָעֲזָרָה וּפוֹתְחִין לוֹ. וּמְבַלְּשִׁין אֶת כָּל הָעֲזָרָה. וּמַעֲמִידִין עוֹשֵׂי חֲבִיתִין לַעֲשׂוֹת הַחֲבִיתִין"}], "caps": [[1, "נָטַל אֶת הַמַּפְתֵּחַ וּפָתַח אֶת הַפִּשְׁפָּשׁ, וְנִכְנַס מִבֵּית הַמּוֹקֵד לָעֲזָרָה"], [6, "וּשְׁתֵּי אֲבוּקוֹת שֶׁל אוּר בְּיָדָם"], [10, "וְנֶחְלְקוּ לִשְׁתֵּי כִתּוֹת, אֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמִּזְרָח, וְאֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמַּעֲרָב"], [20, "הָיוּ בוֹדְקִין וְהוֹלְכִין עַד שֶׁמַּגִּיעִין לִמְקוֹם בֵּית עוֹשֵׂי חֲבִתִּים"], [28.6, "אָמְרוּ שָׁלוֹם, הַכֹּל שָׁלוֹם"], [33, "הֶעֱמִידוּ עוֹשֵׂי חֲבִתִּים לַעֲשׂוֹת חֲבִתִּים"]], "text": "הממונה מגביה את טבלת השיש בטבעת, נוטל את המפתח מן השלשלת שתחתיה (מידות א, ט; מלאכת שלמה, תמיד א, ג: \"מתחת הטבלא של שיש\"), מחזיר את הטבלה ופותח את הפשפש. שתי כתות יוצאות מבית המוקד עם אבוקות, ובודקות את העזרה מסביב: אחת דרך המזרח ואחת דרך המערב, עד שנפגשות ליד לשכת עושי חביתין שבצד שער ניקנור. \"אמרו שלום, הכל שלום\" — בהדגמה כת שואלת וכת משיבה, כתפארת ישראל; ולמפרש ולתוספות יום טוב — כפל לשון. בהדגמה ההליכה מואצת. מספר הכהנים בכל כת, והמסלול הצמוד לכתלים — בחירת מודל.", "refs": [["תמיד א, ג", "Mishnah_Tamid.1.3"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"], ["מידות א, ט", "Mishnah_Middot.1.9"]], "lamps": null, "capsR": [[1, "סָמוּךְ לַעֲלוֹת הַשַּׁחַר יָבוֹא הַמְמֻנֶּה שֶׁעַל הַפְּיָסוֹת וְיַקִּישׁ עַל הָעֲזָרָה וּפוֹתְחִין לוֹ"], [6, "וּמְבַלְּשִׁין אֶת כָּל הָעֲזָרָה"], [10, "וְנֶחְלְקוּ לִשְׁתֵּי כִתּוֹת, אֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמִּזְרָח, וְאֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמַּעֲרָב"], [20, "הָיוּ בוֹדְקִין וְהוֹלְכִין עַד שֶׁמַּגִּיעִין לִמְקוֹם בֵּית עוֹשֵׂי חֲבִתִּים"], [28.6, "אָמְרוּ שָׁלוֹם, הַכֹּל שָׁלוֹם"], [33, "וּמַעֲמִידִין עוֹשֵׂי חֲבִיתִין לַעֲשׂוֹת הַחֲבִיתִין"]]}, "kiyor": {"id": "kiyor", "title": "קידוש ידיים ורגליים — והמוכני", "dur": 20, "v": [{"lbl": "תמיד א, ד", "w": "מִי שֶׁזָּכָה לִתְרֹם אֶת הַמִּזְבֵּחַ, הוּא יִתְרֹם אֶת הַמִּזְבֵּחַ, וְהֵם אוֹמְרִים לוֹ, הִזָּהֵר שֶׁמָּא תִגַּע בַּכְּלִי, עַד שֶׁתְּקַדֵּשׁ יָדֶיךָ וְרַגְלֶיךָ מִן הַכִּיּוֹר, וַהֲרֵי הַמַּחְתָּה נְתוּנָה בַמִּקְצוֹעַ בֵּין הַכֶּבֶשׁ לַמִּזְבֵּחַ, בְּמַעֲרָבוֹ שֶׁל כָּבֶשׁ. אֵין אָדָם נִכְנָס עִמּוֹ, וְלֹא נֵר בְּיָדוֹ, אֶלָּא מְהַלֵּךְ לְאוֹר הַמַּעֲרָכָה. לֹא הָיוּ רוֹאִין אוֹתוֹ וְלֹא שׁוֹמְעִין אֶת קוֹלוֹ, עַד שֶׁשּׁוֹמְעִין קוֹל הָעֵץ שֶׁעָשָׂה בֶן קָטִין מוּכְנִי לַכִּיּוֹר, וְהֵן אוֹמְרִים הִגִּיעַ עֵת. קִדֵּשׁ יָדָיו וְרַגְלָיו מִן הַכִּיּוֹר"}], "vr": [], "caps": [[1, "הִזָּהֵר שֶׁמָּא תִגַּע בַּכְּלִי, עַד שֶׁתְּקַדֵּשׁ יָדֶיךָ וְרַגְלֶיךָ מִן הַכִּיּוֹר"], [6, "וַהֲרֵי הַמַּחְתָּה נְתוּנָה בַמִּקְצוֹעַ בֵּין הַכֶּבֶשׁ לַמִּזְבֵּחַ, בְּמַעֲרָבוֹ שֶׁל כָּבֶשׁ"], [10, "עַד שֶׁשּׁוֹמְעִין קוֹל הָעֵץ שֶׁעָשָׂה בֶן קָטִין מוּכְנִי לַכִּיּוֹר, וְהֵן אוֹמְרִים הִגִּיעַ עֵת"], [16, "קִדֵּשׁ יָדָיו וְרַגְלָיו מִן הַכִּיּוֹר"]], "text": "הכיור עולה מן הבור בגלגל של בן קטין (בלילה היה משוקע במים, שלא ייפסלו בלינה), והזוכה מקדש ידיו ורגליו. אין אדם נכנס עמו, ולא נר בידו — הוא מהלך לאור המערכה.", "refs": [["תמיד א, ד", "Mishnah_Tamid.1.4"], ["יומא ג, י", "Mishnah_Yoma.3.10"]], "lamps": null}, "terumah": {"id": "terumah", "title": "תרומת הדשן", "dur": 36, "v": [{"lbl": "תמיד א, ד", "w": "נָטַל מַחְתַּת הַכֶּסֶף וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ, וּפִנָּה אֶת הַגֶּחָלִים הֵילָךְ וְהֵילָךְ, חָתָה מִן הַמְאֻכָּלוֹת הַפְּנִימִיּוֹת, וְיָרַד. הִגִּיעַ לָרִצְפָה, הָפַךְ פָּנָיו לַצָּפוֹן, הָלַךְ לְמִזְרָחוֹ שֶׁל כֶּבֶשׁ כְּעֶשֶׂר אַמּוֹת. צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הָרִצְפָה רָחוֹק מִן הַכֶּבֶשׁ שְׁלשָׁה טְפָחִים, מְקוֹם שֶׁנּוֹתְנִין מֻרְאוֹת הָעוֹף וְדִּשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה"}], "vr": [], "caps": [[1, "נָטַל מַחְתַּת הַכֶּסֶף וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ"], [8, "וּפִנָּה אֶת הַגֶּחָלִים הֵילָךְ וְהֵילָךְ, חָתָה מִן הַמְאֻכָּלוֹת הַפְּנִימִיּוֹת"], [14.4, "״כל העולין למזבח עולין דרך ימין, ומקיפין, ויורדין דרך שמאל״ (זבחים ו, ג)"], [22.2, "וְיָרַד. הִגִּיעַ לָרִצְפָה, הָפַךְ פָּנָיו לַצָּפוֹן, הָלַךְ לְמִזְרָחוֹ שֶׁל כֶּבֶשׁ כְּעֶשֶׂר אַמּוֹת"], [29.6, "צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הָרִצְפָה רָחוֹק מִן הַכֶּבֶשׁ שְׁלשָׁה טְפָחִים"]], "text": "בראש המזבח — מה שנשאר מן הלילה: ערמת גחלים לוחשות ולהבה נמוכה, בלי עצים שלמים (״אלא מהלך לאור המערכה״, תמיד א, ד; ״וחותה מן הגחלים שנתאכלו בלב האש״, רמב״ם תמידין ב, יב; ״שבתחלה פינה את הגחלים שנתהוו מהעצים של המערכה אילך ואילך לצדדי המזבח״, תפארת ישראל). הזוכה עולה במזרח הכבש עם מחתת הכסף, מפנה את הגחלים, חותה מן הגחלים הפנימיות, ומקיף את כל המזבח על מקום הילוך הכהנים: ״כל העולין למזבח עולין דרך ימין, ומקיפין, ויורדין דרך שמאל״ (משנה זבחים ו, ג; רמב״ם מעשה הקרבנות ז, יא; ״בכל יום כהנים עולים במזרחו של כבש ויורדין במערבו״, יומא ד, ה). הוא יורד במערב הכבש, מקיף את רגל הכבש אל מזרחו (אין לכך מקור מפורש — בחירת מודל), הולך צפונה כעשר אמות מתחתית הכבש, וצובר שם את הגחלים, שלשה טפחים מן הכבש — ״עד י׳ אמות מתחלת תחתית הכבש... בריחוק ג׳ טפחים מהכבש, שלא ישחיר כותל הכבש״ (תפארת ישראל).\n**האם הדשן נבלע במקומו?** אביי (יומא כא.): ״מוראה, ונוצה, ודישון מזבח הפנימי, ודישון המנורה — נבלעין במקומן״ — והם ניתנים במקום הזה (רש״י שם). ועל תרומת הדשן עצמה נחלקו: לרב פורת (בתוספות שם) — אף היא נבלעת; ולרבנו תם (שם) — אינה נבלעת, שהרי ״ושמו — בנחת... ואפר הקדש לעולם אסור״, וטעונה גניזה; וכן המפרש (תמיד כח:): ״אבל תרומת הדשן נ״ל דלא היתה נבלעת״, ״ואמרינן בכריתות ושמו מלמד שטעונין גניזה״.\n**ובאיזה בית?** הבבלי אינו מפרש. בירושלמי (יומא א, ד), על נס אחר מאותה רשימה: ״אמר רבי יוסי בירבי בון: כאן בראשון וכאן בשיני״ — ״כאן בבית ראשון היו אלו הנסים״ (פני משה). ומנגד, נסים אחרים היו גם בבית שני, אלא שנתמעטו: ״כאן — במקדש ראשון, כאן — במקדש שני״ (יומא כא:). בהדגמה הגחלים נשארים על הרצפה — זו בחירת תצוגה, ולא הכרעה.", "refs": [["תמיד א, ד", "Mishnah_Tamid.1.4"], ["רמב״ם תמידין ומוספין ב, יב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.12"], ["זבחים סג. (המשנה)", {"book": 130, "index": 2152}], ["זבחים סד: (הברייתא)", {"book": 130, "index": 2178}], ["רמב״ם מעשה הקרבנות ז, יא", {"book": 341, "index": 123}], ["יומא ד, ה", {"book": 55, "index": 35}], ["רמב״ם תמידין ומוספין ב, ד", {"book": 344, "index": 19}], ["יכין תמיד א (אות ס)", {"book": 818, "index": 122}], ["יכין תמיד א (אות סב–סג)", {"book": 818, "index": 126}], ["יומא כא.", {"book": 107, "index": 457}], ["יומא כא:", {"book": 107, "index": 467}], ["ירושלמי יומא א, ד", {"book": 155, "index": 46}], ["ירושלמי יומא ב, א", {"book": 155, "index": 75}]], "lamps": null}, "tapuach": {"id": "tapuach", "title": "האחים רצים — האפר אל התפוח", "dur": 22, "v": [{"lbl": "תמיד ב, א", "w": "רָאוּהוּ אֶחָיו שֶׁיָּרַד, וְהֵם רָצוּ וּבָאוּ. מִהֲרוּ וְקִדְּשׁוּ יְדֵיהֶן וְרַגְלֵיהֶן מִן הַכִּיּוֹר, נָטְלוּ אֶת הַמַּגְרֵפוֹת וְאֶת הַצִּנּוֹרוֹת וְעָלוּ לְרֹאשׁ הַמִּזְבֵּחַ. הָאֵבָרִין וְהַפְּדָרִין שֶׁלֹּא נִתְאַכְּלוּ מִבָּעֶרֶב, סוֹנְקִין אוֹתָם לִצְדָדֵי הַמִּזְבֵּחַ. אִם אֵין הַצְּדָדִין מַחֲזִיקִין, סוֹדְרִין אוֹתָם בַּסּוֹבֵב עַל הַכָּבֶשׁ:"}, {"lbl": "תמיד ב, ב", "w": "הֵחֵלּוּ מַעֲלִין בָּאֵפֶר עַל גַּבֵּי הַתַּפּוּחַ. וְתַפּוּחַ הָיָה בְאֶמְצַע הַמִּזְבֵּחַ"}], "vr": [], "caps": [[1, "רָאוּהוּ אֶחָיו שֶׁיָּרַד, וְהֵם רָצוּ וּבָאוּ"], [5, "מִהֲרוּ וְקִדְּשׁוּ יְדֵיהֶן וְרַגְלֵיהֶן מִן הַכִּיּוֹר"], [9, "נָטְלוּ אֶת הַמַּגְרֵפוֹת וְאֶת הַצִּנּוֹרוֹת וְעָלוּ לְרֹאשׁ הַמִּזְבֵּחַ"], [15, "הֵחֵלּוּ מַעֲלִין בָּאֵפֶר עַל גַּבֵּי הַתַּפּוּחַ"]], "text": "האחים רצים, מקדשים ידיהם ורגליהם, עולים במגרפות ובצנורות (מזלגות), ומעלים את האפר אל התפוח שבאמצע המזבח. התפוח גדל. לפני כן, האברים והפדרים שלא נתאכלו מבערב — \"סונקין אותם לצדדי המזבח\" (תמיד ב, א); במודל הם שחורים.", "refs": [["תמיד ב, א", "Mishnah_Tamid.2.1"], ["תמיד ב, ב", "Mishnah_Tamid.2.2"]], "lamps": null}, "maarachah": {"id": "maarachah", "title": "סידור המערכה הגדולה", "dur": 20, "v": [{"lbl": "תמיד ב, ג", "w": "הֵחֵלּוּ מַעֲלִין בְּגִזְרִין לְסַדֵּר אֵשׁ הַמַּעֲרָכָה. וְכִי כָל הָעֵצִים כְּשֵׁרִים לַמַּעֲרָכָה. הֵן, כָּל הָעֵצִים כְּשֵׁרִין לַמַּעֲרָכָה, חוּץ מִשֶּׁל זַיִת וְשֶׁל גֶּפֶן"}, {"lbl": "תמיד ב, ד", "w": "סִדֵּר הַמַּעֲרָכָה גְדוֹלָה מִזְרָחָה, וַחֲזִיתָהּ מִזְרָחָה, וְרָאשֵׁי הַגִּזְרִין הַפְּנִימִיִּם הָיוּ נוֹגְעִים בַּתַּפּוּחַ. וְרֶוַח הָיָה בֵין הַגִּזְרִין, שֶׁהָיוּ מַצִּיתִין אֶת הָאֲלִיתָא מִשָּׁם:"}], "vr": [], "caps": [[1, "הֵחֵלּוּ מַעֲלִין בְּגִזְרִין לְסַדֵּר אֵשׁ הַמַּעֲרָכָה"], [8, "סִדֵּר הַמַּעֲרָכָה גְדוֹלָה מִזְרָחָה, וַחֲזִיתָהּ מִזְרָחָה"], [14, "וְרָאשֵׁי הַגִּזְרִין הַפְּנִימִיִּם הָיוּ נוֹגְעִים בַּתַּפּוּחַ"]], "text": "הזוכה בתרומת הדשן עולה ראשון, ושני גזרי העצים בידו; אחיו הכהנים מעלים אחריו את העצים בכבש; והוא לבדו מסדר את המערכה הגדולה במזרח המזבח — \"מי שזכה בתרומת הדשן יזכה בסידור מערכה ובשני גזירי עצים\" (יומא כב.), וכן ברמב״ם (תמידין ד, ה): \"והוא מסדר את המערכה\". העצים החדשים מסומנים בגוון בהיר. כל העולים עולים במזרחו של כבש, ויורדים במערבו (יומא ד, ה).", "refs": [["תמיד ב, ג", "Mishnah_Tamid.2.3"], ["תמיד ב, ד", "Mishnah_Tamid.2.4"], ["רמב״ם תמידין ומוספין ב, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.7"], ["יומא כב.", {"book": 107, "index": 487}], ["רמב״ם תמידין ומוספין ד, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.5"], ["יכין תמיד ב (אות טז)", {"book": 818, "index": 163}], ["יומא ד, ה", "Mishnah_Yoma.4.5"]], "lamps": null}, "maarachah2": {"id": "maarachah2", "title": "המערכה השנייה — לקטורת", "dur": 16, "v": [{"lbl": "תמיד ב, ה", "w": "בֵּרְרוּ מִשָּׁם עֲצֵי תְאֵנָה יָפִין, לְסַדֵּר הַמַּעֲרָכָה שְׁנִיָּה לַקְּטֹרֶת, מִכְּנֶגֶד קֶרֶן מַעֲרָבִית דְּרוֹמִית, מָשׁוּךְ מִן הַקֶּרֶן כְּלַפֵּי צָפוֹן אַרְבַּע אַמּוֹת, בְּעֹמֶד חָמֵשׁ סְאִים גֶּחָלִים, וּבְשַׁבָּת בְּעֹמֶד שְׁמוֹנַת סְאִין גֶּחָלִים, שֶׁשָּׁם הָיוּ נוֹתְנִין שְׁנֵי בְזִיכֵי לְבוֹנָה שֶׁל לֶחֶם הַפָּנִים"}], "vr": [], "caps": [[1, "בֵּרְרוּ מִשָּׁם עֲצֵי תְאֵנָה יָפִין, לְסַדֵּר הַמַּעֲרָכָה שְׁנִיָּה לַקְּטֹרֶת"], [8, "מִכְּנֶגֶד קֶרֶן מַעֲרָבִית דְּרוֹמִית, מָשׁוּךְ מִן הַקֶּרֶן כְּלַפֵּי צָפוֹן אַרְבַּע אַמּוֹת"]], "text": "המערכה השנייה, שממנה לוקחים גחלים לקטורת, נסדרת ליד קרן מערבית דרומית, ארבע אמות לצפון. מי מסדר אותה: לתפארת ישראל — \"ואחרים מסדרין מערכה שנייה של קטורת\", וכך בהדגמה; ולרמב״ם (תמידין ו, א) — הזוכה בתרומת הדשן: \"ואחר כך מסדר מערכה שניה\", ובהדגמה הוא ניגש אליה לכמה שניות. ולרבי יוסי (יומא ד, ו), וכן פסק הרמב״ם (תמידין ב, ד) — יש גם מערכה שלישית, \"לקים מצות האש\"; היא מוצגת כשבמתג \"מניין המערכות\" נבחרו שלוש מערכות או ארבע.", "refs": [["תמיד ב, ה", "Mishnah_Tamid.2.5"], ["יומא לג.", "Yoma.33a"], ["רמב״ם תמידין ומוספין ב, ד", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.4"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"], ["יכין תמיד ב (אות כד)", {"book": 818, "index": 179}], ["יומא ד, ו", "Mishnah_Yoma.4.6"]], "lamps": null}, "gezirin": {"id": "gezirin", "title": "שני גזרי עצים", "dur": 14, "v": [{"lbl": "תמיד ב, ה", "w": "הִצִּיתוּ שְׁתֵּי הַמַּעֲרָכוֹת בָּאֵשׁ, וְיָרְדוּ וּבָאוּ לָהֶם לְלִשְׁכַּת הַגָּזִית"}], "vr": [{"lbl": "רמב״ם תמידין ו, א", "w": "וְאַחַר כָּךְ מְסַדֵּר מַעֲרָכָה גְּדוֹלָה. וְאַחַר כָּךְ מְסַדֵּר מַעֲרָכָה שְׁנִיָּה. וְאַחַר כָּךְ מַעֲלֶה שְׁנֵי גִּזְרֵי עֵצִים וּמַנִּיחָן עַל מַעֲרָכָה גְּדוֹלָה לְהַרְבּוֹת הָאֵשׁ"}], "caps": [[1, "סִידּוּר שְׁנֵי גְּזִירֵי עֵצִים"], [8, "הִצִּיתוּ שְׁתֵּי הַמַּעֲרָכוֹת בָּאֵשׁ"]], "text": "שני גזרי עצים: בשחר כהן אחד מעלה אותם ומניחם על המערכה הגדולה, והוא הזוכה בתרומת הדשן — רמב״ם (תמידין ב, ג): \"שני גזרים של בין הערבים מעלין אותן שני כהנים... אבל של שחר בכהן אחד\". אחר כך שתי המערכות מוצתות. במשנה בתמיד הגזרים לא נזכרו כאן; הם בסדר של אביי (יומא לג.) וברמב״ם (תמידין ו, א). האברים שנסנקו לצדדים — \"מחזירין אותן למערכה\" (תמיד ב, ה); והאליתא מוצתת ברווח שבין הגזרין (תמיד ב, ד).", "refs": [["יומא לג.", "Yoma.33a"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"], ["רמב״ם תמידין ומוספין ב, ג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.3"], ["רמב״ם תמידין ומוספין ד, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.5"], ["תמיד ב, ה", "Mishnah_Tamid.2.5"], ["תמיד ב, ד", "Mishnah_Tamid.2.4"]], "lamps": null}, "lot2": {"id": "lot2", "title": "הפייס השני — שלושה עשר כהנים", "dur": 26, "v": [{"lbl": "תמיד ג, א", "w": "אָמַר לָהֶם הַמְמֻנֶּה, בֹּאוּ וְהָפִיסוּ, מִי שׁוֹחֵט, מִי זוֹרֵק, מִי מְדַשֵּׁן מִזְבֵּחַ הַפְּנִימִי, מִי מְדַשֵּׁן אֶת הַמְּנוֹרָה, מִי מַעֲלֶה אֵבָרִים לַכֶּבֶשׁ, הָרֹאשׁ וְהָרֶגֶל, וּשְׁתֵּי הַיָּדַיִם, הָעֹקֶץ וְהָרֶגֶל, הֶחָזֶה וְהַגֵּרָה, וּשְׁתֵּי דְפָנוֹת, הַקְּרָבַיִם, וְהַסֹּלֶת, וְהַחֲבִתִּים, וְהַיָּיִן. הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה:"}], "vr": [], "caps": [[1, "אָמַר לָהֶם הַמְמֻנֶּה, בֹּאוּ וְהָפִיסוּ"], [5, "מִי שׁוֹחֵט, מִי זוֹרֵק, מִי מְדַשֵּׁן מִזְבֵּחַ הַפְּנִימִי, מִי מְדַשֵּׁן אֶת הַמְּנוֹרָה"], [12, "מִי מַעֲלֶה אֵבָרִים לַכֶּבֶשׁ"], [20, "הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה"]], "text": "בלשכת הגזית (פתוחה מלמעלה). הראשון שיצא בפייס שוחט, והעומדים בצדו לפי הסדר: הזורק, מדשן מזבח הפנימי, מדשן המנורה, ששת מעלי האברים, הסולת, החביתין והיין (רמב״ם תמידין ד, ו). כל זוכה מסומן בשם עבודתו.", "refs": [["תמיד ג, א", "Mishnah_Tamid.3.1"], ["רמב״ם תמידין ומוספין ד, ו", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.6"]], "lamps": null}, "barkai": {"id": "barkai", "title": "ברקאי — עלות השחר", "dur": 16, "v": [{"lbl": "תמיד ג, ב", "w": "אָמַר לָהֶם הַמְמֻנֶּה, צְאוּ וּרְאוּ אִם הִגִּיעַ זְמַן הַשְּׁחִיטָה. אִם הִגִּיעַ, הָרוֹאֶה אוֹמֵר, בַּרְקַאי. מַתְיָא בֶן שְׁמוּאֵל אוֹמֵר, הֵאִיר פְּנֵי כָל הַמִּזְרָח. עַד שֶׁהוּא בְחֶבְרוֹן, וְהוּא אוֹמֵר, הֵין:"}], "vr": [{"lbl": "רמב״ם תמידין א, ב", "w": "וְאֵימָתַי זְמַן שְׁחִיטָתָן. שֶׁל בֹּקֶר שׁוֹחֲטִין אוֹתוֹ קֹדֶם שֶׁתַּעֲלֶה הַחַמָּה מִשֶּׁיֵּאוֹר פְּנֵי כָּל מִזְרָח"}], "caps": [[1, "צְאוּ וּרְאוּ אִם הִגִּיעַ זְמַן הַשְּׁחִיטָה"], [7, "אִם הִגִּיעַ, הָרוֹאֶה אוֹמֵר, בַּרְקַאי"], [12, "הֵאִיר פְּנֵי כָל הַמִּזְרָח. עַד שֶׁהוּא בְחֶבְרוֹן"]], "text": "הרואה עולה למקום גבוה (ברטנורא) ומסתכל למזרח. השמים מאירים. במודל הוא עומד על גג לשכת הגזית — בחירת מודל. הרמב״ם (תמידין א, ב): \"משיאור פני כל מזרח\".", "refs": [["תמיד ג, ב", "Mishnah_Tamid.3.2"], ["רמב״ם תמידין ומוספין א, ב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.1.2"]], "lamps": null}, "lamb": {"id": "lamb", "title": "הטלה מלשכת הטלאים", "dur": 24, "v": [{"lbl": "תמיד ג, ג", "w": "אָמַר לָהֶם, צְאוּ וְהָבִיאוּ טָלֶה מִלִּשְׁכַּת הַטְּלָאִים. וַהֲרֵי לִשְׁכַּת הַטְּלָאִים הָיְתָה בְמִקְצוֹעַ צְפוֹנִית מַעֲרָבִית. וְאַרְבַּע לְשָׁכוֹת הָיוּ שָׁם, אַחַת לִשְׁכַּת הַטְּלָאִים, וְאַחַת לִשְׁכַּת הַחוֹתָמוֹת, וְאַחַת לִשְׁכַּת בֵּית הַמּוֹקֵד, וְאַחַת לִשְׁכָּה שֶׁהָיוּ עוֹשִׂין בָּהּ לֶחֶם הַפָּנִים:"}, {"lbl": "תמיד ג, ד", "w": "נִכְנְסוּ לְלִשְׁכַּת הַכֵּלִים, וְהוֹצִיאוּ מִשָּׁם תִּשְׁעִים וּשְׁלשָׁה כְלֵי כֶסֶף וּכְלֵי זָהָב. הִשְׁקוּ אֶת הַתָּמִיד בְּכוֹס שֶׁל זָהָב. אַף עַל פִּי שֶׁהוּא מְבֻקָּר מִבָּעֶרֶב, מְבַקְּרִין אוֹתוֹ לְאוֹר הָאֲבוּקוֹת:"}], "vr": [], "caps": [[1, "צְאוּ וְהָבִיאוּ טָלֶה מִלִּשְׁכַּת הַטְּלָאִים"], [7, "נִכְנְסוּ לְלִשְׁכַּת הַכֵּלִים, וְהוֹצִיאוּ מִשָּׁם תִּשְׁעִים וּשְׁלשָׁה כְלֵי כֶסֶף וּכְלֵי זָהָב"], [13, "הִשְׁקוּ אֶת הַתָּמִיד בְּכוֹס שֶׁל זָהָב"], [18, "אַף עַל פִּי שֶׁהוּא מְבֻקָּר מִבָּעֶרֶב, מְבַקְּרִין אוֹתוֹ לְאוֹר הָאֲבוּקוֹת"]], "text": "הטלה יוצא מלשכת טלאי קרבן, בקרן מערבית דרומית של בית המוקד. משקים אותו בכוס של זהב, ובודקים אותו לאור האבוקות. לשכת הכלים — אפשר שבאחד מן התאים שסביב ההיכל (תפארת ישראל, תמיד ג, ד).", "refs": [["תמיד ג, ג", "Mishnah_Tamid.3.3"], ["תמיד ג, ד", "Mishnah_Tamid.3.4"], ["מידות א, ו", "Mishnah_Middot.1.6"]], "lamps": null}, "tobeit": {"id": "tobeit", "title": "אל בית המטבחים", "dur": 16, "v": [{"lbl": "תמיד ג, ה", "w": "מִי שֶׁזָּכָה בַתָּמִיד, מוֹשְׁכוֹ וְהוֹלֵךְ לְבֵית הַמִּטְבָּחַיִם, וּמִי שֶׁזָּכוּ בָאֵבָרִים הוֹלְכִין אַחֲרָיו. בֵּית הַמִּטְבָּחַיִם הָיָה לִצְפוֹנוֹ שֶׁל מִזְבֵּחַ"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַתָּמִיד, מוֹשְׁכוֹ וְהוֹלֵךְ לְבֵית הַמִּטְבָּחַיִם"], [8, "וּמִי שֶׁזָּכוּ בָאֵבָרִים הוֹלְכִין אַחֲרָיו"]], "text": "השוחט מושך את הטלה אל הטבעות שבצפון המזבח, ושישה מעלי האברים הולכים אחריו.", "refs": [["תמיד ג, ה", "Mishnah_Tamid.3.5"]], "lamps": null}, "keys": {"id": "keys", "title": "הטני, הכוז ושני המפתחות", "dur": 14, "v": [{"lbl": "תמיד ג, ו", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה הָיוּ מַקְדִּימִין, וְאַרְבָּעָה כֵלִים בְּיָדָם, הַטֶּנִי וְהַכּוּז וּשְׁנֵי מַפְתְּחוֹת. הַטֶּנִי דוֹמֶה לְתַרְקָב גָּדוֹל שֶׁל זָהָב, מַחֲזִיק קַבַּיִן וָחֵצִי. וְהַכּוּז דּוֹמֶה לְקִיתוֹן גָּדוֹל שֶׁל זָהָב. וּשְׁנֵי מַפְתְּחוֹת, אֶחָד יוֹרֵד לְאַמַּת הַשֶּׁחִי וְאֶחָד פּוֹתֵחַ כֵּיוָן:"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה הָיוּ מַקְדִּימִין"], [6, "וְאַרְבָּעָה כֵלִים בְּיָדָם, הַטֶּנִי וְהַכּוּז וּשְׁנֵי מַפְתְּחוֹת"], [10, "הַטֶּנִי דוֹמֶה לְתַרְקָב גָּדוֹל שֶׁל זָהָב"]], "text": "שני הכהנים עולים במעלות האולם: האחד עם הטני (כמין סל גדול של זהב), והשני עם הכוז (כמין קיתון גדול של זהב), ושני מפתחות בידם.", "refs": [["תמיד ג, ו", "Mishnah_Tamid.3.6"]], "lamps": null}, "gate": {"id": "gate", "title": "פתיחת השער הגדול", "dur": 20, "v": [{"lbl": "תמיד ג, ז", "w": "בָּא לוֹ לַפִּשְׁפָּשׁ הַצְּפוֹנִי. וּשְׁנֵי פִשְׁפָּשִׁין הָיוּ לוֹ לַשַּׁעַר הַגָּדוֹל, אֶחָד בַּצָּפוֹן וְאֶחָד בַּדָּרוֹם"}, {"lbl": "תמיד ג, ז", "w": "נָטַל אֶת הַמַּפְתֵּחַ וּפָתַח אֶת הַפִּשְׁפָּשׁ, נִכְנַס לַתָּא, וּמִן הַתָּא אֶל הַהֵיכָל, עַד שֶׁהוּא מַגִּיעַ לַשַּׁעַר הַגָּדוֹל. הִגִּיעַ לַשַּׁעַר הַגָּדוֹל, הֶעֱבִיר אֶת הַנֶּגֶר וְאֶת הַפּוֹתְחוֹת וּפְתָחוֹ. לֹא הָיָה שׁוֹחֵט הַשּׁוֹחֵט, עַד שֶׁשּׁוֹמֵעַ קוֹל שַׁעַר הַגָּדוֹל שֶׁנִּפְתָּח"}, {"lbl": "תמיד ג, ח", "w": "מִירִיחוֹ הָיוּ שׁוֹמְעִין קוֹל שַׁעַר הַגָּדוֹל שֶׁנִּפְתָּח"}], "vr": [], "caps": [[1, "בָּא לוֹ לַפִּשְׁפָּשׁ הַצְּפוֹנִי"], [5, "נִכְנַס לַתָּא, וּמִן הַתָּא אֶל הַהֵיכָל"], [10, "הִגִּיעַ לַשַּׁעַר הַגָּדוֹל, הֶעֱבִיר אֶת הַנֶּגֶר וְאֶת הַפּוֹתְחוֹת וּפְתָחוֹ"], [15, "לֹא הָיָה שׁוֹחֵט הַשּׁוֹחֵט, עַד שֶׁשּׁוֹמֵעַ קוֹל שַׁעַר הַגָּדוֹל שֶׁנִּפְתָּח"]], "text": "הכהן נכנס בפשפש הצפוני (הדרך שבתוך המודל — לפי השיטה שנבחרה בתפריט, תחת ״שיטות ומחלוקות״), ופותח מבפנים את ארבע הדלתות. \"מיריחו היו שומעין קול שער הגדול שנפתח\" (תמיד ג, ח).", "refs": [["תמיד ג, ז", "Mishnah_Tamid.3.7"], ["תמיד ג, ח", "Mishnah_Tamid.3.8"], ["מידות ד, ב", "Mishnah_Middot.4.2"]], "lamps": null}, "inner": {"id": "inner", "title": "דישון מזבח הפנימי", "dur": 16, "v": [{"lbl": "תמיד ג, ט", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי, נִכְנַס וְנָטַל הַטֶּנִי וְהִנִּיחוֹ לְפָנָיו, וְהָיָה חוֹפֵן וְנוֹתֵן לְתוֹכוֹ, וּבָאַחֲרוֹנָה כִּבֵּד אֶת הַשְּׁאָר לְתוֹכוֹ וְהִנִּיחוֹ וְיָצָא"}], "vr": [{"lbl": "רמב״ם תמידין ו, ב", "w": "וְהַמְדַשֵּׁן אֶת הַמִּזְבֵּחַ מְדַשְּׁנוֹ בְּשָׁעָה שֶׁהַשּׁוֹחֵט שׁוֹחֵט אֶת הַתָּמִיד. וְאַחַר כָּךְ זוֹרֵק הַדָּם זֶה שֶׁקִּבְּלוֹ:"}], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי, נִכְנַס וְנָטַל הַטֶּנִי וְהִנִּיחוֹ לְפָנָיו"], [6, "וְהָיָה חוֹפֵן וְנוֹתֵן לְתוֹכוֹ"], [11, "וּבָאַחֲרוֹנָה כִּבֵּד אֶת הַשְּׁאָר לְתוֹכוֹ וְהִנִּיחוֹ וְיָצָא"]], "text": "בהיכל, לפני מזבח הזהב: חופן את הדשן לתוך הטני, מכבד את השאר, מניח את הטני ויוצא.", "refs": [["תמיד ג, ט", "Mishnah_Tamid.3.9"]], "lamps": null}, "lamps5": {"id": "lamps5", "title": "הטבת חמש נרות", "dur": 30, "v": [{"lbl": "תמיד ג, ט", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִים, מְדַשֵּׁן אֶת הַשְּׁאָר וּמַנִּיחַ אֶת אֵלּוּ דּוֹלְקִין בִּמְקוֹמָן. מְצָאָן שֶׁכָּבוּ, מְדַשְּׁנָן וּמַדְלִיקָן מִן הַדּוֹלְקִים, וְאַחַר כָּךְ מְדַשֵּׁן אֶת הַשְּׁאָר. וְאֶבֶן הָיְתָה לִפְנֵי הַמְּנוֹרָה וּבָהּ שָׁלשׁ מַעֲלוֹת, שֶׁעָלֶיהָ הַכֹּהֵן עוֹמֵד וּמֵטִיב אֶת הַנֵּרוֹת. וְהִנִּיחַ אֶת הַכּוּז עַל מַעֲלָה שְׁנִיָּה וְיָצָא"}], "vr": [{"lbl": "רמב״ם תמידין ו, ג", "w": "וְאַחַר שֶׁזּוֹרְקִין אֶת הַדָּם מֵטִיב זֶה שֶׁבַּהֵיכָל חָמֵשׁ נֵרוֹת וְיוֹצְאִין שְׁנֵיהֶן מִן הַהֵיכָל"}], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִים"], [7, "מְדַשֵּׁן אֶת הַשְּׁאָר וּמַנִּיחַ אֶת אֵלּוּ דּוֹלְקִין בִּמְקוֹמָן"], [20, "וְאֶבֶן הָיְתָה לִפְנֵי הַמְּנוֹרָה וּבָהּ שָׁלשׁ מַעֲלוֹת, שֶׁעָלֶיהָ הַכֹּהֵן עוֹמֵד וּמֵטִיב אֶת הַנֵּרוֹת"], [26, "וְהִנִּיחַ אֶת הַכּוּז עַל מַעֲלָה שְׁנִיָּה וְיָצָא"]], "text": "", "refs": [["תמיד ג, ט", "Mishnah_Tamid.3.9"], ["רמב״ם תמידין ומוספין ג, יב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.12"], ["רמב״ם תמידין ומוספין ג, טז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.16"], ["רמב״ם תמידין ומוספין ג, יז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.17"]], "lamps": {"rambam": "המנורה מונחת בין הצפון ובין הדרום (רמב״ם בית הבחירה ג, יב); הנר האמצעי פניו כנגד קודש הקדשים, והוא הנר המערבי (שם ג, ח). שני הנרות שנשארים דולקים: האמצעי והנר שמצפון לו (תפארת ישראל). בשאר החמישה מסיר את הפתילה והשמן, מקנח, נותן פתילה ושמן במידה, ומדליק — \"והדלקת הנרות היא הטבתם\" (רמב״ם תמידין ג, יב). הכוז מונח על המעלה השנייה.", "rashi": "כרש״י, הראב״ד והברטנורא: התנא של משנה זו סובר שהמנורה מונחת ממזרח למערב (ברטנורא; תוספות מנחות צח:). \"שני נרות מזרחיים\" — שני הנרות הקרובים לפתח; הנר המערבי — השני מן המזרח (רש״י שבת כב:). בשאר החמישה נותן שמן ופתילה חדשים, \"ומניחן כבויות עד הערב\" (ברטנורא). הכוז מונח על המעלה השנייה."}}, "akedah": {"id": "akedah", "title": "העקידה בטבעת", "dur": 16, "v": [{"lbl": "תמיד ד, א", "w": "לֹא הָיוּ כוֹפְתִין אֶת הַטָּלֶה, אֶלָּא מְעַקְּדִין אוֹתוֹ. מִי שֶׁזָּכוּ בָאֵבָרִים, אוֹחֲזִים בּוֹ. וְכָךְ הָיְתָה עֲקֵדָתוֹ, רֹאשׁוֹ לַדָּרוֹם וּפָנָיו לַמַּעֲרָב. הַשּׁוֹחֵט, עוֹמֵד בַּמִּזְרָח וּפָנָיו לַמַּעֲרָב. שֶׁל שַׁחַר הָיָה נִשְׁחָט עַל קֶרֶן צְפוֹנִית מַעֲרָבִית, עַל טַבַּעַת שְׁנִיָּה"}], "vr": [{"lbl": "רמב״ם תמידין א, יא", "w": "תָּמִיד שֶׁל שַׁחַר הָיָה נִשְׁחָט עַל קֶרֶן צְפוֹנִית מַעֲרָבִית שֶׁל בֵּית הַמִּטְבָּחַיִם עַל טַבַּעַת שְׁנִיָּה. וְשֶׁל בֵּין הָעַרְבַּיִם עַל קֶרֶן צְפוֹנִית מִזְרָחִית מִמֶּנָּה עַל טַבַּעַת שְׁנִיָּה כְּדֵי שֶׁיִּהְיֶה כְּנֶגֶד הַשֶּׁמֶשׁ. דִּבְרֵי קַבָּלָה הֵן שֶׁיִּהְיוּ נִשְׁחָטִין כְּנֶגֶד הַשֶּׁמֶשׁ:"}], "caps": [[1, "לֹא הָיוּ כוֹפְתִין אֶת הַטָּלֶה, אֶלָּא מְעַקְּדִין אוֹתוֹ. מִי שֶׁזָּכוּ בָאֵבָרִים, אוֹחֲזִים בּוֹ"], [7, "וְכָךְ הָיְתָה עֲקֵדָתוֹ, רֹאשׁוֹ לַדָּרוֹם וּפָנָיו לַמַּעֲרָב"], [11, "הַשּׁוֹחֵט, עוֹמֵד בַּמִּזְרָח וּפָנָיו לַמַּעֲרָב"]], "text": "הטלה נעקד בטבעת השנייה שבקרן הצפונית מערבית (רמב״ם תמידין א, יא: \"של בית המטבחים\"); איזו מן הטבעות היא השנייה — בחירת מודל. השחיטה עצמה אינה מוצגת.", "refs": [["תמיד ד, א", "Mishnah_Tamid.4.1"], ["רמב״ם תמידין ומוספין א, י", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.1.10"], ["רמב״ם תמידין ומוספין א, יא", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.1.11"]], "lamps": null}, "dam": {"id": "dam", "title": "זריקת הדם", "dur": 20, "v": [{"lbl": "תמיד ד, א", "w": "שָׁחַט הַשּׁוֹחֵט, וְקִבֵּל הַמְקַבֵּל. בָּא לוֹ לְקֶרֶן מִזְרָחִית צְפוֹנִית, וְנוֹתֵן מִזְרָחָה צָפוֹנָה. מַעֲרָבִית דְּרוֹמִית, וְנוֹתֵן מַעֲרָבָה דָרוֹמָה. שְׁיָרֵי הַדָּם הָיָה שׁוֹפֵךְ עַל יְסוֹד דְּרוֹמִית"}], "vr": [], "caps": [[1, "שָׁחַט הַשּׁוֹחֵט, וְקִבֵּל הַמְקַבֵּל"], [5, "בָּא לוֹ לְקֶרֶן מִזְרָחִית צְפוֹנִית, וְנוֹתֵן מִזְרָחָה צָפוֹנָה"], [11, "מַעֲרָבִית דְּרוֹמִית, וְנוֹתֵן מַעֲרָבָה דָרוֹמָה"], [16, "שְׁיָרֵי הַדָּם הָיָה שׁוֹפֵךְ עַל יְסוֹד דְּרוֹמִית"]], "text": "המקבל במזרק הולך לקרן מזרחית צפונית וזורק כנגד הקרן — מתנה אחת שנראית כשתיים — ואחר כך לקרן מערבית דרומית; את השיריים שופך על היסוד הדרומי. מקום הזריקה מסומן בחצי התחתון של המזבח, מתחת לחוט הסיקרא.", "refs": [["תמיד ד, א", "Mishnah_Tamid.4.1"], ["זבחים ה, ד", "Mishnah_Zevachim.5.4"]], "lamps": null}, "evarim": {"id": "evarim", "title": "האברים אל הכבש", "dur": 22, "v": [{"lbl": "תמיד ד, ג", "w": "נִמְצְאוּ כֻלָּן עוֹמְדִין בְּשׁוּרָה וְהָאֵבָרִים בְּיָדָם. הָרִאשׁוֹן, בָּרֹאשׁ וּבָרֶגֶל"}, {"lbl": "תמיד ד, ג", "w": "הַשְּׁבִיעִי, בַּסֹּלֶת. הַשְּׁמִינִי, בַּחֲבִתִּין. הַתְּשִׁיעִי, בַּיָּיִן. הָלְכוּ וּנְתָנוּם מֵחֲצִי הַכֶּבֶשׁ וּלְמַטָּה בְּמַעֲרָבוֹ, וּמְלָחוּם. וְיָרְדוּ וּבָאוּ לָהֶם לְלִשְׁכַּת הַגָּזִית, לִקְרוֹת אֶת שְׁמַע"}], "vr": [], "caps": [[1, "נִמְצְאוּ כֻלָּן עוֹמְדִין בְּשׁוּרָה וְהָאֵבָרִים בְּיָדָם"], [8, "הַשְּׁבִיעִי, בַּסֹּלֶת. הַשְּׁמִינִי, בַּחֲבִתִּין. הַתְּשִׁיעִי, בַּיָּיִן"], [14, "הָלְכוּ וּנְתָנוּם מֵחֲצִי הַכֶּבֶשׁ וּלְמַטָּה בְּמַעֲרָבוֹ, וּמְלָחוּם"]], "text": "אחרי ההפשט והניתוח (אינם מוצגים) תשעה כהנים בשורה, ובידיהם האברים, הסולת, החביתין והיין; נותנים אותם בחצי התחתון של הכבש, במערבו, ומולחים.", "refs": [["תמיד ד, ב", "Mishnah_Tamid.4.2"], ["תמיד ד, ג", "Mishnah_Tamid.4.3"], ["רמב״ם תמידין ומוספין ו, ג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.3"]], "lamps": null}, "shema": {"id": "shema", "title": "לשכת הגזית — קריאת שמע", "dur": 19, "v": [{"lbl": "תמיד ה, א", "w": "אָמַר לָהֶם הַמְמֻנֶּה, בָּרְכוּ בְרָכָה אֶחַת, וְהֵן בֵּרְכוּ. קָרְאוּ עֲשֶׂרֶת הַדְּבָרִים, שְׁמַע, וְהָיָה אִם שָׁמֹעַ, וַיֹּאמֶר. בֵּרְכוּ אֶת הָעָם שָׁלשׁ בְּרָכוֹת, אֱמֶת וְיַצִּיב, וַעֲבוֹדָה, וּבִרְכַּת כֹּהֲנִים. וּבְשַׁבָּת מוֹסִיפִין בְּרָכָה אַחַת לַמִּשְׁמָר הַיּוֹצֵא:"}], "vr": [{"lbl": "רמב״ם תמידין ו, ד", "w": "וְאַחַר שֶׁמַּעֲלִין הָאֵיבָרִים לַכֶּבֶשׁ מִתְכַּנְּסִין כֻּלָּן לְלִשְׁכַּת הַגָּזִית. וְהַמְמֻנֶּה אוֹמֵר לָהֶם בָּרְכוּ בְּרָכָה אַחַת. וְהֵן פּוֹתְחִין וְקוֹרִין אַהֲבַת עוֹלָם וַעֲשֶׂרֶת הַדִּבְּרוֹת וּשְׁמַע וְהָיָה אִם שָׁמוֹעַ וַיֹּאמֶר וֶאֱמֶת וְיַצִּיב וּרְצֵה וְשִׂים שָׁלוֹם"}], "caps": [[1, "אָמַר לָהֶם הַמְמֻנֶּה, בָּרְכוּ בְרָכָה אֶחַת, וְהֵן בֵּרְכוּ"], [7, "קָרְאוּ עֲשֶׂרֶת הַדְּבָרִים, שְׁמַע, וְהָיָה אִם שָׁמֹעַ, וַיֹּאמֶר"], [12, "בֵּרְכוּ אֶת הָעָם שָׁלשׁ בְּרָכוֹת, אֱמֶת וְיַצִּיב, וַעֲבוֹדָה, וּבִרְכַּת כֹּהֲנִים"]], "text": "כולם נכנסים ללשכת הגזית לקרות את שמע.", "refs": [["תמיד ה, א", "Mishnah_Tamid.5.1"], ["רמב״ם תמידין ומוספין ו, ד", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.4"]], "lamps": null}, "lot34": {"id": "lot34", "title": "הפייס השלישי והרביעי", "dur": 16, "v": [{"lbl": "תמיד ה, ב", "w": "אָמַר לָהֶם, חֲדָשִׁים לַקְּטֹרֶת בֹּאוּ וְהָפִיסוּ. הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה. חֲדָשִׁים עִם יְשָׁנִים בֹּאוּ וְהָפִיסוּ, מִי מַעֲלֶה אֵבָרִים מִן הַכֶּבֶשׁ לַמִּזְבֵּחַ. רַבִּי אֱלִיעֶזֶר בֶּן יַעֲקֹב אוֹמֵר, הַמַּעֲלֶה אֵבָרִים לַכֶּבֶשׁ הוּא מַעֲלֶה אוֹתָן עַל גַּבֵּי הַמִּזְבֵּחַ:"}], "vr": [], "caps": [[1, "חֲדָשִׁים לַקְּטֹרֶת בֹּאוּ וְהָפִיסוּ"], [8, "חֲדָשִׁים עִם יְשָׁנִים בֹּאוּ וְהָפִיסוּ, מִי מַעֲלֶה אֵבָרִים מִן הַכֶּבֶשׁ לַמִּזְבֵּחַ"]], "text": "הפייס השלישי — לקטורת, רק למי שלא הקטיר מימיו; הרביעי — לכולם, מי מעלה את האברים מן הכבש למזבח.", "refs": [["תמיד ה, ב", "Mishnah_Tamid.5.2"], ["רמב״ם תמידין ומוספין ד, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.7"], ["רמב״ם תמידין ומוספין ד, ח", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.8"]], "lamps": null}, "machta": {"id": "machta", "title": "הכף והמחתה", "dur": 20, "v": [{"lbl": "תמיד ה, ד", "w": "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַכַּף. וְהַכַּף דּוֹמֶה לְתַרְקַב גָּדוֹל שֶׁל זָהָב, מַחֲזִיק שְׁלשֶׁת קַבִּים, וְהַבָּזָךְ הָיָה בְתוֹכוֹ, מָלֵא וְגָדוּשׁ קְטֹרֶת. וְכִסּוּי הָיָה לוֹ, וּכְמִין מְטוּטֶלֶת הָיָה עָלָיו מִלְמַעְלָן:"}, {"lbl": "תמיד ה, ה", "w": "מִי שֶׁזָּכָה בַמַּחְתָּה, נָטַל מַחְתַּת הַכֶּסֶף, וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ, וּפִנָּה אֶת הַגֶּחָלִים הֵילָךְ וְהֵילָךְ וְחָתָה. יָרַד וְעֵרָן לְתוֹךְ שֶׁל זָהָב. נִתְפַּזֵּר מִמֶּנָּה כְּקַב גֶּחָלִים, וְהָיָה מְכַבְּדָן לָאַמָּה"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַכַּף"], [6, "וְהַבָּזָךְ הָיָה בְתוֹכוֹ, מָלֵא וְגָדוּשׁ קְטֹרֶת"], [10, "מִי שֶׁזָּכָה בַמַּחְתָּה, נָטַל מַחְתַּת הַכֶּסֶף, וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ"], [16, "יָרַד וְעֵרָן לְתוֹךְ שֶׁל זָהָב"]], "text": "המקטיר נוטל את הכף (כמין סל גדול של זהב) והבזך בתוכו, מכוסה. בעל המחתה עולה למזבח, חותה גחלים מן המערכה השנייה, יורד ומערה אותן למחתה של זהב.", "refs": [["תמיד ה, ד", "Mishnah_Tamid.5.4"], ["תמיד ה, ה", "Mishnah_Tamid.5.5"], ["רמב״ם תמידין ומוספין ד, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.5"]], "lamps": null}, "magrefa": {"id": "magrefa", "title": "המגרפה", "dur": 17, "v": [{"lbl": "תמיד ה, ו", "w": "הִגִּיעוּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ, נָטַל אֶחָד אֶת הַמַּגְרֵפָה וְזוֹרְקָהּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ. אֵין אָדָם שׁוֹמֵעַ קוֹל חֲבֵרוֹ בִּירוּשָׁלַיִם מִקּוֹל הַמַּגְרֵפָה. וּשְׁלשָׁה דְבָרִים הָיְתָה מְשַׁמֶּשֶׁת, כֹּהֵן שֶׁשּׁוֹמֵעַ אֶת קוֹלָהּ, יוֹדֵעַ שֶׁאֶחָיו הַכֹּהֲנִים נִכְנָסִים לְהִשְׁתַּחֲווֹת, וְהוּא רָץ וּבָא. וּבֶן לֵוִי שֶׁהוּא שׁוֹמֵעַ אֶת קוֹלָהּ, יוֹדֵעַ שֶׁאֶחָיו הַלְוִיִּם נִכְנָסִים לְדַבֵּר בַּשִּׁיר, וְהוּא רָץ וּבָא. וְרֹאשׁ הַמַּעֲמָד הָיָה מַעֲמִיד אֶת הַטְּמֵאִים בְּשַׁעַר הַמִּזְרָח:"}], "vr": [], "caps": [[1, "הִגִּיעוּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ, נָטַל אֶחָד אֶת הַמַּגְרֵפָה וְזוֹרְקָהּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ"], [6, "אֵין אָדָם שׁוֹמֵעַ קוֹל חֲבֵרוֹ בִּירוּשָׁלַיִם מִקּוֹל הַמַּגְרֵפָה"], [10, "וּבֶן לֵוִי שֶׁהוּא שׁוֹמֵעַ אֶת קוֹלָהּ, יוֹדֵעַ שֶׁאֶחָיו הַלְוִיִּם נִכְנָסִים לְדַבֵּר בַּשִּׁיר, וְהוּא רָץ וּבָא"]], "text": "קול המגרפה. הכהנים נכנסים להשתחוות, והלוים עולים לדוכן: שנים עשר לויים שאומרים שירה בפה, ולצדם המנגנים — תשעה כינורות, שני נבלים, ובן ארזא בצלצל. רמב״ם (כלי המקדש ג, ג): \"ואין אומרין שירה אלא בפה בלא כלי... ואחרים היו עומדים שם מנגנין בכלי שיר... ואין אלו המשוררים על פי הכלים עולין למנין השנים עשר\". ובגמרא (ערכין יג:): שנים עשר — \"כנגד תשעה כנורות [ושני] נבלים וצלצל אחד\". מקומם על הדוכן — בחירת מודל.", "refs": [["תמיד ה, ו", "Mishnah_Tamid.5.6"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"], ["רמב״ם כלי המקדש ג, ג", {"book": 338, "index": 39}], ["ערכין יג:", {"book": 134, "index": 435}]], "lamps": null}, "teni": {"id": "teni", "title": "הטני יוצא", "dur": 14, "v": [{"lbl": "תמיד ו, א", "w": "הֵחֵלּוּ עוֹלִים בְּמַעֲלוֹת הָאוּלָם. מִי שֶׁזָּכוּ בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה הָיוּ מַקְדִּימִין לִפְנֵיהֶם. מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי נִכְנַס, וְנָטַל אֶת הַטֶּנִי וְהִשְׁתַּחֲוָה וְיָצָא"}], "vr": [], "caps": [[1, "הֵחֵלּוּ עוֹלִים בְּמַעֲלוֹת הָאוּלָם"], [5, "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי נִכְנַס, וְנָטַל אֶת הַטֶּנִי וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "מדשן מזבח הפנימי נכנס, נוטל את הטני שהניח, משתחוה ויוצא.", "refs": [["תמיד ו, א", "Mishnah_Tamid.6.1"]], "lamps": null}, "lamps2": {"id": "lamps2", "title": "הטבת שתי נרות", "dur": 22, "v": [{"lbl": "תמיד ו, א", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִין, מְדַשֵּׁן אֶת הַמִּזְרָחִי, וּמַנִּיחַ אֶת הַמַּעֲרָבִי דוֹלֵק, שֶׁמִּמֶּנּוּ הָיָה מַדְלִיק אֶת הַמְּנוֹרָה בֵּין הָעַרְבַּיִם. מְצָאוֹ שֶׁכָּבָה, מְדַשְּׁנוֹ וּמַדְלִיקוֹ מִמִּזְבַּח הָעוֹלָה. נָטַל אֶת הַכּוּז מִמַּעֲלָה שְׁנִיָּה, וְהִשְׁתַּחֲוָה וְיָצָא"}], "vr": [{"lbl": "רמב״ם תמידין ו, ד", "w": "וְאַחַר כָּךְ נִכְנַס זֶה שֶׁזָּכָה בְּדִשּׁוּן הַמְּנוֹרָה וּמֵטִיב שְׁתֵּי הַנֵּרוֹת וְיוֹצֵא זֶה שֶׁהִקְטִיר עִם מְדַשֵּׁן הַמְּנוֹרָה. וְעוֹמֵד עַל מַעֲלוֹת הָאוּלָם הוּא וְאֶחָיו הַכֹּהֲנִים"}], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִין"], [7, "מְדַשֵּׁן אֶת הַמִּזְרָחִי, וּמַנִּיחַ אֶת הַמַּעֲרָבִי דוֹלֵק"], [12, "שֶׁמִּמֶּנּוּ הָיָה מַדְלִיק אֶת הַמְּנוֹרָה בֵּין הָעַרְבַּיִם"], [17, "נָטַל אֶת הַכּוּז מִמַּעֲלָה שְׁנִיָּה, וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "", "refs": [["תמיד ו, א", "Mishnah_Tamid.6.1"], ["רמב״ם תמידין ומוספין ג, יג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.13"], ["רמב״ם תמידין ומוספין ג, יז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.17"]], "lamps": {"rambam": "כרמב״ם: הנר שמצפון לאמצעי — מתקנו (שלא כבה); והאמצעי, הנר המערבי, נשאר דולק, וממנו מדליקים בין הערבים. \"נר מערבי שכבה אין מדליקין אותו אחר דשונו אלא ממזבח החיצון\" (תמידין ג, יג).", "rashi": "כרש״י, הראב״ד והברטנורא: מדשן את המזרחי ונותן בו שמן ופתילה ומניחו כבוי עד הערב; והמערבי — השני מן המזרח — נשאר דולק, וממנו מדליקים את המנורה בין הערבים."}}, "deshen": {"id": "deshen", "title": "הטני והכוז — אל מקום הדשן", "dur": 18, "v": [{"lbl": "תמיד א, ד", "w": "צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הָרִצְפָה רָחוֹק מִן הַכֶּבֶשׁ שְׁלשָׁה טְפָחִים, מְקוֹם שֶׁנּוֹתְנִין מֻרְאוֹת הָעוֹף וְדִּשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה"}], "vr": [], "caps": [[1, "מְקוֹם שֶׁנּוֹתְנִין מֻרְאוֹת הָעוֹף וְדִּשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה"]], "text": "מדשן מזבח הפנימי ומדשן המנורה יוצאים יחד, זה בטני וזה בכוז, ושופכים את הדשן במקום הדשן שבמזרח הכבש. ברטנורא (תמיד ו, א): \"ואז היו שניהן מוציאין זה הטני וזה הכוז ושופכים הדשן במקום אחד אצל המזבח קדמה\"; והרא״ש: \"כדי שיוציאם ביחד\". אחר כך הם עומדים בברכת כהנים והכלים בידם (תמיד ז, ב). דרכם אל מקום הדשן ומקום עמידתם שם — בחירת מודל.", "refs": [["תמיד א, ד", "Mishnah_Tamid.1.4"], ["תמיד ו, א", "Mishnah_Tamid.6.1"], ["ברטנורא תמיד ו, א", {"book": 634, "index": 201}], ["פירוש הרא״ש תמיד לג.", {"book": 2224, "index": 289}], ["רמב״ם תמידין ומוספין ג, יב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.12"], ["תמיד ז, ב", "Mishnah_Tamid.7.2"]], "lamps": null}, "gechalim": {"id": "gechalim", "title": "הגחלים על מזבח הזהב", "dur": 14, "v": [{"lbl": "תמיד ו, ב", "w": "מִי שֶׁזָּכָה בַמַּחְתָּה, צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הַמִּזְבֵּחַ וְרִדְּדָן בְּשׁוּלֵי הַמַּחְתָּה, וְהִשְׁתַּחֲוָה וְיָצָא:"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַמַּחְתָּה, צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הַמִּזְבֵּחַ"], [7, "וְרִדְּדָן בְּשׁוּלֵי הַמַּחְתָּה, וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "בעל המחתה צובר את הגחלים על מזבח הזהב ומרדד אותן בשולי המחתה.", "refs": [["תמיד ו, ב", "Mishnah_Tamid.6.2"]], "lamps": null}, "ketoret": {"id": "ketoret", "title": "הקטרת הקטורת", "dur": 24, "v": [{"lbl": "תמיד ו, ג", "w": "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַבָּזָךְ מִתּוֹךְ הַכַּף וְנוֹתְנוֹ לְאוֹהֲבוֹ אוֹ לִקְרוֹבוֹ. נִתְפַּזֵּר מִמֶּנּוּ לְתוֹכוֹ, נוֹתְנוֹ לוֹ בְחָפְנָיו. וּמְלַמְּדִים אוֹתוֹ, הֱוֵי זָהִיר שֶׁמָּא תַתְחִיל לְפָנֶיךָ, שֶׁלֹּא תִכָּוֶה. הִתְחִיל מְרַדֵּד וְיוֹצֵא. לֹא הָיָה הַמַּקְטִיר מַקְטִיר עַד שֶׁהַמְמֻנֶּה אוֹמֵר לוֹ, הַקְטֵר. אִם הָיָה כֹהֵן גָּדוֹל, הַמְמֻנֶּה אוֹמֵר, אִישִׁי כֹהֵן גָּדוֹל, הַקְטֵר. פָּרְשׁוּ הָעָם, וְהִקְטִיר וְהִשְׁתַּחֲוָה וְיָצָא:"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַבָּזָךְ מִתּוֹךְ הַכַּף וְנוֹתְנוֹ לְאוֹהֲבוֹ אוֹ לִקְרוֹבוֹ"], [7, "הֱוֵי זָהִיר שֶׁמָּא תַתְחִיל לְפָנֶיךָ, שֶׁלֹּא תִכָּוֶה"], [12, "לֹא הָיָה הַמַּקְטִיר מַקְטִיר עַד שֶׁהַמְמֻנֶּה אוֹמֵר לוֹ, הַקְטֵר"], [18, "פָּרְשׁוּ הָעָם, וְהִקְטִיר וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "המקטיר מרדד את הקטורת על הגחלים מן הצד הרחוק אליו. כולם פורשים מבין האולם ולמזבח, והקטורת עולה.", "refs": [["תמיד ו, ג", "Mishnah_Tamid.6.3"], ["רמב״ם תמידין ומוספין ו, ד", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.4"]], "lamps": null}, "birkat": {"id": "birkat", "title": "ברכת כהנים על מעלות האולם", "dur": 20, "v": [{"lbl": "תמיד ז, ב", "w": "בָּאוּ וְעָמְדוּ עַל מַעֲלוֹת הָאוּלָם. עָמְדוּ הָרִאשׁוֹנִים לִדְרוֹם אֲחֵיהֶם הַכֹּהֲנִים, וַחֲמִשָּׁה כֵלִים בְּיָדָם, הַטֶּנִי בְיַד אֶחָד, וְהַכּוּז בְּיַד אֶחָד, וְהַמַּחְתָּה בְיַד אֶחָד, וְהַבָּזָךְ בְּיַד אֶחָד, וְכַף וְכִסּוּיָהּ בְּיַד אֶחָד. וּבֵרְכוּ אֶת הָעָם בְּרָכָה אַחַת, אֶלָּא שֶׁבַּמְּדִינָה אוֹמְרִים אוֹתָהּ שָׁלשׁ בְּרָכוֹת, וּבַמִּקְדָּשׁ בְּרָכָה אֶחָת. בַּמִּקְדָּשׁ הָיוּ אוֹמְרִים אֶת הַשֵּׁם כִּכְתָבוֹ, וּבַמְּדִינָה בְּכִנּוּיוֹ. בַּמְּדִינָה הַכֹּהֲנִים נוֹשְׂאִים אֶת כַּפֵּיהֶם, יְדֵיהֶם כְּנֶגֶד כִּתְפוֹתֵיהֶם, וּבַמִּקְדָּשׁ עַל גַּבֵּי רָאשֵׁיהֶן"}], "vr": [{"lbl": "רמב״ם תמידין ו, ה", "w": "וְאַחַר כָּךְ מַעֲלֶה זֶה שֶׁזָּכָה בָּאֵיבָרִים אֶת הָאֵיבָרִים מִן הַכֶּבֶשׁ לַמִּזְבֵּחַ. וְאַחַר שֶׁמַּעֲלִין אֶת הָאֵיבָרִים. מַתְחִילִין אֵלּוּ שֶׁעַל מַעֲלוֹת הָאוּלָם וּמְבָרְכִין בִּרְכַּת כֹּהֲנִים בְּרָכָה אַחַת בַּשֵּׁם הַמְפֹרָשׁ כְּמוֹ שֶׁבֵּאַרְנוּ בִּמְקוֹמָהּ"}], "caps": [[1, "בָּאוּ וְעָמְדוּ עַל מַעֲלוֹת הָאוּלָם"], [5, "עָמְדוּ הָרִאשׁוֹנִים לִדְרוֹם אֲחֵיהֶם הַכֹּהֲנִים, וַחֲמִשָּׁה כֵלִים בְּיָדָם"], [11, "וּבֵרְכוּ אֶת הָעָם בְּרָכָה אַחַת"], [15, "וּבַמִּקְדָּשׁ עַל גַּבֵּי רָאשֵׁיהֶן"]], "text": "הכהנים על מעלות האולם; החמישה הראשונים בדרום, והכלים בידם. ידיהם מעל ראשיהם.", "refs": [["תמיד ז, ב", "Mishnah_Tamid.7.2"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"], ["סוטה ז, ו", "Mishnah_Sotah.7.6"]], "lamps": null}, "haalaah": {"id": "haalaah", "title": "האברים על המזבח", "dur": 20, "v": [{"lbl": "תמיד ז, ג", "w": "בִּזְמַן שֶׁכֹּהֵן גָּדוֹל רוֹצֶה לְהַקְטִיר, הָיָה עוֹלֶה בַכֶּבֶשׁ וְהַסְּגָן בִּימִינוֹ. הִגִּיעַ לְמַחֲצִית הַכֶּבֶשׁ, אָחַז הַסְּגָן בִּימִינוֹ וְהֶעֱלָהוּ. הוֹשִׁיט לוֹ הָרִאשׁוֹן הָרֹאשׁ וְהָרֶגֶל, וְסָמַךְ עֲלֵיהֶן וּזְרָקָן. הוֹשִׁיט הַשֵּׁנִי לָרִאשׁוֹן שְׁתֵּי הַיָּדַיִם, נוֹתְנָן לְכֹהֵן גָּדוֹל, וְסָמַךְ עֲלֵיהֶן וּזְרָקָן. נִשְׁמַט הַשֵּׁנִי וְהָלַךְ לוֹ. וְכָךְ הָיוּ מוֹשִׁיטִין לוֹ שְׁאָר כָּל הָאֵבָרִין, וְהוּא סוֹמֵךְ עֲלֵיהֶן וְזוֹרְקָן. וּבִזְמַן שֶׁהוּא רוֹצֶה, הוּא סוֹמֵךְ וַאֲחֵרִים זוֹרְקִין. בָּא לוֹ לְהַקִּיף אֶת הַמִּזְבֵּחַ. מֵהֵיכָן הוּא מַתְחִיל, מִקֶּרֶן דְּרוֹמִית מִזְרָחִית, מִזְרָחִית צְפוֹנִית, צְפוֹנִית מַעֲרָבִית, מַעֲרָבִית דְּרוֹמִית"}], "vr": [], "caps": [[1, "וְכָךְ הָיוּ מוֹשִׁיטִין לוֹ שְׁאָר כָּל הָאֵבָרִין, וְהוּא סוֹמֵךְ עֲלֵיהֶן וְזוֹרְקָן"], [10, "בָּא לוֹ לְהַקִּיף אֶת הַמִּזְבֵּחַ"], [14, "מִקֶּרֶן דְּרוֹמִית מִזְרָחִית, מִזְרָחִית צְפוֹנִית, צְפוֹנִית מַעֲרָבִית, מַעֲרָבִית דְּרוֹמִית"]], "text": "מי שזכה בפייס הרביעי מעלה את האברים מן הכבש וזורקם על המערכה הגדולה. המשנה מתארת כאן כהן גדול; בכל יום — מי שזכה. האברים מונחים בחצי הכבש ולמטה, במערבו (תמיד ד, ג); והמעלה אותם עולה במזרחו של כבש (יומא ד, ה).", "refs": [["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["תמיד ה, ב", "Mishnah_Tamid.5.2"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"], ["תמיד ד, ג", "Mishnah_Tamid.4.3"], ["יומא ד, ה", "Mishnah_Yoma.4.5"]], "lamps": null}, "mincha": {"id": "mincha", "title": "המנחה והחביתין", "dur": 17, "v": [{"lbl": "תמיד ד, ג", "w": "הַשְּׁבִיעִי, בַּסֹּלֶת. הַשְּׁמִינִי, בַּחֲבִתִּין. הַתְּשִׁיעִי, בַּיָּיִן"}], "vr": [{"lbl": "רמב״ם תמידין ו, ה", "w": "וְאַחַר כָּךְ מַעֲלִין סלֶת הַנְּסָכִים. וְאַחַר הַסּלֶת מַקְטִיר הַחֲבִיתִין. וְאַחַר הַחֲבִיתִין מַעֲלִין אֶת הַיַּיִן לְנִסּוּךְ"}], "caps": [[1, "וְאֵבָרִים לְמִנְחָה, וּמִנְחָה לַחֲבִיתִּין"], [8, "וַחֲבִיתִּין לִנְסָכִין"]], "text": "הסולת (מנחת הנסכים) ואחריה החביתין של כהן גדול עולים למזבח — בסדר של אביי (יומא לג.) ובסדר הרמב״ם (תמידין ו, ה).", "refs": [["יומא לג.", "Yoma.33a"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"]], "lamps": null}, "nesachim": {"id": "nesachim", "title": "ניסוך היין, החצוצרות והשיר", "dur": 30, "v": [{"lbl": "תמיד ז, ג", "w": "נָתְנוּ לוֹ יַיִן לְנַסֵּךְ, הַסְּגָן עוֹמֵד עַל הַקֶּרֶן וְהַסּוּדָרִים בְּיָדוֹ, וּשְׁנֵי כֹהֲנִים עוֹמְדִים עַל שֻׁלְחַן הַחֲלָבִים וּשְׁתֵּי חֲצוֹצְרוֹת שֶׁל כֶּסֶף בְּיָדָם, תָּקְעוּ וְהֵרִיעוּ וְתָקְעוּ. בָּאוּ וְעָמְדוּ אֵצֶל בֶּן אַרְזָא, אֶחָד מִימִינוֹ וְאֶחָד מִשְּׂמֹאלוֹ. שָׁחָה לְנַסֵּךְ, וְהֵנִיף הַסְּגָן בַּסּוּדָרִין, וְהִקִּישׁ בֶּן אַרְזָא בַּצֶּלְצָל, וְדִבְּרוּ הַלְוִיִּם בַּשִּׁיר. הִגִּיעוּ לְפֶרֶק, תָּקְעוּ, וְהִשְׁתַּחֲווּ הָעָם. עַל כָּל פֶּרֶק, תְּקִיעָה. וְעַל כָּל תְּקִיעָה, הִשְׁתַּחֲוָיָה"}], "vr": [], "caps": [[1, "נָתְנוּ לוֹ יַיִן לְנַסֵּךְ, הַסְּגָן עוֹמֵד עַל הַקֶּרֶן וְהַסּוּדָרִים בְּיָדוֹ"], [6, "וּשְׁנֵי כֹהֲנִים עוֹמְדִים עַל שֻׁלְחַן הַחֲלָבִים וּשְׁתֵּי חֲצוֹצְרוֹת שֶׁל כֶּסֶף בְּיָדָם, תָּקְעוּ וְהֵרִיעוּ וְתָקְעוּ"], [13, "שָׁחָה לְנַסֵּךְ, וְהֵנִיף הַסְּגָן בַּסּוּדָרִין, וְהִקִּישׁ בֶּן אַרְזָא בַּצֶּלְצָל, וְדִבְּרוּ הַלְוִיִּם בַּשִּׁיר"], [21, "הִגִּיעוּ לְפֶרֶק, תָּקְעוּ, וְהִשְׁתַּחֲווּ הָעָם"], [26, "עַל כָּל פֶּרֶק, תְּקִיעָה. וְעַל כָּל תְּקִיעָה, הִשְׁתַּחֲוָיָה"]], "text": "היין מתנסך בספל שבקרן מערבית דרומית. הסגן מניף בסודרים, בן ארזא מקיש בצלצל, הלוים אומרים שיר על הדוכן, ובכל פרק — תקיעה והשתחויה.", "refs": [["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["רמב״ם תמידין ומוספין ו, ו", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.6"], ["רמב״ם תמידין ומוספין ו, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.7"], ["שקלים ה, א", "Mishnah_Shekalim.5.1"]], "lamps": null}, "shir": {"id": "shir", "title": "שיר של יום", "dur": 16, "v": [{"lbl": "תמיד ז, ד", "w": "הַשִּׁיר שֶׁהָיוּ הַלְוִיִּם אוֹמְרִים בַּמִּקְדָּשׁ, בַּיּוֹם הָרִאשׁוֹן הָיוּ אוֹמְרִים (תהילים כ״ד:א׳), לַה' הָאָרֶץ וּמְלוֹאָהּ תֵּבֵל וְיֹשְׁבֵי בָהּ. בַּשֵּׁנִי הָיוּ אוֹמְרִים (שם מח), גָּדוֹל ה' וּמְהֻלָּל מְאֹד בְּעִיר אֱלֹהֵינוּ הַר קָדְשׁוֹ. בַּשְּׁלִישִׁי הָיוּ אוֹמְרִים (שם פב), אֱלֹהִים נִצָּב בַּעֲדַת אֵל בְּקֶרֶב אֱלֹהִים יִשְׁפֹּט. בָּרְבִיעִי הָיוּ אוֹמְרִים (שם צד), אֵל נְקָמוֹת ה' אֵל נְקָמוֹת הוֹפִיעַ וְגוֹ'. בַּחֲמִישִׁי הָיוּ אוֹמְרִים (שם פא), הַרְנִינוּ לֵאלֹהִים עוּזֵּנוּ, הָרִיעוּ לֵאלֹהֵי יַעֲקֹב. בַּשִּׁשִּׁי הָיוּ אוֹמְרִים (שם צג), ה' מָלָךְ גֵּאוּת לָבֵשׁ וְגוֹ'. בְּשַׁבָּת הָיוּ אוֹמְרִים (שם צב), מִזְמוֹר שִׁיר לְיוֹם הַשַּׁבָּת, מִזְמוֹר שִׁיר לֶעָתִיד לָבֹא, לְיוֹם שֶׁכֻּלּוֹ שַׁבָּת מְנוּחָה לְחַיֵּי הָעוֹלָמִים:"}], "vr": [], "caps": [[1, "הַשִּׁיר שֶׁהָיוּ הַלְוִיִּם אוֹמְרִים בַּמִּקְדָּשׁ"]], "text": "השיר של כל יום מימות השבוע.", "refs": [["תמיד ז, ד", "Mishnah_Tamid.7.4"], ["רמב״ם תמידין ומוספין ו, ט", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.9"]], "lamps": null}, "sof": {"id": "sof", "title": "זה הוא סדר התמיד", "dur": 12, "v": [{"lbl": "תמיד ז, ג", "w": "זֶה הוּא סֵדֶר הַתָּמִיד לַעֲבוֹדַת בֵּית אֱלֹהֵינוּ, יְהִי רָצוֹן שֶׁיִבָּנֶה בִּמְהֵרָה בְיָמֵינוּ, אָמֵן"}], "vr": [], "caps": [[1, "זֶה הוּא סֵדֶר הַתָּמִיד לַעֲבוֹדַת בֵּית אֱלֹהֵינוּ"], [6, "יְהִי רָצוֹן שֶׁיִבָּנֶה בִּמְהֵרָה בְיָמֵינוּ, אָמֵן"]], "text": "אחרי החביתין והנסכים — המוספין (בשבת, בראש חודש ובמועדים), ואחריהם, בשבת, שני בזיכי הלבונה; ובין הערבים התמיד השני (יומא לג.).", "refs": [["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["יומא לג.", "Yoma.33a"]], "lamps": null}}, "orders": {"abba": ["moked", "lot1", "patrol", "kiyor", "terumah", "tapuach", "maarachah", "maarachah2", "gezirin", "lot2", "barkai", "lamb", "tobeit", "keys", "gate", "inner", "lamps5", "akedah", "dam", "evarim", "shema", "lot34", "machta", "magrefa", "teni", "lamps2", "deshen", "gechalim", "ketoret", "birkat", "haalaah", "mincha", "nesachim", "shir", "sof"], "rambam": ["moked", "patrol", "lot1", "kiyor", "terumah", "tapuach", "maarachah", "maarachah2", "gezirin", "barkai", "lamb", "tobeit", "keys", "gate", "inner", "akedah", "dam", "lamps5", "evarim", "shema", "lot34", "machta", "magrefa", "teni", "gechalim", "ketoret", "lamps2", "deshen", "haalaah", "birkat", "mincha", "nesachim", "shir", "sof"]}, "note": {"abba": "סדר אביי (יומא לג.), \"אליבא דאבא שאול\" — המשנה במסכת תמיד כסדרה.", "rambam": "סדר הרמב״ם (תמידין ומוספין ו), כחכמים — \"והלכה כחכמים\" (פירוש המשניות תמיד ו, ג)."}, "abaye": "אַבָּיֵי מְסַדֵּר מַעֲרָכָה מִשְּׁמֵיהּ דִּגְמָרָא וְאַלִּיבָּא דְּאַבָּא שָׁאוּל: מַעֲרָכָה גְּדוֹלָה קוֹדֶמֶת לְמַעֲרָכָה שְׁנִיָּה שֶׁל קְטוֹרֶת, מַעֲרָכָה שְׁנִיָּה שֶׁל קְטוֹרֶת קוֹדֶמֶת לְסִידּוּר שְׁנֵי גְּזִירֵי עֵצִים, וְסִידּוּר שְׁנֵי גְּזִירֵי עֵצִים קוֹדֵם לְדִישּׁוּן מִזְבֵּחַ הַפְּנִימִי, וְדִישּׁוּן מִזְבֵּחַ הַפְּנִימִי קוֹדֵם לַהֲטָבַת חָמֵשׁ נֵרוֹת, וַהֲטָבַת חָמֵשׁ נֵרוֹת קוֹדֵם לְדַם הַתָּמִיד, וְדַם הַתָּמִיד קוֹדֵם לַהֲטָבַת שְׁתֵּי נֵרוֹת, וַהֲטָבַת שְׁתֵּי נֵרוֹת קוֹדֵם לִקְטוֹרֶת, וּקְטוֹרֶת קוֹדֵם לְאֵבָרִים, וְאֵבָרִים לְמִנְחָה, וּמִנְחָה לַחֲבִיתִּין, וַחֲבִיתִּין לִנְסָכִין, וּנְסָכִין לְמוּסָפִין, וּמוּסָפִין לְבָזִיכִין, וּבָזִיכִין לְתָמִיד שֶׁל בֵּין הָעַרְבַּיִם", "shir": {"0": "בַּיּוֹם הָרִאשׁוֹן הָיוּ אוֹמְרִים (תהילים כ״ד:א׳), לַה' הָאָרֶץ וּמְלוֹאָהּ תֵּבֵל וְיֹשְׁבֵי בָהּ", "1": "בַּשֵּׁנִי הָיוּ אוֹמְרִים (שם מח), גָּדוֹל ה' וּמְהֻלָּל מְאֹד בְּעִיר אֱלֹהֵינוּ הַר קָדְשׁוֹ", "2": "בַּשְּׁלִישִׁי הָיוּ אוֹמְרִים (שם פב), אֱלֹהִים נִצָּב בַּעֲדַת אֵל בְּקֶרֶב אֱלֹהִים יִשְׁפֹּט", "3": "בָּרְבִיעִי הָיוּ אוֹמְרִים (שם צד), אֵל נְקָמוֹת ה' אֵל נְקָמוֹת הוֹפִיעַ וְגוֹ", "4": "בַּחֲמִישִׁי הָיוּ אוֹמְרִים (שם פא), הַרְנִינוּ לֵאלֹהִים עוּזֵּנוּ, הָרִיעוּ לֵאלֹהֵי יַעֲקֹב", "5": "בַּשִּׁשִּׁי הָיוּ אוֹמְרִים (שם צג), ה' מָלָךְ גֵּאוּת לָבֵשׁ וְגוֹ", "6": "בְּשַׁבָּת הָיוּ אוֹמְרִים (שם צב), מִזְמוֹר שִׁיר לְיוֹם הַשַּׁבָּת, מִזְמוֹר שִׁיר לֶעָתִיד לָבֹא, לְיוֹם שֶׁכֻּלּוֹ שַׁבָּת מְנוּחָה לְחַיֵּי הָעוֹלָמִים"}}; //
+  var TAMID_DATA = {"stages": {"moked": {"id": "moked", "title": "בלילה — בית המוקד", "dur": 22, "v": [{"lbl": "תמיד א, א", "w": "בִּשְׁלשָׁה מְקוֹמוֹת הַכֹּהֲנִים שׁוֹמְרִים בְּבֵית הַמִּקְדָּשׁ. בְּבֵית אַבְטִינָס, בְּבֵית הַנִּיצוֹץ וּבְבֵית הַמּוֹקֵד. בֵּית אַבְטִינָס וּבֵית הַנִּיצוֹץ הָיוּ עֲלִיּוֹת, וְהָרוֹבִים שׁוֹמְרִים שָׁם. בֵּית הַמּוֹקֵד, כִּפָּה, וּבַיִת גָּדוֹל הָיָה, מֻקָּף רוֹבָדִים שֶׁל אֶבֶן, וְזִקְנֵי בֵית אָב יְשֵׁנִים שָׁם, וּמַפְתְּחוֹת הָעֲזָרָה בְּיָדָם. וּפִרְחֵי כְהֻנָּה אִישׁ כִּסְתּוֹ בָאָרֶץ. לֹא הָיוּ יְשֵׁנִים בְּבִגְדֵי קֹדֶשׁ, אֶלָּא פוֹשְׁטִין וּמְקַפְּלִין וּמַנִּיחִים אוֹתָן תַּחַת רָאשֵׁיהֶן, וּמִתְכַּסִּין בִּכְסוּת עַצְמָן"}], "vr": [], "caps": [[1, "בֵּית הַמּוֹקֵד, כִּפָּה, וּבַיִת גָּדוֹל הָיָה"], [12.8, "וְזִקְנֵי בֵית אָב יְשֵׁנִים שָׁם, וּמַפְתְּחוֹת הָעֲזָרָה בְּיָדָם"], [16.4, "וּפִרְחֵי כְהֻנָּה אִישׁ כִּסְתּוֹ בָאָרֶץ"]], "text": "הממונה בא בלילה: עובר בחיל, עולה במעלות שלאורך כותל הבית הצפוני ועומד על המדרגה שלפני שער בית המוקד שאל החיל — והמצלמה הולכת אחריו, ואחר כך נכנסת פנימה. הלילה שלפני העבודה. בית המוקד פתוח מלמעלה כדי לראות פנימה: הזקנים ישנים על רובדי האבן שלאורך הכתלים, והצעירים על הרצפה, כל אחד על כסתו. באמצע המוקד, האש שבה התחממו. ליד הלשכה הצפונית־מערבית, טבלת השיש שבריצפה, והמפתחות תלויים בשלשלת שתחתיה; והישן עליה, וכסותו עליה (מידות א, ט) — לתוספות יום טוב הוא הכהן שנעל, וכך בהדגמה; ולרבינו שמעיה — בן הלוי: \"ונתן בן לוי כסותו עליה חזר וישן לו\". מקום הטבלה בבית המוקד — בחירת מודל.", "refs": [["תמיד א, א", "Mishnah_Tamid.1.1"], ["מידות א, ט", "Mishnah_Middot.1.9"], ["תוספות יום טוב מידות א, ט", {"book": 948, "index": 58}], ["רבינו שמעיה מידות א, ט", {"book": 645, "index": 40}]], "lamps": null}, "lot1": {"id": "lot1", "title": "הפייס הראשון — מי תורם את המזבח", "dur": 18, "v": [{"lbl": "תמיד א, ב", "w": "מִי שֶׁהוּא רוֹצֶה לִתְרֹם אֶת הַמִּזְבֵּחַ, מַשְׁכִּים וְטוֹבֵל עַד שֶׁלֹּא יָבֹא הַמְמֻנֶּה. וְכִי בְאֵיזוֹ שָׁעָה הַמְמֻנֶּה בָא. לֹא כָל הָעִתִּים שָׁווֹת, פְּעָמִים שֶׁהוּא בָא מִקְרִיאַת הַגֶּבֶר, אוֹ סָמוּךְ לוֹ מִלְּפָנָיו אוֹ מִלְּאַחֲרָיו. הַמְמֻנֶּה בָא וְדוֹפֵק עֲלֵיהֶם, וְהֵם פָּתְחוּ לוֹ. אָמַר לָהֶן, מִי שֶׁטָּבַל יָבֹא וְיָפִיס. הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה:"}], "vr": [{"lbl": "רמב״ם תמידין ו, א", "w": "וְכָל הַכֹּהֲנִים שֶׁשָּׁם כְּבָר טָבְלוּ קֹדֶם שֶׁיָּבוֹא הַמְמֻנֶּה וְלָבְשׁוּ בִּגְדֵי כְּהֻנָּה. וְיָבוֹאוּ וְיַעַמְדוּ בְּלִשְׁכַּת הַגָּזִית. וְיָפִיסוּ פַּיִס רִאשׁוֹן וְשֵׁנִי וְיִזְכֶּה כָּל אֶחָד בִּמְלַאכְתּוֹ כְּמוֹ שֶׁבֵּאַרְנוּ"}], "caps": [[1, "הַמְמֻנֶּה בָא וְדוֹפֵק עֲלֵיהֶם, וְהֵם פָּתְחוּ לוֹ"], [7, "מִי שֶׁטָּבַל יָבֹא וְיָפִיס"], [13, "הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה"]], "text": "הממונה דופק על בית המוקד, ופותחים לו. מי שטבל עומד בהקף, ומוציא אצבע אחת או שתיים; הממונה מונה על האצבעות עד המספר שהוסכם, ומי שהמספר נגמר אצלו — זכה (רמב״ם תמידין ד, ג). הזוכה מסומן.", "refs": [["תמיד א, ב", "Mishnah_Tamid.1.2"], ["רמב״ם תמידין ומוספין ד, ג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.3"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"]], "lamps": null, "capsR": [[1, "וְכָל הַכֹּהֲנִים שֶׁשָּׁם כְּבָר טָבְלוּ קֹדֶם שֶׁיָּבוֹא הַמְמֻנֶּה וְלָבְשׁוּ בִּגְדֵי כְּהֻנָּה"], [6.5, "וְיָבוֹאוּ וְיַעַמְדוּ בְּלִשְׁכַּת הַגָּזִית"], [11, "וְיָפִיסוּ פַּיִס רִאשׁוֹן וְשֵׁנִי וְיִזְכֶּה כָּל אֶחָד בִּמְלַאכְתּוֹ"]]}, "patrol": {"id": "patrol", "title": "שתי כתות עם אבוקות", "dur": 37, "v": [{"lbl": "תמיד א, ג", "w": "נָטַל אֶת הַמַּפְתֵּחַ וּפָתַח אֶת הַפִּשְׁפָּשׁ, וְנִכְנַס מִבֵּית הַמּוֹקֵד לָעֲזָרָה, וְנִכְנְסוּ אַחֲרָיו וּשְׁתֵּי אֲבוּקוֹת שֶׁל אוּר בְּיָדָם. וְנֶחְלְקוּ לִשְׁתֵּי כִתּוֹת, אֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמִּזְרָח, וְאֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמַּעֲרָב. הָיוּ בוֹדְקִין וְהוֹלְכִין עַד שֶׁמַּגִּיעִין לִמְקוֹם בֵּית עוֹשֵׂי חֲבִתִּים. הִגִּיעוּ אֵלּוּ וָאֵלּוּ, אָמְרוּ שָׁלוֹם, הַכֹּל שָׁלוֹם. הֶעֱמִידוּ עוֹשֵׂי חֲבִתִּים לַעֲשׂוֹת חֲבִתִּים:"}], "vr": [{"lbl": "רמב״ם תמידין ו, א", "w": "סָמוּךְ לַעֲלוֹת הַשַּׁחַר יָבוֹא הַמְמֻנֶּה שֶׁעַל הַפְּיָסוֹת וְיַקִּישׁ עַל הָעֲזָרָה וּפוֹתְחִין לוֹ. וּמְבַלְּשִׁין אֶת כָּל הָעֲזָרָה. וּמַעֲמִידִין עוֹשֵׂי חֲבִיתִין לַעֲשׂוֹת הַחֲבִיתִין"}], "caps": [[1, "נָטַל אֶת הַמַּפְתֵּחַ וּפָתַח אֶת הַפִּשְׁפָּשׁ, וְנִכְנַס מִבֵּית הַמּוֹקֵד לָעֲזָרָה"], [6, "וּשְׁתֵּי אֲבוּקוֹת שֶׁל אוּר בְּיָדָם"], [10, "וְנֶחְלְקוּ לִשְׁתֵּי כִתּוֹת, אֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמִּזְרָח, וְאֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמַּעֲרָב"], [20, "הָיוּ בוֹדְקִין וְהוֹלְכִין עַד שֶׁמַּגִּיעִין לִמְקוֹם בֵּית עוֹשֵׂי חֲבִתִּים"], [28.6, "אָמְרוּ שָׁלוֹם, הַכֹּל שָׁלוֹם"], [33, "הֶעֱמִידוּ עוֹשֵׂי חֲבִתִּים לַעֲשׂוֹת חֲבִתִּים"]], "text": "הממונה מגביה את טבלת השיש בטבעת, נוטל את המפתח מן השלשלת שתחתיה (מידות א, ט; מלאכת שלמה, תמיד א, ג: \"מתחת הטבלא של שיש\"), מחזיר את הטבלה ופותח את הפשפש. שתי כתות יוצאות מבית המוקד עם אבוקות, ובודקות את העזרה מסביב: אחת דרך המזרח ואחת דרך המערב, עד שנפגשות ליד לשכת עושי חביתין שבצד שער ניקנור. \"אמרו שלום, הכל שלום\" — בהדגמה כת שואלת וכת משיבה, כתפארת ישראל; ולמפרש ולתוספות יום טוב — כפל לשון. בהדגמה ההליכה מואצת. מספר הכהנים בכל כת, והמסלול הצמוד לכתלים — בחירת מודל.", "refs": [["תמיד א, ג", "Mishnah_Tamid.1.3"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"], ["מידות א, ט", "Mishnah_Middot.1.9"]], "lamps": null, "capsR": [[1, "סָמוּךְ לַעֲלוֹת הַשַּׁחַר יָבוֹא הַמְמֻנֶּה שֶׁעַל הַפְּיָסוֹת וְיַקִּישׁ עַל הָעֲזָרָה וּפוֹתְחִין לוֹ"], [6, "וּמְבַלְּשִׁין אֶת כָּל הָעֲזָרָה"], [10, "וְנֶחְלְקוּ לִשְׁתֵּי כִתּוֹת, אֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמִּזְרָח, וְאֵלּוּ הוֹלְכִים בָּאַכְסַדְרָא דֶּרֶךְ הַמַּעֲרָב"], [20, "הָיוּ בוֹדְקִין וְהוֹלְכִין עַד שֶׁמַּגִּיעִין לִמְקוֹם בֵּית עוֹשֵׂי חֲבִתִּים"], [28.6, "אָמְרוּ שָׁלוֹם, הַכֹּל שָׁלוֹם"], [33, "וּמַעֲמִידִין עוֹשֵׂי חֲבִיתִין לַעֲשׂוֹת הַחֲבִיתִין"]]}, "kiyor": {"id": "kiyor", "title": "קידוש ידיים ורגליים — והמוכני", "dur": 20, "v": [{"lbl": "תמיד א, ד", "w": "מִי שֶׁזָּכָה לִתְרֹם אֶת הַמִּזְבֵּחַ, הוּא יִתְרֹם אֶת הַמִּזְבֵּחַ, וְהֵם אוֹמְרִים לוֹ, הִזָּהֵר שֶׁמָּא תִגַּע בַּכְּלִי, עַד שֶׁתְּקַדֵּשׁ יָדֶיךָ וְרַגְלֶיךָ מִן הַכִּיּוֹר, וַהֲרֵי הַמַּחְתָּה נְתוּנָה בַמִּקְצוֹעַ בֵּין הַכֶּבֶשׁ לַמִּזְבֵּחַ, בְּמַעֲרָבוֹ שֶׁל כָּבֶשׁ. אֵין אָדָם נִכְנָס עִמּוֹ, וְלֹא נֵר בְּיָדוֹ, אֶלָּא מְהַלֵּךְ לְאוֹר הַמַּעֲרָכָה. לֹא הָיוּ רוֹאִין אוֹתוֹ וְלֹא שׁוֹמְעִין אֶת קוֹלוֹ, עַד שֶׁשּׁוֹמְעִין קוֹל הָעֵץ שֶׁעָשָׂה בֶן קָטִין מוּכְנִי לַכִּיּוֹר, וְהֵן אוֹמְרִים הִגִּיעַ עֵת. קִדֵּשׁ יָדָיו וְרַגְלָיו מִן הַכִּיּוֹר"}], "vr": [], "caps": [[1, "הִזָּהֵר שֶׁמָּא תִגַּע בַּכְּלִי, עַד שֶׁתְּקַדֵּשׁ יָדֶיךָ וְרַגְלֶיךָ מִן הַכִּיּוֹר"], [6, "וַהֲרֵי הַמַּחְתָּה נְתוּנָה בַמִּקְצוֹעַ בֵּין הַכֶּבֶשׁ לַמִּזְבֵּחַ, בְּמַעֲרָבוֹ שֶׁל כָּבֶשׁ"], [10, "עַד שֶׁשּׁוֹמְעִין קוֹל הָעֵץ שֶׁעָשָׂה בֶן קָטִין מוּכְנִי לַכִּיּוֹר, וְהֵן אוֹמְרִים הִגִּיעַ עֵת"], [16, "קִדֵּשׁ יָדָיו וְרַגְלָיו מִן הַכִּיּוֹר"]], "text": "הכיור עולה מן הבור בגלגל של בן קטין (בלילה היה משוקע במים, שלא ייפסלו בלינה), והזוכה מקדש ידיו ורגליו. אין אדם נכנס עמו, ולא נר בידו — הוא מהלך לאור המערכה.", "refs": [["תמיד א, ד", "Mishnah_Tamid.1.4"], ["יומא ג, י", "Mishnah_Yoma.3.10"]], "lamps": null}, "terumah": {"id": "terumah", "title": "תרומת הדשן", "dur": 36, "v": [{"lbl": "תמיד א, ד", "w": "נָטַל מַחְתַּת הַכֶּסֶף וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ, וּפִנָּה אֶת הַגֶּחָלִים הֵילָךְ וְהֵילָךְ, חָתָה מִן הַמְאֻכָּלוֹת הַפְּנִימִיּוֹת, וְיָרַד. הִגִּיעַ לָרִצְפָה, הָפַךְ פָּנָיו לַצָּפוֹן, הָלַךְ לְמִזְרָחוֹ שֶׁל כֶּבֶשׁ כְּעֶשֶׂר אַמּוֹת. צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הָרִצְפָה רָחוֹק מִן הַכֶּבֶשׁ שְׁלשָׁה טְפָחִים, מְקוֹם שֶׁנּוֹתְנִין מֻרְאוֹת הָעוֹף וְדִּשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה"}], "vr": [], "caps": [[1, "נָטַל מַחְתַּת הַכֶּסֶף וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ"], [8, "וּפִנָּה אֶת הַגֶּחָלִים הֵילָךְ וְהֵילָךְ, חָתָה מִן הַמְאֻכָּלוֹת הַפְּנִימִיּוֹת"], [14.4, "״כל העולין למזבח עולין דרך ימין, ומקיפין, ויורדין דרך שמאל״ (זבחים ו, ג)"], [22.2, "וְיָרַד. הִגִּיעַ לָרִצְפָה, הָפַךְ פָּנָיו לַצָּפוֹן, הָלַךְ לְמִזְרָחוֹ שֶׁל כֶּבֶשׁ כְּעֶשֶׂר אַמּוֹת"], [29.6, "צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הָרִצְפָה רָחוֹק מִן הַכֶּבֶשׁ שְׁלשָׁה טְפָחִים"]], "text": "בראש המזבח — מה שנשאר מן הלילה: ערמת גחלים לוחשות ולהבה נמוכה, בלי עצים שלמים (״אלא מהלך לאור המערכה״, תמיד א, ד; ״וחותה מן הגחלים שנתאכלו בלב האש״, רמב״ם תמידין ב, יב; ״שבתחלה פינה את הגחלים שנתהוו מהעצים של המערכה אילך ואילך לצדדי המזבח״, תפארת ישראל). הזוכה עולה במזרח הכבש עם מחתת הכסף, מפנה את הגחלים, חותה מן הגחלים הפנימיות, ומקיף את כל המזבח על מקום הילוך הכהנים: ״כל העולין למזבח עולין דרך ימין, ומקיפין, ויורדין דרך שמאל״ (משנה זבחים ו, ג; רמב״ם מעשה הקרבנות ז, יא; ״בכל יום כהנים עולים במזרחו של כבש ויורדין במערבו״, יומא ד, ה). הוא יורד במערב הכבש, מקיף את רגל הכבש אל מזרחו (אין לכך מקור מפורש — בחירת מודל), הולך צפונה כעשר אמות מתחתית הכבש, וצובר שם את הגחלים, שלשה טפחים מן הכבש — ״עד י׳ אמות מתחלת תחתית הכבש... בריחוק ג׳ טפחים מהכבש, שלא ישחיר כותל הכבש״ (תפארת ישראל).\n**האם הדשן נבלע במקומו?** אביי (יומא כא.): ״מוראה, ונוצה, ודישון מזבח הפנימי, ודישון המנורה — נבלעין במקומן״ — והם ניתנים במקום הזה (רש״י שם). ועל תרומת הדשן עצמה נחלקו: לרב פורת (בתוספות שם) — אף היא נבלעת; ולרבנו תם (שם) — אינה נבלעת, שהרי ״ושמו — בנחת... ואפר הקדש לעולם אסור״, וטעונה גניזה; וכן המפרש (תמיד כח:): ״אבל תרומת הדשן נ״ל דלא היתה נבלעת״, ״ואמרינן בכריתות ושמו מלמד שטעונין גניזה״.\n**ובאיזה בית?** הבבלי אינו מפרש. בירושלמי (יומא א, ד), על נס אחר מאותה רשימה: ״אמר רבי יוסי בירבי בון: כאן בראשון וכאן בשיני״ — ״כאן בבית ראשון היו אלו הנסים״ (פני משה). ומנגד, נסים אחרים היו גם בבית שני, אלא שנתמעטו: ״כאן — במקדש ראשון, כאן — במקדש שני״ (יומא כא:). בהדגמה הגחלים נשארים על הרצפה — זו בחירת תצוגה, ולא הכרעה.", "refs": [["תמיד א, ד", "Mishnah_Tamid.1.4"], ["רמב״ם תמידין ומוספין ב, יב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.12"], ["זבחים סג. (המשנה)", {"book": 130, "index": 2152}], ["זבחים סד: (הברייתא)", {"book": 130, "index": 2178}], ["רמב״ם מעשה הקרבנות ז, יא", {"book": 341, "index": 123}], ["יומא ד, ה", {"book": 55, "index": 35}], ["רמב״ם תמידין ומוספין ב, ד", {"book": 344, "index": 19}], ["יכין תמיד א (אות ס)", {"book": 818, "index": 122}], ["יכין תמיד א (אות סב–סג)", {"book": 818, "index": 126}], ["יומא כא.", {"book": 107, "index": 457}], ["יומא כא:", {"book": 107, "index": 467}], ["ירושלמי יומא א, ד", {"book": 155, "index": 46}], ["ירושלמי יומא ב, א", {"book": 155, "index": 75}]], "lamps": null}, "tapuach": {"id": "tapuach", "title": "האחים רצים — האפר אל התפוח", "dur": 22, "v": [{"lbl": "תמיד ב, א", "w": "רָאוּהוּ אֶחָיו שֶׁיָּרַד, וְהֵם רָצוּ וּבָאוּ. מִהֲרוּ וְקִדְּשׁוּ יְדֵיהֶן וְרַגְלֵיהֶן מִן הַכִּיּוֹר, נָטְלוּ אֶת הַמַּגְרֵפוֹת וְאֶת הַצִּנּוֹרוֹת וְעָלוּ לְרֹאשׁ הַמִּזְבֵּחַ. הָאֵבָרִין וְהַפְּדָרִין שֶׁלֹּא נִתְאַכְּלוּ מִבָּעֶרֶב, סוֹנְקִין אוֹתָם לִצְדָדֵי הַמִּזְבֵּחַ. אִם אֵין הַצְּדָדִין מַחֲזִיקִין, סוֹדְרִין אוֹתָם בַּסּוֹבֵב עַל הַכָּבֶשׁ:"}, {"lbl": "תמיד ב, ב", "w": "הֵחֵלּוּ מַעֲלִין בָּאֵפֶר עַל גַּבֵּי הַתַּפּוּחַ. וְתַפּוּחַ הָיָה בְאֶמְצַע הַמִּזְבֵּחַ"}], "vr": [], "caps": [[1, "רָאוּהוּ אֶחָיו שֶׁיָּרַד, וְהֵם רָצוּ וּבָאוּ"], [5, "מִהֲרוּ וְקִדְּשׁוּ יְדֵיהֶן וְרַגְלֵיהֶן מִן הַכִּיּוֹר"], [9, "נָטְלוּ אֶת הַמַּגְרֵפוֹת וְאֶת הַצִּנּוֹרוֹת וְעָלוּ לְרֹאשׁ הַמִּזְבֵּחַ"], [15, "הֵחֵלּוּ מַעֲלִין בָּאֵפֶר עַל גַּבֵּי הַתַּפּוּחַ"]], "text": "האחים רצים, מקדשים ידיהם ורגליהם, עולים במגרפות ובצנורות (מזלגות), ומעלים את האפר אל התפוח שבאמצע המזבח. התפוח גדל. לפני כן, האברים והפדרים שלא נתאכלו מבערב — \"סונקין אותם לצדדי המזבח\" (תמיד ב, א); במודל הם שחורים.", "refs": [["תמיד ב, א", "Mishnah_Tamid.2.1"], ["תמיד ב, ב", "Mishnah_Tamid.2.2"]], "lamps": null}, "maarachah": {"id": "maarachah", "title": "סידור המערכה הגדולה", "dur": 20, "v": [{"lbl": "תמיד ב, ג", "w": "הֵחֵלּוּ מַעֲלִין בְּגִזְרִין לְסַדֵּר אֵשׁ הַמַּעֲרָכָה. וְכִי כָל הָעֵצִים כְּשֵׁרִים לַמַּעֲרָכָה. הֵן, כָּל הָעֵצִים כְּשֵׁרִין לַמַּעֲרָכָה, חוּץ מִשֶּׁל זַיִת וְשֶׁל גֶּפֶן"}, {"lbl": "תמיד ב, ד", "w": "סִדֵּר הַמַּעֲרָכָה גְדוֹלָה מִזְרָחָה, וַחֲזִיתָהּ מִזְרָחָה, וְרָאשֵׁי הַגִּזְרִין הַפְּנִימִיִּם הָיוּ נוֹגְעִים בַּתַּפּוּחַ. וְרֶוַח הָיָה בֵין הַגִּזְרִין, שֶׁהָיוּ מַצִּיתִין אֶת הָאֲלִיתָא מִשָּׁם:"}], "vr": [], "caps": [[1, "הֵחֵלּוּ מַעֲלִין בְּגִזְרִין לְסַדֵּר אֵשׁ הַמַּעֲרָכָה"], [8, "סִדֵּר הַמַּעֲרָכָה גְדוֹלָה מִזְרָחָה, וַחֲזִיתָהּ מִזְרָחָה"], [14, "וְרָאשֵׁי הַגִּזְרִין הַפְּנִימִיִּם הָיוּ נוֹגְעִים בַּתַּפּוּחַ"]], "text": "הזוכה בתרומת הדשן עולה ראשון, ושני גזרי העצים בידו; אחיו הכהנים מעלים אחריו את העצים בכבש; והוא לבדו מסדר את המערכה הגדולה במזרח המזבח — \"מי שזכה בתרומת הדשן יזכה בסידור מערכה ובשני גזירי עצים\" (יומא כב.), וכן ברמב״ם (תמידין ד, ה): \"והוא מסדר את המערכה\". העצים החדשים מסומנים בגוון בהיר. כל העולים עולים במזרחו של כבש, ויורדים במערבו (יומא ד, ה).", "refs": [["תמיד ב, ג", "Mishnah_Tamid.2.3"], ["תמיד ב, ד", "Mishnah_Tamid.2.4"], ["רמב״ם תמידין ומוספין ב, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.7"], ["יומא כב.", {"book": 107, "index": 487}], ["רמב״ם תמידין ומוספין ד, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.5"], ["יכין תמיד ב (אות טז)", {"book": 818, "index": 163}], ["יומא ד, ה", "Mishnah_Yoma.4.5"]], "lamps": null}, "maarachah2": {"id": "maarachah2", "title": "המערכה השנייה — לקטורת", "dur": 16, "v": [{"lbl": "תמיד ב, ה", "w": "בֵּרְרוּ מִשָּׁם עֲצֵי תְאֵנָה יָפִין, לְסַדֵּר הַמַּעֲרָכָה שְׁנִיָּה לַקְּטֹרֶת, מִכְּנֶגֶד קֶרֶן מַעֲרָבִית דְּרוֹמִית, מָשׁוּךְ מִן הַקֶּרֶן כְּלַפֵּי צָפוֹן אַרְבַּע אַמּוֹת, בְּעֹמֶד חָמֵשׁ סְאִים גֶּחָלִים, וּבְשַׁבָּת בְּעֹמֶד שְׁמוֹנַת סְאִין גֶּחָלִים, שֶׁשָּׁם הָיוּ נוֹתְנִין שְׁנֵי בְזִיכֵי לְבוֹנָה שֶׁל לֶחֶם הַפָּנִים"}], "vr": [], "caps": [[1, "בֵּרְרוּ מִשָּׁם עֲצֵי תְאֵנָה יָפִין, לְסַדֵּר הַמַּעֲרָכָה שְׁנִיָּה לַקְּטֹרֶת"], [8, "מִכְּנֶגֶד קֶרֶן מַעֲרָבִית דְּרוֹמִית, מָשׁוּךְ מִן הַקֶּרֶן כְּלַפֵּי צָפוֹן אַרְבַּע אַמּוֹת"]], "text": "המערכה השנייה, שממנה לוקחים גחלים לקטורת, נסדרת ליד קרן מערבית דרומית, ארבע אמות לצפון. מי מסדר אותה: לתפארת ישראל — \"ואחרים מסדרין מערכה שנייה של קטורת\", וכך בהדגמה; ולרמב״ם (תמידין ו, א) — הזוכה בתרומת הדשן: \"ואחר כך מסדר מערכה שניה\", ובהדגמה הוא ניגש אליה לכמה שניות. ולרבי יוסי (יומא ד, ו), וכן פסק הרמב״ם (תמידין ב, ד) — יש גם מערכה שלישית, \"לקים מצות האש\"; היא מוצגת כשבמתג \"מניין המערכות\" נבחרו שלוש מערכות או ארבע.", "refs": [["תמיד ב, ה", "Mishnah_Tamid.2.5"], ["יומא לג.", "Yoma.33a"], ["רמב״ם תמידין ומוספין ב, ד", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.4"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"], ["יכין תמיד ב (אות כד)", {"book": 818, "index": 179}], ["יומא ד, ו", "Mishnah_Yoma.4.6"]], "lamps": null}, "gezirin": {"id": "gezirin", "title": "שני גזרי עצים", "dur": 14, "v": [{"lbl": "תמיד ב, ה", "w": "הִצִּיתוּ שְׁתֵּי הַמַּעֲרָכוֹת בָּאֵשׁ, וְיָרְדוּ וּבָאוּ לָהֶם לְלִשְׁכַּת הַגָּזִית"}], "vr": [{"lbl": "רמב״ם תמידין ו, א", "w": "וְאַחַר כָּךְ מְסַדֵּר מַעֲרָכָה גְּדוֹלָה. וְאַחַר כָּךְ מְסַדֵּר מַעֲרָכָה שְׁנִיָּה. וְאַחַר כָּךְ מַעֲלֶה שְׁנֵי גִּזְרֵי עֵצִים וּמַנִּיחָן עַל מַעֲרָכָה גְּדוֹלָה לְהַרְבּוֹת הָאֵשׁ"}], "caps": [[1, "סִידּוּר שְׁנֵי גְּזִירֵי עֵצִים"], [8, "הִצִּיתוּ שְׁתֵּי הַמַּעֲרָכוֹת בָּאֵשׁ"]], "text": "שני גזרי עצים: בשחר כהן אחד מעלה אותם ומניחם על המערכה הגדולה, והוא הזוכה בתרומת הדשן — רמב״ם (תמידין ב, ג): \"שני גזרים של בין הערבים מעלין אותן שני כהנים... אבל של שחר בכהן אחד\". אחר כך שתי המערכות מוצתות. במשנה בתמיד הגזרים לא נזכרו כאן; הם בסדר של אביי (יומא לג.) וברמב״ם (תמידין ו, א). האברים שנסנקו לצדדים — \"מחזירין אותן למערכה\" (תמיד ב, ה); והאליתא מוצתת ברווח שבין הגזרין (תמיד ב, ד).", "refs": [["יומא לג.", "Yoma.33a"], ["רמב״ם תמידין ומוספין ו, א", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.1"], ["רמב״ם תמידין ומוספין ב, ג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.2.3"], ["רמב״ם תמידין ומוספין ד, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.5"], ["תמיד ב, ה", "Mishnah_Tamid.2.5"], ["תמיד ב, ד", "Mishnah_Tamid.2.4"]], "lamps": null}, "lot2": {"id": "lot2", "title": "הפייס השני — שלושה עשר כהנים", "dur": 26, "v": [{"lbl": "תמיד ג, א", "w": "אָמַר לָהֶם הַמְמֻנֶּה, בֹּאוּ וְהָפִיסוּ, מִי שׁוֹחֵט, מִי זוֹרֵק, מִי מְדַשֵּׁן מִזְבֵּחַ הַפְּנִימִי, מִי מְדַשֵּׁן אֶת הַמְּנוֹרָה, מִי מַעֲלֶה אֵבָרִים לַכֶּבֶשׁ, הָרֹאשׁ וְהָרֶגֶל, וּשְׁתֵּי הַיָּדַיִם, הָעֹקֶץ וְהָרֶגֶל, הֶחָזֶה וְהַגֵּרָה, וּשְׁתֵּי דְפָנוֹת, הַקְּרָבַיִם, וְהַסֹּלֶת, וְהַחֲבִתִּים, וְהַיָּיִן. הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה:"}], "vr": [], "caps": [[1, "אָמַר לָהֶם הַמְמֻנֶּה, בֹּאוּ וְהָפִיסוּ"], [5, "מִי שׁוֹחֵט, מִי זוֹרֵק, מִי מְדַשֵּׁן מִזְבֵּחַ הַפְּנִימִי, מִי מְדַשֵּׁן אֶת הַמְּנוֹרָה"], [12, "מִי מַעֲלֶה אֵבָרִים לַכֶּבֶשׁ"], [20, "הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה"]], "text": "בלשכת הגזית (פתוחה מלמעלה). הראשון שיצא בפייס שוחט, והעומדים בצדו לפי הסדר: הזורק, מדשן מזבח הפנימי, מדשן המנורה, ששת מעלי האברים, הסולת, החביתין והיין (רמב״ם תמידין ד, ו). כל זוכה מסומן בשם עבודתו.", "refs": [["תמיד ג, א", "Mishnah_Tamid.3.1"], ["רמב״ם תמידין ומוספין ד, ו", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.6"]], "lamps": null}, "barkai": {"id": "barkai", "title": "ברקאי — עלות השחר", "dur": 16, "v": [{"lbl": "תמיד ג, ב", "w": "אָמַר לָהֶם הַמְמֻנֶּה, צְאוּ וּרְאוּ אִם הִגִּיעַ זְמַן הַשְּׁחִיטָה. אִם הִגִּיעַ, הָרוֹאֶה אוֹמֵר, בַּרְקַאי. מַתְיָא בֶן שְׁמוּאֵל אוֹמֵר, הֵאִיר פְּנֵי כָל הַמִּזְרָח. עַד שֶׁהוּא בְחֶבְרוֹן, וְהוּא אוֹמֵר, הֵין:"}], "vr": [{"lbl": "רמב״ם תמידין א, ב", "w": "וְאֵימָתַי זְמַן שְׁחִיטָתָן. שֶׁל בֹּקֶר שׁוֹחֲטִין אוֹתוֹ קֹדֶם שֶׁתַּעֲלֶה הַחַמָּה מִשֶּׁיֵּאוֹר פְּנֵי כָּל מִזְרָח"}], "caps": [[1, "צְאוּ וּרְאוּ אִם הִגִּיעַ זְמַן הַשְּׁחִיטָה"], [7, "אִם הִגִּיעַ, הָרוֹאֶה אוֹמֵר, בַּרְקַאי"], [12, "הֵאִיר פְּנֵי כָל הַמִּזְרָח. עַד שֶׁהוּא בְחֶבְרוֹן"]], "text": "הרואה עולה למקום גבוה (ברטנורא) ומסתכל למזרח. השמים מאירים. במודל הוא עומד על גג לשכת הגזית — בחירת מודל. הרמב״ם (תמידין א, ב): \"משיאור פני כל מזרח\".", "refs": [["תמיד ג, ב", "Mishnah_Tamid.3.2"], ["רמב״ם תמידין ומוספין א, ב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.1.2"]], "lamps": null}, "lamb": {"id": "lamb", "title": "הטלה מלשכת הטלאים", "dur": 24, "v": [{"lbl": "תמיד ג, ג", "w": "אָמַר לָהֶם, צְאוּ וְהָבִיאוּ טָלֶה מִלִּשְׁכַּת הַטְּלָאִים. וַהֲרֵי לִשְׁכַּת הַטְּלָאִים הָיְתָה בְמִקְצוֹעַ צְפוֹנִית מַעֲרָבִית. וְאַרְבַּע לְשָׁכוֹת הָיוּ שָׁם, אַחַת לִשְׁכַּת הַטְּלָאִים, וְאַחַת לִשְׁכַּת הַחוֹתָמוֹת, וְאַחַת לִשְׁכַּת בֵּית הַמּוֹקֵד, וְאַחַת לִשְׁכָּה שֶׁהָיוּ עוֹשִׂין בָּהּ לֶחֶם הַפָּנִים:"}, {"lbl": "תמיד ג, ד", "w": "נִכְנְסוּ לְלִשְׁכַּת הַכֵּלִים, וְהוֹצִיאוּ מִשָּׁם תִּשְׁעִים וּשְׁלשָׁה כְלֵי כֶסֶף וּכְלֵי זָהָב. הִשְׁקוּ אֶת הַתָּמִיד בְּכוֹס שֶׁל זָהָב. אַף עַל פִּי שֶׁהוּא מְבֻקָּר מִבָּעֶרֶב, מְבַקְּרִין אוֹתוֹ לְאוֹר הָאֲבוּקוֹת:"}], "vr": [], "caps": [[1, "צְאוּ וְהָבִיאוּ טָלֶה מִלִּשְׁכַּת הַטְּלָאִים"], [7, "נִכְנְסוּ לְלִשְׁכַּת הַכֵּלִים, וְהוֹצִיאוּ מִשָּׁם תִּשְׁעִים וּשְׁלשָׁה כְלֵי כֶסֶף וּכְלֵי זָהָב"], [13, "הִשְׁקוּ אֶת הַתָּמִיד בְּכוֹס שֶׁל זָהָב"], [18, "אַף עַל פִּי שֶׁהוּא מְבֻקָּר מִבָּעֶרֶב, מְבַקְּרִין אוֹתוֹ לְאוֹר הָאֲבוּקוֹת"]], "text": "הטלה יוצא מלשכת טלאי קרבן, בקרן מערבית דרומית של בית המוקד. משקים אותו בכוס של זהב, ובודקים אותו לאור האבוקות. לשכת הכלים — אפשר שבאחד מן התאים שסביב ההיכל (תפארת ישראל, תמיד ג, ד).", "refs": [["תמיד ג, ג", "Mishnah_Tamid.3.3"], ["תמיד ג, ד", "Mishnah_Tamid.3.4"], ["מידות א, ו", "Mishnah_Middot.1.6"]], "lamps": null}, "tobeit": {"id": "tobeit", "title": "אל בית המטבחים", "dur": 16, "v": [{"lbl": "תמיד ג, ה", "w": "מִי שֶׁזָּכָה בַתָּמִיד, מוֹשְׁכוֹ וְהוֹלֵךְ לְבֵית הַמִּטְבָּחַיִם, וּמִי שֶׁזָּכוּ בָאֵבָרִים הוֹלְכִין אַחֲרָיו. בֵּית הַמִּטְבָּחַיִם הָיָה לִצְפוֹנוֹ שֶׁל מִזְבֵּחַ"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַתָּמִיד, מוֹשְׁכוֹ וְהוֹלֵךְ לְבֵית הַמִּטְבָּחַיִם"], [8, "וּמִי שֶׁזָּכוּ בָאֵבָרִים הוֹלְכִין אַחֲרָיו"]], "text": "השוחט מושך את הטלה אל הטבעות שבצפון המזבח, ושישה מעלי האברים הולכים אחריו.", "refs": [["תמיד ג, ה", "Mishnah_Tamid.3.5"]], "lamps": null}, "keys": {"id": "keys", "title": "הטני, הכוז ושני המפתחות", "dur": 14, "v": [{"lbl": "תמיד ג, ו", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה הָיוּ מַקְדִּימִין, וְאַרְבָּעָה כֵלִים בְּיָדָם, הַטֶּנִי וְהַכּוּז וּשְׁנֵי מַפְתְּחוֹת. הַטֶּנִי דוֹמֶה לְתַרְקָב גָּדוֹל שֶׁל זָהָב, מַחֲזִיק קַבַּיִן וָחֵצִי. וְהַכּוּז דּוֹמֶה לְקִיתוֹן גָּדוֹל שֶׁל זָהָב. וּשְׁנֵי מַפְתְּחוֹת, אֶחָד יוֹרֵד לְאַמַּת הַשֶּׁחִי וְאֶחָד פּוֹתֵחַ כֵּיוָן:"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה הָיוּ מַקְדִּימִין"], [6, "וְאַרְבָּעָה כֵלִים בְּיָדָם, הַטֶּנִי וְהַכּוּז וּשְׁנֵי מַפְתְּחוֹת"], [10, "הַטֶּנִי דוֹמֶה לְתַרְקָב גָּדוֹל שֶׁל זָהָב"]], "text": "שני הכהנים עולים במעלות האולם: האחד עם הטני (כמין סל גדול של זהב), והשני עם הכוז (כמין קיתון גדול של זהב), ושני מפתחות בידם.", "refs": [["תמיד ג, ו", "Mishnah_Tamid.3.6"]], "lamps": null}, "gate": {"id": "gate", "title": "פתיחת השער הגדול", "dur": 20, "v": [{"lbl": "תמיד ג, ז", "w": "בָּא לוֹ לַפִּשְׁפָּשׁ הַצְּפוֹנִי. וּשְׁנֵי פִשְׁפָּשִׁין הָיוּ לוֹ לַשַּׁעַר הַגָּדוֹל, אֶחָד בַּצָּפוֹן וְאֶחָד בַּדָּרוֹם"}, {"lbl": "תמיד ג, ז", "w": "נָטַל אֶת הַמַּפְתֵּחַ וּפָתַח אֶת הַפִּשְׁפָּשׁ, נִכְנַס לַתָּא, וּמִן הַתָּא אֶל הַהֵיכָל, עַד שֶׁהוּא מַגִּיעַ לַשַּׁעַר הַגָּדוֹל. הִגִּיעַ לַשַּׁעַר הַגָּדוֹל, הֶעֱבִיר אֶת הַנֶּגֶר וְאֶת הַפּוֹתְחוֹת וּפְתָחוֹ. לֹא הָיָה שׁוֹחֵט הַשּׁוֹחֵט, עַד שֶׁשּׁוֹמֵעַ קוֹל שַׁעַר הַגָּדוֹל שֶׁנִּפְתָּח"}, {"lbl": "תמיד ג, ח", "w": "מִירִיחוֹ הָיוּ שׁוֹמְעִין קוֹל שַׁעַר הַגָּדוֹל שֶׁנִּפְתָּח"}], "vr": [], "caps": [[1, "בָּא לוֹ לַפִּשְׁפָּשׁ הַצְּפוֹנִי"], [5, "נִכְנַס לַתָּא, וּמִן הַתָּא אֶל הַהֵיכָל"], [10, "הִגִּיעַ לַשַּׁעַר הַגָּדוֹל, הֶעֱבִיר אֶת הַנֶּגֶר וְאֶת הַפּוֹתְחוֹת וּפְתָחוֹ"], [15, "לֹא הָיָה שׁוֹחֵט הַשּׁוֹחֵט, עַד שֶׁשּׁוֹמֵעַ קוֹל שַׁעַר הַגָּדוֹל שֶׁנִּפְתָּח"]], "text": "הכהן נכנס בפשפש הצפוני (הדרך שבתוך המודל — לפי השיטה שנבחרה בתפריט, תחת ״שיטות ומחלוקות״), ופותח מבפנים את ארבע הדלתות. \"מיריחו היו שומעין קול שער הגדול שנפתח\" (תמיד ג, ח).", "refs": [["תמיד ג, ז", "Mishnah_Tamid.3.7"], ["תמיד ג, ח", "Mishnah_Tamid.3.8"], ["מידות ד, ב", "Mishnah_Middot.4.2"]], "lamps": null}, "inner": {"id": "inner", "title": "דישון מזבח הפנימי", "dur": 16, "v": [{"lbl": "תמיד ג, ט", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי, נִכְנַס וְנָטַל הַטֶּנִי וְהִנִּיחוֹ לְפָנָיו, וְהָיָה חוֹפֵן וְנוֹתֵן לְתוֹכוֹ, וּבָאַחֲרוֹנָה כִּבֵּד אֶת הַשְּׁאָר לְתוֹכוֹ וְהִנִּיחוֹ וְיָצָא"}], "vr": [{"lbl": "רמב״ם תמידין ו, ב", "w": "וְהַמְדַשֵּׁן אֶת הַמִּזְבֵּחַ מְדַשְּׁנוֹ בְּשָׁעָה שֶׁהַשּׁוֹחֵט שׁוֹחֵט אֶת הַתָּמִיד. וְאַחַר כָּךְ זוֹרֵק הַדָּם זֶה שֶׁקִּבְּלוֹ:"}], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי, נִכְנַס וְנָטַל הַטֶּנִי וְהִנִּיחוֹ לְפָנָיו"], [6, "וְהָיָה חוֹפֵן וְנוֹתֵן לְתוֹכוֹ"], [11, "וּבָאַחֲרוֹנָה כִּבֵּד אֶת הַשְּׁאָר לְתוֹכוֹ וְהִנִּיחוֹ וְיָצָא"]], "text": "בהיכל, לפני מזבח הזהב: חופן את הדשן לתוך הטני, מכבד את השאר, מניח את הטני ויוצא.", "refs": [["תמיד ג, ט", "Mishnah_Tamid.3.9"]], "lamps": null}, "lamps5": {"id": "lamps5", "title": "הטבת חמש נרות", "dur": 30, "v": [{"lbl": "תמיד ג, ט", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִים, מְדַשֵּׁן אֶת הַשְּׁאָר וּמַנִּיחַ אֶת אֵלּוּ דּוֹלְקִין בִּמְקוֹמָן. מְצָאָן שֶׁכָּבוּ, מְדַשְּׁנָן וּמַדְלִיקָן מִן הַדּוֹלְקִים, וְאַחַר כָּךְ מְדַשֵּׁן אֶת הַשְּׁאָר. וְאֶבֶן הָיְתָה לִפְנֵי הַמְּנוֹרָה וּבָהּ שָׁלשׁ מַעֲלוֹת, שֶׁעָלֶיהָ הַכֹּהֵן עוֹמֵד וּמֵטִיב אֶת הַנֵּרוֹת. וְהִנִּיחַ אֶת הַכּוּז עַל מַעֲלָה שְׁנִיָּה וְיָצָא"}], "vr": [{"lbl": "רמב״ם תמידין ו, ג", "w": "וְאַחַר שֶׁזּוֹרְקִין אֶת הַדָּם מֵטִיב זֶה שֶׁבַּהֵיכָל חָמֵשׁ נֵרוֹת וְיוֹצְאִין שְׁנֵיהֶן מִן הַהֵיכָל"}], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִים"], [7, "מְדַשֵּׁן אֶת הַשְּׁאָר וּמַנִּיחַ אֶת אֵלּוּ דּוֹלְקִין בִּמְקוֹמָן"], [20, "וְאֶבֶן הָיְתָה לִפְנֵי הַמְּנוֹרָה וּבָהּ שָׁלשׁ מַעֲלוֹת, שֶׁעָלֶיהָ הַכֹּהֵן עוֹמֵד וּמֵטִיב אֶת הַנֵּרוֹת"], [26, "וְהִנִּיחַ אֶת הַכּוּז עַל מַעֲלָה שְׁנִיָּה וְיָצָא"]], "text": "", "refs": [["תמיד ג, ט", "Mishnah_Tamid.3.9"], ["רמב״ם תמידין ומוספין ג, יב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.12"], ["רמב״ם תמידין ומוספין ג, טז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.16"], ["רמב״ם תמידין ומוספין ג, יז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.17"]], "lamps": {"rambam": "המנורה מונחת בין הצפון ובין הדרום (רמב״ם בית הבחירה ג, יב); הנר האמצעי פניו כנגד קודש הקדשים, והוא הנר המערבי (שם ג, ח). שני הנרות שנשארים דולקים: האמצעי והנר שמצפון לו (תפארת ישראל). בשאר החמישה מסיר את הפתילה והשמן, מקנח, נותן פתילה ושמן במידה, ומדליק — \"והדלקת הנרות היא הטבתם\" (רמב״ם תמידין ג, יב). הכוז מונח על המעלה השנייה.", "rashi": "כרש״י, הראב״ד והברטנורא: התנא של משנה זו סובר שהמנורה מונחת ממזרח למערב (ברטנורא; תוספות מנחות צח:). \"שני נרות מזרחיים\" — שני הנרות הקרובים לפתח; הנר המערבי — השני מן המזרח (רש״י שבת כב:). בשאר החמישה נותן שמן ופתילה חדשים, \"ומניחן כבויות עד הערב\" (ברטנורא). הכוז מונח על המעלה השנייה."}}, "akedah": {"id": "akedah", "title": "העקידה בטבעת", "dur": 16, "v": [{"lbl": "תמיד ד, א", "w": "לֹא הָיוּ כוֹפְתִין אֶת הַטָּלֶה, אֶלָּא מְעַקְּדִין אוֹתוֹ. מִי שֶׁזָּכוּ בָאֵבָרִים, אוֹחֲזִים בּוֹ. וְכָךְ הָיְתָה עֲקֵדָתוֹ, רֹאשׁוֹ לַדָּרוֹם וּפָנָיו לַמַּעֲרָב. הַשּׁוֹחֵט, עוֹמֵד בַּמִּזְרָח וּפָנָיו לַמַּעֲרָב. שֶׁל שַׁחַר הָיָה נִשְׁחָט עַל קֶרֶן צְפוֹנִית מַעֲרָבִית, עַל טַבַּעַת שְׁנִיָּה"}], "vr": [{"lbl": "רמב״ם תמידין א, יא", "w": "תָּמִיד שֶׁל שַׁחַר הָיָה נִשְׁחָט עַל קֶרֶן צְפוֹנִית מַעֲרָבִית שֶׁל בֵּית הַמִּטְבָּחַיִם עַל טַבַּעַת שְׁנִיָּה. וְשֶׁל בֵּין הָעַרְבַּיִם עַל קֶרֶן צְפוֹנִית מִזְרָחִית מִמֶּנָּה עַל טַבַּעַת שְׁנִיָּה כְּדֵי שֶׁיִּהְיֶה כְּנֶגֶד הַשֶּׁמֶשׁ. דִּבְרֵי קַבָּלָה הֵן שֶׁיִּהְיוּ נִשְׁחָטִין כְּנֶגֶד הַשֶּׁמֶשׁ:"}], "caps": [[1, "לֹא הָיוּ כוֹפְתִין אֶת הַטָּלֶה, אֶלָּא מְעַקְּדִין אוֹתוֹ. מִי שֶׁזָּכוּ בָאֵבָרִים, אוֹחֲזִים בּוֹ"], [7, "וְכָךְ הָיְתָה עֲקֵדָתוֹ, רֹאשׁוֹ לַדָּרוֹם וּפָנָיו לַמַּעֲרָב"], [11, "הַשּׁוֹחֵט, עוֹמֵד בַּמִּזְרָח וּפָנָיו לַמַּעֲרָב"]], "text": "הטלה נעקד בטבעת השנייה שבקרן הצפונית מערבית (רמב״ם תמידין א, יא: \"של בית המטבחים\"); איזו מן הטבעות היא השנייה — בחירת מודל. השחיטה עצמה אינה מוצגת.", "refs": [["תמיד ד, א", "Mishnah_Tamid.4.1"], ["רמב״ם תמידין ומוספין א, י", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.1.10"], ["רמב״ם תמידין ומוספין א, יא", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.1.11"]], "lamps": null}, "dam": {"id": "dam", "title": "זריקת הדם", "dur": 20, "v": [{"lbl": "תמיד ד, א", "w": "שָׁחַט הַשּׁוֹחֵט, וְקִבֵּל הַמְקַבֵּל. בָּא לוֹ לְקֶרֶן מִזְרָחִית צְפוֹנִית, וְנוֹתֵן מִזְרָחָה צָפוֹנָה. מַעֲרָבִית דְּרוֹמִית, וְנוֹתֵן מַעֲרָבָה דָרוֹמָה. שְׁיָרֵי הַדָּם הָיָה שׁוֹפֵךְ עַל יְסוֹד דְּרוֹמִית"}], "vr": [], "caps": [[1, "שָׁחַט הַשּׁוֹחֵט, וְקִבֵּל הַמְקַבֵּל"], [5, "בָּא לוֹ לְקֶרֶן מִזְרָחִית צְפוֹנִית, וְנוֹתֵן מִזְרָחָה צָפוֹנָה"], [11, "מַעֲרָבִית דְּרוֹמִית, וְנוֹתֵן מַעֲרָבָה דָרוֹמָה"], [16, "שְׁיָרֵי הַדָּם הָיָה שׁוֹפֵךְ עַל יְסוֹד דְּרוֹמִית"]], "text": "המקבל במזרק הולך לקרן מזרחית צפונית וזורק כנגד הקרן — מתנה אחת שנראית כשתיים — ואחר כך לקרן מערבית דרומית; את השיריים שופך על היסוד הדרומי. מקום הזריקה מסומן בחצי התחתון של המזבח, מתחת לחוט הסיקרא.", "refs": [["תמיד ד, א", "Mishnah_Tamid.4.1"], ["זבחים ה, ד", "Mishnah_Zevachim.5.4"]], "lamps": null}, "evarim": {"id": "evarim", "title": "האברים אל הכבש", "dur": 22, "v": [{"lbl": "תמיד ד, ג", "w": "נִמְצְאוּ כֻלָּן עוֹמְדִין בְּשׁוּרָה וְהָאֵבָרִים בְּיָדָם. הָרִאשׁוֹן, בָּרֹאשׁ וּבָרֶגֶל"}, {"lbl": "תמיד ד, ג", "w": "הַשְּׁבִיעִי, בַּסֹּלֶת. הַשְּׁמִינִי, בַּחֲבִתִּין. הַתְּשִׁיעִי, בַּיָּיִן. הָלְכוּ וּנְתָנוּם מֵחֲצִי הַכֶּבֶשׁ וּלְמַטָּה בְּמַעֲרָבוֹ, וּמְלָחוּם. וְיָרְדוּ וּבָאוּ לָהֶם לְלִשְׁכַּת הַגָּזִית, לִקְרוֹת אֶת שְׁמַע"}], "vr": [], "caps": [[1, "נִמְצְאוּ כֻלָּן עוֹמְדִין בְּשׁוּרָה וְהָאֵבָרִים בְּיָדָם"], [8, "הַשְּׁבִיעִי, בַּסֹּלֶת. הַשְּׁמִינִי, בַּחֲבִתִּין. הַתְּשִׁיעִי, בַּיָּיִן"], [14, "הָלְכוּ וּנְתָנוּם מֵחֲצִי הַכֶּבֶשׁ וּלְמַטָּה בְּמַעֲרָבוֹ, וּמְלָחוּם"]], "text": "אחרי ההפשט והניתוח (אינם מוצגים) תשעה כהנים בשורה, ובידיהם האברים, הסולת, החביתין והיין; נותנים אותם בחצי התחתון של הכבש, במערבו, ומולחים.", "refs": [["תמיד ד, ב", "Mishnah_Tamid.4.2"], ["תמיד ד, ג", "Mishnah_Tamid.4.3"], ["רמב״ם תמידין ומוספין ו, ג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.3"]], "lamps": null}, "shema": {"id": "shema", "title": "לשכת הגזית — קריאת שמע", "dur": 19, "v": [{"lbl": "תמיד ה, א", "w": "אָמַר לָהֶם הַמְמֻנֶּה, בָּרְכוּ בְרָכָה אֶחַת, וְהֵן בֵּרְכוּ. קָרְאוּ עֲשֶׂרֶת הַדְּבָרִים, שְׁמַע, וְהָיָה אִם שָׁמֹעַ, וַיֹּאמֶר. בֵּרְכוּ אֶת הָעָם שָׁלשׁ בְּרָכוֹת, אֱמֶת וְיַצִּיב, וַעֲבוֹדָה, וּבִרְכַּת כֹּהֲנִים. וּבְשַׁבָּת מוֹסִיפִין בְּרָכָה אַחַת לַמִּשְׁמָר הַיּוֹצֵא:"}], "vr": [{"lbl": "רמב״ם תמידין ו, ד", "w": "וְאַחַר שֶׁמַּעֲלִין הָאֵיבָרִים לַכֶּבֶשׁ מִתְכַּנְּסִין כֻּלָּן לְלִשְׁכַּת הַגָּזִית. וְהַמְמֻנֶּה אוֹמֵר לָהֶם בָּרְכוּ בְּרָכָה אַחַת. וְהֵן פּוֹתְחִין וְקוֹרִין אַהֲבַת עוֹלָם וַעֲשֶׂרֶת הַדִּבְּרוֹת וּשְׁמַע וְהָיָה אִם שָׁמוֹעַ וַיֹּאמֶר וֶאֱמֶת וְיַצִּיב וּרְצֵה וְשִׂים שָׁלוֹם"}], "caps": [[1, "אָמַר לָהֶם הַמְמֻנֶּה, בָּרְכוּ בְרָכָה אֶחַת, וְהֵן בֵּרְכוּ"], [7, "קָרְאוּ עֲשֶׂרֶת הַדְּבָרִים, שְׁמַע, וְהָיָה אִם שָׁמֹעַ, וַיֹּאמֶר"], [12, "בֵּרְכוּ אֶת הָעָם שָׁלשׁ בְּרָכוֹת, אֱמֶת וְיַצִּיב, וַעֲבוֹדָה, וּבִרְכַּת כֹּהֲנִים"]], "text": "כולם נכנסים ללשכת הגזית לקרות את שמע.", "refs": [["תמיד ה, א", "Mishnah_Tamid.5.1"], ["רמב״ם תמידין ומוספין ו, ד", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.4"]], "lamps": null}, "lot34": {"id": "lot34", "title": "הפייס השלישי והרביעי", "dur": 16, "v": [{"lbl": "תמיד ה, ב", "w": "אָמַר לָהֶם, חֲדָשִׁים לַקְּטֹרֶת בֹּאוּ וְהָפִיסוּ. הֵפִיסוּ, זָכָה מִי שֶׁזָּכָה. חֲדָשִׁים עִם יְשָׁנִים בֹּאוּ וְהָפִיסוּ, מִי מַעֲלֶה אֵבָרִים מִן הַכֶּבֶשׁ לַמִּזְבֵּחַ. רַבִּי אֱלִיעֶזֶר בֶּן יַעֲקֹב אוֹמֵר, הַמַּעֲלֶה אֵבָרִים לַכֶּבֶשׁ הוּא מַעֲלֶה אוֹתָן עַל גַּבֵּי הַמִּזְבֵּחַ:"}], "vr": [], "caps": [[1, "חֲדָשִׁים לַקְּטֹרֶת בֹּאוּ וְהָפִיסוּ"], [8, "חֲדָשִׁים עִם יְשָׁנִים בֹּאוּ וְהָפִיסוּ, מִי מַעֲלֶה אֵבָרִים מִן הַכֶּבֶשׁ לַמִּזְבֵּחַ"]], "text": "הפייס השלישי — לקטורת, רק למי שלא הקטיר מימיו; הרביעי — לכולם, מי מעלה את האברים מן הכבש למזבח.", "refs": [["תמיד ה, ב", "Mishnah_Tamid.5.2"], ["רמב״ם תמידין ומוספין ד, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.7"], ["רמב״ם תמידין ומוספין ד, ח", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.8"]], "lamps": null}, "machta": {"id": "machta", "title": "הכף והמחתה", "dur": 20, "v": [{"lbl": "תמיד ה, ד", "w": "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַכַּף. וְהַכַּף דּוֹמֶה לְתַרְקַב גָּדוֹל שֶׁל זָהָב, מַחֲזִיק שְׁלשֶׁת קַבִּים, וְהַבָּזָךְ הָיָה בְתוֹכוֹ, מָלֵא וְגָדוּשׁ קְטֹרֶת. וְכִסּוּי הָיָה לוֹ, וּכְמִין מְטוּטֶלֶת הָיָה עָלָיו מִלְמַעְלָן:"}, {"lbl": "תמיד ה, ה", "w": "מִי שֶׁזָּכָה בַמַּחְתָּה, נָטַל מַחְתַּת הַכֶּסֶף, וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ, וּפִנָּה אֶת הַגֶּחָלִים הֵילָךְ וְהֵילָךְ וְחָתָה. יָרַד וְעֵרָן לְתוֹךְ שֶׁל זָהָב. נִתְפַּזֵּר מִמֶּנָּה כְּקַב גֶּחָלִים, וְהָיָה מְכַבְּדָן לָאַמָּה"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַכַּף"], [6, "וְהַבָּזָךְ הָיָה בְתוֹכוֹ, מָלֵא וְגָדוּשׁ קְטֹרֶת"], [10, "מִי שֶׁזָּכָה בַמַּחְתָּה, נָטַל מַחְתַּת הַכֶּסֶף, וְעָלָה לְרֹאשׁ הַמִּזְבֵּחַ"], [16, "יָרַד וְעֵרָן לְתוֹךְ שֶׁל זָהָב"]], "text": "המקטיר נוטל את הכף (כמין סל גדול של זהב) והבזך בתוכו, מכוסה. בעל המחתה עולה למזבח, חותה גחלים מן המערכה השנייה, יורד ומערה אותן למחתה של זהב.", "refs": [["תמיד ה, ד", "Mishnah_Tamid.5.4"], ["תמיד ה, ה", "Mishnah_Tamid.5.5"], ["רמב״ם תמידין ומוספין ד, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.4.5"]], "lamps": null}, "magrefa": {"id": "magrefa", "title": "המגרפה", "dur": 17, "v": [{"lbl": "תמיד ה, ו", "w": "הִגִּיעוּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ, נָטַל אֶחָד אֶת הַמַּגְרֵפָה וְזוֹרְקָהּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ. אֵין אָדָם שׁוֹמֵעַ קוֹל חֲבֵרוֹ בִּירוּשָׁלַיִם מִקּוֹל הַמַּגְרֵפָה. וּשְׁלשָׁה דְבָרִים הָיְתָה מְשַׁמֶּשֶׁת, כֹּהֵן שֶׁשּׁוֹמֵעַ אֶת קוֹלָהּ, יוֹדֵעַ שֶׁאֶחָיו הַכֹּהֲנִים נִכְנָסִים לְהִשְׁתַּחֲווֹת, וְהוּא רָץ וּבָא. וּבֶן לֵוִי שֶׁהוּא שׁוֹמֵעַ אֶת קוֹלָהּ, יוֹדֵעַ שֶׁאֶחָיו הַלְוִיִּם נִכְנָסִים לְדַבֵּר בַּשִּׁיר, וְהוּא רָץ וּבָא. וְרֹאשׁ הַמַּעֲמָד הָיָה מַעֲמִיד אֶת הַטְּמֵאִים בְּשַׁעַר הַמִּזְרָח:"}], "vr": [], "caps": [[1, "הִגִּיעוּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ, נָטַל אֶחָד אֶת הַמַּגְרֵפָה וְזוֹרְקָהּ בֵּין הָאוּלָם וְלַמִּזְבֵּחַ"], [6, "אֵין אָדָם שׁוֹמֵעַ קוֹל חֲבֵרוֹ בִּירוּשָׁלַיִם מִקּוֹל הַמַּגְרֵפָה"], [10, "וּבֶן לֵוִי שֶׁהוּא שׁוֹמֵעַ אֶת קוֹלָהּ, יוֹדֵעַ שֶׁאֶחָיו הַלְוִיִּם נִכְנָסִים לְדַבֵּר בַּשִּׁיר, וְהוּא רָץ וּבָא"]], "text": "קול המגרפה. הכהנים נכנסים להשתחוות, והלוים עולים לדוכן: שנים עשר לויים שאומרים שירה בפה, ולצדם המנגנים — תשעה כינורות, שני נבלים, ובן ארזא בצלצל. רמב״ם (כלי המקדש ג, ג): \"ואין אומרין שירה אלא בפה בלא כלי... ואחרים היו עומדים שם מנגנין בכלי שיר... ואין אלו המשוררים על פי הכלים עולין למנין השנים עשר\". ובגמרא (ערכין יג:): שנים עשר — \"כנגד תשעה כנורות [ושני] נבלים וצלצל אחד\". מקומם על הדוכן — בחירת מודל.", "refs": [["תמיד ה, ו", "Mishnah_Tamid.5.6"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"], ["רמב״ם כלי המקדש ג, ג", {"book": 338, "index": 39}], ["ערכין יג:", {"book": 134, "index": 435}]], "lamps": null}, "teni": {"id": "teni", "title": "הטני יוצא", "dur": 14, "v": [{"lbl": "תמיד ו, א", "w": "הֵחֵלּוּ עוֹלִים בְּמַעֲלוֹת הָאוּלָם. מִי שֶׁזָּכוּ בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה הָיוּ מַקְדִּימִין לִפְנֵיהֶם. מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי נִכְנַס, וְנָטַל אֶת הַטֶּנִי וְהִשְׁתַּחֲוָה וְיָצָא"}], "vr": [], "caps": [[1, "הֵחֵלּוּ עוֹלִים בְּמַעֲלוֹת הָאוּלָם"], [5, "מִי שֶׁזָּכָה בְדִשּׁוּן מִזְבֵּחַ הַפְּנִימִי נִכְנַס, וְנָטַל אֶת הַטֶּנִי וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "מדשן מזבח הפנימי נכנס, נוטל את הטני שהניח, משתחוה ויוצא.", "refs": [["תמיד ו, א", "Mishnah_Tamid.6.1"]], "lamps": null}, "lamps2": {"id": "lamps2", "title": "הטבת שתי נרות", "dur": 22, "v": [{"lbl": "תמיד ו, א", "w": "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִין, מְדַשֵּׁן אֶת הַמִּזְרָחִי, וּמַנִּיחַ אֶת הַמַּעֲרָבִי דוֹלֵק, שֶׁמִּמֶּנּוּ הָיָה מַדְלִיק אֶת הַמְּנוֹרָה בֵּין הָעַרְבַּיִם. מְצָאוֹ שֶׁכָּבָה, מְדַשְּׁנוֹ וּמַדְלִיקוֹ מִמִּזְבַּח הָעוֹלָה. נָטַל אֶת הַכּוּז מִמַּעֲלָה שְׁנִיָּה, וְהִשְׁתַּחֲוָה וְיָצָא"}], "vr": [{"lbl": "רמב״ם תמידין ו, ד", "w": "וְאַחַר כָּךְ נִכְנַס זֶה שֶׁזָּכָה בְּדִשּׁוּן הַמְּנוֹרָה וּמֵטִיב שְׁתֵּי הַנֵּרוֹת וְיוֹצֵא זֶה שֶׁהִקְטִיר עִם מְדַשֵּׁן הַמְּנוֹרָה. וְעוֹמֵד עַל מַעֲלוֹת הָאוּלָם הוּא וְאֶחָיו הַכֹּהֲנִים"}], "caps": [[1, "מִי שֶׁזָּכָה בְדִשּׁוּן הַמְּנוֹרָה, נִכְנַס וּמָצָא שְׁנֵי נֵרוֹת מִזְרָחִיִּים דּוֹלְקִין"], [7, "מְדַשֵּׁן אֶת הַמִּזְרָחִי, וּמַנִּיחַ אֶת הַמַּעֲרָבִי דוֹלֵק"], [12, "שֶׁמִּמֶּנּוּ הָיָה מַדְלִיק אֶת הַמְּנוֹרָה בֵּין הָעַרְבַּיִם"], [17, "נָטַל אֶת הַכּוּז מִמַּעֲלָה שְׁנִיָּה, וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "", "refs": [["תמיד ו, א", "Mishnah_Tamid.6.1"], ["רמב״ם תמידין ומוספין ג, יג", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.13"], ["רמב״ם תמידין ומוספין ג, יז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.17"]], "lamps": {"rambam": "כרמב״ם: הנר שמצפון לאמצעי — מתקנו (שלא כבה); והאמצעי, הנר המערבי, נשאר דולק, וממנו מדליקים בין הערבים. \"נר מערבי שכבה אין מדליקין אותו אחר דשונו אלא ממזבח החיצון\" (תמידין ג, יג).", "rashi": "כרש״י, הראב״ד והברטנורא: מדשן את המזרחי ונותן בו שמן ופתילה ומניחו כבוי עד הערב; והמערבי — השני מן המזרח — נשאר דולק, וממנו מדליקים את המנורה בין הערבים."}}, "deshen": {"id": "deshen", "title": "הטני והכוז — אל מקום הדשן", "dur": 18, "v": [{"lbl": "תמיד א, ד", "w": "צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הָרִצְפָה רָחוֹק מִן הַכֶּבֶשׁ שְׁלשָׁה טְפָחִים, מְקוֹם שֶׁנּוֹתְנִין מֻרְאוֹת הָעוֹף וְדִּשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה"}], "vr": [], "caps": [[1, "מְקוֹם שֶׁנּוֹתְנִין מֻרְאוֹת הָעוֹף וְדִּשּׁוּן מִזְבֵּחַ הַפְּנִימִי וְהַמְּנוֹרָה"]], "text": "מדשן מזבח הפנימי ומדשן המנורה יוצאים יחד, זה בטני וזה בכוז, ושופכים את הדשן במקום הדשן שבמזרח הכבש. ברטנורא (תמיד ו, א): \"ואז היו שניהן מוציאין זה הטני וזה הכוז ושופכים הדשן במקום אחד אצל המזבח קדמה\"; והרא״ש: \"כדי שיוציאם ביחד\". אחר כך הם עומדים בברכת כהנים והכלים בידם (תמיד ז, ב). דרכם אל מקום הדשן ומקום עמידתם שם — בחירת מודל.", "refs": [["תמיד א, ד", "Mishnah_Tamid.1.4"], ["תמיד ו, א", "Mishnah_Tamid.6.1"], ["ברטנורא תמיד ו, א", {"book": 634, "index": 201}], ["פירוש הרא״ש תמיד לג.", {"book": 2224, "index": 289}], ["רמב״ם תמידין ומוספין ג, יב", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.3.12"], ["תמיד ז, ב", "Mishnah_Tamid.7.2"]], "lamps": null}, "gechalim": {"id": "gechalim", "title": "הגחלים על מזבח הזהב", "dur": 14, "v": [{"lbl": "תמיד ו, ב", "w": "מִי שֶׁזָּכָה בַמַּחְתָּה, צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הַמִּזְבֵּחַ וְרִדְּדָן בְּשׁוּלֵי הַמַּחְתָּה, וְהִשְׁתַּחֲוָה וְיָצָא:"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַמַּחְתָּה, צָבַר אֶת הַגֶּחָלִים עַל גַּבֵּי הַמִּזְבֵּחַ"], [7, "וְרִדְּדָן בְּשׁוּלֵי הַמַּחְתָּה, וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "בעל המחתה צובר את הגחלים על מזבח הזהב ומרדד אותן בשולי המחתה.", "refs": [["תמיד ו, ב", "Mishnah_Tamid.6.2"]], "lamps": null}, "ketoret": {"id": "ketoret", "title": "הקטרת הקטורת", "dur": 24, "v": [{"lbl": "תמיד ו, ג", "w": "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַבָּזָךְ מִתּוֹךְ הַכַּף וְנוֹתְנוֹ לְאוֹהֲבוֹ אוֹ לִקְרוֹבוֹ. נִתְפַּזֵּר מִמֶּנּוּ לְתוֹכוֹ, נוֹתְנוֹ לוֹ בְחָפְנָיו. וּמְלַמְּדִים אוֹתוֹ, הֱוֵי זָהִיר שֶׁמָּא תַתְחִיל לְפָנֶיךָ, שֶׁלֹּא תִכָּוֶה. הִתְחִיל מְרַדֵּד וְיוֹצֵא. לֹא הָיָה הַמַּקְטִיר מַקְטִיר עַד שֶׁהַמְמֻנֶּה אוֹמֵר לוֹ, הַקְטֵר. אִם הָיָה כֹהֵן גָּדוֹל, הַמְמֻנֶּה אוֹמֵר, אִישִׁי כֹהֵן גָּדוֹל, הַקְטֵר. פָּרְשׁוּ הָעָם, וְהִקְטִיר וְהִשְׁתַּחֲוָה וְיָצָא:"}], "vr": [], "caps": [[1, "מִי שֶׁזָּכָה בַקְּטֹרֶת, הָיָה נוֹטֵל אֶת הַבָּזָךְ מִתּוֹךְ הַכַּף וְנוֹתְנוֹ לְאוֹהֲבוֹ אוֹ לִקְרוֹבוֹ"], [7, "הֱוֵי זָהִיר שֶׁמָּא תַתְחִיל לְפָנֶיךָ, שֶׁלֹּא תִכָּוֶה"], [12, "לֹא הָיָה הַמַּקְטִיר מַקְטִיר עַד שֶׁהַמְמֻנֶּה אוֹמֵר לוֹ, הַקְטֵר"], [18, "פָּרְשׁוּ הָעָם, וְהִקְטִיר וְהִשְׁתַּחֲוָה וְיָצָא"]], "text": "המקטיר מרדד את הקטורת על הגחלים מן הצד הרחוק אליו. כולם פורשים מבין האולם ולמזבח, והקטורת עולה.", "refs": [["תמיד ו, ג", "Mishnah_Tamid.6.3"], ["רמב״ם תמידין ומוספין ו, ד", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.4"]], "lamps": null}, "birkat": {"id": "birkat", "title": "ברכת כהנים על מעלות האולם", "dur": 20, "v": [{"lbl": "תמיד ז, ב", "w": "בָּאוּ וְעָמְדוּ עַל מַעֲלוֹת הָאוּלָם. עָמְדוּ הָרִאשׁוֹנִים לִדְרוֹם אֲחֵיהֶם הַכֹּהֲנִים, וַחֲמִשָּׁה כֵלִים בְּיָדָם, הַטֶּנִי בְיַד אֶחָד, וְהַכּוּז בְּיַד אֶחָד, וְהַמַּחְתָּה בְיַד אֶחָד, וְהַבָּזָךְ בְּיַד אֶחָד, וְכַף וְכִסּוּיָהּ בְּיַד אֶחָד. וּבֵרְכוּ אֶת הָעָם בְּרָכָה אַחַת, אֶלָּא שֶׁבַּמְּדִינָה אוֹמְרִים אוֹתָהּ שָׁלשׁ בְּרָכוֹת, וּבַמִּקְדָּשׁ בְּרָכָה אֶחָת. בַּמִּקְדָּשׁ הָיוּ אוֹמְרִים אֶת הַשֵּׁם כִּכְתָבוֹ, וּבַמְּדִינָה בְּכִנּוּיוֹ. בַּמְּדִינָה הַכֹּהֲנִים נוֹשְׂאִים אֶת כַּפֵּיהֶם, יְדֵיהֶם כְּנֶגֶד כִּתְפוֹתֵיהֶם, וּבַמִּקְדָּשׁ עַל גַּבֵּי רָאשֵׁיהֶן"}], "vr": [{"lbl": "רמב״ם תמידין ו, ה", "w": "וְאַחַר כָּךְ מַעֲלֶה זֶה שֶׁזָּכָה בָּאֵיבָרִים אֶת הָאֵיבָרִים מִן הַכֶּבֶשׁ לַמִּזְבֵּחַ. וְאַחַר שֶׁמַּעֲלִין אֶת הָאֵיבָרִים. מַתְחִילִין אֵלּוּ שֶׁעַל מַעֲלוֹת הָאוּלָם וּמְבָרְכִין בִּרְכַּת כֹּהֲנִים בְּרָכָה אַחַת בַּשֵּׁם הַמְפֹרָשׁ כְּמוֹ שֶׁבֵּאַרְנוּ בִּמְקוֹמָהּ"}], "caps": [[1, "בָּאוּ וְעָמְדוּ עַל מַעֲלוֹת הָאוּלָם"], [5, "עָמְדוּ הָרִאשׁוֹנִים לִדְרוֹם אֲחֵיהֶם הַכֹּהֲנִים, וַחֲמִשָּׁה כֵלִים בְּיָדָם"], [11, "וּבֵרְכוּ אֶת הָעָם בְּרָכָה אַחַת"], [15, "וּבַמִּקְדָּשׁ עַל גַּבֵּי רָאשֵׁיהֶן"]], "text": "הכהנים על מעלות האולם; החמישה הראשונים בדרום, והכלים בידם. ידיהם מעל ראשיהם.", "refs": [["תמיד ז, ב", "Mishnah_Tamid.7.2"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"], ["סוטה ז, ו", "Mishnah_Sotah.7.6"]], "lamps": null}, "haalaah": {"id": "haalaah", "title": "האברים על המזבח", "dur": 20, "v": [{"lbl": "תמיד ז, ג", "w": "בִּזְמַן שֶׁכֹּהֵן גָּדוֹל רוֹצֶה לְהַקְטִיר, הָיָה עוֹלֶה בַכֶּבֶשׁ וְהַסְּגָן בִּימִינוֹ. הִגִּיעַ לְמַחֲצִית הַכֶּבֶשׁ, אָחַז הַסְּגָן בִּימִינוֹ וְהֶעֱלָהוּ. הוֹשִׁיט לוֹ הָרִאשׁוֹן הָרֹאשׁ וְהָרֶגֶל, וְסָמַךְ עֲלֵיהֶן וּזְרָקָן. הוֹשִׁיט הַשֵּׁנִי לָרִאשׁוֹן שְׁתֵּי הַיָּדַיִם, נוֹתְנָן לְכֹהֵן גָּדוֹל, וְסָמַךְ עֲלֵיהֶן וּזְרָקָן. נִשְׁמַט הַשֵּׁנִי וְהָלַךְ לוֹ. וְכָךְ הָיוּ מוֹשִׁיטִין לוֹ שְׁאָר כָּל הָאֵבָרִין, וְהוּא סוֹמֵךְ עֲלֵיהֶן וְזוֹרְקָן. וּבִזְמַן שֶׁהוּא רוֹצֶה, הוּא סוֹמֵךְ וַאֲחֵרִים זוֹרְקִין. בָּא לוֹ לְהַקִּיף אֶת הַמִּזְבֵּחַ. מֵהֵיכָן הוּא מַתְחִיל, מִקֶּרֶן דְּרוֹמִית מִזְרָחִית, מִזְרָחִית צְפוֹנִית, צְפוֹנִית מַעֲרָבִית, מַעֲרָבִית דְּרוֹמִית"}], "vr": [], "caps": [[1, "וְכָךְ הָיוּ מוֹשִׁיטִין לוֹ שְׁאָר כָּל הָאֵבָרִין, וְהוּא סוֹמֵךְ עֲלֵיהֶן וְזוֹרְקָן"], [10, "בָּא לוֹ לְהַקִּיף אֶת הַמִּזְבֵּחַ"], [14, "מִקֶּרֶן דְּרוֹמִית מִזְרָחִית, מִזְרָחִית צְפוֹנִית, צְפוֹנִית מַעֲרָבִית, מַעֲרָבִית דְּרוֹמִית"]], "text": "מי שזכה בפייס הרביעי מעלה את האברים מן הכבש וזורקם על המערכה הגדולה. המשנה מתארת כאן כהן גדול; בכל יום — מי שזכה. האברים מונחים בחצי הכבש ולמטה, במערבו (תמיד ד, ג); והמעלה אותם עולה במזרחו של כבש (יומא ד, ה).", "refs": [["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["תמיד ה, ב", "Mishnah_Tamid.5.2"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"], ["תמיד ד, ג", "Mishnah_Tamid.4.3"], ["יומא ד, ה", "Mishnah_Yoma.4.5"]], "lamps": null}, "mincha": {"id": "mincha", "title": "המנחה והחביתין", "dur": 17, "v": [{"lbl": "תמיד ד, ג", "w": "הַשְּׁבִיעִי, בַּסֹּלֶת. הַשְּׁמִינִי, בַּחֲבִתִּין. הַתְּשִׁיעִי, בַּיָּיִן"}], "vr": [{"lbl": "רמב״ם תמידין ו, ה", "w": "וְאַחַר כָּךְ מַעֲלִין סלֶת הַנְּסָכִים. וְאַחַר הַסּלֶת מַקְטִיר הַחֲבִיתִין. וְאַחַר הַחֲבִיתִין מַעֲלִין אֶת הַיַּיִן לְנִסּוּךְ"}], "caps": [[1, "וְאֵבָרִים לְמִנְחָה, וּמִנְחָה לַחֲבִיתִּין"], [8, "וַחֲבִיתִּין לִנְסָכִין"]], "text": "הסולת (מנחת הנסכים) ואחריה החביתין של כהן גדול עולים למזבח — בסדר של אביי (יומא לג.) ובסדר הרמב״ם (תמידין ו, ה).", "refs": [["יומא לג.", "Yoma.33a"], ["רמב״ם תמידין ומוספין ו, ה", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.5"]], "lamps": null}, "nesachim": {"id": "nesachim", "title": "ניסוך היין, החצוצרות והשיר", "dur": 30, "v": [{"lbl": "תמיד ז, ג", "w": "נָתְנוּ לוֹ יַיִן לְנַסֵּךְ, הַסְּגָן עוֹמֵד עַל הַקֶּרֶן וְהַסּוּדָרִים בְּיָדוֹ, וּשְׁנֵי כֹהֲנִים עוֹמְדִים עַל שֻׁלְחַן הַחֲלָבִים וּשְׁתֵּי חֲצוֹצְרוֹת שֶׁל כֶּסֶף בְּיָדָם, תָּקְעוּ וְהֵרִיעוּ וְתָקְעוּ. בָּאוּ וְעָמְדוּ אֵצֶל בֶּן אַרְזָא, אֶחָד מִימִינוֹ וְאֶחָד מִשְּׂמֹאלוֹ. שָׁחָה לְנַסֵּךְ, וְהֵנִיף הַסְּגָן בַּסּוּדָרִין, וְהִקִּישׁ בֶּן אַרְזָא בַּצֶּלְצָל, וְדִבְּרוּ הַלְוִיִּם בַּשִּׁיר. הִגִּיעוּ לְפֶרֶק, תָּקְעוּ, וְהִשְׁתַּחֲווּ הָעָם. עַל כָּל פֶּרֶק, תְּקִיעָה. וְעַל כָּל תְּקִיעָה, הִשְׁתַּחֲוָיָה"}], "vr": [], "caps": [[1, "נָתְנוּ לוֹ יַיִן לְנַסֵּךְ, הַסְּגָן עוֹמֵד עַל הַקֶּרֶן וְהַסּוּדָרִים בְּיָדוֹ"], [6, "וּשְׁנֵי כֹהֲנִים עוֹמְדִים עַל שֻׁלְחַן הַחֲלָבִים וּשְׁתֵּי חֲצוֹצְרוֹת שֶׁל כֶּסֶף בְּיָדָם, תָּקְעוּ וְהֵרִיעוּ וְתָקְעוּ"], [13, "שָׁחָה לְנַסֵּךְ, וְהֵנִיף הַסְּגָן בַּסּוּדָרִין, וְהִקִּישׁ בֶּן אַרְזָא בַּצֶּלְצָל, וְדִבְּרוּ הַלְוִיִּם בַּשִּׁיר"], [21, "הִגִּיעוּ לְפֶרֶק, תָּקְעוּ, וְהִשְׁתַּחֲווּ הָעָם"], [26, "עַל כָּל פֶּרֶק, תְּקִיעָה. וְעַל כָּל תְּקִיעָה, הִשְׁתַּחֲוָיָה"]], "text": "היין מתנסך בספל שבקרן מערבית דרומית. הסגן מניף בסודרים, בן ארזא מקיש בצלצל, הלוים אומרים שיר על הדוכן, ובכל פרק — תקיעה והשתחויה.", "refs": [["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["רמב״ם תמידין ומוספין ו, ו", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.6"], ["רמב״ם תמידין ומוספין ו, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.7"], ["שקלים ה, א", "Mishnah_Shekalim.5.1"]], "lamps": null}, "shir": {"id": "shir", "title": "שיר של יום", "dur": 16, "v": [{"lbl": "תמיד ז, ד", "w": "הַשִּׁיר שֶׁהָיוּ הַלְוִיִּם אוֹמְרִים בַּמִּקְדָּשׁ, בַּיּוֹם הָרִאשׁוֹן הָיוּ אוֹמְרִים (תהילים כ״ד:א׳), לַה' הָאָרֶץ וּמְלוֹאָהּ תֵּבֵל וְיֹשְׁבֵי בָהּ. בַּשֵּׁנִי הָיוּ אוֹמְרִים (שם מח), גָּדוֹל ה' וּמְהֻלָּל מְאֹד בְּעִיר אֱלֹהֵינוּ הַר קָדְשׁוֹ. בַּשְּׁלִישִׁי הָיוּ אוֹמְרִים (שם פב), אֱלֹהִים נִצָּב בַּעֲדַת אֵל בְּקֶרֶב אֱלֹהִים יִשְׁפֹּט. בָּרְבִיעִי הָיוּ אוֹמְרִים (שם צד), אֵל נְקָמוֹת ה' אֵל נְקָמוֹת הוֹפִיעַ וְגוֹ'. בַּחֲמִישִׁי הָיוּ אוֹמְרִים (שם פא), הַרְנִינוּ לֵאלֹהִים עוּזֵּנוּ, הָרִיעוּ לֵאלֹהֵי יַעֲקֹב. בַּשִּׁשִּׁי הָיוּ אוֹמְרִים (שם צג), ה' מָלָךְ גֵּאוּת לָבֵשׁ וְגוֹ'. בְּשַׁבָּת הָיוּ אוֹמְרִים (שם צב), מִזְמוֹר שִׁיר לְיוֹם הַשַּׁבָּת, מִזְמוֹר שִׁיר לֶעָתִיד לָבֹא, לְיוֹם שֶׁכֻּלּוֹ שַׁבָּת מְנוּחָה לְחַיֵּי הָעוֹלָמִים:"}], "vr": [], "caps": [[1, "הַשִּׁיר שֶׁהָיוּ הַלְוִיִּם אוֹמְרִים בַּמִּקְדָּשׁ"]], "text": "השיר של כל יום מימות השבוע.", "refs": [["תמיד ז, ד", "Mishnah_Tamid.7.4"], ["רמב״ם תמידין ומוספין ו, ט", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.6.9"]], "lamps": null}, "sof": {"id": "sof", "title": "זה הוא סדר התמיד", "dur": 12, "v": [{"lbl": "תמיד ז, ג", "w": "זֶה הוּא סֵדֶר הַתָּמִיד לַעֲבוֹדַת בֵּית אֱלֹהֵינוּ, יְהִי רָצוֹן שֶׁיִבָּנֶה בִּמְהֵרָה בְיָמֵינוּ, אָמֵן"}], "vr": [], "caps": [[1, "זֶה הוּא סֵדֶר הַתָּמִיד לַעֲבוֹדַת בֵּית אֱלֹהֵינוּ"], [6, "יְהִי רָצוֹן שֶׁיִבָּנֶה בִּמְהֵרָה בְיָמֵינוּ, אָמֵן"]], "text": "אחרי החביתין והנסכים — המוספין (בשבת, בראש חודש ובמועדים), ואחריהם, בשבת, שני בזיכי הלבונה; ובין הערבים התמיד השני (יומא לג.).", "refs": [["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["יומא לג.", "Yoma.33a"]], "lamps": null}, "ihb": {"id": "ihb", "title": "בלילה — איש הר הבית ובן בבי", "dur": 46, "v": [{"lbl": "מידות א, ב", "w": "אִישׁ הַר הַבַּיִת הָיָה מְחַזֵּר עַל כָּל מִשְׁמָר וּמִשְׁמָר, וַאֲבוּקוֹת דּוֹלְקִין לְפָנָיו, וְכָל מִשְׁמָר שֶׁאֵינוֹ עוֹמֵד, אוֹמֵר לוֹ אִישׁ הַר הַבַּיִת, שָׁלוֹם עָלֶיךָ. נִכָּר שֶׁהוּא יָשֵׁן, חוֹבְטוֹ בְמַקְלוֹ. וּרְשׁוּת הָיָה לוֹ לִשְׂרֹף אֶת כְּסוּתוֹ. וְהֵם אוֹמְרִים, מַה קּוֹל בָּעֲזָרָה. קוֹל בֶּן לֵוִי לוֹקֶה וּבְגָדָיו נִשְׂרָפִין, שֶׁיָּשֵׁן לוֹ עַל מִשְׁמָרוֹ. רַבִּי אֱלִיעֶזֶר בֶּן יַעֲקֹב אוֹמֵר, פַּעַם אַחַת מָצְאוּ אֶת אֲחִי אִמָּא יָשֵׁן, וְשָׂרְפוּ אֶת כְּסוּתוֹ"}, {"lbl": "שקלים ה, א", "w": "אֵלּוּ הֵן הַמְמֻנִּין שֶׁהָיוּ בַּמִּקְדָּשׁ... בֶּן בֵּבָי עַל הַפָּקִיעַ"}], "vr": [{"lbl": "רמב״ם בית הבחירה ח, י", "w": "וּמַעֲמִידִין מְמֻנֶּה אֶחָד עַל כָּל מִשְׁמְרוֹת הַשּׁוֹמְרִים. וְאִישׁ הַר הַבַּיִת הָיָה נִקְרָא. וְהָיָה מְחַזֵּר עַל כָּל מִשְׁמָר וּמִשְׁמָר כָּל הַלַּיְלָה. וַאֲבוּקוֹת דְּלוּקוֹת לְפָנָיו. וְכָל מִשְׁמָר שֶׁאֵינוֹ עוֹמֵד וְאוֹמֵר לוֹ אִישׁ הַר הַבַּיִת שָׁלוֹם עָלֶיךָ נִכָּר שֶׁהוּא יָשֵׁן חוֹבְטוֹ בְּמַקְּלוֹ. וּרְשׁוּת הָיָה לוֹ לִשְׂרֹף אֶת כְּסוּתוֹ עַד שֶׁהָיוּ אוֹמְרִין בִּירוּשָׁלַיִם מַה קּוֹל בָּעֲזָרָה קוֹל בֶּן לֵוִי לוֹקֶה וּבְגָדָיו נִשְׂרָפִין שֶׁיָּשַׁן עַל מִשְׁמַרְתּוֹ"}], "caps": [[0.5, "אִישׁ הַר הַבַּיִת הָיָה מְחַזֵּר עַל כָּל מִשְׁמָר וּמִשְׁמָר, וַאֲבוּקוֹת דּוֹלְקִין לְפָנָיו"], [3.0, "״כדי שכשהשומר ער, יראה להשר ויקום לפניו״ (תפארת ישראל)"], [12.0, "וְכָל מִשְׁמָר שֶׁאֵינוֹ עוֹמֵד, אוֹמֵר לוֹ אִישׁ הַר הַבַּיִת, שָׁלוֹם עָלֶיךָ"], [14.4, "נִכָּר שֶׁהוּא יָשֵׁן, חוֹבְטוֹ בְמַקְלוֹ"], [16.8, "וּרְשׁוּת הָיָה לוֹ לִשְׂרֹף אֶת כְּסוּתוֹ"], [20.8, "וְהֵם אוֹמְרִים, מַה קּוֹל בָּעֲזָרָה. קוֹל בֶּן לֵוִי לוֹקֶה וּבְגָדָיו נִשְׂרָפִין, שֶׁיָּשֵׁן לוֹ עַל מִשְׁמָרוֹ"], [23.8, "רַבִּי אֱלִיעֶזֶר בֶּן יַעֲקֹב אוֹמֵר, פַּעַם אַחַת מָצְאוּ אֶת אֲחִי אִמָּא יָשֵׁן, וְשָׂרְפוּ אֶת כְּסוּתוֹ"], [26.2, "בֶּן בֵּבָי עַל הַפָּקִיעַ (שקלים ה, א) — ״והיה הוא או אנשיו חוזרים על המשמורת בלילה״ (תפארת ישראל)"], [37.8, "״להלקות הכהנים והלוים שנמצאו ישנים על משמרותיהם״ (ברטנורא, שקלים ה, א)"], [42.0, "״אַשְׁרֵיהֶם לָרִאשׁוֹנִים, שֶׁאֲפִילּוּ עַל אוֹנֶס שֵׁינָה עוֹשִׂין דִּין״ (רבי יוחנן, תמיד כח.)"]], "text": "משמרות הלילה. השומרים — לויים: ״חמשה על חמשה שערי העזרה, ארבעה על ארבע פנותיה מבחוץ... ואחד אחורי בית הכפורת״ (מידות א, א). הם יושבים מחוץ לעזרה: ״לפי שאין ישיבה בעזרה אלא למלכי בית דוד בלבד... השומרים בשערי העזרה שומרים מבחוץ כדי שיהיו מותרין בישיבה״ (ברטנורא שם).\n**איש הר הבית** — ״ממונה על כל השומרים״ (ברטנורא); ״שהיו כמה שרים ממונים על השומרים, ומתחלפים בכל לילה לסבב על השומרים, וראש שעל כולן נקרא בן ביבאי״ (תפארת ישראל, מידות א, ב). האבוקות — בפנסים קבועים ליד המשמרות, כתפארת ישראל: ״מדלא קאמר ונושאים אבוקות לפניו, משמע שהאבוקות עומדות במקומן בפנסין סביב, שלא יתכבו ברוח״. השומר בשער הקרבן ער — רואה את השר ״ויקום לפניו״. השומר בשער הניצוץ ישן. מי אומר ״שלום עליך״ — במתג ״״שלום עליך״ — איש הר הבית או השומר״ (שיטות ומחלוקות); ברירת המחדל — המשנה ותפארת ישראל: איש הר הבית אומר, ״שאם הוא ער יענהו״. ״חובטו במקלו — בפקיע שבהמקל״, ״לשרוף את כסותו — ר״ל רק כסותו העליון שמסתמא התחתל בו״ (תפארת ישראל). ״מה קול בעזרה — אומרים זה לזה בן לוי לוקה, ובשביל כך הוא צועק ונשמע קולו בכאן״ (המפרש לתמיד כח.).\n**בן בבי** — ״בן בבי על הפקיע״ (שקלים ה, א): ״להלקות הכהנים והלוים שנמצאו ישנים על משמרותיהם... כדאמרן במסכת מדות״ (ברטנורא שם); ״והיה הוא או אנשיו חוזרים על המשמורת בלילה״ (תפארת ישראל שם). הפקיע — ״מאי פקיע? אמר רב: מדרא. מאי מדרא? אמר רב פפא: מטרקא דטייעי דפסיק רישיה״ (יומא כג.); רש״י: ״מפסקת בראשה לרצועות דקות״. בן בבי — כהן (״בן בביי, שם כהן״, רבינו אליקים), ולכן בבגדי כהונה בלי האבנט (רמב״ם כלי המקדש ח, יא). ובירושלמי (שקלים ה, א) אחרת: ״בן בבי על הפקיע — שהיה מזוויג את הפתילות״; וכך היה סבור אביי בתחילה: ״אמינא פתילתא״ (יומא כג.). השומרים בהדגמה לויים: ״שלא מצינו כהנים לוקים״ (שלטי הגבורים, בתוספות יום טוב מידות א, ב); ״אבל כהן שישן על משמרו קנסוהו באופן אחר״ (תפארת ישראל, מידות א, ב).\nבחירות מודל: מקום כל שומר וכל פנס, הישיבה על אבן, לבושו של איש הר הבית (שבטו לא נתפרש), שני השומרים של בן בבי — בפינה הצפונית־מערבית ואחורי בית הכפורת — והליכה מואצת.", "refs": [["מידות א, א", "Mishnah_Middot.1.1"], ["מידות א, ב", "Mishnah_Middot.1.2"], ["ברטנורא מידות א, א", "Bartenura_on_Mishnah_Middot.1.1"], ["יכין מידות א, ב", {"book": 819, "index": 26}], ["תוספות יום טוב מידות א, ב", {"book": 948, "index": 27}], ["תמיד כז:–כח.", "Tamid.27b"], ["המפרש תמיד כז:", {"book": 2105, "index": 173}], ["רמב״ם בית הבחירה ח, י", "Mishneh_Torah,_The_Chosen_Temple.8.10"], ["שקלים ה, א", "Mishnah_Shekalim.5.1"], ["ברטנורא שקלים ה, א", {"book": 593, "index": 182}], ["יכין שקלים ה, א", {"book": 768, "index": 372}], ["ירושלמי שקלים ה, א", {"book": 154, "index": 148}], ["יומא כג.", {"book": 107, "index": 522}], ["רש״י יומא כג.", {"book": 2157, "index": 1167}], ["רמב״ם כלי המקדש ח, יא", {"book": 338, "index": 133}]], "lamps": null, "capsG": [[0.5, "אִישׁ הַר הַבַּיִת הָיָה מְחַזֵּר עַל כָּל מִשְׁמָר וּמִשְׁמָר, וַאֲבוּקוֹת דּוֹלְקִין לְפָנָיו"], [3.6, "השומר הער קם, ואומר לאיש הר הבית ״שלום עליך״ (כגמרא, תמיד כז:)"], [12.0, "וְכׇל מִשְׁמָר שֶׁאֵינוֹ עוֹמֵד וְאוֹמֵר לוֹ: ״אִישׁ הַר הַבַּיִת שָׁלוֹם עָלֶיךָ״! – נִיכָּר שֶׁהוּא יָשֵׁן, חוֹבְטוֹ בְּמַקְלוֹ"], [16.8, "וּרְשׁוּת הָיָה לוֹ לִשְׂרֹף אֶת כְּסוּתוֹ"], [20.8, "וְהֵם אוֹמְרִים, מַה קּוֹל בָּעֲזָרָה. קוֹל בֶּן לֵוִי לוֹקֶה וּבְגָדָיו נִשְׂרָפִין, שֶׁיָּשֵׁן לוֹ עַל מִשְׁמָרוֹ"], [23.8, "רַבִּי אֱלִיעֶזֶר בֶּן יַעֲקֹב אוֹמֵר, פַּעַם אַחַת מָצְאוּ אֶת אֲחִי אִמָּא יָשֵׁן, וְשָׂרְפוּ אֶת כְּסוּתוֹ"], [26.2, "בֶּן בֵּבָי עַל הַפָּקִיעַ (שקלים ה, א) — ״והיה הוא או אנשיו חוזרים על המשמורת בלילה״ (תפארת ישראל)"], [37.8, "״להלקות הכהנים והלוים שנמצאו ישנים על משמרותיהם״ (ברטנורא, שקלים ה, א)"], [42.0, "״אַשְׁרֵיהֶם לָרִאשׁוֹנִים, שֶׁאֲפִילּוּ עַל אוֹנֶס שֵׁינָה עוֹשִׂין דִּין״ (רבי יוחנן, תמיד כח.)"]]}, "gevini": {"id": "gevini", "title": "גביני הכרוז — ״עמדו כהנים לעבודתכם״", "dur": 14, "v": [{"lbl": "תמיד ג, ח", "w": "מִירִיחוֹ הָיוּ שׁוֹמְעִין קוֹל גְּבִינִי כָּרוֹז"}, {"lbl": "יומא כ:", "w": "גְּבִינִי כָּרוֹז מַהוּ אוֹמֵר: ״עִמְדוּ כֹּהֲנִים לַעֲבוֹדַתְכֶם, וּלְוִיִּם לְדוּכַנְכֶם, וְיִשְׂרָאֵל לְמַעֲמַדְכֶם״. וְהָיָה קוֹלוֹ נִשְׁמָע בְּשָׁלֹשׁ פַּרְסָאוֹת"}], "vr": [], "caps": [[0.4, "מִירִיחוֹ הָיוּ שׁוֹמְעִין קוֹל גְּבִינִי כָּרוֹז"], [3.4, "״עִמְדוּ כֹּהֲנִים לַעֲבוֹדַתְכֶם״"], [6.8, "״וּלְוִיִּם לְדוּכַנְכֶם, וְיִשְׂרָאֵל לְמַעֲמַדְכֶם״"], [10.2, "וְהָיָה קוֹלוֹ נִשְׁמָע בְּשָׁלֹשׁ פַּרְסָאוֹת (יומא כ:)"]], "text": "גביני הכרוז — ״כהן ששמו גביני, שהיה מכריז בכל בוקר בבית המקדש עמדו כהנים לעבודתכם״ (ברטנורא, תמיד ג, ח). מקומו — ״מכריז בכל בוקר בהר הבית לפני שער בית המוקד הסגור״ (תפארת ישראל שם), כבתצוגת ״חמישה עשר הממונים״. לשון הקריאה — כבבלי (יומא כ:): ״עמדו כהנים לעבודתכם, ולוים לדוכנכם, וישראל למעמדכם. והיה קולו נשמע בשלש פרסאות״; ובירושלמי (שקלים ה, א): ״הכהנים לעבודה והלוים לדוכן וישראל למעמד. אגריפס המלך שמע קולו עד שמונה פרסאות״.\n**קריאת הגבר:** ״מאי קריאת הגבר? רב אמר: קרא גברא. רבי שילא אמר: קרא תרנגולא״, ״תניא כותיה דרב: גביני כרוז מהו אומר...״ (יומא כ:); רש״י: ״קרא גברא — מכריז הממונה על הכרוז ואומר עמדו כהנים לעבודתכם״. והממונה בא ״מקריאת הגבר, או סמוך לו מלפניו או מלאחריו״ (תמיד א, ב) — ״ופירשוהו בגמ׳ יומא על גביני כרוז שהיו מכריזין בקול רם סמוך לעליית השחר״ (המאירי, תמיד כח.). בהדגמה הממונה כבר עומד לפני השער, וגביני קורא; אחר כך הממונה דופק.\nגביני בבגדי כהונה, בלי האבנט: ״לפיכך לובשם ביום עבודתו ואפילו שלא בשעת עבודה, חוץ מן האבנט מפני שהוא שעטנז״ (רמב״ם כלי המקדש ח, יא). הידיים סביב הפה, ופניו תחילה אל השער ואחר כך אל החיל — בחירת מודל; המלים בכתוביות.", "refs": [["תמיד ג, ח", "Mishnah_Tamid.3.8"], ["ברטנורא תמיד ג, ח", {"book": 634, "index": 117}], ["יכין תמיד ג, ח", {"book": 818, "index": 332}], ["יומא כ:", {"book": 107, "index": 446}], ["רש״י יומא כ:", {"book": 2157, "index": 982}], ["ירושלמי שקלים ה, א", {"book": 154, "index": 146}], ["תמיד א, ב", "Mishnah_Tamid.1.2"], ["רמב״ם כלי המקדש ח, יא", {"book": 338, "index": 133}]], "lamps": null}}, "orders": {"abba": ["ihb", "moked", "gevini", "lot1", "patrol", "kiyor", "terumah", "tapuach", "maarachah", "maarachah2", "gezirin", "lot2", "barkai", "lamb", "tobeit", "keys", "gate", "inner", "lamps5", "akedah", "dam", "evarim", "shema", "lot34", "machta", "magrefa", "teni", "lamps2", "deshen", "gechalim", "ketoret", "birkat", "haalaah", "mincha", "nesachim", "shir", "sof"], "rambam": ["ihb", "moked", "gevini", "patrol", "lot1", "kiyor", "terumah", "tapuach", "maarachah", "maarachah2", "gezirin", "barkai", "lamb", "tobeit", "keys", "gate", "inner", "akedah", "dam", "lamps5", "evarim", "shema", "lot34", "machta", "magrefa", "teni", "gechalim", "ketoret", "lamps2", "deshen", "haalaah", "birkat", "mincha", "nesachim", "shir", "sof"]}, "note": {"abba": "סדר אביי (יומא לג.), \"אליבא דאבא שאול\" — המשנה במסכת תמיד כסדרה.", "rambam": "סדר הרמב״ם (תמידין ומוספין ו), כחכמים — \"והלכה כחכמים\" (פירוש המשניות תמיד ו, ג)."}, "abaye": "אַבָּיֵי מְסַדֵּר מַעֲרָכָה מִשְּׁמֵיהּ דִּגְמָרָא וְאַלִּיבָּא דְּאַבָּא שָׁאוּל: מַעֲרָכָה גְּדוֹלָה קוֹדֶמֶת לְמַעֲרָכָה שְׁנִיָּה שֶׁל קְטוֹרֶת, מַעֲרָכָה שְׁנִיָּה שֶׁל קְטוֹרֶת קוֹדֶמֶת לְסִידּוּר שְׁנֵי גְּזִירֵי עֵצִים, וְסִידּוּר שְׁנֵי גְּזִירֵי עֵצִים קוֹדֵם לְדִישּׁוּן מִזְבֵּחַ הַפְּנִימִי, וְדִישּׁוּן מִזְבֵּחַ הַפְּנִימִי קוֹדֵם לַהֲטָבַת חָמֵשׁ נֵרוֹת, וַהֲטָבַת חָמֵשׁ נֵרוֹת קוֹדֵם לְדַם הַתָּמִיד, וְדַם הַתָּמִיד קוֹדֵם לַהֲטָבַת שְׁתֵּי נֵרוֹת, וַהֲטָבַת שְׁתֵּי נֵרוֹת קוֹדֵם לִקְטוֹרֶת, וּקְטוֹרֶת קוֹדֵם לְאֵבָרִים, וְאֵבָרִים לְמִנְחָה, וּמִנְחָה לַחֲבִיתִּין, וַחֲבִיתִּין לִנְסָכִין, וּנְסָכִין לְמוּסָפִין, וּמוּסָפִין לְבָזִיכִין, וּבָזִיכִין לְתָמִיד שֶׁל בֵּין הָעַרְבַּיִם", "shir": {"0": "בַּיּוֹם הָרִאשׁוֹן הָיוּ אוֹמְרִים (תהילים כ״ד:א׳), לַה' הָאָרֶץ וּמְלוֹאָהּ תֵּבֵל וְיֹשְׁבֵי בָהּ", "1": "בַּשֵּׁנִי הָיוּ אוֹמְרִים (שם מח), גָּדוֹל ה' וּמְהֻלָּל מְאֹד בְּעִיר אֱלֹהֵינוּ הַר קָדְשׁוֹ", "2": "בַּשְּׁלִישִׁי הָיוּ אוֹמְרִים (שם פב), אֱלֹהִים נִצָּב בַּעֲדַת אֵל בְּקֶרֶב אֱלֹהִים יִשְׁפֹּט", "3": "בָּרְבִיעִי הָיוּ אוֹמְרִים (שם צד), אֵל נְקָמוֹת ה' אֵל נְקָמוֹת הוֹפִיעַ וְגוֹ", "4": "בַּחֲמִישִׁי הָיוּ אוֹמְרִים (שם פא), הַרְנִינוּ לֵאלֹהִים עוּזֵּנוּ, הָרִיעוּ לֵאלֹהֵי יַעֲקֹב", "5": "בַּשִּׁשִּׁי הָיוּ אוֹמְרִים (שם צג), ה' מָלָךְ גֵּאוּת לָבֵשׁ וְגוֹ", "6": "בְּשַׁבָּת הָיוּ אוֹמְרִים (שם צב), מִזְמוֹר שִׁיר לְיוֹם הַשַּׁבָּת, מִזְמוֹר שִׁיר לֶעָתִיד לָבֹא, לְיוֹם שֶׁכֻּלּוֹ שַׁבָּת מְנוּחָה לְחַיֵּי הָעוֹלָמִים"}}; //
   // plugin/js/tamid.js //
   // ===== 55-tamid.js — "סדר עבודת הבוקר": the morning's service by Masechet Tamid, a demonstration in stages (2.0, 11.11.2026) ===== //
   // The user (11.11.2026): "הדלקת הנרות וכל הסדר הידוע של הבוקר... לעשות הדגמה להקרבת קורבן התמיד, לפי הסדר"; "תתחיל דווקא בגדול"; //
@@ -60408,8 +60572,11 @@ void main() {
     const V3 = (x, y, lz) => [x, y, lz + D]; //
     // (the methods never use `this`: the tour calls them unbound) //
     const TM = SH.tamid = { //
-      order: "abba", lamps: "rambam", belt: "kilayim", mitz: "rashi", ephod: "rashi", active: false, stage: -1, sec: 0, qa: null, //
-      readings: () => ({ order: TM.order, lamps: TM.lamps, belt: TM.belt, mitz: TM.mitz, ephod: TM.ephod }), //
+      order: "abba", lamps: "rambam", belt: "kilayim", mitz: "rashi", ephod: "rashi", shalom: "mishna", active: false, stage: -1, sec: 0, qa: null, //
+      readings: () => ({ order: TM.order, lamps: TM.lamps, belt: TM.belt, mitz: TM.mitz, ephod: TM.ephod, shalom: TM.shalom }), //
+      // NIGHT_WATCH_305: the row "״שלום עליך״" - who says it: the officer (the Mishnah, Middot 1:2; the default, the user 23:49) or //
+      // the guard (the Gemara, Tamid 27b; the Rambam, Beit HaBechira 8:10) - the presentation built again at the same stage //
+      setShalom: (m) => { TM.shalom = m === "gemara" ? "gemara" : "mishna"; retour(); return TM.shalom; }, //
       // the priests' belt (Yoma 12b, Ravin: "לא נחלקו אלא באבנטו של כהן הדיוט... שרבי אומר: של כלאים, ורבי אלעזר ברבי שמעון אומר: של //
       // בוץ"; the high priest's in the days of the year "דברי הכל של כלאים") - at once, the stage going on //
       setBelt: (m) => { TM.belt = m === "white" ? "white" : "kilayim"; applyGarb(); return TM.belt; }, //
@@ -60476,7 +60643,8 @@ void main() {
       // NIGHT_VIEWS_209: from above the hall itself, north of its gate - the gate's two open leaves (gold, twenty amot high, at //
       // z -57.5..-53.2) stood across the picture of an eye south of them, as two dark slabs; from here the hearth, the elders on the //
       // stone ledges and the four rooms are seen whole //
-      moked: () => [[-18, 50.5, -58.6], [-18, 14, -69]],   // MOKED_WIDE_211: higher (44 until 2.0.1) - the house is 32 wide now //
+      ihb: () => CAMK.ihb()[0].slice(1), gevini: () => CAMK.gevini()[0].slice(1),   // NIGHT_WATCH_305 //
+      moked: () => CAMK.moked()[0].slice(1),   // NIGHT_WATCH_305: the moving eye's first key (MOKED_WIDE_211's eye at its end) //
       lot1: (o) => (o === "rambam" ? GZV : [[-18, 50.5, -58.6], [-18, 15, -69]]), //
       patrol: () => CAMK.patrol()[0].slice(1), //
       kiyor: () => [[12, 24.5, 54.5], [22.4, 18.6, 54.8]], //
@@ -60491,7 +60659,7 @@ void main() {
       tobeit: () => [[70, 34, -10], [26, 16, -44]], //
       keys: () => [[52, 32, 24], [16, 22, 0]], //
       gate: () => [[34, 30, 12], [1, 26, -7]], //
-      inner: () => [[-20, 27.6, 7], [-33.5, 24.4, 0]], //
+      inner: () => [[-20, 27.6, 7], [-32.25, 24.4, 0]],   // ALTAR_EAST_305 //
       lamps5: menView, //
       akedah: () => [[54, 25, -10], [42, 16.5, -25]], //
       dam: () => CAMK.dam()[0].slice(1), //
@@ -60500,10 +60668,10 @@ void main() {
       lot34: () => GZV, //
       machta: () => [V3(80, 44, 50), V3(52, 22, 20)], //
       magrefa: () => [[106, 40, -30], [40, 18, 0]], //
-      teni: () => [[-20, 28, 8], [-33.5, 24, 0]], //
+      teni: () => [[-20, 28, 8], [-32.25, 24, 0]],   // ALTAR_EAST_305 //
       lamps2: menView, //
-      gechalim: () => [[-25, 27.5, 6], [-33.5, 24.5, 0]], //
-      ketoret: () => [[-22, 28.5, 8], [-33.5, 25, 0]], //
+      gechalim: () => [[-25, 27.5, 6], [-32.25, 24.5, 0]],   // ALTAR_EAST_305 //
+      ketoret: () => [[-22, 28.5, 8], [-32.25, 25, 0]],   // ALTAR_EAST_305 //
       // BIRKAT_VIEW_209: the eye stood on the altar's top, in its fire - now in the court between the ulam and the altar, at the south //
       birkat: () => [[34, 27, 20], [20, 20.5, -1]], //
       haalaah: () => [V3(82, 46, 42), V3(57, 24, 8)], //
@@ -60514,6 +60682,21 @@ void main() {
     }; //
     // a stage whose eye moves with it: keyframes [sec, pos, target] (smoothed between them), from the slide's own view at 0 //
     const CAMK = { //
+      // NIGHT_WATCH_305: with Ish Har HaBayit along the north chel, then with Ben Bavi by the west //
+      // (NIGHT_SIT_305: the sleepers seen beside the one who comes to them - from the west of the gate of the spark, from the south-west //
+      // behind the house of the kaporet; until the second draft the eye looked over the officer's back) //
+      ihb: () => [[0, [-28, 17, -99], [-42, 1.6, -77.2]], [2.6, [-49, 7.5, -89], [-41.2, 1.5, -76.9]], [6.4, [-49, 7.5, -89], [-41.2, 1.5, -76.9]], //
+        [11.2, [-80, 6.2, -83], [-71.3, 1.3, -76.7]], [12.0, [-82, 4.6, -80.5], [-71.3, 1.2, -76.6]], [18.6, [-82, 4.6, -80.5], [-71.3, 1.2, -76.6]], //
+        [19.4, [-79, 3.8, -80.6], [-71.0, 0.8, -76.6]], [25.6, [-79, 3.8, -80.6], [-71.0, 0.8, -76.6]], //
+        [27.0, [-84, 22, -100], [-98.5, 2, -78.5]], [29.6, [-88, 12, -93], [-98.6, 1.8, -77.4]], [30.2, [-88, 12, -93], [-98.6, 1.8, -77.4]], //
+        [33.4, [-112, 9, -50], [-99, 1.6, -42]], [36.6, [-110, 7, -2], [-99, 1.4, -10]], [37.6, [-104, 4.5, 0], [-98.3, 1.2, -6.4]], //
+        [46, [-104, 4.5, 0], [-98.3, 1.2, -6.4]]], //
+      // Gevini on the landing: from the north-east, then from before him when he turns to the chel //
+      gevini: () => [[0, [-2, 21, -95], [-13.5, 14.6, -79.1]], [3.0, [-8.6, 16.9, -86.4], [-15.4, 15.9, -79.0]], [6.2, [-8.6, 16.9, -86.4], [-15.4, 15.9, -79.0]], //
+        [7.4, [-15.0, 16.4, -88.6], [-15.5, 15.8, -79.0]], [14, [-15.0, 16.4, -88.6], [-15.5, 15.8, -79.0]]], //
+      // NIGHT_WATCH_305 (the user, 19.11.2026 21:24: "4. הממונה"): the officer across the chel and up the flight, then into the house //
+      moked: () => [[0, [16, 8.5, -94], [7, 2.4, -79]], [1.0, [16, 8.5, -94], [7, 2.4, -79]], [5.6, [5, 13, -94.5], [-6.5, 8.5, -79.2]], //
+        [9.2, [-8, 20.5, -93], [-18, 14.6, -79.4]], [10.6, [-8, 20.5, -93], [-18, 14.6, -79.4]], [12.6, [-18, 50.5, -58.6], [-18, 14, -69]], [22, [-18, 50.5, -58.6], [-18, 14, -69]]], //
       // NESACHIM_BOW_209: the libation from above, then - at the bows of the song ("והשתחוו העם", Tamid 7:3) - the priests on the //
       // ulam's steps bowing toward the house, from the court //
       nesachim: () => [[0, [64, 64, 48], [60, 18, 8]], [19.4, [64, 64, 48], [60, 18, 8]], [21.2, [36, 27, 26], [20, 18.5, -3]], [30, [35, 26.5, 24], [20, 18.5, -3]]], //
@@ -60554,7 +60737,7 @@ void main() {
         const d = new Date().getDay(); //
         verses.splice(0, verses.length, [0, DATA.shir[d] || DATA.shir[0], "תמיד ז, ד — " + (d === 6 ? "השיר של שבת" : "השיר של יום " + DAYS[d])]); //
       } //
-      const caps = (R && st.capsR ? st.capsR : st.caps).map(([t, c]) => ({ t, text: c })); //
+      const caps = (st.capsG && TM.shalom === "gemara" ? st.capsG : R && st.capsR ? st.capsR : st.caps).map(([t, c]) => ({ t, text: c }));   // NIGHT_WATCH_305: capsG //
       // LAMPS_CAP_300 (the user, 18.11.2026, "א+ג": the lamp he fixes as it was, and a caption): in the Rambam's reading all seven lamps //
       // burn at the second dressing - at the first he lit the five ("והדלקת הנרות היא הטבתם", Temidin 3) - the caption says so at the //
       // stage's start, and the Mishnah's first words follow at 3.6 (he reaches the menorah at 4.6) //
@@ -61047,7 +61230,7 @@ void main() {
         const K = KIT, FS = K.FS, lev = kind === "L", hp = kind === "H", n = Object.keys(figs).length; //
         const g = new Group(), lean = new Group(); //
         g.add(lean); //
-        let body, belt = null, bend = null; //
+        let body, belt = null, bend = null, neckG = null, upG = null;   // NIGHT_SIT_305: the neck's pivot; the part above the waist //
         if (hp) { //
           body = new Mesh(G.HK, MAT.fig);              // this demonstration's body (no ears: the head is the priest's) //
           body.castShadow = true; //
@@ -61076,12 +61259,18 @@ void main() {
           body.castShadow = true; //
           S.add(body); //
           if (K.gRobeUp) { const up = new Mesh(K.gRobeUp, lev ? KG.mLev : K.mRobe); up.castShadow = true; U.add(up); } //
-          U.add(new Mesh(KG.neck, K.mSkin)); //
+          // NIGHT_SIT_305: the neck, the head and its cap or hat in one group, turned at the neck's foot (NK) - a guard asleep bows his //
+          // head (applyFig: headA). Not turned, all is where it was. //
+          const NKY = 1.86, NK = new Group(); //
+          NK.position.y = NKY; //
+          U.add(NK); //
+          neckG = NK; upG = U; //
+          { const nk = new Mesh(KG.neck, K.mSkin); nk.position.y = -NKY; NK.add(nk); } //
           if (!lev) { belt = new Mesh(K.gSash, TM.belt === "white" ? K.mSashWhite : K.mSashDyed); belt.userData.kit = true; U.add(belt); } //
-          const hg = K.headOn(U, K.HEAD_Y, K.mBeards[n % K.mBeards.length], n); //
+          const hg = K.headOn(NK, K.HEAD_Y - NKY, K.mBeards[n % K.mBeards.length], n); //
           hg.rotation.set(0, (((n * 0.618) % 1) - 0.5) * 0.4, 0);   // every man a little different (a fixed turn, no chance) //
-          if (lev) { const cap = new Mesh(K.gCap, KG.mLevCap); cap.position.y = K.HEAD_Y; U.add(cap); } //
-          else { const hat = new Mesh(K.gHat, K.mHat); hat.position.y = K.HAT_Y; hat.rotation.y = hg.rotation.y + (((n * 0.37) % 1) - 0.5) * 0.9; U.add(hat); } //
+          if (lev) { const cap = new Mesh(K.gCap, KG.mLevCap); cap.position.y = K.HEAD_Y - NKY; NK.add(cap); } //
+          else { const hat = new Mesh(K.gHat, K.mHat); hat.position.y = K.HAT_Y - NKY; hat.rotation.y = hg.rotation.y + (((n * 0.37) % 1) - 0.5) * 0.9; NK.add(hat); } //
         } //
         const A = hp ? KG.H : KG.P, armMat = lev ? KG.mLev : K.mRobe; //
         const arm = (side) => {   // side +1 = the left (+x), -1 = the right //
@@ -61121,7 +61310,7 @@ void main() {
         } //
         g.visible = false; //
         group.add(g); //
-        const f = { id, g, lean, bend, legs, A, L, R, fl, fr, levite: lev, kind, body, belt, st: null, tag: null, kit: true }; //
+        const f = { id, g, lean, bend, legs, A, L, R, fl, fr, levite: lev, kind, body, belt, st: null, tag: null, kit: true, neck: neckG, upper: upG };   // NIGHT_SIT_305 //
         figs[id] = f; //
         return f; //
       }; //
@@ -61166,6 +61355,13 @@ void main() {
       }; //
       for (const id of FIG_IDS) makeFig(id, "K"); //
       for (const id of LEV_IDS) makeFig(id, "L"); //
+      // NIGHT_WATCH_305: the night's watch - Ish Har HaBayit (his tribe is not said: plain clothes in a colour of his own, as the //
+      // officers' "not said"), four Levite guards, and Ben Bavi and Gevini - priests ("בן בביי, שם כהן", Rabbeinu Elyakim on Yoma 23a; //
+      // "כהן ששמו גביני", the Bartenura on Tamid 3:8), in the priests' garments without the avnet: "לפיכך לובשם ביום עבודתו ואפילו //
+      // שלא בשעת עבודה, חוץ מן האבנט מפני שהוא שעטנז" (the Rambam, Klei HaMikdash 8:11) //
+      for (const id of ["bbv", "gev"]) { const f = makeFig(id, "K"); if (f.belt) f.belt.visible = false; } //
+      for (const id of ["ihb", "gk", "gn", "gc", "gp"]) makeFig(id, "L"); //
+      if (KG) { const mI = KG.mLev.clone(); mI.color.setHex(0x56606e); figs.ihb.g.traverse((o) => { if (o.isMesh && o.material === KG.mLev) o.material = mI; }); } //
       // ---- the high priest in his eight (Rambam, Klei HaMikdash 9 - 10; 10:3 "לובש המעיל. ועל המעיל האפוד והחשן וחוגר בחשב האפוד על //
       // המעיל מתחת החשן... ואחר כך צונף במצנפת וקושר הציץ למעלה מן המצנפת ושערו היה נראה בין ציץ למצנפת ושם היה מניח תפלין"): //
       //  the robe "כלו תכלת... ואין לו בית יד" (9:3), to the feet (the Ramban 28:31 "עד רגלי האדם"; its opening not drawn), on its hem //
@@ -61540,6 +61736,126 @@ void main() {
         return prop("torch" + k, g, { p: [0, -0.1, 0.1], r: [-0.25, 0, 0] }, false); //
       }; //
       torch(1); torch(2); //
+      // ---- NIGHT_WATCH_305 (the user, 19.11.2026 21:24 "5. להוסיף את איש הר הבית, כולל שומר ישן וכו'"; 23:26 "2. כתפא"י", "3. ב") - the //
+      // night's watch on the chel (SC.ihb, SC.gevini): the guards' lanterns - "משמע שהאבוקות עומדות במקומן בפנסין סביב, שלא יתכבו ברוח" //
+      // (Tiferet Yisrael, Middot 1:2) - two of them giving light where the stage is (N.lantA); the stones the guards sit on; the cloak //
+      // that is burnt ("לשרוף את כסותו - ר"ל רק כסותו העליון שמסתמא התחתל בו, ובא עי"ז לשינה", there), the officer's staff ("חובטו במקלו - בפקיע שבהמקל", there), Ben Bavi's pakia (Yoma 23a "מאי פקיע - //
+      // נגדא", Rashi "מפסקת בראשה לרצועות דקות") and the lantern's torch. Their places, forms and colours - model choices. //
+      const NW = (() => { //
+        const grp = new Group(); //
+        grp.name = "night-watch"; //
+        group.add(grp); //
+        const mCloak = std(0x6e5c46, { roughness: 1 }), mStone = std(0x8f8a80, { roughness: 0.95 }), mStrap = std(0x5a3a22, { roughness: 0.8 }); //
+        const mFlame = new MeshBasicMaterial({ color: 0xffb04a }); //
+        const mGlass = new MeshStandardMaterial({ color: 0xfff1c8, roughness: 0.2, transparent: true, opacity: 0.22, emissive: 0xffb04a, emissiveIntensity: 0.35, depthWrite: false }); //
+        // the lanterns: [x, z, the floor] - 0 at the gate of the offering, 1 at the gate of the spark, 2 at the court's north-west corner, //
+        // 3 behind the house of the kaporet (Middot 1:1 "ואחד אחורי בית הכפורת"), 4-7 on the way, 8 at the foot of Beit HaMoked's //
+        // flight, 9 on its landing //
+        const LANT = [[-43.6, -75.0, 0], [-73.6, -75.0, 0], [-97.3, -74.9, 0], [-97.2, -3.6, 0], [-58.5, -75.0, 0], [-87.0, -75.0, 0], [-97.1, -42.0, 0], //
+          [-36.4, -75.0, 0], [6.5, -77.8, 0], [-22.5, -79.2, 13.5]]; //
+        const LG = new Group(); //
+        LG.visible = false; //
+        grp.add(LG); //
+        const lanterns = LANT.map(([x, z, fy]) => { //
+          const g = new Group(); //
+          g.position.set(x, fy, z); //
+          g.add(mesh(new CylinderGeometry(0.06, 0.085, 2.5, 8), MAT.wood, 0, 1.25, 0)); //
+          for (const [dx, dz] of [[-0.2, -0.2], [0.2, -0.2], [0.2, 0.2], [-0.2, 0.2]]) g.add(mesh(new CylinderGeometry(0.018, 0.018, 0.62, 5), MAT.bronze, dx, 2.81, dz)); //
+          g.add(mesh(new BoxGeometry(0.5, 0.05, 0.5), MAT.bronze, 0, 2.5, 0)); //
+          g.add(mesh(new ConeGeometry(0.34, 0.2, 4).rotateY(Math.PI / 4), MAT.bronze, 0, 3.2, 0)); //
+          const gl = new Mesh(new BoxGeometry(0.4, 0.58, 0.4), mGlass); //
+          gl.position.y = 2.81; //
+          gl.renderOrder = 2; //
+          g.add(gl); //
+          const fl = new Mesh(new ConeGeometry(0.075, 0.26, 8), mFlame); //
+          fl.position.y = 2.7; //
+          g.add(fl); //
+          LG.add(g); //
+          return { g, fl }; //
+        }); //
+        const LPAIR = { 1: [0, 1], 2: [2, 3], 3: [8, 9] }; //
+        const lights = [0, 1].map(() => { const l = new PointLight(0xffa64a, 0, 24, 1.6); grp.add(l); return l; }); //
+        // NIGHT_SIT_305: the stones the guards sit on (the Tamid figures themselves sit - applyFig "sit", "doze"): at the gate of the //
+        // offering, at the gate of the spark, behind the house of the kaporet - each in its guard's frame (his face +z), the seat 0.63 high //
+        const stones = new Group(); //
+        stones.visible = false; //
+        grp.add(stones); //
+        for (const [x, z, yaw] of [[-41.6, -75.9, Math.PI], [-71.6, -75.8, Math.PI], [-97.7, -6.0, -HP]]) { //
+          const st = new Group(); //
+          st.position.set(x, 0, z); //
+          st.rotation.y = yaw; //
+          const b = new Mesh(new BoxGeometry(0.74, 0.63, 0.52), mStone); //
+          b.position.set(0, 0.315, -0.06); //
+          b.castShadow = true; //
+          b.receiveShadow = true; //
+          st.add(b); //
+          stones.add(st); //
+        } //
+        // the cloak on the ground, and its fire //
+        const cloakG = new Group(); //
+        { //
+          // a cloth fallen in a heap: a few low folds over one another (NIGHT_SIT_305: until the second draft one flat disc) //
+          for (const [sx, sy, sz, x, y, z, ry] of [[0.6, 0.09, 0.46, 0, 0.05, 0, 0.2], [0.38, 0.13, 0.27, 0.22, 0.1, -0.12, 0.7], [0.3, 0.11, 0.22, -0.26, 0.09, 0.14, -0.5], //
+            [0.24, 0.1, 0.34, 0.05, 0.13, 0.18, 1.2]]) { //
+            const c = new Mesh(new SphereGeometry(1, 16, 8).scale(sx, sy, sz), mCloak); //
+            c.position.set(x, y, z); //
+            c.rotation.y = ry; //
+            c.castShadow = true; //
+            cloakG.add(c); //
+          } //
+        } //
+        // its fire: tongues of flame over it, orange about and yellow in the middle, and their light on the chel //
+        const mFlameO = new MeshBasicMaterial({ color: 0xff7424, transparent: true, opacity: 0.88, depthWrite: false }); //
+        const cloakFl = []; //
+        for (let i = 0; i < 11; i++) { //
+          const inner = i >= 7, an = i * 2.4, rr = inner ? 0.1 + 0.05 * (i % 2) : 0.24 + 0.08 * (i % 3) / 2; //
+          const h = inner ? 0.62 + 0.12 * (i % 2) : 0.36 + 0.1 * ((i * 7) % 3) / 2; //
+          const fl = new Mesh(new ConeGeometry(inner ? 0.075 : 0.1, h, 7).translate(0, h / 2, 0), inner ? mFlame : mFlameO); //
+          fl.position.set(Math.cos(an) * rr * 1.2, 0.1, Math.sin(an) * rr); //
+          fl.visible = false; //
+          cloakG.add(fl); //
+          cloakFl.push(fl); //
+        } //
+        const cloakL = new PointLight(0xff8a3a, 0, 10, 1.8); //
+        cloakL.position.set(0, 0.6, 0); //
+        cloakG.add(cloakL); //
+        const cloakCol = new Color(0x6e5c46), charCol = new Color(0x241a12); //
+        prop("cloakN", cloakG, null, false); //
+        // the staff (held at a third of it), the strap at its head //
+        const stickG = new Group(); //
+        stickG.add(mesh(new CylinderGeometry(0.035, 0.045, 2.4, 7), MAT.wood, 0, 0.55, 0)); //
+        stickG.add(mesh(new BoxGeometry(0.03, 0.42, 0.012), mStrap, 0.035, 1.54, 0)); //
+        prop("stick", stickG, { p: [0, -0.1, 0.1], r: [-0.25, 0, 0] }, false); //
+        // the pakia: a handle and a strap, split at its end into thin straps //
+        const pakG = new Group(); //
+        pakG.add(mesh(new CylinderGeometry(0.03, 0.035, 0.45, 7), MAT.wood, 0, 0.12, 0)); //
+        pakG.add(mesh(new BoxGeometry(0.045, 0.5, 0.012), mStrap, 0, 0.6, 0)); //
+        for (const dx of [-0.045, -0.015, 0.015, 0.045]) pakG.add(mesh(new BoxGeometry(0.009, 0.28, 0.006), mStrap, dx, 0.98, 0)); //
+        prop("pakia", pakG, { p: [0, -0.06, 0.08], r: [-0.4, 0, 0] }, false); //
+        // the torch of the lantern at the gate of the spark (lantern 1 shows no flame while it is out) //
+        const ltG = new Group(); //
+        ltG.add(mesh(new CylinderGeometry(0.03, 0.025, 0.7, 6), MAT.wood, 0, 0.2, 0)); //
+        { const f = new Mesh(new ConeGeometry(0.075, 0.26, 8), mFlame); f.position.y = 0.66; ltG.add(f); } //
+        prop("ltorch", ltG, { p: [0, -0.08, 0.08], r: [-0.3, 0, 0] }, false); //
+        // none of these is a floor or a wall: the figures' floor ray (floorAt) and the camera pass through them //
+        for (const o of [grp, cloakG, stickG, pakG, ltG]) o.traverse((m) => { m.userData.noPick = true; }); //
+        return { //
+          grp, lanterns, //
+          apply(N) { //
+            LG.visible = N.lanterns > 0.5; //
+            const pair = LG.visible ? LPAIR[N.lantA | 0] : null; //
+            lights.forEach((l, i) => { if (pair) { const p = lanterns[pair[i]].g.position; l.position.set(p.x, p.y + 2.85, p.z); l.intensity = 16; } else l.intensity = 0; }); //
+            lanterns[1].fl.visible = !(N.ltorchOut > 0.5); //
+            const tt = performance.now() * 0.001; //
+            lanterns.forEach((L, i) => { L.fl.scale.set(1, 1 + 0.16 * Math.sin(tt * 9 + i * 1.3), 1); }); //
+            stones.visible = LG.visible; //
+            const cf = N.cloakFire; //
+            cloakFl.forEach((m, i) => { m.visible = cf > 0.02; const w = 0.8 + 0.3 * Math.sin(tt * 11 + i * 1.7); m.scale.set(Math.max(0.01, cf * (0.9 + 0.1 * w)), Math.max(0.01, cf * w), Math.max(0.01, cf * (0.9 + 0.1 * w))); }); //
+            cloakL.intensity = cf > 0.02 ? cf * (5 + 1.2 * Math.sin(tt * 13)) : 0; //
+            mCloak.color.copy(cloakCol).lerp(charCol, clamp(cf * 1.4, 0, 1) * 0.7);   // the cloth blackens as it burns //
+          } //
+        }; //
+      })(); //
       const toolS = () => { const g = new Group(); g.add(mesh(new BoxGeometry(0.4, 0.04, 0.35), MAT.bronze, 0, 0, 0.75)); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1)); return g; }; //
       const toolF = () => { const g = new Group(); for (const x of [-0.1, 0, 0.1]) g.add(mesh(new CylinderGeometry(0.015, 0.015, 0.35, 5).rotateX(HP), MAT.bronze, x, 0, 0.8)); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1)); return g; }; //
       prop("tool1", toolS(), null, false); prop("tool2", toolF(), null, false); prop("tool3", toolS(), null, false); prop("tool4", toolF(), null, false); //
@@ -61608,7 +61924,7 @@ void main() {
         g.add(mesh(new TorusGeometry(0.32, 0.03, 6, 14, Math.PI * 1.3).rotateZ(-0.1), MAT.wood, 0, 0.3, 0)); //
         g.add(mesh(new BoxGeometry(0.62, 0.05, 0.06), MAT.wood, 0, 0.6, 0)); //
         for (let s = -2; s <= 2; s++) g.add(mesh(new CylinderGeometry(0.004, 0.004, 0.52, 3), MAT.salt, s * 0.08, 0.35, 0)); //
-        prop("lyre" + i, g, { p: [0, 0.1, 0.2], r: [0, 0, 0] }, false); //
+        prop("lyre" + i, g, { p: [0, 0.1, 0.05], r: [0, 0, 0] });   // MUSICIANS_305: upright (false until 2.0.13), on the hand (0.2 above it) //
       } //
       for (let i = 1; i <= 2; i++) {   // LEVITES_211: two harps (נבלים) - a tall frame with a resonator below and more strings; the form - model choice //
         const g = new Group(); //
@@ -61616,7 +61932,7 @@ void main() {
         g.add(mesh(new BoxGeometry(0.56, 0.07, 0.09), MAT.wood, 0.27, 0.92, 0)); //
         g.add(mesh(new BoxGeometry(0.58, 0.14, 0.14), MAT.wood, 0.28, 0.07, 0)); //
         for (let s = 1; s <= 7; s++) g.add(mesh(new CylinderGeometry(0.004, 0.004, 0.74, 3), MAT.salt, s * 0.068, 0.51, 0)); //
-        prop("nevel" + i, g, { p: [0, 0.05, 0.2], r: [0, 0, 0] }, false); //
+        prop("nevel" + i, g, { p: [0, 0.05, -0.05], r: [0, Math.PI, 0] });   // MUSICIANS_305: upright, its strings toward his middle, its foot at the hand //
       } //
       // the role tags over the figures (sprites, drawn over everything on a dark plate) //
       const tagCache = new Map(); //
@@ -61638,7 +61954,7 @@ void main() {
         tagCache.set(text, v); //
         return v; //
       }; //
-      return { group, altarG, MAT, G, figs, hp: hpGarb, piles, lamb, props, sleepers, L1, L2, modelGez, blood, tagMat, paths: new Map(), routes: new Map() }; //
+      return { group, altarG, MAT, G, figs, hp: hpGarb, piles, lamb, props, sleepers, L1, L2, modelGez, blood, tagMat, paths: new Map(), routes: new Map(), night: NW };   // NIGHT_WATCH_305 //
     } //
     // ---------------------------------------------------------------- the cast //
     const FIG_IDS = ["mem", "t", "mc", "cv", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "k", "f", "e", "b1", "b2", "b3", "b4", "sg", "tr1", "tr2"]; //
@@ -61817,13 +62133,14 @@ void main() {
       for (const id in W.figs) { //
         const f = W.figs[id]; //
         if (!f.st) f.st = {}; //
-        Object.assign(f.st, { vis: false, x: 0, y: 0, z: 0, yaw: 0, pose: "stand", ph: 0, t: 0, tag: "" }); //
+        Object.assign(f.st, { vis: false, x: 0, y: 0, z: 0, yaw: 0, pose: "stand", ph: 0, t: 0, tag: "", cloak: false });   // NIGHT_SIT_305: cloak //
         if (!S0[id]) S0[id] = { vis: false, x: 0, z: 0, yaw: 0 }; //
       } //
       W.lamb.st = { vis: false, x: 0, y: 0, z: 0, yaw: 0, pose: "stand", ph: 0 }; //
       for (const id in W.props) { const p = W.props[id]; if (!p.st) p.st = {}; Object.assign(p.st, { vis: false, fig: null, hand: "R", x: 0, y: 0, z: 0, ry: 0, rx: 0 }); } //
       Object.assign(N, { kidWater: 0, sleepers: 1, gate: 0, mukhni: 1, lamps: [1, 1, 1, 1, 1, 1, 1], tap: 1, l1: 0, l2: 0, gz: 0, glow: 0, ashGold: 1, coals: 0, smoke: 0, //
-        blood: { ne: 0, sw: 0, ys: 0 }, chelG: 0, roofs: false, torches: [0, 0], coalsS: 0, coalsG: 0, teniAsh: 0, kafLid: 1, mizrak: 0, slab: 0, slabKeys: 1, fx: [], night: 1 }); //   // NIGHT_COALS_304: night //
+        blood: { ne: 0, sw: 0, ys: 0 }, chelG: 0, roofs: false, torches: [0, 0], coalsS: 0, coalsG: 0, teniAsh: 0, kafLid: 1, mizrak: 0, slab: 0, slabKeys: 1, fx: [], night: 1, //
+        lanterns: 0, lantA: 0, joltN: 0, joltP: 0, cloakFire: 0, ltorchOut: 0 });   // NIGHT_WATCH_305 //   // NIGHT_COALS_304: night //
       N.lamps.fill(1); //
     }; //
     const snap = () => { for (const id in W.figs) { const s = W.figs[id].st, o = S0[id]; o.vis = s.vis; o.x = s.x; o.z = s.z; o.yaw = s.yaw; } }; //
@@ -61864,6 +62181,7 @@ void main() {
         face(k, yaw, t) { if (tau >= t) fig(k).st.yaw = yaw; }, //
         hide(k, t = 0) { if (tau >= t) fig(k).st.vis = false; }, //
         tag(k, text, t0 = 0, t1 = 1e9) { if (tau >= t0 && tau < t1) fig(k).st.tag = text; }, //
+        cloak(k, t0 = 0, t1 = 1e9) { if (tau >= t0 && tau < t1) fig(k).st.cloak = true; },   // NIGHT_SIT_305: wrapped in his cloak //
         hold(k, p, hand, t) { if (tau >= t) Object.assign(P(p).st, { vis: true, fig: k, hand }); }, //
         put(p, x, y, z, t, ry = 0, rx = 0) { if (tau >= t) Object.assign(P(p).st, { vis: true, fig: null, x, y: y == null ? floorAt(x, z) : y, z, ry, rx }); }, //
         putA(p, x, lz, t, ry = 0, y = null) { a.put(p, x, y, lz + D, t, ry); },   // by the altar: (x, z) in its own frame //
@@ -61936,7 +62254,7 @@ void main() {
       return { pre: m.ew ? [M.x + 0.4, M.z - 3.6] : [M.x - 3.4, M.z - 3.1], ap: m.at(0, -2.3), stand: m.at(0, -0.62), y: m.FL + m.stoneTop, yaw: M.rot, //
         kuz: m.at(0.36, -1.05), kuzY: m.FL + 2 * m.stoneStep }; //
     }; //
-    const GA = () => SH.goldenAltar || { x: -33.5, z: 0, top: 25.9 }; //
+    const GA = () => SH.goldenAltar || { x: -32.25, z: 0, top: 25.9 };   // ALTAR_EAST_305 //
     const BOWSPOT = (p) => [GA().x + 5.0, p[1]];   // BOW_SPOT_209: where one bows in the heichal after his service at the golden altar - east of it //
     const RING2 = [42, -30];   // Rambam 1:11 "על קרן צפונית מערבית של בית המטבחים על טבעת שניה" - model choice: the second ring of the western //
     // column from that corner (40-altar.js: the rings at 42 + 4i, -18 - 6j; the north is -z) //
@@ -61945,16 +62263,117 @@ void main() {
     // MAARACHOT2_211: where the unconsumed limbs lie (the altar's frame): on the old fire, at the altar's east side ("לצדדי המזבח"), on the new pyre //
     const OLDL = { fire: [[61.0, 3.3, 0.0], [62.6, 3.35, 2.2], [60.4, 3.3, 3.1]], side: [[66.2, 0.25, -2.4], [66.3, 0.25, -0.6], [66.2, 0.25, 1.2]], back: [[61.3, 3.5, -0.9], [62.5, 3.55, 1.4], [61.1, 3.5, 2.7]] }; //
     const oldAt = (where, i) => { const p = OLDL[where][i]; return V3(p[0], TOP + p[1], p[2]); }; //
+    // ---------------------------------------------------------------- NIGHT_WATCH_305: the night's watch and Gevini's call //
+    // (the user, 19.11.2026 21:24: "5. להוסיף את איש הר הבית, כולל שומר ישן וכו', תוסיף אח"כ את גביני צועק (את הצעקה תדגים בתנועות גוף //
+    // עם יד על הפה וכד', והמלל בכתובית)... את בן בבי שמכה אותם (תעשה אחד ער ואחד ישן - ובישן הכאה)"; 23:26: "2. כתפא"י", "3. ב"; 23:49: //
+    // "שלום עליך - א"). Every figure walks the chel on its own floor (y 0: hintY gives the court's there), between the court's wall //
+    // (z -74.25, x -96.75) and the soreg (z -80, x -100). The places of the posts, the lanterns and the ways - model choices. //
+    const ON_CHEL = (pts) => pts.map((p) => [p[0], p[1], 0]); //
+    const NWP = { gk: [-41.6, -75.9], gn: [-71.6, -75.8], gc: [-97.9, -76.0], gp: [-97.7, -6.0], cloak: [-70.4, -76.2] }; //   // (the cloak falls on his east side, before the stone - NIGHT_SIT_305) //
+    const faceTo = (from, to) => Math.atan2(to[0] - from[0], to[1] - from[1]); //
+    const upAt = (p, yaw) => [p[0] + 0.62 * Math.sin(yaw), p[1] + 0.62 * Math.cos(yaw)];   // NIGHT_SIT_305: where he stands up (SIT.step before the stone) //
+    const NIGHT_FIGS = ["ihb", "bbv", "gk", "gn", "gc", "gp"]; //
+    SC.ihb = (a) => { //
+      const GM = TM.shalom === "gemara";   // the row "״שלום עליך״": the guard says it (the Gemara, Tamid 27b; the Rambam) - or the officer (the Mishnah) //
+      a.set("lanterns", 1, 0); //
+      a.set("lantA", 1, 0); //
+      a.at("gc", NWP.gc[0], NWP.gc[1], -2.36, 0, { y: 0 });   // the north-west corner's guard, awake, at his post all night //
+      // NIGHT_SIT_305: the guards on their stones - the gate of the offering's awake, the gate of the spark's and the one behind the //
+      // house of the kaporet asleep, wrapped in their cloaks //
+      a.at("gk", NWP.gk[0], NWP.gk[1], Math.PI, 0, { y: 0, pose: "sit" }); //
+      a.at("gn", NWP.gn[0], NWP.gn[1], Math.PI, 0, { y: 0, pose: "doze" }); //
+      a.cloak("gn", 0, 16.4); //
+      a.at("gp", NWP.gp[0], NWP.gp[1], -HP, 0, { y: 0, pose: "doze" }); //
+      a.cloak("gp", 0); //
+      // ---- Ish Har HaBayit (Middot 1:2): along the north chel, westward //
+      const p0 = [-36.5, -78.0], p1 = [-40.4, -78.0], p2 = [-69.8, -77.9], p3 = [-70.6, -77.3]; //
+      a.hold("ihb", "stick", "R", 0); //
+      a.at("ihb", p0[0], p0[1], -HP, 0, { y: 0 }); //
+      a.walk("ihb", ON_CHEL([p0, p1]), 0.8, 2.6, { yaw: faceTo(p1, NWP.gk) }); //
+      a.tag("ihb", "איש הר הבית", 0.6, 26); //
+      // the guard of the gate of the offering is awake: he sees him by the lantern's light and rises (Tiferet Yisrael: "כדי שכשהשומר ער, //
+      // יראה להשר ויקום לפניו") //
+      a.face("gk", faceTo(NWP.gk, p1), 2.4); //
+      a.pose("gk", "situp", 2.4, 3.3); //
+      const gkU = upAt(NWP.gk, faceTo(NWP.gk, p1)); //
+      a.at("gk", gkU[0], gkU[1], faceTo(NWP.gk, p1), 3.3, { y: 0 }); //
+      if (GM) { a.pose("gk", "hail", 3.6, 5.6); a.tag("gk", "״איש הר הבית, שלום עליך״", 3.6, 6.2); } //
+      a.walk("ihb", ON_CHEL([p1, [-55, -78.2], p2]), 6.4, 11.2, { yaw: faceTo(p2, NWP.gn) }); //
+      a.face("gk", Math.PI, 7.5); //
+      // the guard of the gate of the spark sleeps: he does not rise //
+      if (!GM) { a.pose("ihb", "hail", 12.0, 13.8); a.tag("ihb", "״שלום עליך״", 12.0, 14.2); } //
+      a.walk("ihb", ON_CHEL([p2, p3]), 14.4, 14.9, { yaw: faceTo(p3, NWP.gn) }); //
+      a.pose("ihb", "strike", 14.9, 16.3); //
+      a.fx("strike", 15.25); a.fx("strike", 15.95); //
+      a.ramp("joltN", 1, 0, 15.25, 15.65); a.ramp("joltN", 1, 0, 15.95, 16.35); //
+      // he wakes and leaps up - his cloak falls from him //
+      a.face("gn", faceTo(NWP.gn, p3), 16.4); //
+      a.pose("gn", "wake", 16.4, 17.4); //
+      const gnU = upAt(NWP.gn, faceTo(NWP.gn, p3)); //
+      a.at("gn", gnU[0], gnU[1], faceTo(NWP.gn, p3), 17.4, { y: 0 }); //
+      a.put("cloakN", NWP.cloak[0], 0.02, NWP.cloak[1], 16.4, 0.5); //
+      a.walk("gn", ON_CHEL([gnU, [-72.6, -76.6]]), 17.4, 18.2, { yaw: faceTo([-72.6, -76.6], NWP.cloak) }); //
+      // "ורשות היה לו לשרוף את כסותו": the torch from the lantern, to the cloak, and back //
+      const pl = [-73.0, -75.9]; //
+      a.walk("ihb", ON_CHEL([p3, pl]), 16.6, 17.6, { yaw: faceTo(pl, [-73.6, -75.0]) }); //
+      a.pose("ihb", "reachL", 17.6, 18.2); //
+      a.set("ltorchOut", 1, 18.0); //
+      a.hold("ihb", "ltorch", "L", 18.0); //
+      const pc = [-70.4, -77.15];   // north of the cloak, his face to it //
+      a.walk("ihb", ON_CHEL([pl, pc]), 18.3, 19.1, { yaw: 0 }); //
+      a.pose("ihb", "lowerL", 19.2, 20.4); //
+      a.ramp("cloakFire", 0, 1, 19.6, 20.6); //
+      a.fx("ignite", 19.6); a.fx("torch", 20.3); //
+      a.walk("ihb", ON_CHEL([pc, pl]), 20.6, 21.4, { yaw: faceTo(pl, [-73.6, -75.0]) }); //
+      a.pose("ihb", "reachL", 21.4, 21.9); //
+      a.gone("ltorch", 21.7); //
+      a.set("ltorchOut", 0, 21.7); //
+      a.ramp("cloakFire", 1, 0.35, 23, 26); //
+      // ---- Ben Bavi (Shekalim 5:1 "בן בבי על הפקיע"; the Yachin there: "והיה הוא או אנשיו חוזרים על המשמורת בלילה"): by the west //
+      a.set("lantA", 2, 26.0); //
+      const b0 = [-91.0, -78.2], b1 = [-99.2, -78.4], b2 = [-99.1, -8.2], b3 = [-98.9, -6.9]; //
+      a.hold("bbv", "pakia", "R", 26.0); //
+      a.at("bbv", b0[0], b0[1], -HP, 26.0, { y: 0 }); //
+      a.tag("bbv", "בן בבי — על הפקיע", 26.0, 46); //
+      a.walk("bbv", ON_CHEL([b0, b1]), 26.4, 28.6, { yaw: faceTo(b1, NWP.gc) }); //
+      a.face("gc", faceTo(NWP.gc, b1), 27.8); //
+      a.walk("bbv", ON_CHEL([b1, [-99.2, -60], [-99.1, -20], b2]), 30.0, 36.6, { yaw: faceTo(b2, NWP.gp) }); //
+      a.face("gc", -2.36, 31.0); //
+      a.walk("bbv", ON_CHEL([b2, b3]), 37.6, 38.1, { yaw: faceTo(b3, NWP.gp) }); //
+      a.pose("bbv", "strike", 38.1, 39.5); //
+      a.fx("strike", 38.45); a.fx("strike", 39.15); //
+      a.ramp("joltP", 1, 0, 38.45, 38.85); a.ramp("joltP", 1, 0, 39.15, 39.55); //
+      a.face("gp", faceTo(NWP.gp, b3), 39.6); //
+      a.pose("gp", "wake", 39.6, 40.6); //
+      const gpU = upAt(NWP.gp, faceTo(NWP.gp, b3)); //
+      a.at("gp", gpU[0], gpU[1], faceTo(NWP.gp, b3), 40.6, { y: 0 }); //
+    }; //
+    // Gevini the herald (the Bartenura on Tamid 3:8: "כהן ששמו גביני, שהיה מכריז בכל בוקר בבית המקדש"; the Yachin there: "מכריז בכל //
+    // בוקר בהר הבית לפני שער בית המוקד הסגור" - on the landing, as in the officers' layer, GEVINI_211): up the flight, his hands about //
+    // his mouth; first to the gate (the priests within), then to the chel (the Levites and Israel) - model choice. The officer stands //
+    // at the gate from the stage before (Tamid 1:2 "פעמים שהוא בא מקריאת הגבר, או סמוך לו מלפניו או מלאחריו"). //
+    SC.gevini = (a) => { //
+      a.roofs(); //
+      const gv = [-15.5, -78.9]; //
+      a.walk("gev", [[3.0, -78.65], [-11.5, -78.65], [-12.6, -78.75], [gv[0], gv[1], 13.5]], 0.2, 3.0, { yaw: 0 }); //
+      a.tag("gev", "גביני — הכרוז", 0.2, 14); //
+      a.pose("gev", "call", 3.3, 13.4); //
+      [[6.2, 0.8], [6.35, 1.6], [6.5, 2.4], [6.65, Math.PI]].forEach(([t, y]) => a.face("gev", y, t)); //
+    }; //
     SC.moked = (a) => { //
       a.roofs(); //
       for (let i = 0; i < 3; i++) { const q = oldAt("fire", i); a.put("old" + (i + 1), q[0], q[1], q[2], 0, i * 1.1); }   // MAARACHOT2_211 //
-      a.walk("mem", [[8, -78.65], [1.5, -78.65], [-12, -78.65], [-13.2, -79.4], [-18, -79.4, 13.5]], 2, 12, { yaw: 0 });   // MOKED_KNOCK_215: on the landing, clear of the leaf ajar   // CHEL_211: across the chel and up the flight along the house's north face //
+      // NIGHT_WATCH_305: the officers of the watch gone; the lanterns' light at the flight and its landing //
+      for (const k of ["ihb", "bbv"]) a.hide(k, 0); //
+      for (const pr of ["cloakN", "stick", "pakia", "ltorch"]) a.gone(pr, 0); //
+      a.set("lantA", 3, 0); //
+      a.walk("mem", [[8, -78.65], [1.5, -78.65], [-12, -78.65], [-13.2, -79.4], [-18, -79.4, 13.5]], 1, 9.2, { yaw: 0 });   // NIGHT_WATCH_305: 2..12 until 3.0.4 (CAMK.moked) //   // MOKED_KNOCK_215: on the landing, clear of the leaf ajar   // CHEL_211: across the chel and up the flight along the house's north face //
     }; //
     // the first lot: Abaye's order - in Beit HaMoked round the hearth; the Rambam's - the first and the second together, in the hall of //
     // hewn stone, after the search (6:1) //
     SC.lot1 = (a) => { //
       a.roofs(); //
-      if (a.prev === "moked") { //
+      if (a.prev === "moked" || a.prev === "gevini") {   // NIGHT_WATCH_305: after Gevini's call too //
         // MOKED_KNOCK_215: on the landing before the gate (z -79.8..-77.5, 13.5 high) - until 2.0.14 at z -80.5, beyond its edge, so the //
         // officer stood on the ground below it and walked in through the landing's stone; the gate opens (CHEL_GATE_215) //
         a.at("mem", -18, -79.4, 0, 0, { h: 13.5 }); //
@@ -61992,7 +62411,7 @@ void main() {
     const WEST = [[-22, -52.4], [-80, -52.4], [-88.4, -44], [-88.4, 44], [-80, 53.6], [16, 53.6], [44.5, 54.2],   // PLATFORM_215: z 53.6 (52.2 until 2.0.14 - the third, 1.4 inside, walked in the ulam's platform) //
       [66, 54.2], [77, 46], [78.2, 28], [89.6, 26.6]]; //
     SC.patrol = (a) => { //
-      const night = a.prev === "moked";   // (the Rambam's order) //
+      const night = a.prev === "moked" || a.prev === "gevini";   // (the Rambam's order; NIGHT_WATCH_305) //
       a.roofs(0, 9); //
       let t0 = 1; //
       const start = {}; //
@@ -62204,6 +62623,8 @@ void main() {
       R13.forEach((k, i) => a.tag(k, ROLE[k], 15.5 + i * 0.55)); //
     }; //
     SC.barkai = (a) => { //
+      for (const k of ["gk", "gn", "gc", "gp"]) a.hide(k, 0);   // NIGHT_WATCH_305: the watch ends with the light //
+      a.set("lanterns", 0, 0); a.set("lantA", 0, 0); //
       a.roofs(0, 1); //
       // BARKAI_UP_215: he leaves the hall and is seen on its roof (until 2.0.14 he slid there at once, through the wall), and after the //
       // call he goes down out of sight - until 2.0.14 he stood on the roof to the Shema, and then was set inside the hall's west wall //
@@ -62579,7 +63000,10 @@ void main() {
       a.pose("ba", "cymbal", 13.8, 15); //
       a.fx("cymbal", 14); //
       a.fx("song", 14.6); //
-      LEV_PLAY.forEach((k) => a.pose(k, "play", 14.6, 30)); //
+      // MUSICIANS_305: the players and the twelve singers, with a pause at each section while the trumpets sound - "הגיעו לפרק - חלק //
+      // שבשיר. שכל שיר של יום חלקוהו לג' חלקים, שמפסיקין שם בין פרק לפרק" (Yachin, Tamid 7, 818:712); the song again after each //
+      for (const [t0, t1] of [[14.6, 21], [23.2, 26], [28.2, 30]]) { LEV_PLAY.forEach((k) => a.pose(k, "play", t0, t1)); LEV_SING.forEach((k) => a.pose(k, "sing", t0, t1)); } //
+      a.fx("song", 23.2); a.fx("song", 28.2); //
       for (const t of [21, 26]) { a.pose("tr1", "trumpet", t, t + 2); a.pose("tr2", "trumpet", t, t + 2); a.fx("tekiaShort", t + 0.1); } //
       // PROSTRATE_WEST_209 (the user, 13.11.2026 02:57: "בעבודת הבוקר יש כמה פאדיחות עם ההשתחוויות יוצא שכאילו הוא משתחוה על המזבח"): //
       // "הגיעו לפרק, תקעו, והשתחוו העם" (Tamid 7:3) - TOWARD THE HOUSE. The priests on the ulam's steps stood facing the people for the //
@@ -62594,6 +63018,7 @@ void main() {
     }; //
     SC.shir = (a) => { //
       LEV_PLAY.forEach((k) => a.pose(k, "play", 0, 16)); //
+      LEV_SING.forEach((k) => a.pose(k, "sing", 0, 16));   // MUSICIANS_305 //
       a.fx("song", 0.5); //
       a.tag("v6", "שיר של יום", 0.5, 16); //
     }; //
@@ -62606,15 +63031,133 @@ void main() {
       pour: [[-1.15, 0.05, -0.35], [0.05, 0.08, -0.15], 0.22], offer: [[-1.0, -0.05, -0.6], [-0.6, -0.1, -0.8], 0.15], point: [[-1.7, 0.1, -0.05], [0.05, 0.08, -0.15], 0], //
       reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.95, 0.32, -0.15], [-2.95, 0.32, -0.15], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12], //
       trumpet: [[-1.5, -0.25, -1.45], [-1.45, -0.3, -1.55], 0], cymbal: [[-1.0, 0.5, -1.2], [-1.0, 0.5, -1.2], 0], wave: [[-2.6, 0.35, -0.2], [0.05, 0.08, -0.15], 0], //
-      play: [[-0.75, -0.15, -1.15], [-0.95, -0.1, -0.9], 0], throw: [[-1.5, 0.05, -0.2], [0.05, 0.08, -0.15], 0.1], prostrate: [[-2.9, 0.4, 0], [-2.9, 0.4, 0], 1.48], //
+      play: [[-0.75, -0.15, -1.15], [-0.2, -0.12, -1.35], 0], throw: [[-1.5, 0.05, -0.2], [0.05, 0.08, -0.15], 0.1], prostrate: [[-2.9, 0.4, 0], [-2.9, 0.4, 0], 1.48], //
       // KIDDUSH_211 (the user, 14.11.2026 23:36; Zevachim 19b, 130:754): "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו //
       // השמאלית, ומקדש" - each hand down to its leg. KIDDUSH_BEND_212 (the user, 16.11.2026 13:31: "הכהן צריך להיות כמה שיותר זקוף ורק //
       // היד שלו על הרגל (כיפוף ולא נפילה...)"): the legs upright, the body bends at the waist (KB), each hand on its leg as low as it //
       // reaches (kidReach) - until 2.1.2 the whole figure leaned from the ankles (0.5), as falling. The arms below: only where there is //
       // no waist (the high priest's body) - there the old lean, a little less. //
-      kiddush: [[-0.3, 0.14, 0], [-0.3, 0.14, 0], 0.4] //
+      kiddush: [[-0.3, 0.14, 0], [-0.3, 0.14, 0], 0.4], //
+      // NIGHT_WATCH_305: "שלום עליך" - the right hand raised before him; the blow of the staff or the pakia (applyFig); woken; up from //
+      // the stone; the left hand to the lantern and down to the cloak; the herald's two hands about his mouth (callArms) //
+      hail: [[-1.25, 0.12, -0.75], [0.05, 0.08, -0.15], 0.04], strike: [[-0.85, 0.05, -0.15], [0.05, 0.08, -0.15], 0.1], //
+      startle: [[0.05, 0.08, -0.15], [0.05, 0.08, -0.15], 0], rise: [[0.05, 0.08, -0.15], [0.05, 0.08, -0.15], 0], //
+      reachL: [[0.05, 0.08, -0.15], [-1.9, -0.05, -0.4], 0], lowerL: [[0.05, 0.08, -0.15], [-0.6, -0.05, -0.2], 0], call: [[-0.9, 0.2, -1.6], [-0.9, 0.2, -1.6], 0] //
     }; //
     const KB = 0.95;   // KIDDUSH_BEND_212: how far he bends at the waist (rad) - a model choice //
+    // NIGHT_SIT_305 (the user, 19.11.2026 21:24: "כולל שומר ישן"): A GUARD ON HIS STONE. The legs (KIDDUSH_FOOT_213's: the thigh, the //
+    // knee, the shin, the foot) bent at the hip and the knee, the robe over the knees down to the feet (sitParts) and its lower part //
+    // hidden; awake ("sit") upright, the hands on the thighs; asleep ("doze") bent forward at the waist, the head bowed, the hands in //
+    // the lap, a slow breath - and a start at each blow (N.joltN, N.joltP); "situp": up in 0.9 s; "wake": up in 0.35 s, the hands //
+    // raised as "startle". The cloak about his shoulders (cloakOn: the API's cloak()) - "רק כסותו העליון שמסתמא התחתל בו, ובא עי"ז //
+    // לשינה" (Tiferet Yisrael, Middot 1:2). The stone's height (seat, amot), the postures and the cloak's form - model choices. //
+    // step: how far before the stone he stands up (his feet stay where they were; the stage puts the standing man there) //
+    const SIT = { seat: 0.63, step: 0.62, knee: [0.125, 1.02, 0.42], ank: [0.13, 0.47], gPel: null, gDrape: null, gCloak: null, mCloak: null }; //
+    const sitArms = (f, doze) => {   // the hands' places: in the lap (asleep), on the thighs (awake); the targets in the bend's frame //
+      const key = doze ? "d" : "a"; //
+      f.sitArms = f.sitArms || {}; //
+      if (f.sitArms[key]) return f.sitArms[key]; //
+      const K = SH.priestKit, FS = K.FS, WY = f.bend.position.y, A = f.A, th = doze ? 0.36 : 0, cb = Math.cos(th), sb = Math.sin(th), out = {}; //
+      for (const side of [1, -1]) { //
+        const T = doze ? [side * 0.07, WY + 0.15 * FS, 0.25 * FS] : [side * 0.15, WY + 0.14 * FS, 0.3 * FS]; //
+        const dy = T[1] - WY, Tb = [T[0], dy * cb + T[2] * sb, -dy * sb + T[2] * cb]; //
+        out[side] = reach([side * A.sx, A.sy - WY, 0], Tb, A.up, A.fo + 0.06 * FS, side); //
+      } //
+      return (f.sitArms[key] = out); //
+    }; //
+    const sitPose = (f, s, p, t) => { //
+      const doze = p === "doze", wake = p === "wake"; //
+      const u = p === "situp" ? 1 - smooth(clamp(t / 0.9, 0, 1)) : wake ? 1 - smooth(clamp(t / 0.35, 0, 1)) : 1, w = 1 - u; //
+      const H = sitArms(f, doze || wake), q = { u, bend: 0, bz: 0, head: 0, lean: 0, R: H[-1], L: H[1], shift: doze || p === "sit" ? 0 : SIT.step * w }; //
+      const mix = (a2, b2) => [lerp(a2[0], b2[0], w), lerp(a2[1], b2[1], w), lerp(a2[2], b2[2], w)]; //
+      if (doze) { //
+        const jo = f.id === "gn" ? N.joltN : f.id === "gp" ? N.joltP : 0, br = Math.sin(t * 1.25); //
+        q.bend = 0.36 + 0.012 * br + 0.06 * jo * Math.sin(t * 31); //
+        q.bz = 0.04 * jo * Math.sin(t * 23); //
+        q.head = 0.62 + 0.03 * br; //
+      } else if (wake) { //
+        const k = smooth(clamp(t / 0.25, 0, 1)) * (1 - smooth(clamp((t - 0.6) / 0.4, 0, 1))), S2 = [lerp(0.05, -1.0, k), lerp(0.08, 0.45, k), lerp(-0.15, -1.25, k)]; //
+        q.R = mix(H[-1], S2); q.L = mix(H[1], S2); q.bend = 0.36 * u; q.head = 0.62 * u; q.lean = -0.1 * k; //
+      } else if (p === "situp") { //
+        q.R = mix(H[-1], POSES.stand[0]); q.L = mix(H[1], POSES.stand[1]); q.bend = 0.3 * Math.sin(Math.PI * w);   // forward as he rises //
+      } //
+      return q; //
+    }; //
+    const sitParts = (f) => {   // the seat under the robe above the waist, and the robe hanging from each knee (the robe's own material) //
+      const FS = SH.priestKit.FS, mR = f.body.material, g = new Group(); //
+      if (!SIT.gPel) {   // (white vertex colours: the robe's material takes them, as the kit's legs) //
+        SIT.gPel = SH.priestKit.white(new SphereGeometry(1, 16, 10).scale(0.22 * FS, 0.12 * FS, 0.21 * FS)); //
+        SIT.gDrape = SH.priestKit.white(new CylinderGeometry(0.1 * FS, 0.088 * FS, 1, 12, 1, true).translate(0, 0.5, 0)); //
+      } //
+      const pel = new Mesh(SIT.gPel, mR); //
+      pel.castShadow = true; //
+      pel.position.set(0, f.bend.position.y - 0.04 * FS, -0.03 * FS); //
+      g.add(pel); //
+      const dr = {}; //
+      for (const side of [1, -1]) { const m = new Mesh(SIT.gDrape, mR); m.castShadow = true; g.add(m); dr[side] = m; } //
+      g.visible = false; //
+      f.lean.add(g); //
+      return (f.sitP = { g, pel, dr }); //
+    }; //
+    // u: 1 seated, 0 standing - the body lowered so the hip is just over the stone, the knee before it, the foot on the floor //
+    const setSit = (f, u) => { //
+      const P = f.sitP || sitParts(f), on = u > 0.001; //
+      P.g.visible = on; //
+      if (on) { f.body.visible = u < 0.3; f.sitHid = true; } //
+      else if (f.sitHid) { f.body.visible = true; f.sitHid = false; } //
+      P.pel.visible = on && u >= 0.3; //
+      if (!on) return;   // the legs as setLeg left them (hidden, the feet his own) //
+      const FS = SH.priestKit.FS, hk = SIT.seat / FS + 0.1, dk = (1 - hk) * u;   // the hip over the floor when seated; its drop now (kit units) //
+      f.lean.position.y -= dk * FS; //
+      for (const side of [1, -1]) { //
+        const lg = f.legs[side]; //
+        lg.g.visible = true; //
+        (side > 0 ? f.fl : f.fr).visible = false; //
+        const Hp = [side * 0.1 * FS, FS, 0]; //
+        const Kp = [side * lerp(0.1, SIT.knee[0], u) * FS, lerp(0.55 + dk, SIT.knee[1], u) * FS, lerp(0.02, SIT.knee[2], u) * FS]; //
+        const Ap = [side * lerp(0.1, SIT.ank[0], u) * FS, (dk + 0.15) * FS, lerp(-0.01, SIT.ank[1], u) * FS]; //
+        seg(lg.th, Hp, Kp); //
+        lg.kn.position.set(Kp[0], Kp[1], Kp[2]); //
+        seg(lg.sn, Kp, Ap); //
+        lg.ft.rotation.set(0, 0, 0); //
+        lg.ft.position.set(Ap[0], Ap[1] - 0.15 * FS, Ap[2] + 0.01 * FS); //
+        seg(P.dr[side], Kp, [Ap[0], Ap[1] + 0.02 * FS, Ap[2]]); //
+      } //
+    }; //
+    const cloakOn = (f, on) => {   // a cloak over the shoulders and the back, open before him; with the body above the waist //
+      if (!f.cloakG) { //
+        if (!on) return; //
+        if (!SIT.gCloak) { //
+          SIT.mCloak = new MeshStandardMaterial({ color: 0x6e5c46, roughness: 1, metalness: 0, side: DoubleSide }); //
+          // rings from the neck down to below the waist (the kit's units): [y, half-breadth, half-depth] about the body and over the //
+          // arms; round him from his back (0) to ±2.3 rad, open before him; soft folds that grow toward the hem //
+          const RG = [[1.875, 0.1, 0.085], [1.84, 0.21, 0.13], [1.79, 0.34, 0.17], [1.72, 0.42, 0.195], [1.6, 0.4, 0.205], [1.4, 0.35, 0.21], //
+            [1.2, 0.33, 0.215], [1.0, 0.33, 0.225], [0.82, 0.34, 0.24]], NS = 30, PM = 2.3, pos = [], idx = []; //
+          RG.forEach(([y, a2, b2]) => { //
+            const k = clamp((1.72 - y) / 0.8, 0, 1); //
+            for (let j = 0; j <= NS; j++) { const ph = -PM + (2 * PM * j) / NS, w2 = 1 + 0.045 * k * Math.sin(9 * ph + 0.6); pos.push(a2 * w2 * Math.sin(ph), y, -0.02 - b2 * w2 * Math.cos(ph)); } //
+          }); //
+          for (let i = 0; i < RG.length - 1; i++) for (let j = 0; j < NS; j++) { const q0 = i * (NS + 1) + j, q2 = q0 + NS + 1; idx.push(q0, q2, q0 + 1, q0 + 1, q2, q2 + 1); } //
+          SIT.gCloak = new BufferGeometry(); //
+          SIT.gCloak.setAttribute("position", new Float32BufferAttribute(pos, 3)); //
+          SIT.gCloak.setIndex(idx); //
+          SIT.gCloak.computeVertexNormals(); //
+        } //
+        const m = new Mesh(SIT.gCloak, SIT.mCloak); //
+        m.castShadow = true; //
+        m.userData.noPick = true; //
+        f.upper.add(m);   // in the kit's units, above the waist //
+        f.cloakG = m; //
+      } //
+      f.cloakG.visible = on; //
+    }; //
+    // NIGHT_WATCH_305: the herald's hands cupped about his mouth - the targets in the bending part's frame, as kidReach's (cached) //
+    const callArms = (f) => { //
+      if (f.callArms) return f.callArms; //
+      const K = SH.priestKit, FS = K.FS, WY = f.bend.position.y, A = f.A, my = K.HEAD_Y * FS - 0.135 - WY, out = {}; //
+      for (const side of [1, -1]) out[side] = reach([side * A.sx, A.sy - WY, 0], [side * 0.075, my, 0.27], A.up, A.fo + 0.06 * FS, side); //
+      return (f.callArms = out); //
+    }; //
     // an arm reaching a point: sp the shoulder, tp the point (in its parent's frame, amot); a the upper arm, b the forearm to the palm; //
     // side as setArm's. [shoulder x, abduct, elbow] - the elbow bends forward. Out of reach: the arm straight toward the point. //
     const reach = (sp, tp, a, b, side) => { //
@@ -62726,6 +63269,39 @@ void main() {
       return g; //
     }; //
     const setArm = (A2, v, side) => { A2.sh.rotation.x = v[0]; A2.sh.rotation.z = side * v[1]; A2.el.rotation.x = v[2]; }; //
+    // MUSICIANS_305 (the user, 19.11.2026 21:08: "צריך גם לעשות את הלוויים מנגנים, אותו דבר בעבודת הבוקר. אם הם מנגנים, לא יכולים //
+    // לעמוד כמו פסלים"): THE PLAYER'S RIGHT HAND on the strings of the instrument in his left (the lyre: five strings on its face; the //
+    // harp: seven along it) - across them and back, a stroke in about 0.45 s, from the face of the strings nearer to him; the left arm //
+    // as POSES.play. And every Levite of the song - the players and the twelve singers - sways a little with it (songSway: the body //
+    // above the waist, aside and forward). Until 2.0.13 the right arm swung 0.12 in the air, and the singers stood still. The //
+    // motions - model choices //
+    const PLAY_STR = { lyre: [[-0.14, 0.33], [0.14, 0.38]], nevel: [[0.1, 0.45], [0.42, 0.55]] }; //
+    const mPA = new Matrix4(), mPB = new Matrix4(), mPI = new Matrix4(), qP = new Quaternion(), eP = new Euler(), vP = new Vector3(), vP1 = new Vector3(), vP2 = new Vector3(); //
+    const figNo = (f) => { if (f.no == null) { let h = 0; for (const c of String(f.id)) h = (h * 31 + c.charCodeAt(0)) % 997; f.no = h; } return f.no; }; //
+    const playArm = (f, t) => { //
+      if (!f.A || !f.L || !f.L.grip || !f.R) return null; //
+      const inst = /^l(10|11)$/.test(f.id) ? "nevel" : /^l[1-9]$/.test(f.id) ? "lyre" : null, pr = inst && W.props[inst + "1"]; //
+      if (!pr) return null; //
+      setArm(f.L, POSES.play[1], 1); //
+      f.L.sh.updateMatrix(); f.L.el.updateMatrix(); f.L.grip.updateMatrix(); //
+      mPA.multiplyMatrices(f.L.sh.matrix, f.L.el.matrix).multiply(f.L.grip.matrix); //
+      if (pr.upright) {   // upright (applyProps): its own place in the hand, turned as the figure and by its own turn (grip.r[1]) //
+        vP.set(pr.grip.p[0], pr.grip.p[1], pr.grip.p[2]).applyMatrix4(mPA); //
+        mPA.makeRotationY(pr.grip.r[1] || 0).setPosition(vP); //
+      } else { //
+        mPB.compose(vP.set(pr.grip.p[0], pr.grip.p[1], pr.grip.p[2]), qP.setFromEuler(eP.set(pr.grip.r[0], pr.grip.r[1], pr.grip.r[2])), vP2.set(1, 1, 1)); //
+        mPA.multiply(mPB);   // the instrument in the frame of the arms' parent //
+      } //
+      const sp = f.R.sh.position; //
+      vP1.copy(sp).applyMatrix4(mPI.copy(mPA).invert());   // the right shoulder in the instrument's frame: which face of the strings is his //
+      const side = vP1.z >= 0 ? 1 : -1, ab = PLAY_STR[inst], u = 0.5 + 0.5 * Math.sin(t * 14 + figNo(f)); //
+      vP.set(ab[0][0] + (ab[1][0] - ab[0][0]) * u, ab[0][1] + (ab[1][1] - ab[0][1]) * u, side * 0.06).applyMatrix4(mPA); //
+      return reach([sp.x, sp.y, sp.z], [vP.x, vP.y, vP.z], f.A.up, f.A.fo + 0.08, -1); //
+    }; //
+    const songSway = (f, s) => { //
+      const t = s.t || 0, k = smooth(clamp(t / 0.6, 0, 1)) * smooth(clamp((s.tl == null ? 9 : s.tl) / 0.5, 0, 1)), ph = figNo(f) * 0.11; //
+      return [0.055 * k * Math.sin(t * 2.4 + ph), k * (0.04 + 0.035 * Math.sin(t * 4.8 + ph))]; //
+    }; //
     const applyFig = (f) => { //
       const s = f.st; //
       f.g.visible = !!s.vis; //
@@ -62733,7 +63309,7 @@ void main() {
       f.g.position.set(s.x, s.y, s.z); //
       f.g.rotation.y = s.yaw; //
       const p = s.pose; //
-      let R = POSES.stand[0], Lv = POSES.stand[1], lean = 0, bob = 0, fz0 = 0, fz1 = 0, bendA = 0, bendZ = 0, legR = 0, legL = 0; //
+      let R = POSES.stand[0], Lv = POSES.stand[1], lean = 0, bob = 0, fz0 = 0, fz1 = 0, bendA = 0, bendZ = 0, legR = 0, legL = 0, headA = 0, sitU = 0, sitZ = 0;   // NIGHT_SIT_305: headA, sitU, sitZ //
       if (p === "walk" || p === "walkCarry" || p === "walkHold") { //
         const sw = Math.sin(s.ph); //
         R = p === "walkCarry" ? POSES.carry[0] : p === "walkHold" ? POSES.hold[0] : [-0.32 * sw, 0.08, -0.25]; //
@@ -62748,10 +63324,27 @@ void main() {
         else if (p === "cymbal") { const u = Math.abs(Math.sin(t * 5)); R = Lv = [-1.0, 0.15 + 0.5 * u, -1.25]; } //
         else if (p === "shovel" || p === "scoop" || p === "place") { const w = Math.sin(t * 3.2); R = [R[0] + 0.25 * w, R[1], R[2]]; Lv = [Lv[0] + 0.25 * w, Lv[1], Lv[2]]; } //
         else if (p === "wash") { const w = Math.sin(t * 6); R = [R[0] + 0.1 * w, R[1], R[2]]; Lv = [Lv[0] - 0.1 * w, Lv[1], Lv[2]]; } //
-        else if (p === "play") R = [R[0] + 0.12 * Math.sin(t * 7), R[1], R[2]]; //
+        else if (p === "play" || p === "sing") {   // MUSICIANS_305: the player's right hand over the strings; both sway with the song //
+          if (p === "play") { const H = playArm(f, t); R = H || [R[0] + 0.12 * Math.sin(t * 7), R[1], R[2]]; } //
+          const w = songSway(f, s); //
+          bendZ = w[0]; bendA = w[1]; //
+        } //
         else if (p === "fingers") R = [R[0] + 0.06 * Math.sin(t * 2), R[1], R[2]]; //
         else if (p === "prostrate") { const u = clamp(t / 1.2, 0, 1), d = t > 2.2 ? clamp((t - 2.2) / 0.8, 0, 1) : 0, k = smooth(u) * (1 - smooth(d)); lean = 1.48 * k; R = Lv = [lerp(0.05, -2.9, k), 0.4 * k, 0]; } //
         else if (p === "knock") R = [-1.4 + 0.2 * Math.sin(t * 9), 0.05, -1.3]; //
+        else if (p === "strike") {   // NIGHT_WATCH_305: raised high and brought down, twice in 1.4 seconds //
+          const ph = (t / 0.7) % 1, k = ph < 0.55 ? smooth(ph / 0.55) : 1 - smooth(Math.min(1, (ph - 0.55) / 0.2)); //
+          R = [lerp(-0.85, -2.75, k), lerp(0.05, 0.3, k), lerp(-0.15, -0.55, k)]; lean = 0.1 + 0.08 * (1 - k); //
+        } //
+        else if (p === "hail") R = [-1.25 - 0.12 * Math.sin(t * 5), 0.12, -0.75]; //
+        else if (p === "startle") { const u = smooth(clamp(t / 0.25, 0, 1)) * (1 - smooth(clamp((t - 0.6) / 0.4, 0, 1))); R = Lv = [lerp(0.05, -1.0, u), lerp(0.08, 0.45, u), lerp(-0.15, -1.25, u)]; lean = -0.1 * u; } //
+        else if (p === "rise" && f.bend) { const u = 1 - smooth(clamp(t / 0.8, 0, 1)); bendA = 0.6 * u; R = Lv = [lerp(0.05, -0.5, u), 0.15, lerp(-0.15, -0.6, u)]; } //
+        else if (p === "lowerL" && f.bend) { const u = smooth(clamp(t / 0.4, 0, 1)); bendA = 0.55 * u; } //
+        else if (p === "call" && f.bend && f.A && SH.priestKit) { const H = callArms(f); R = H[-1]; Lv = H[1]; bendA = 0.1 + 0.06 * Math.sin(t * 2.6); } //
+        else if ((p === "sit" || p === "doze" || p === "situp" || p === "wake") && f.legs && f.bend && f.A && SH.priestKit) {   // NIGHT_SIT_305 //
+          const q = sitPose(f, s, p, t); //
+          R = q.R; Lv = q.L; bendA = q.bend; bendZ = q.bz; headA = q.head; sitU = q.u; lean = q.lean; sitZ = q.shift; //
+        } //
         else if (p === "trim" && f.A && SH.menorah && fnc(SH.menorah.lampPos)) {   // LAMPS_HANDS_219: the hand to the lamp and back, the other arm as he stands //
           const H = trimArm(f, s), tl = s.tl == null ? 9 : s.tl, u = smooth(clamp(t / 0.4, 0, 1)) * smooth(clamp(tl / 0.3, 0, 1)); //
           const mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)]; //
@@ -62779,6 +63372,11 @@ void main() {
       f.fl.position.z = fz0; //
       f.fr.position.z = fz1; //
       f.fl.visible = f.fr.visible = lean < 1; //
+      if (f.neck) f.neck.rotation.x = headA;   // NIGHT_SIT_305 //
+      if (f.legs && (sitU > 0 || f.sitP)) setSit(f, sitU);   // NIGHT_SIT_305: on his stone - after the lean and the feet //
+      if (sitZ > 0) { f.lean.position.z = sitZ; f.fl.position.z += sitZ; f.fr.position.z += sitZ; }   // getting up: the body over the feet //
+      else if (f.lean.position.z !== 0) f.lean.position.z = 0; //
+      if (f.upper && (s.cloak || f.cloakG)) cloakOn(f, !!s.cloak); //
       if (s.tag) { //
         const tm = W.tagMat(s.tag); //
         if (!f.tag) { f.tag = new Sprite(tm.m); f.tag.renderOrder = 45; f.tag.center.set(0.5, 0); W.group.add(f.tag); } //
@@ -62821,7 +63419,7 @@ void main() {
           o.rotation.set(p.grip.r[0], p.grip.r[1], p.grip.r[2]); //
           if (p.upright) {   // vessels stay upright whatever the arm does //
             gp.getWorldQuaternion(QA); //
-            EU.set(0, f.g.rotation.y, 0); //
+            EU.set(0, f.g.rotation.y + (p.grip.r[1] || 0), 0);   // MUSICIANS_305: and its own turn //
             QB.setFromEuler(EU); //
             o.quaternion.copy(QA.invert()).multiply(QB); //
           } //
@@ -62838,6 +63436,7 @@ void main() {
       W.altarG.position.z = D; //
       W.altarG.position.y = TOP - TOP0; //
       W.sleepers.visible = N.sleepers > 0.5; //
+      if (W.night) W.night.apply(N);   // NIGHT_WATCH_305 //
       W.L1.forEach((m, i) => { m.visible = N.l1 > i + 0.5; }); //
       W.L2.forEach((m, i) => { m.visible = N.l2 > i + 0.5; }); //
       for (const m of W.modelGez) m.visible = N.gz > 0.5; //
@@ -63112,7 +63711,8 @@ void main() {
         else if (name === "pour") { noise(a, t, 1.6, 0.12, "bandpass", 900, 1.2, 0.5); for (let i = 0; i < 6; i++) osc(a, "sine", 500 + Math.random() * 500, t + 0.1 + i * 0.25, 0.04, 0.05, null, 0.005, 0.12); } //
         else if (name === "torch") { noise(a, t, 3.0, 0.07 * FIRE_LOW, "lowpass", 500, 0.7, 1.0); for (let i = 0; i < 14; i++) noise(a, t + Math.random() * 3.2, 0.012, 0.3 * FIRE_LOW, "highpass", 2600, 0.8, 0.05); }   // SOUNDS_300: FIRE_LOW //
         else if (name === "barkai") osc(a, "sine", 660, t, 0.6, 0.05, null, 0.2, 0.8); //
-        else if (name === "tekia") { brass(a, t, 1.4); for (let i = 0; i < 9; i++) brass(a, t + 1.8 + i * 0.16, 0.08); brass(a, t + 3.4, 1.4); } //
+        else if (name === "strike") { noise(a, t, 0.06, 0.45, "lowpass", 900, 0.8, 0.08); osc(a, "sine", 120, t, 0.05, 0.22, null, 0.003, 0.1); }   // NIGHT_WATCH_305: a soft blow //
+        else if (name === "tekia") { brass(a, t, 1.4); for (let i = 0; i < 9; i++) brass(a, t + 1.75 + i * 0.2, 0.13); brass(a, t + 3.75, 1.4); }   // TERUAH_305: the nine each heard //
         else if (name === "tekiaShort") brass(a, t, 1.3); //
         else if (name === "cymbal") { noise(a, t, 0.05, 0.7, "highpass", 4000, 0.6, 1.8); for (const f of [3150, 4470, 5560, 7230]) osc(a, "square", f, t, 0.02, 0.025, null, 0.001, 1.2); } //
         else if (name === "song" || name === "blessing") {   // a quiet choir of four voices (and for the song a lyre) - model choice //
@@ -63826,6 +64426,407 @@ void main() {
         for (const f of flames) if (f.visible && f.isSprite) { const k = 0.85 + 0.15 * Math.sin(now * 9 + f.userData.ph) + 0.06 * Math.sin(now * 23 + f.userData.ph * 2); f.scale.set(0.9 * k, 1.8 * (0.9 + 0.2 * k), 1); } //
       }); //
     } //
+    // ---------- SHILOACH_305 (the user, 20.11.2026 01:21: "אתה יכול להוסיף את מעיין השילוח [איך היו מגיעים לשם"; 01:25: "1. א 2. זו ---------- //
+    // 3. כהן"): THE SHILOACH AND THE WATER'S LIBATION. "נסוך המים כיצד. צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער //
+    // המים, תקעו והריעו ותקעו. עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם" (Mishnah Sukkah 4:9, book 56, line 48); "ולמה נקרא שמו //
+    // שער המים. שבו מכניסין צלוחית של מים של נסוך בחג" (Middot 2:6); "שני שערי חלדה מן הדרום, משמשין כניסה ויציאה" (Middot 1:3); "שילוח //
+    // היה מוציא מים כאיסר" (the Yerushalmi, Sukkah 5:6). No source gives the way out of the mount or how far the spring was: the pool is //
+    // drawn at the bottom of the model's valley south of the mount (some 220 amot from its wall), the path to it from the western gate of //
+    // Chulda, its form and the pool's - model choices. Always: the pool, its stream and the path. In the demonstration: a priest with the //
+    // golden flask goes out by the Water Gate and the gate of Chulda, fills it at the Shiloach and comes back; two priests blow at the //
+    // Water Gate; he goes up the ramp, turns left and pours into the western bowl (40-altar.js: the bowls at x 43.05 / 43.95, z 9.4 of the //
+    // altar's frame - "מערבי של מים ומזרחי של יין"). Its walk is the walk engine's (ctx2.shared.walk); the walks are hurried. //
+    // SH.shiloach = { demo, stop, at(t), info, refs, POOL }. //
+    { //
+      const SHL = { POOL: [32, 550], PW: 26, PD: 12, D: null, run: false, SP: { x: 25.5, z: 541.4, zT: 540.92 } }; //
+      const K = SH.priestKit; //
+      const fnc = (f) => typeof f === "function"; //
+      const smooth = (u) => u * u * (3 - 2 * u), lerp = (a, b, u) => a + (b - a) * u; //
+      const altDz = () => { const AP = SH.altarPlace; return AP && AP.dz && typeof AP.dz[AP.current] === "number" ? AP.dz[AP.current] : 12.5; }; //
+      const groundY = (x, z, from) => { const y = fnc(SH.floorY) ? SH.floorY(x, from == null ? 40 : from, z) : -Infinity; return isFinite(y) ? y : -28; }; //
+      // ---- always: the pool, its stream and the path (built when the terrain is there: on the first frame) //
+      const SG = new Group(); //
+      SG.name = "shiloach"; //
+      ctx2.root.add(SG); //
+      let built = false, Y0 = -55; //
+      const mStone = new MeshStandardMaterial({ color: 0xbfae8c, roughness: 0.95 }), mStone2 = new MeshStandardMaterial({ color: 0xa8987a, roughness: 0.95 }); //
+      const mWater = new MeshStandardMaterial({ color: 0x3e7fb8, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.86 }); //
+      const mStream = new MeshStandardMaterial({ color: 0x8fc3ec, roughness: 0.1, transparent: true, opacity: 0.85 }); //
+      const mPath = new MeshStandardMaterial({ color: 0xcbbd9a, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }); //
+      const PATH = [[0, 366], [2, 392], [7, 425], [14, 460], [21, 495], [26, 522], [29, 538]];   // from the foot of the western Chulda stairs //
+      const streamTo = (yb) => { const SP = SHL.SP; if (!SP.st) return; const h = Math.max(0.05, SP.y - yb); SP.st.position.set(SP.x, yb + h / 2, SP.zT); SP.st.scale.y = h; }; //
+      const buildPool = () => { //
+        if (built) return; //
+        built = true; //
+        try { const D0 = buildDemo(); SHL.offF = measure(D0, ARM.fill, FILL_LEAN, 0); SHL.offP = measure(D0, ARM.pour, POUR_LEAN, TILT); } catch (e) { console.warn("[shiloach]", e && e.message); } //
+        const [px, pz] = SHL.POOL, W2 = SHL.PW / 2, D2 = SHL.PD / 2; //
+        let lo = Infinity; //
+        for (const dx of [-W2, 0, W2]) for (const dz of [-D2, 0, D2]) lo = Math.min(lo, groundY(px + dx, pz + dz, 20)); //
+        Y0 = isFinite(lo) ? lo : -55; //
+        const RIM = Y0 + 1.3, WL = Y0 + 0.95; //
+        const box = (w, h, d, m, x, y, z) => { const b = new Mesh(new BoxGeometry(w, h, d), m); b.position.set(x, y + h / 2, z); b.castShadow = b.receiveShadow = true; SG.add(b); return b; }; //
+        // the basin's four walls (1 thick), from 1.5 under the ground's lowest point to the rim, and its floor //
+        box(SHL.PW + 2, RIM - Y0 + 1.5, 1, mStone, px, Y0 - 1.5, pz - D2 - 0.5); //
+        box(SHL.PW + 2, RIM - Y0 + 1.5, 1, mStone, px, Y0 - 1.5, pz + D2 + 0.5); //
+        box(1, RIM - Y0 + 1.5, SHL.PD, mStone, px - W2 - 0.5, Y0 - 1.5, pz); //
+        box(1, RIM - Y0 + 1.5, SHL.PD, mStone, px + W2 + 0.5, Y0 - 1.5, pz); //
+        box(SHL.PW, 0.2, SHL.PD, mStone2, px, Y0 - 1.6, pz); //
+        const water = new Mesh(new PlaneGeometry(SHL.PW, SHL.PD).rotateX(-Math.PI / 2), mWater); //
+        water.position.set(px, WL, pz); //
+        water.renderOrder = 2; //
+        SG.add(water); //
+        // the spring's mouth (the user, 01:56, over the picture of the pouring: "הוא לא מוזג לתוך הספל למה" - and a flask held over a pool //
+        // that it could not reach would be the same fault): a block of stone on the pool's north side, at the path's end, with a spout //
+        // toward the path; its thin stream ("כאיסר") falls into a small basin at its foot (the water goes on to the pool under the block). //
+        // The spout's height: over the mouth of the flask held out under it - measured on the priest's own figure (SHL.offF). Its form - a //
+        // model choice //
+        const SP = SHL.SP, gy = groundY(SP.x, SP.z - 0.9, 20), offF = SHL.offF || { y: 1.2 }; //
+        SP.gy = gy; //
+        SP.y = gy + Math.max(1.15, offF.y + 0.34);   // the spout's tip //
+        box(2.6, SP.y - gy + 1.15, 1.6, mStone, SP.x, gy - 0.4, SP.z + 0.8); //
+        const spout = new Mesh(new CylinderGeometry(0.075, 0.095, 0.48, 12), mStone); //
+        spout.rotation.x = Math.PI / 2; //
+        spout.position.set(SP.x, SP.y + 0.03, SP.z - 0.24); //
+        spout.castShadow = true; //
+        SG.add(spout); //
+        box(1.4, 0.85, 1.0, mStone2, SP.x, gy - 0.45, SP.z - 0.52);   // the basin //
+        const bw = new Mesh(new PlaneGeometry(1.15, 0.78).rotateX(-Math.PI / 2), mWater); //
+        bw.position.set(SP.x, gy + 0.36, SP.z - 0.52); //
+        SG.add(bw); //
+        SP.base = gy + 0.36; //
+        SP.st = new Mesh(new CylinderGeometry(0.026, 0.032, 1, 8, 1, true), mStream); //
+        SG.add(SP.st); //
+        streamTo(SP.base); //
+        // the path: a strip on the ground from the stairs' foot to the steps (sampled every 2 amot, 3.2 wide) //
+        const pts = [], pos = [], idx = []; //
+        for (let i = 0; i < PATH.length - 1; i++) { const a = PATH[i], b = PATH[i + 1], n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2); for (let k = 0; k < n; k++) pts.push([lerp(a[0], b[0], k / n), lerp(a[1], b[1], k / n)]); } //
+        pts.push(PATH[PATH.length - 1]); //
+        pts.forEach((p, i) => { //
+          const q = pts[Math.min(pts.length - 1, i + 1)], r0 = pts[Math.max(0, i - 1)], dx = q[0] - r0[0], dz = q[1] - r0[1], L = Math.hypot(dx, dz) || 1, nx = -dz / L * 1.6, nz = dx / L * 1.6; //
+          for (const s of [-1, 1]) { const x = p[0] + s * nx, z = p[1] + s * nz; pos.push(x, groundY(x, z, 20) + 0.06, z); } //
+          if (i > 0) { const k = 2 * i; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); } //
+        }); //
+        const pg = new BufferGeometry(); //
+        pg.setAttribute("position", new Float32BufferAttribute(pos, 3)); //
+        pg.setIndex(idx); //
+        pg.computeVertexNormals(); //
+        const pm = new Mesh(pg, mPath); //
+        pm.receiveShadow = true; //
+        SG.add(pm); //
+        SG.traverse((o) => { if (o.isMesh) o.userData.noPick = true; }); //
+      }; //
+      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (!built && fnc(SH.floorY)) { try { buildPool(); } catch (e) { console.warn("[shiloach]", e && e.message); built = true; } } }); //
+      (ctx2.labels = ctx2.labels || []).push({ text: "מעיין השילוח", x: SHL.POOL[0], y: -45, z: SHL.POOL[1], size: 4 }); //
+      // ---- the demonstration's people: the priest of the water and two with trumpets (the kit's priest; his arms and feet move) //
+      const FIG = (() => { //
+        if (!K) return null; //
+        const FS = K.FS, sc = (q, s) => q.scale(s, s, s), W1 = (q) => K.white(q); //
+        const P = { sx: K.SH_X * FS, sy: K.SH_Y * FS, up: K.UP * FS, fo: K.FORE * FS }; //
+        const upP = sc(mergeGeometries([W1(K.sph(0.07, 0.07, 0.07, 14, 10)), W1(K.at(new CylinderGeometry(0.07, 0.058, P.up / FS, 14), 0, -P.up / FS / 2, 0)), //
+          W1(K.at(K.sph(0.058, 0.058, 0.058, 12, 8), 0, -P.up / FS, 0))]), FS); //
+        const foP = sc(W1(K.at(new CylinderGeometry(0.056, 0.046, P.fo / FS, 14), 0, -P.fo / FS / 2, 0)), FS); //
+        const hand = { 1: sc(K.at(K.handRaw(1), 0, -(P.fo / FS + 0.045), 0), FS), "-1": sc(K.at(K.handRaw(-1), 0, -(P.fo / FS + 0.045), 0), FS) }; //
+        const foot = { 1: sc(K.footGeo(1).translate(-0.1, 0, 0), FS), "-1": sc(K.footGeo(-1).translate(0.1, 0, 0), FS) }; //
+        const neck = sc(K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), 1); //
+        return { P, upP, foP, hand, foot, neck }; //
+      })(); //
+      const mkPriest = (n) => { //
+        const FS = K.FS, g = new Group(), lean = new Group(), S = new Group(); //
+        g.add(lean); //
+        S.scale.setScalar(FS); //
+        lean.add(S); //
+        const add = (par, geo, mat) => { const m = new Mesh(geo, mat); m.castShadow = true; m.userData.noPick = true; par.add(m); return m; }; //
+        add(S, K.gRobeBody, K.mRobe); //
+        add(S, FIG.neck, K.mSkin); //
+        const sash = add(S, K.gSash, (SH.tamid && SH.tamid.belt === "white") ? K.mSashWhite : K.mSashDyed); //
+        const hg = K.headOn(S, K.HEAD_Y, K.mBeards[n % K.mBeards.length], n); //
+        hg.traverse((m) => { if (m.isMesh) m.userData.noPick = true; }); //
+        add(S, K.gHat, K.mHat).position.y = K.HAT_Y; //
+        const arm = (side) => { //
+          const sh = new Group(); //
+          sh.position.set(side * FIG.P.sx, FIG.P.sy, 0); //
+          lean.add(sh); //
+          add(sh, FIG.upP, K.mRobe); //
+          const el = new Group(); //
+          el.position.y = -FIG.P.up; //
+          sh.add(el); //
+          add(el, FIG.foP, K.mRobe); //
+          add(el, FIG.hand[side], K.mSkin); //
+          const grip = new Group(); //
+          grip.position.set(0, -(FIG.P.fo + 0.08), 0.03); //
+          el.add(grip); //
+          return { sh, el, grip }; //
+        }; //
+        const L = arm(1), R = arm(-1); //
+        const fl = add(g, FIG.foot[1], K.mSkin), fr = add(g, FIG.foot[-1], K.mSkin); //
+        fl.position.x = 0.1 * FS; //
+        fr.position.x = -0.1 * FS; //
+        g.visible = false; //
+        return { g, lean, L, R, fl, fr, sash }; //
+      }; //
+      const setArm = (A2, v, side) => { A2.sh.rotation.set(v[0], 0, side * v[1]); A2.el.rotation.set(v[2], 0, 0); }; //
+      const ARM = { rest: [0.05, 0.08, -0.15], carry: [-0.25, 0.1, -0.85], fill: [-1.05, 0.12, -0.35], pour: [-1.2, 0.1, -0.55], tR: [-1.42, 0.05, -0.2], tL: [-1.28, -0.06, -0.38] }; //
+      const buildDemo = () => { //
+        if (SHL.D) return SHL.D; //
+        const DG = new Group(); //
+        DG.name = "shiloachDemo"; //
+        DG.visible = false; //
+        ctx2.root.add(DG); //
+        const p = mkPriest(2), t1 = mkPriest(4), t2 = mkPriest(6); //
+        for (const f of [p, t1, t2]) DG.add(f.g); //
+        // the golden flask (its form - a model choice), in his right hand //
+        const gold = new MeshStandardMaterial({ color: 0xd8ad45, metalness: 0.9, roughness: 0.28 }); //
+        const flask = new Mesh(new LatheGeometry([[0.001, 0], [0.07, 0], [0.105, 0.05], [0.11, 0.12], [0.07, 0.21], [0.032, 0.25], [0.04, 0.3], [0.001, 0.3]].map(([r, y]) => new Vector2(r, y)), 18), gold); //
+        flask.castShadow = true; //
+        flask.userData.noPick = true; //
+        flask.position.set(0, -0.2, 0.02); //
+        p.R.grip.add(flask); //
+        const fwater = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true), new MeshStandardMaterial({ color: 0x7fc0f0, transparent: true, opacity: 0.8, roughness: 0.1 })); //
+        fwater.visible = false; //
+        DG.add(fwater); //
+        // the silver trumpets (Numbers 10:2), one for each of the two, from his mouth forward and up //
+        const silver = new MeshStandardMaterial({ color: 0xe6e6ea, metalness: 0.85, roughness: 0.25, side: DoubleSide }); //
+        for (const f of [t1, t2]) { //
+          const tr = new Group(); //
+          const tube = new Mesh(new CylinderGeometry(0.022, 0.026, 1.25, 10), silver); //
+          tube.position.y = 0.625; //
+          const bell = new Mesh(new CylinderGeometry(0.16, 0.03, 0.26, 16, 1, true), silver); //
+          bell.position.y = 1.36; //
+          tr.add(tube, bell); //
+          tr.position.set(0, K.HEAD_Y * K.FS - 0.17, 0.14); //
+          tr.rotation.x = 1.25; //
+          tr.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.userData.noPick = true; } }); //
+          f.lean.add(tr); //
+        } //
+        SHL.D = { DG, p, t1, t2, flask, fwater, ys: new Map() }; //
+        return SHL.D; //
+      }; //
+      // ---- the ways (each [x, z] in the world; the floor under them read once, from a height near it) //
+      const AW = (x, lz) => [x, lz + altDz()];   // in the altar's frame (the opinions table moves it) //
+      const yAt = (D2, x, z, near) => { const k = Math.round(x * 4) + "," + Math.round(z * 4) + "," + Math.round(near); let y = D2.ys.get(k); if (y === undefined) { y = groundY(x, z, near + 2.6); D2.ys.set(k, y); } return y; }; //
+      const plen = (pts) => { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; }; //
+      const along = (pts, u) => {   // the point at fraction u of the way, and the way's heading there //
+        const L = plen(pts) * clamp(u, 0, 1); //
+        let acc = 0; //
+        for (let i = 1; i < pts.length; i++) { //
+          const a = pts[i - 1], b = pts[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]); //
+          if (acc + l >= L || i === pts.length - 1) { const f = l > 0 ? clamp((L - acc) / l, 0, 1) : 0; return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), Math.atan2(b[0] - a[0], b[1] - a[1])]; } //
+          acc += l; //
+        } //
+        return [pts[0][0], pts[0][1], 0]; //
+      }; //
+      // the beats (demo seconds; the walk engine runs them at ctx2.shared.demoSlow) //
+      const T = { out1: 4.6, gate1: 8.6, stairs1: 11.8, path1: 17.6, rim1: 18.8, fill0: 19.6, fill1: 22.6, back0: 23.6, //
+        back1: 30.2, wg0: 32.4, wg1: 35.8, blow0: 36.0, blow1: 40.2, in1: 44.2, ramp1: 48.6, top1: 51.4, pour0: 52.0, pour1: 55.6, end: 58.2 }; //
+      // the flask: upright in the world, its neck in his hand; tilted forward to pour. Its mouth - where the streams begin and end //
+      const FILL_LEAN = 0.1, POUR_LEAN = 0.08, TILT = 1.62; //
+      const QG = new Quaternion(), QT = new Quaternion(), AX = new Vector3(), NECK = new Vector3(0, -0.21, 0), MOUTH = new Vector3(0, 0.3, 0), V1 = new Vector3(); //
+      const setFlask = (D2, tilt, yaw) => { //
+        const f = D2.flask; //
+        D2.p.g.updateMatrixWorld(true); //
+        D2.p.R.grip.getWorldQuaternion(QG).invert(); //
+        QT.setFromAxisAngle(AX.set(Math.cos(yaw), 0, -Math.sin(yaw)), tilt); //
+        f.quaternion.copy(QG).multiply(QT); //
+        f.position.copy(NECK).applyQuaternion(QT).applyQuaternion(QG); //
+        f.updateMatrixWorld(true); //
+      }; //
+      const mouthW = (D2, out) => D2.flask.localToWorld(out.copy(MOUTH)); //
+      const measure = (D2, arm, lean, tilt) => {   // the flask's mouth from his feet, his face to +z //
+        const p = D2.p; //
+        p.g.position.set(0, 0, 0); //
+        p.g.rotation.y = 0; //
+        p.lean.position.set(0, 0, 0); //
+        p.lean.rotation.x = lean; //
+        setArm(p.R, arm, -1); //
+        setFlask(D2, tilt, 0); //
+        const m = mouthW(D2, new Vector3()), o = p.g.getWorldPosition(new Vector3()); //
+        return { x: m.x - o.x, y: m.y - o.y, z: m.z - o.z }; //
+      }; //
+      // the ways (each [x, z] in the world; the floor under them read once, from a height near it). The Water Gate's landing (y 13.5, //
+      // x -24..-12) has its stair down to the east (to y 0 at x 2) and the soreg its opening before the gate (x -19..-17, z 80) //
+      const BOWL = () => AW(43.05, 9.4);   // the western bowl, of the water //
+      const bowlY = () => { const B = BOWL(), k = Math.round(B[1] * 10); if (SHL.byK !== k) { SHL.byK = k; SHL.by = groundY(B[0], B[1], 40); } return SHL.by; }; //
+      const standF = () => { const SP = SHL.SP, o = SHL.offF || { x: 0, z: 0.9 }; return [SP.x - o.x, SP.zT - o.z]; };   // the flask's mouth under the spout //
+      const standP = () => { const B = BOWL(), o = SHL.offP || { x: 0, z: 0.9 }; return [B[0] - o.x, B[1] - o.z]; };   // the flask's mouth over the bowl //
+      const WAYS = () => { //
+        const G_IN = [-18, 60.5], G_OUT = [-18, 72.6], TOPS = [-12, 72.6], FOOT = [2.6, 72.6]; //
+        return [ //
+          { pts: [G_IN, [-18, 66.5], G_OUT, TOPS, FOOT], t: [0.6, T.out1], near: 16 }, //
+          { pts: [FOOT, [3.4, 77.6], [-18, 78], [-18, 84], [-12, 150], [0, 305], [0, 335.5]], t: [T.out1, T.gate1], near: 1, hide: true },   // (not seen: the soreg's opening, the mount, the gate of Chulda) //
+          { pts: [[0, 335.5], [0, 364.5]], t: [T.gate1, T.stairs1], stairs: [0.2, -28] }, //
+          { pts: PATH.slice(), t: [T.stairs1, T.path1], terrain: true }, //
+          { pts: [PATH[PATH.length - 1], standF()], t: [T.path1, T.rim1], terrain: true, endYaw: 0 },   // his face to the spout //
+          { pts: [standF()].concat(PATH.slice().reverse()), t: [T.back0, T.back0 + 4.6], terrain: true }, //
+          { pts: [[0, 364.5], [0, 335.5]], t: [T.back0 + 4.6, T.back1], stairs: [-28, 0.2] }, //
+          { pts: [[0, 335.5], [0, 305], [-12, 150], [-18, 84], [-18, 78], [3.6, 77.4]], t: [T.back1 + 0.1, T.wg0], near: 1, hide: true }, //
+          { pts: [[3.6, 77.4], FOOT, TOPS, [-16.6, 72.6], G_OUT], t: [T.wg0, T.wg1], near: 16, endYaw: Math.PI },   // up to the gate, his face to it //
+          // in the court: north of the chambers along its south wall (from z 54) and of the laver (x 22, z 57), to the ramp's foot (z 54) //
+          { pts: [G_OUT, [-18, 64], [-18, 59], [-8, 54.5], [30, 53.2], [46, 53.2], AW(57.4, 41.2)], t: [T.blow1, T.in1], near: 16 }, //
+          { pts: [AW(57.4, 41.2), AW(57.4, 18.5)], t: [T.in1, T.ramp1], ramp: true }, //
+          { pts: [AW(57.4, 18.5), AW(57.0, 12.6), AW(50.8, 9.8), AW(46.6, 8.4), standP()], t: [T.ramp1, T.top1], near: 25, endYaw: 0 }   // "ופנה לשמאלו"; his face to the bowls //
+        ]; //
+      }; //
+      const placeOn = (D2, f, w, t, carry) => {   // the figure on way w at second t: its place, heading, height and the step //
+        const u = (t - w.t[0]) / Math.max(1e-3, w.t[1] - w.t[0]), q = along(w.pts, u); //
+        let y; //
+        if (w.stairs) y = lerp(w.stairs[0], w.stairs[1], clamp(u, 0, 1)); //
+        else if (w.terrain) y = yAt(D2, q[0], q[1], 20); //
+        else if (w.ramp) y = yAt(D2, q[0], q[1], 30); //
+        else y = yAt(D2, q[0], q[1], w.near); //
+        f.g.position.set(q[0], y, q[1]); //
+        f.g.rotation.y = u >= 1 && w.endYaw != null ? w.endYaw : q[2]; //
+        const walking = u > 0 && u < 1, ph = t * 9; //
+        f.fl.position.z = walking ? 0.17 * Math.sin(ph) : 0; //
+        f.fr.position.z = walking ? -0.17 * Math.sin(ph) : 0; //
+        f.lean.position.y = walking ? Math.abs(Math.cos(ph)) * 0.035 : 0; //
+        setArm(f.L, walking ? [0.3 * Math.sin(ph), 0.08, -0.25] : ARM.rest, 1); //
+        setArm(f.R, carry ? ARM.carry : walking ? [-0.3 * Math.sin(ph), 0.08, -0.25] : ARM.rest, -1); //
+        return u; //
+      }; //
+      const apply = (t) => { //
+        const D2 = buildDemo(), WS = WAYS(), p = D2.p; //
+        // the priest: which way he is on at this second (between them he stands where the last left him; on a hidden one he is not seen) //
+        let cur = null; //
+        for (const w of WS) if (t >= w.t[0] - 0.01) cur = w; //
+        p.g.visible = !!cur && !cur.hide && t < T.end; //
+        if (cur) placeOn(D2, p, cur, Math.min(t, cur.t[1]), true); //
+        const yaw = p.g.rotation.y; //
+        p.lean.rotation.x = 0; //
+        // filling under the spring's stream (the flask upright, its mouth under the spout) //
+        let fillK = 0, pourK = 0; //
+        if (t >= T.fill0 && t < T.back0) { //
+          fillK = smooth(clamp((t - T.fill0) / 0.6, 0, 1)) * (1 - smooth(clamp((t - T.fill1) / 0.6, 0, 1))); //
+          setArm(p.R, ARM.carry.map((v, i) => lerp(v, ARM.fill[i], fillK)), -1); //
+          p.lean.rotation.x = FILL_LEAN * fillK; //
+        } //
+        // pouring into the western bowl, his hand raised ("ולמנסך אומרים לו, הגבה ידך") //
+        if (t >= T.pour0 && t < T.end) { //
+          pourK = smooth(clamp((t - T.pour0) / 0.6, 0, 1)) * (1 - smooth(clamp((t - T.pour1) / 0.6, 0, 1))); //
+          setArm(p.R, ARM.carry.map((v, i) => lerp(v, ARM.pour[i], pourK)), -1); //
+          p.lean.rotation.x = POUR_LEAN * pourK; //
+        } //
+        setFlask(D2, TILT * pourK, yaw); //
+        // the streams: the spring's ends in the flask while he holds it there; the flask's falls into the bowl //
+        const m = mouthW(D2, V1); //
+        streamTo(fillK > 0.9 && p.g.visible ? m.y + 0.02 : (SHL.SP.base || 0)); //
+        D2.fwater.visible = false; //
+        if (pourK > 0.92 && p.g.visible) { //
+          const by = bowlY(), h = Math.max(0.05, m.y - by); //
+          D2.fwater.visible = true; //
+          D2.fwater.position.set(m.x, by + h / 2, m.z); //
+          D2.fwater.scale.y = h; //
+        } //
+        // the two with trumpets at the Water Gate: on its landing, either side of the way in //
+        const tOn = t >= T.wg0 && t < T.in1 + 1; //
+        for (const [f, x] of [[D2.t1, -21.4], [D2.t2, -14.4]]) { //
+          f.g.visible = tOn; //
+          if (!tOn) continue; //
+          f.g.position.set(x, yAt(D2, x, 74.0, 13.5), 74.0); //
+          f.g.rotation.y = x < -18 ? 0.35 : -0.35;   // their faces out, to the chel, a little toward the way in //
+          const up = smooth(clamp((t - T.blow0 + 0.6) / 0.5, 0, 1)) * (1 - smooth(clamp((t - T.blow1) / 0.5, 0, 1))); //
+          setArm(f.R, ARM.rest.map((v, i) => lerp(v, ARM.tR[i], up)), -1); //
+          setArm(f.L, ARM.rest.map((v, i) => lerp(v, ARM.tL[i], up)), 1); //
+          f.lean.children[f.lean.children.length - 1].visible = up > 0.3;   // the trumpet //
+        } //
+      }; //
+      // ---- the eye (keys [t, eye, look], demo seconds) and the words //
+      const keys = () => { //
+        const wy = Y0, SP = SHL.SP, sf = standF(), sy = SP.gy != null ? SP.gy : wy; //
+        const A1 = AW(57.4, 30), B = BOWL(); //
+        return [ //
+          [0, [4, 21, 94], [-17, 15, 70]], [T.out1, [9, 14, 92], [-3, 5, 74]], //
+          // over the mount (above the roof of the royal stoa, 37.5) to the outside of the gate of Chulda //
+          [T.out1 + 1.6, [10, 95, 200], [6, 0, 360]], [T.gate1 - 1.0, [24, 40, 384], [2, -4, 338]], //
+          [T.gate1, [22, 10, 352], [0, -6, 340]], [T.stairs1, [24, -6, 380], [0, -24, 360]], //
+          [T.path1 - 2.2, [44, wy + 22, 470], [20, wy + 4, 515]], //
+          [T.rim1, [sf[0] - 5.2, sy + 2.9, sf[1] - 2.0], [sf[0] + 0.3, sy + 1.3, sf[1] + 0.8]], [T.fill1, [sf[0] - 4.8, sy + 2.7, sf[1] - 1.6], [sf[0] + 0.3, sy + 1.25, sf[1] + 0.85]], //
+          [T.back0 + 1.0, [sf[0] - 6, sy + 10, sf[1] - 6], [sf[0] + 4, sy - 2, sf[1] - 30]], [T.back0 + 2.6, [40, wy + 34, 600], [12, -24, 420]], //
+          [T.back1 - 0.6, [22, 4, 384], [0, -6, 345]], //
+          // up over the wall and the mount again, to the Water Gate //
+          [T.back1 + 0.5, [22, 42, 372], [0, 0, 330]], [T.back1 + 1.4, [10, 48, 220], [-10, 0, 100]], //
+          [T.wg0 + 0.2, [10, 16, 96], [-4, 6, 74]], [T.wg1 - 0.4, [-30, 18, 86], [-17, 15.2, 73]], [T.blow1, [-32, 17.6, 84], [-17, 15.3, 73.2]], //
+          // over the court's wall (40.9) into the court, to the ramp //
+          [T.blow1 + 1.0, [-4, 52, 80], [-14, 16, 63]], [T.in1 - 0.8, [38, 30, 44], [56, 18, 50]], [T.ramp1 - 1.0, [38, 31, A1[1] - 8.5], [56, 23, A1[1] - 12.5]], //
+          [T.top1, [40, 31, B[1] + 11], [B[0] + 3, 25.5, B[1] - 1]], [T.pour0 + 0.8, [48.6, 29.4, B[1] + 8.6], [B[0] + 0.3, 26.2, B[1] - 0.4]], //
+          [T.end, [48.2, 29.2, B[1] + 8.2], [B[0] + 0.2, 26.1, B[1] - 0.3]] //
+        ]; //
+      }; //
+      const caps = [ //
+        [0, "״נסוך המים כיצד. צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח״ (סוכה ד, ט)"], //
+        [T.gate1 - 0.8, "״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״ (מידות א, ג)"], //
+        [T.stairs1, "אל השילוח — הדרך ומקום המעיין בחירת מודל: אין מקור שמתאר אותם"], //
+        [T.rim1 - 0.4, "״היה ממלא מן השלוח״ (סוכה ד, ט); ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו)"], //
+        [T.back0 + 0.6, "בחזרה — דרך שערי חלדה ושער המים"], //
+        [T.wg0, "״הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט). ״ולמה נקרא שמו שער המים. שבו מכניסין צלוחית של מים של נסוך בחג״ (מידות ב, ו)"], //
+        [T.in1 - 0.4, "״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם״ (סוכה ד, ט)"], //
+        [T.pour0 - 0.6, "״מערבי של מים, מזרחי של יין״; ״ולמנסך אומרים לו, הגבה ידך״ (סוכה ד, ט)"] //
+      ]; //
+      const finish = () => { //
+        SHL.run = false; //
+        if (SHL.D) SHL.D.DG.visible = false; //
+        streamTo(SHL.SP.base || 0); //
+        const sv = SHL.saved; //
+        if (sv && sv.lg) sv.lg.visible = sv.labels; //
+        if (sv && sv.view && SH.viewLimits) SH.viewLimits.set(sv.view);   // the view's limits as they were //
+        delete SH.camLow; //
+        SHL.saved = null; //
+      }; //
+      const start = () => { //
+        const Wk = SH.walk; //
+        if (!Wk || !K || !FIG) return false; //
+        buildPool(); //
+        const D2 = buildDemo(); //
+        if (fnc(SH.stopDemos)) SH.stopDemos("shiloachDemo"); //
+        for (const f of [D2.p, D2.t1, D2.t2]) f.sash.material = (SH.tamid && SH.tamid.belt === "white") ? K.mSashWhite : K.mSashDyed; //
+        let lg = null; //
+        try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {} //
+        SHL.saved = { lg, labels: lg ? lg.visible : true, view: SH.viewLimits ? SH.viewLimits.get() : null }; //
+        if (lg) lg.visible = false; //
+        // the eye goes down to the Shiloach, far from the mount and under its ground: the view's limits are widened for the walk //
+        if (SH.viewLimits) SH.viewLimits.include([SHL.POOL[0], Y0 - 1, SHL.POOL[1] + 10]); //
+        SH.camLow = Y0 - 3; //
+        D2.DG.visible = true; //
+        SHL.run = true; //
+        apply(0); //
+        Wk.run(keys(), caps, finish); //
+        return true; //
+      }; //
+      const stop = () => { if (!SHL.run) return; const Wk = SH.walk; if (Wk && Wk.on) Wk.stop(); else finish(); }; //
+      let sndT = -1; //
+      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { //
+        if (!SHL.run) { sndT = -1; return; } //
+        const Wk = SH.walk, t = Wk && fnc(Wk.now) ? Math.max(0, Wk.now()) : 0; //
+        try { apply(t); } catch (e) { console.warn("[shiloach]", e && e.message); } //
+        try { //
+          if (sndT >= 0 && t > sndT && fnc(SH.sfx)) { //
+            if (sndT < T.fill0 + 0.4 && t >= T.fill0 + 0.4) SH.sfx("water", { dur: 2.2, gain: 0.7 }); //
+            if (sndT < T.blow0 && t >= T.blow0) SH.sfx("trumpets"); //
+            if (sndT < T.pour0 + 0.5 && t >= T.pour0 + 0.5) SH.sfx("water", { dur: 2.0, gain: 0.6 }); //
+          } //
+        } catch (_) {} //
+        sndT = t; //
+      }); //
+      const walkEntry = () => (SH.demoStops || []).find((q) => q.id === "walk"); //
+      (SH.demoStops || (SH.demoStops = [])).push({ id: "shiloachDemo", running: () => SHL.run, stop, //
+        pause: () => { const w = walkEntry(); if (w) w.pause(); }, resume: () => { const w = walkEntry(); if (w) w.resume(); }, //
+        paused: () => { const w = walkEntry(); return !!(w && w.paused()); }, restart: () => { stop(); start(); } }); //
+      const INFO = "**המשנה** (סוכה ד, ט): ״נסוך המים כיצד. צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער המים, תקעו והריעו ותקעו. עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם... מערבי של מים, מזרחי של יין... ולמנסך אומרים לו, הגבה ידך״; ובשבת (שם, י): ״היה ממלא מערב שבת חבית של זהב שאינה מקדשת, מן השלוח, ומניחה בלשכה״.\n" + //
+        "**שער המים** (מידות ב, ו): ״ולמה נקרא שמו שער המים. שבו מכניסין צלוחית של מים של נסוך בחג. רבי אליעזר בן יעקב אומר, ובו המים מפכים, ועתידין להיות יוצאין מתחת מפתן הבית״; וכן בתוספתא (סוכה ג, ג).\n" + //
+        "**שערי חולדה** (מידות א, ג): ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״.\n" + //
+        "**השילוח** — תני, רבן שמעון בן גמליאל אומר: ״שילוח היה מוציא מים כאיסר. אמרו: נרחיבנו וירבו מימיו. הרחיבוהו ונתמעטו מימיו. חזרו וגדרוהו וחזר לכמות שהיה״ (ירושלמי סוכה ה, ו).\n" + //
+        "**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. הבריכה מצוירת בתחתית העמק שבדרום ההר, כמאתיים ועשרים אמה מחומתו, והשביל אליה יוצא משער חולדה המערבי — בחירת מודל. צורת הבריכה, מוצא המעיין (אבן עם צינור שהמים יורדים ממנו), צורת הצלוחית ושני התוקעים — בחירות מודל. בהדגמה הכהן ממלא את הצלוחית מתחת לזרם היוצא מן המעיין, ומנסך ביד מורמת לתוך הספל המערבי. ההליכה בהדגמה מואצת, ובשני מקומות היא מדולגת (בדרך על פני הר הבית)."; //
+      const REFS = [["סוכה ד, ט", { book: 56, index: 48 }], ["סוכה ד, י", { book: 56, index: 49 }], ["מידות ב, ו", "Mishnah_Middot.2.6"], ["מידות א, ג", "Mishnah_Middot.1.3"]]; //
+      SH.shiloach = { demo: start, stop, T, info: INFO, refs: REFS, POOL: SHL.POOL, at: (t) => { buildPool(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); return { Y0 }; }, //
+        leave: () => { if (SHL.D) SHL.D.DG.visible = false; }, dbg: () => ({ offF: SHL.offF, offP: SHL.offP, SP: { x: SHL.SP.x, y: SHL.SP.y, gy: SHL.SP.gy, zT: SHL.SP.zT }, standF: standF(), standP: standP(), bowl: BOWL(), bowlY: bowlY() }) }; //
+      SH.modelButtons = SH.modelButtons || []; //
+      SH.modelButtons.push({ //
+        id: "shiloachDemo", label: "הדגמה: ניסוך המים — מן השילוח", labelOn: "עצור את ההדגמה", maxDist: 140, //
+        title: "״צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט). ההדגמה: כהן יוצא בשער המים ובשער חולדה, ממלא מן השילוח, חוזר, ומנסך בספל המערבי.", //
+        anchor: () => [SHL.POOL[0], Y0 + 9, SHL.POOL[1]], //
+        get: () => SHL.run, //
+        set: (on) => { if (on) start(); else stop(); } //
+      }); //
+    } //
     // ---------- SIMCHA_304 (the user, 19.11.2026 19:09: "תעשה הדגמה של שמחת בית השואבה / א: עם כל המרפסות של עזרת הנשים / ב: עם ---------- //
     // חסידים שהיו מרקדין, ושרים אשרי מי שלא חטא וכו' / ג: עם כל הנלוה"; 19:33: "1." - three balconies, north, south and east; "2. זיזים //
     // קבועים תמיד הדגמה רק במתג"; "3. לפני העם - תוסיף מלא אנשים בגילאים שונים כולל ילדים במבנה הדמויות שעשית רק לא כהנים"; "4. ב" - the //
@@ -63958,6 +64959,156 @@ void main() {
       }; //
       const SPOTS = [[141, -20], [181, -20], [141, 20], [181, 20]];   // the golden lamps (above) //
       const DR = 8.2, NDANCE = 14; //
+      // ---- MUSICIANS_305 (the user, 21:08: "צריך גם לעשות את הלוויים מנגנים... אם הם מנגנים, לא יכולים לעמוד כמו פסלים"; 21:10: //
+      // "ידיים של הכוהנים תופסות את החצוצרה, אי אפשר בלי"): THE MUSICIANS' KIT. A musician is a figure of tm_people without its own //
+      // arms (crowd o.arms: false); every frame his arms (PP.rig) and his instrument are set: the instrument in his hands, the hands at //
+      // their work in time with the music, the body swaying a little with it. All in the figure's own units (its scale 1.4 - an amah //
+      // is 0.714; the face to +z, the left at +x). Until 2.0.13 the Levites and the flutes stood still, their instruments standing //
+      // before them, and the priests' trumpets moved before their mouths without hands. The instruments' forms and the motions - //
+      // model choices. //
+      const MUS = (() => { //
+        const UA = 0.32, FA = 0.29, HL = 0.075;   // the upper arm, the forearm (to the wrist), the wrist to the middle of the fingers //
+        const SHL = new Vector3(0.25, 1.718, 0), SHR = new Vector3(-0.25, 1.718, 0); //
+        const cyl = (r0, r1, a, b, n = 6) => {   // a tube from a to b //
+          const d = new Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), L = d.length(); //
+          const q = new CylinderGeometry(r1, r0, L, n); //
+          q.applyQuaternion(new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), d.normalize())); //
+          q.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); //
+          return q; //
+        }; //
+        // the lyre (כנור): a sound-box below, two arms out and up, the yoke across them, five strings - in its own plane (x, y) //
+        const G = { //
+          lyre: [mergeGeometries([new BoxGeometry(0.27, 0.085, 0.06).translate(0, 0.0425, 0), cyl(0.016, 0.013, [0.1, 0.06, 0], [0.155, 0.37, 0]), //
+            cyl(0.016, 0.013, [-0.1, 0.06, 0], [-0.155, 0.37, 0]), cyl(0.014, 0.014, [-0.18, 0.345, 0], [0.18, 0.345, 0])]), //
+            mergeGeometries([-2, -1, 0, 1, 2].map((k) => cyl(0.0025, 0.0025, [k * 0.035, 0.085, 0.012], [k * 0.042, 0.335, 0.012], 3)))], //
+          // the harp (נבל): its pillar, the neck over it, the sound-box along its foot, seven strings //
+          harp: [mergeGeometries([new BoxGeometry(0.045, 0.56, 0.055).translate(0, 0.28, 0), new BoxGeometry(0.33, 0.045, 0.05).translate(0.165, 0.545, 0), //
+            new BoxGeometry(0.36, 0.09, 0.08).translate(0.18, 0.045, 0)]), //
+            mergeGeometries([1, 2, 3, 4, 5, 6, 7].map((k) => cyl(0.0022, 0.0022, [k * 0.042, 0.09, 0], [k * 0.042, 0.52, 0], 3)))], //
+          cym: [new CylinderGeometry(0.13, 0.13, 0.016, 16).rotateZ(Math.PI / 2)],   // a cymbal: its face across x (the two meet) //
+          // a trumpet (חצוצרה): from the mouthpiece (the origin) forward along +z, the bell at its end //
+          tru: [mergeGeometries([cyl(0.017, 0.021, [0, 0, 0], [0, 0, 0.86], 8), new ConeGeometry(0.095, 0.2, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 0.96)])], //
+          flute: [cyl(0.019, 0.026, [0, 0, 0], [0, 0, 0.68], 8)]   // the flute (חליל): from the mouth forward //
+        }; //
+        G.koh = G.tru; //
+        const strM = new MeshStandardMaterial({ color: 0xe9dfc6, roughness: 0.55 }); //
+        const bronzeM = new MeshStandardMaterial({ color: 0xc8963e, metalness: 0.75, roughness: 0.32 });   // (M2.bronze is dark in the night) //
+        const MAT = { lyre: [wood, strM], harp: [wood, strM], cym: [bronzeM], tru: [silver], koh: [silver], flute: [wood] }; //
+        const ss01 = (x) => { const u = Math.max(0, Math.min(1, x)); return u * u * (3 - 2 * u); }; //
+        const lerp = (a, b, u) => a + (b - a) * u; //
+        const V = new Vector3(), Q = new Quaternion(), E3 = new Euler(), ONE = new Vector3(1, 1, 1); //
+        const P1 = new Vector3(), P2 = new Vector3(), T1 = new Vector3(), T2 = new Vector3(); //
+        const place = (out, x, y, z, rx, ry, rz) => out.compose(V.set(x, y, z), Q.setFromEuler(E3.set(rx, ry, rz, "YXZ")), ONE); //
+        const pt = (m, x, y, z, out) => out.set(x, y, z).applyMatrix4(m); //
+        const wristTo = (S, P, out) => { T1.subVectors(P, S); const d = T1.length() || 1e-6; out.copy(P).addScaledVector(T1, -HL / d); };   // the fingers at P //
+        // the elbow of the arm from the shoulder S to the wrist W (W is pulled in when it is beyond the arm's length): down, out and back //
+        const elbow = (S, W, side, out) => { //
+          T1.subVectors(W, S); //
+          let d = T1.length(); //
+          T1.multiplyScalar(1 / (d || 1e-6)); //
+          if (d > UA + FA - 1e-3) { d = UA + FA - 1e-3; W.copy(S).addScaledVector(T1, d); } //
+          const ca = Math.max(-1, Math.min(1, (UA * UA + d * d - FA * FA) / (2 * UA * Math.max(d, 1e-4)))), sa = Math.sqrt(Math.max(0, 1 - ca * ca)); //
+          T2.set(side * 0.55, -1, -0.3); //
+          T2.addScaledVector(T1, -T2.dot(T1)).normalize(); //
+          out.copy(S).addScaledVector(T1, UA * ca).addScaledVector(T2, UA * sa); //
+        }; //
+        // every instrument at a moment: e8 - the music's eighth (fractional), v - 0 at rest .. 1 playing; sets f.IM (and f.IM2), f.WL, f.WR //
+        const HANDS = { //
+          lyre(f, e8, v) {   // before the chest, a little to the left, its top out and to the left; the left hand on its left arm, the right across the strings //
+            place(f.IM, 0.07, 1.2, 0.3, 0.28, 0.12, -0.22); //
+            pt(f.IM, 0.155, 0.2, -0.02, P1); //
+            const sw = v * 0.075 * Math.sin(Math.PI * e8 + f.ph);   // a stroke every eighth //
+            pt(f.IM, sw - 0.02 * (1 - v), 0.19, 0.045 + 0.035 * (1 - v), P2); //
+            wristTo(SHL, P1, f.WL); wristTo(SHR, P2, f.WR); //
+          }, //
+          harp(f, e8, v) {   // at the hip before him, its pillar to his right; both hands on the strings, by turns //
+            place(f.IM, -0.17, 0.98, 0.3, 0.12, 0.25, 0.05); //
+            const a = v * Math.sin(Math.PI * e8 * 0.5 + f.ph), b = v * Math.sin(Math.PI * e8 * 0.5 + f.ph + Math.PI); //
+            pt(f.IM, 0.23 + 0.03 * a, 0.3 + 0.05 * a, 0.04 + 0.03 * (1 - v), P1); //
+            pt(f.IM, 0.09 + 0.03 * b, 0.36 + 0.05 * b, 0.04 + 0.03 * (1 - v), P2); //
+            wristTo(SHL, P1, f.WL); wristTo(SHR, P2, f.WR); //
+          }, //
+          cym(f, e8, v) {   // a cymbal in each hand; they meet at the head of every phrase (the loop's clash, 92-sounds) //
+            const u = ((e8 / 16) % 1 + 1) % 1; //
+            let gap = 0.15; //
+            if (u > 0.86) gap = 0.035 + 0.115 * (1 - ss01((u - 0.86) / 0.14)); //
+            else if (u < 0.22) gap = 0.035 + 0.115 * ss01((u - 0.04) / 0.18); //
+            gap = 0.15 + (gap - 0.15) * v; //
+            const y = 1.3 + 0.14 * v, z = 0.28 + 0.04 * v; //
+            place(f.IM, gap, y, z, 0, 0, 0); //
+            place(f.IM2, -gap, y, z, 0, 0, 0); //
+            P1.set(gap + 0.03, y - 0.01, z - 0.01); P2.set(-gap - 0.03, y - 0.01, z - 0.01); //
+            wristTo(SHL, P1, f.WL); wristTo(SHR, P2, f.WR); //
+          }, //
+          tru(f, e8, v) {   // across the chest at rest; at the call (the loop's trumpets: the head of the first and the third phrase) to the mouth //
+            const u = ((e8 % 32) + 32) % 32; //
+            let up = 0; //
+            if (u >= 29.5) up = ss01((u - 29.5) / 2.5); else if (u < 4.2) up = 1; else if (u < 6) up = 1 - ss01((u - 4.2) / 1.8); //
+            HANDS.koh(f, up * v); //
+          }, //
+          koh(f, up) {   // the trumpet in both hands: the right by the mouthpiece, the left further; up 0 - before him, a little down; 1 - at the mouth, its bell a little up //
+            place(f.IM, lerp(-0.08, 0, up), lerp(1.36, 1.985, up), lerp(0.24, 0.135, up), lerp(0.38, -0.14, up), lerp(0.32, 0, up), 0); //
+            pt(f.IM, 0, -0.03, 0.2, P2); pt(f.IM, 0, -0.03, 0.34, P1); //
+            wristTo(SHR, P2, f.WR); wristTo(SHL, P1, f.WL); //
+          }, //
+          flute(f, e8, v) {   // at the mouth, down and forward; the left hand above, the right below it, the fingers at work //
+            const b = v * 0.012 * Math.sin(Math.PI * e8 * 0.5 + f.ph); //
+            place(f.IM, lerp(0.02, 0, v), lerp(1.4, 1.98, v), lerp(0.22, 0.13, v), lerp(1.15, 0.55, v), lerp(-0.2, 0, v), 0); //
+            pt(f.IM, 0, -0.025 + b, 0.2, P1); pt(f.IM, 0, -0.025 - b, 0.42, P2); //
+            wristTo(SHL, P1, f.WL); wristTo(SHR, P2, f.WR); //
+          } //
+        }; //
+        const qB = new Quaternion(), eB = new Euler(), vB = new Vector3(), vS = new Vector3(), mW = new Matrix4(); //
+        // a set: figs [{ x, y, z, yaw, kind, cw (the crowd's handle), ci (its index there), skin }] in `parent`, their sleeves `robe` //
+        const set = (parent, figs, robe) => { //
+          const PP = tm_people(ctx2); //
+          const rig = PP.rig(parent, figs.length, { robe, skin: (i) => figs[i].skin }); //
+          const count = {}, inst = {}, all = []; //
+          figs.forEach((f, i) => { //
+            f.ri = i; f.ii = count[f.kind] = (count[f.kind] || 0); //
+            count[f.kind]++; //
+            f.IM = new Matrix4(); f.IM2 = new Matrix4(); f.M = new Matrix4(); //
+            f.WL = new Vector3(); f.WR = new Vector3(); f.EL = new Vector3(); f.ER = new Vector3(); //
+            f.ph = ((i * 0.618) % 1) * 0.9; f.up = 0; //
+          }); //
+          for (const k in count) { //
+            const n = count[k] * (k === "cym" ? 2 : 1); //
+            inst[k] = G[k].map((geo, j) => { //
+              const im = new InstancedMesh(geo, MAT[k][j], n); //
+              im.castShadow = false; im.receiveShadow = true; im.frustumCulled = false; im.userData.noPick = true; im.name = "simchaInstr"; //
+              parent.add(im); all.push(im); //
+              return im; //
+            }); //
+          } //
+          const crowds = [...new Set(figs.map((f) => f.cw).filter(Boolean))]; //
+          return { //
+            g: parent, figs, //
+            // e8 - the music's eighth; v - how much they play (0 .. 1); the body's sway and the hands at their work. Every frame, near //
+            // or far (a few tens of thousands of triangles in all): a pause, or a flight to them in it, finds them set //
+            play(e8, v) { //
+              for (const f of figs) { //
+                const sw = v * Math.sin(Math.PI * 2 * e8 / 16 + f.ph * 7), nd = v * Math.sin(Math.PI * 2 * e8 / 8 + f.ph * 9); //
+                qB.setFromEuler(eB.set(0.03 * nd, f.yaw + 0.05 * sw, 0.025 * sw, "YXZ")); //
+                f.M.compose(vB.set(f.x, f.y, f.z), qB, vS.set(1.4, 1.4, 1.4)); //
+                if (f.cw) f.cw.pose(f.ci, f.M); //
+                if (f.kind === "koh") HANDS.koh(f, f.up); else HANDS[f.kind](f, e8, v); //
+                elbow(SHL, f.WL, 1, f.EL); //
+                elbow(SHR, f.WR, -1, f.ER); //
+                rig.arm(f.ri, 1, f.M, SHL, f.EL, f.WL); //
+                rig.arm(f.ri, -1, f.M, SHR, f.ER, f.WR); //
+                const two = f.kind === "cym"; //
+                mW.multiplyMatrices(f.M, f.IM); //
+                for (const im of inst[f.kind]) im.setMatrixAt(two ? 2 * f.ii : f.ii, mW); //
+                if (two) { mW.multiplyMatrices(f.M, f.IM2); for (const im of inst[f.kind]) im.setMatrixAt(2 * f.ii + 1, mW); } //
+              } //
+              for (const c of crowds) c.done(); //
+              rig.done(); //
+              for (const im of all) im.instanceMatrix.needsUpdate = true; //
+            } //
+          }; //
+        }; //
+        return { set }; //
+      })(); //
       let B = null; //
       const build = () => { //
         if (B) return B; //
@@ -63977,7 +65128,7 @@ void main() {
           for (const [mx, mz] of SPOTS) if (Math.hypot(x - mx, z - mz) < 8.4) return false;   // the lamps, their ladders, the young priests //
           if (Math.hypot(x - CXc, z) < 14.6) return false;                     // the dancers //
           if (Math.abs(z) < 3.4 && x > 112) return false;                      // the way of the two priests to the east gate //
-          for (const [fx, fz] of [[121.6, -6], [121.6, 6]]) if (Math.hypot(x - fx, z - fz) < 1.6) return false;   // the two flutes //
+          for (const [fx, fz] of [[121.6, -6], [121.6, 6]]) if (Math.hypot(x - fx, z - fz) < 2.6) return false;   // the two flutes (MUSICIANS_305: 2.6, 1.6 until 2.0.13 - one stood before each) //
           return true; //
         }; //
         let q = 19112026; //
@@ -64028,24 +65179,16 @@ void main() {
           for (let k = 0; k < 8; k++) { const t = torch(k % 2 === 0, 1.9); G.add(t); tor.push(t); } //
           B.rsbg = { G, Tl, tor }; //
         } //
-        // ---- the two priests with the trumpets (white garments, the hat and the sash), the trumpet at the mouth while they blow //
+        // ---- the two priests with the trumpets (white garments, the hat and the sash) - MUSICIANS_305: "ושתי חצוצרות בידיהן" (5:4): //
+        // the trumpet in both hands, to the mouth while they blow (MUS above; each priest a set of one, in his own group) //
         for (const s of [-1, 1]) { //
           const G = new Group(); G.visible = false; DG.add(G); //
-          PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind: "kohen", robe: 0xf1ede2, tone: () => (s < 0 ? 1 : 2), exact: true, name: "simchaKohen" }); //
-          const tr = new Group(); //
-          tr.add(noP(new Mesh(new CylinderGeometry(0.035, 0.035, 1.35, 8).rotateX(Math.PI / 2).translate(0, 0, 0.68), silver))); //
-          tr.add(noP(new Mesh(new ConeGeometry(0.15, 0.32, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 1.45), silver))); //
-          G.add(tr); //
-          B.koh.push({ G, tr, s }); //
+          const near = PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind: "kohen", robe: 0xf1ede2, tone: () => (s < 0 ? 1 : 2), exact: true, arms: false, name: "simchaKohen" }); //
+          const cw = near && near.userData ? near.userData.crowd : null; //
+          const set = MUS.set(G, [{ x: 0, y: 0, z: 0, yaw: 0, kind: "koh", cw, ci: 0, skin: s < 0 ? 0 : 1 }], 0xf1ede2); //
+          B.koh.push({ G, s, set, up: 0 }); //
         } //
-        // ---- the musicians: the Levites on the steps, and the flute below them //
-        const lyreG = mergeGeometries([new TorusGeometry(0.3, 0.03, 6, 14, Math.PI * 1.3).rotateZ(-0.1).translate(0, 0.3, 0), new BoxGeometry(0.6, 0.05, 0.06).translate(0, 0.6, 0), //
-          ...[-2, -1, 0, 1, 2].map((s) => new CylinderGeometry(0.006, 0.006, 0.5, 3).translate(s * 0.08, 0.34, 0))]); //
-        const harpG = mergeGeometries([new BoxGeometry(0.09, 1.0, 0.11).translate(0, 0.5, 0), new BoxGeometry(0.56, 0.07, 0.09).translate(0.27, 0.96, 0), new BoxGeometry(0.58, 0.14, 0.14).translate(0.28, 0.07, 0), //
-          ...[1, 2, 3, 4, 5, 6, 7].map((s) => new CylinderGeometry(0.005, 0.005, 0.78, 3).translate(s * 0.068, 0.52, 0))]); //
-        const cymG = mergeGeometries([-1, 1].map((s) => new CylinderGeometry(0.2, 0.2, 0.025, 16).rotateZ(Math.PI / 2).translate(s * 0.16, 0, 0))); //
-        const trpG = mergeGeometries([new CylinderGeometry(0.03, 0.03, 1.2, 8).rotateX(Math.PI / 2).translate(0, 0, 0.6), new ConeGeometry(0.13, 0.28, 12, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 1.3)]); //
-        const fluteG = new CylinderGeometry(0.03, 0.045, 0.95, 8).rotateX(Math.PI / 2 - 0.55).translate(0, -0.25, 0.42); //
+        // ---- the musicians: the Levites on the steps, and the flute below them (MUSICIANS_305: each with his instrument in his hands) //
         const levites = (rid) => { //
           const g = new Group(); g.visible = false; DG.add(g); //
           const pts = []; //
@@ -64067,63 +65210,69 @@ void main() {
               for (let i = 0; i < 6; i++) { const z = -half + ((i + off) / 5.5) * 2 * half; if (Math.abs(z) >= 2.6) pts.push([x, y, z, Math.PI / 2]); } //
             } //
           } //
+          // "בכנורות ובנבלים ובמצלתים ובחצוצרות" (5:4): lyres for most, harps, cymbals and trumpets (their numbers - model choices) //
+          const kinds = pts.map((p, i) => (i % 9 === 4 ? "cym" : i % 7 === 3 ? "tru" : i % 4 === 1 ? "harp" : "lyre")); //
           // each row's figures stand on their own step: one crowd per height //
           const byY = new Map(); //
-          for (const p of pts) { if (!byY.has(p[1])) byY.set(p[1], []); byY.get(p[1]).push(p); } //
-          for (const [y, list] of byY) PP.crowd(g, list.map((p) => [p[0], p[2], p[3]]), { y, s: 1.4, pose: "stand", kind: "levi", robe: 0x8f8468, tone: (i) => 1 + (i % 2), exact: true, name: "simchaLevi" }); //
-          // the instruments before them: lyres for most, harps, cymbals and trumpets //
-          const kinds = pts.map((p, i) => (i % 9 === 4 ? 2 : i % 7 === 3 ? 3 : i % 4 === 1 ? 1 : 0)); //
-          [lyreG, harpG, cymG, trpG].forEach((geo, t) => { //
-            const idx = kinds.map((k, i) => (k === t ? i : -1)).filter((i) => i >= 0); //
-            if (!idx.length) return; //
-            const im = new InstancedMesh(geo, t === 2 || t === 3 ? (t === 2 ? M2.bronze : silver) : wood, idx.length); //
-            idx.forEach((i, n) => { //
-              const p = pts[i], yaw = p[3], fw = t === 3 ? 0.12 : 0.42, hy = t === 3 ? 2.75 : t === 1 ? 1.3 : t === 2 ? 1.85 : 1.6; //
-              qz.setFromAxisAngle(upY, yaw); //
-              m4z.compose(vz.set(p[0] + Math.sin(yaw) * fw, p[1] + hy, p[2] + Math.cos(yaw) * fw), qz, sz1); //
-              im.setMatrixAt(n, m4z); //
-            }); //
-            im.instanceMatrix.needsUpdate = true; //
-            g.add(noP(im)); //
-          }); //
-          return g; //
+          pts.forEach((p, i) => { if (!byY.has(p[1])) byY.set(p[1], []); byY.get(p[1]).push(i); }); //
+          const figs = []; //
+          for (const [y, idx] of byY) { //
+            const near = PP.crowd(g, idx.map((i) => [pts[i][0], pts[i][2], pts[i][3]]), { y, s: 1.4, pose: "stand", kind: "levi", robe: 0x8f8468, tone: (j) => 1 + (j % 2), exact: true, arms: false, name: "simchaLevi" }); //
+            const cw = near && near.userData ? near.userData.crowd : null; //
+            idx.forEach((i, j) => figs.push({ x: pts[i][0], y, z: pts[i][2], yaw: pts[i][3], kind: kinds[i], cw, ci: j, skin: j })); //
+          } //
+          return MUS.set(g, figs, 0x8f8468); //
         }; //
         B.levFor = (rid) => B.lev[rid ? "rid" : "rambam"] || (B.lev[rid ? "rid" : "rambam"] = levites(rid)); //
         // the flute: two players at the steps' foot, on the court's floor ("החליל מכה", the Rambam, Lulav 8:13) //
         { //
           const g = new Group(); DG.add(g); //
           const pts = [[121.6, -6, Math.PI / 2 - 0.25], [121.6, 6, Math.PI / 2 + 0.25]];   // their faces to the court //
-          PP.crowd(g, pts, { y: Y0, s: 1.4, pose: "stand", kind: "levi", robe: 0x8f8468, tone: (i) => 1 + i, exact: true, name: "simchaFlute" }); //
-          for (const [x, z, yaw] of pts) { const f = noP(new Mesh(fluteG, wood)); f.position.set(x, Y0 + 2.85, z); f.rotation.y = yaw; g.add(f); } //
+          const near = PP.crowd(g, pts, { y: Y0, s: 1.4, pose: "stand", kind: "levi", robe: 0x8f8468, tone: (i) => 1 + i, exact: true, arms: false, name: "simchaFlute" }); //
+          const cw = near && near.userData ? near.userData.crowd : null; //
+          B.flute = MUS.set(g, pts.map((p, j) => ({ x: p[0], y: Y0, z: p[1], yaw: p[2], kind: "flute", cw, ci: j, skin: j })), 0x8f8468); //
         } //
         return B; //
       }; //
       // ---- the clock (the written seconds; the screen's are SH.demoSlow times longer) ---- //
-      const TD = 66;   // the cock's crow //
-      const CAPS = [[0, "״במוצאי יום טוב הראשון של חג, ירדו לעזרת נשים, ומתקנין שם תקון גדול״ (סוכה ה, ב)"], //
-        [3.2, "״חלקה היתה בראשונה, והקיפוה גזוזטרא, והתקינו שיהו נשים יושבות מלמעלה ואנשים מלמטה״ (סוכה נא:) — ״קרשים עם מעקה סביב על הזיזין שיוצאין מהחומות״ (תפארת ישראל)"], //
-        [6, "״ומנורות של זהב היו שם, וארבעה ספלים של זהב בראשיהן, וארבעה סלמות לכל אחד ואחד, וארבעה ילדים מפרחי כהנה ובידיהם כדים של שמן״ (סוכה ה, ב)"], //
-        [14.5, "״מבלאי מכנסי כהנים ומהמיניהן מהן היו מפקיעין, ובהן היו מדליקין״ (סוכה ה, ג)"], //
-        [21.8, "״ולא היתה חצר בירושלים שאינה מאירה מאור בית השואבה״ (סוכה ה, ג)"], //
-        [29.5, "״חסידים ואנשי מעשה היו מרקדים לפניהם באבוקות של אור שבידיהן, ואומרים לפניהן דברי שירות ותשבחות״ (סוכה ה, ד)"], //
-        [34, "״יש מהן אומרים: אשרי ילדותנו שלא ביישה את זקנותנו — אלו חסידים ואנשי מעשה״ (סוכה נג.)"], //
-        [38.5, "״ויש מהן אומרים: אשרי זקנותנו שכפרה את ילדותנו — אלו בעלי תשובה״ (סוכה נג.)"], //
-        [43, "״אלו ואלו אומרים: אשרי מי שלא חטא, ומי שחטא — ישוב וימחול לו״ (סוכה נג.)"], //
-        [48, "״והלוים בכנורות ובנבלים ובמצלתים ובחצוצרות ובכלי שיר בלא מספר, על חמש עשרה מעלות היורדות מעזרת ישראל לעזרת נשים״ (סוכה ה, ד)"], //
-        [52, "״שיר המעלות, הנה ברכו את ה׳ כל עבדי ה׳, העומדים בבית ה׳ בלילות״ (תהלים קלד, א) — ״ולוים בכנורות ובנבלים וכל כלי שיר מהן אומרים שיר המעלות הנה ברכו״ (תוספתא סוכה ד, ה)"], //
-        [56, "״אמרו עליו על רבן שמעון בן גמליאל, כשהיה שמח שמחת בית השואבה, היה נוטל שמנה אבוקות של אור, וזורק אחת ונוטל אחת ואין נוגעות זו בזו״ (סוכה נג.)"], //
-        [61.5, "״וכשהוא משתחוה, נועץ שני גודליו בארץ ושוחה ונושק את הרצפה וזוקף, ואין כל בריה יכולה לעשות כן, וזו היא קידה״ (סוכה נג.)"], //
+      // CAPTIONS_305: the clock in phases - the lamps (L0), the dance (DZ), the Levites (LVS - not LV, the name of the levels in this function), Rabban Shimon (RS), the cock's crow (TD) //
+      const L0 = 13.7, DZ = L0 + 23.5, LVS = DZ + 41, RS = LVS + 8, TD = RS + 10;   // (until 2.0.13: 6, 29.5, 48, 56, 66) //
+      const CAPS = [[0, "״אמרו: כל מי שלא ראה שמחת בית השואבה, לא ראה שמחה מימיו״ (סוכה ה, א)"], //
+        [3, "״במוצאי יום טוב הראשון של חג, ירדו לעזרת נשים, ומתקנין שם תקון גדול״ (סוכה ה, ב)"], //
+        [5.8, "״מאי תיקון גדול?... חלקה היתה בראשונה, והקיפוה גזוזטרא, והתקינו שיהו נשים יושבות מלמעלה ואנשים מלמטה״ (סוכה נא:) — ״קרשים עם מעקה סביב על הזיזין שיוצאין מהחומות״ (תפארת ישראל)"], //
+        [9.2, "״תנו רבנן: בראשונה היו נשים מבפנים ואנשים מבחוץ, והיו באים לידי קלות ראש. התקינו שיהו נשים יושבות מבחוץ ואנשים מבפנים, ועדיין היו באין לידי קלות ראש. התקינו שיהו נשים יושבות מלמעלה ואנשים מלמטה״ (סוכה נא:)"], //
+        [L0, "״ומנורות של זהב היו שם, וארבעה ספלים של זהב בראשיהן, וארבעה סלמות לכל אחד ואחד, וארבעה ילדים מפרחי כהנה ובידיהם כדים של שמן״ (סוכה ה, ב)"], //
+        [L0 + 4.2, "״תנא: והן משובחין היו יותר מבנה של מרתא בת בייתוס״... ״מאי משובחים?... התם כבש, ומרובע, ולא זקיף. הכא סולמות, וזקיף טובא״ (סוכה נב:)"], //
+        [L0 + 8.5, "״מבלאי מכנסי כהנים ומהמיניהן מהן היו מפקיעין, ובהן היו מדליקין״ (סוכה ה, ג)"], //
+        [L0 + 15.8, "״ולא היתה חצר בירושלים שאינה מאירה מאור בית השואבה״ (סוכה ה, ג)"], //
+        [L0 + 19.6, "״אשה היתה בוררת חטים לאור של בית השואבה״ (סוכה נג.)"], //
+        [DZ, "״חסידים ואנשי מעשה היו מרקדים לפניהם באבוקות של אור שבידיהן, ואומרים לפניהן דברי שירות ותשבחות״ (סוכה ה, ד)"], //
+        [DZ + 4.5, "״יש מהן אומרים: אשרי ילדותנו שלא ביישה את זקנותנו — אלו חסידים ואנשי מעשה״ (סוכה נג.)"], //
+        [DZ + 9, "״ויש מהן אומרים: אשרי זקנותנו שכפרה את ילדותנו — אלו בעלי תשובה״ (סוכה נג.)"], //
+        [DZ + 13.5, "״אלו ואלו אומרים: אשרי מי שלא חטא, ומי שחטא — ישוב וימחול לו״ (סוכה נג.)"], //
+        [DZ + 18, "״אמרו עליו על הלל הזקן, כשהיה שמח בשמחת בית השואבה, אמר כן: אם אני כאן — הכל כאן, ואם איני כאן — מי כאן״ (סוכה נג.)"], //
+        [DZ + 22.5, "״הוא היה אומר כן: מקום שאני אוהב — שם רגלי מוליכות אותי. אם תבא אל ביתי — אני אבא אל ביתך, אם אתה לא תבא אל ביתי — אני לא אבא אל ביתך, שנאמר: ׳בכל המקום אשר אזכיר את שמי אבא אליך וברכתיך׳״ (סוכה נג.)"], //
+        [DZ + 27.5, "״אמר רבי יהושע בן חנניה: כשהיינו שמחים שמחת בית השואבה, לא ראינו שינה בעינינו״ (סוכה נג.)"], //
+        [DZ + 31.5, "״כיצד? שעה ראשונה תמיד של שחר, משם לתפלה, משם לקרבן מוסף, משם לתפלת המוספין, משם לבית המדרש, משם לאכילה ושתיה, משם לתפלת המנחה, משם לתמיד של בין הערבים, מכאן ואילך לשמחת בית השואבה״ (סוכה נג.)"], //
+        [DZ + 37, "״אלא הכי קאמר: לא טעמנו טעם שינה, דהוו מנמנמי אכתפא דהדדי״ (סוכה נג.)"], //
+        [LVS, "״והלוים בכנורות ובנבלים ובמצלתים ובחצוצרות ובכלי שיר בלא מספר, על חמש עשרה מעלות היורדות מעזרת ישראל לעזרת נשים״ (סוכה ה, ד)"], //
+        [LVS + 4, "״שיר המעלות, הנה ברכו את ה׳ כל עבדי ה׳, העומדים בבית ה׳ בלילות״ (תהלים קלד, א) — ״ולוים בכנורות ובנבלים וכל כלי שיר מהן אומרים שיר המעלות הנה ברכו״ (תוספתא סוכה ד, ה)"], //
+        [RS, "״אמרו עליו על רבן שמעון בן גמליאל, כשהיה שמח שמחת בית השואבה, היה נוטל שמנה אבוקות של אור, וזורק אחת ונוטל אחת ואין נוגעות זו בזו״ (סוכה נג.)"], //
+        [RS + 5.5, "״וכשהוא משתחוה, נועץ שני גודליו בארץ ושוחה ונושק את הרצפה וזוקף, ואין כל בריה יכולה לעשות כן, וזו היא קידה״ (סוכה נג.) — ופניו אל ההיכל"], //
         [TD, "״ועמדו שני כהנים בשער העליון שיורד מעזרת ישראל לעזרת נשים, ושתי חצוצרות בידיהן. קרא הגבר — תקעו והריעו ותקעו״ (סוכה ה, ד)"], //
         [TD + 8.6, "״הגיעו למעלה עשירית — תקעו והריעו ותקעו״ — בהדגמה: ירדו חמש, ועומדים על העשירית (״תיקו״, סוכה נג:)"], //
         [TD + 14.9, "״הגיעו לעזרה — תקעו והריעו ותקעו״ — ״לרצפת עזרת נשים״ (תפארת ישראל)"], //
-        [TD + 20, "״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח״ (סוכה ה, ד)"], //
+        [TD + 20, () => "״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח״ (סוכה ה, ד) — " + (SH.simchaWalk && SH.simchaWalk.mode === "tyt" //
+          ? "לתפארת ישראל: ״היינו רק תקיעה בלי תרועה״" : "לרש״י: ״באלו שלש אחרונות מאריכין עד שמגיעין לשער״ — התקיעה, התרועה והתקיעה נמשכות בהליכה")], //
         [TD + 34.5, "״הגיעו לשער היוצא ממזרח, הפכו פניהן למערב, ואמרו: אבותינו שהיו במקום הזה אחוריהם אל היכל ה׳ ופניהם קדמה, והמה משתחוים קדמה לשמש — ואנו ליה עינינו״ (סוכה ה, ד)"], //
-        [TD + 42, "״רבי יהודה אומר: היו שונין ואומרין: אנו ליה, וליה עינינו״ (סוכה ה, ד)"]]; //
-      const TEND = TD + 47; //
+        [TD + 42, "״רבי יהודה אומר: היו שונין ואומרין: אנו ליה, וליה עינינו״ (סוכה ה, ד)"], //
+        [TD + 46.5, "״אלא הכי אמרי: המה משתחוים קדמה, ואנו ליה — אנחנו מודים, ועינינו ליה מיחלות״ (סוכה נג:)"]]; //
+      const TEND = TD + 51; //
       // the eye: flights fired by the clock (the viewer may look round between them) //
-      const FLY = [[0, [252, 88, 96], [161, 14, 0]], [3.4, [173, 26, -24], [158, 22, -64]], [6.2, [176, 32, 44], [141, 30, -20]], //
-        [14.5, [152, 58, -7], [141, 51, -20]], [21.8, [215, 60, 80], [161, 30, 0]], [29.5, [178, 13.5, 11], [161, 8.5, 0]], [38, [146, 12.5, -9], [161, 8.5, 0]], //
-        [48, [129, 16, 13], [104, 11, 0]], [56, [177, 12, 12], [161, 9.4, 0]], [TD, [126, 19, 15], [97, 14, 0]], [TD + 19.5, [172, 17, 24], [128, 9, 0]], //
+      const FLY = [[0, [252, 88, 96], [161, 14, 0]], [3.4, [173, 26, -24], [158, 22, -64]], [L0 + 0.2, [176, 32, 44], [141, 30, -20]], //
+        [L0 + 8.5, [152, 58, -7], [141, 51, -20]], [L0 + 15.8, [215, 60, 80], [161, 30, 0]], [DZ, [178, 13.5, 11], [161, 8.5, 0]], [DZ + 8.5, [146, 12.5, -9], [161, 8.5, 0]], //
+        [DZ + 27.5, [172, 20, -26], [161, 8, 0]], [LVS, [129, 16, 13], [104, 11, 0]], [RS, [177, 12, 12], [161, 9.4, 0]], [RS + 5.4, [146, 11.5, 9], [161, 8.6, 0]], //
+        [TD, [126, 19, 15], [97, 14, 0]], [TD + 19.5, [172, 17, 24], [128, 9, 0]], //
         [TD + 27, [204, 16, 23], [182, 9, 0]], [TD + 33, [196, 12.5, 9], [223, 9.5, 0]], [TD + 42.5, [252, 70, 92], [161, 12, 0]]]; //
       // the two priests' way (the screen's x; their feet on the steps by stepY): the upper gate, the tenth step, the court, the east gate //
       const kohWay = (rid) => { //
@@ -64131,7 +65280,18 @@ void main() {
         return [[TD, 94.6], [TD + 6, 94.6], [TD + 7.4, xTop], [TD + 8.4, x10], [TD + 13.6, x10], [TD + 14.6, xF], [TD + 19.9, xF], [TD + 34, 222.2]]; //
       }; //
       const BLASTS = [TD + 1, TD + 8.7, TD + 15];   // tekia - terua - tekia, each ~4.8 s (SOUNDS_300 "trumpets") //
-      const LONGS = [TD + 20.2, TD + 24.8, TD + 29.4];   // "היו תוקעין והולכין" - long blasts as they go //
+      const LONGS = [TD + 20.2, TD + 24.8, TD + 29.4];   // "היו תוקעין והולכין" - long blasts as they go (the Tiferet Yisrael's) //
+      // TERUAH_305 (the user, 21:10: "ונראה לי יש תרועה שם גם, תבדוק"; 21:24: "2. ג" - a switch, ״שיטות ומחלוקות״ sh60): "היו תוקעין //
+      // והולכין" (5:4). Rashi (on the mishnah): "באלו שלש אחרונות מאריכין עד שמגיעין לשער היוצא מעזרת נשים להר הבית", and so the //
+      // Bartenura (5:5: "ומאריכין בהן עד שהגיעו לשער התחתון"), the Tosafot Yom Tov and the Pnei Moshe - the court's tekia, teruah and //
+      // tekia drawn out along the way, to the east gate (the default; their length - model choice); the Tiferet Yisrael (Yachin 5:5, //
+      // 772:581): "ואע״ג דגם לאחר מעלה עשירית קאמר תוקעין והולכין, היינו רק תקיעה בלי תרועה" - after the court's three, long blasts //
+      // without a teruah as they go (until 2.0.13 the only way) //
+      const WALK = SH.simchaWalk || (SH.simchaWalk = { mode: "rashi", set(m) { this.mode = m === "tyt" ? "tyt" : "rashi"; return this.mode; } }); //
+      const DRAWN = [TD + 15, TD + 34];   // Rashi's: from the court's floor to the east gate //
+      const blowing = (t) => (WALK.mode === "tyt" //
+        ? BLASTS.some((s) => t >= s - 0.3 && t < s + 5) || LONGS.some((s) => t >= s - 0.2 && t < s + 3) //
+        : BLASTS.slice(0, 2).some((s) => t >= s - 0.3 && t < s + 5) || (t >= DRAWN[0] - 0.3 && t < DRAWN[1])); //
       // ---- the run ---- //
       const D = { run: false, t0: 0, pausedAt: null, fl: 0, saved: null, snd: -1, way: null, rid: false, music: null }; //
       const tNow = () => ((D.pausedAt != null ? D.pausedAt : performance.now()) - D.t0) / 1000 / SLOW(); //
@@ -64167,10 +65327,10 @@ void main() {
         sync(); //
         // the lamps: their own demonstration, by this clock, without its flights and labels //
         const L = SH.simchaDemo; //
-        if (L && fnc(L.drive)) L.drive(t < 6 ? -1 : Math.min(23.4, t - 6)); //
-        // the dancers: standing in their ring until 29.5, then round it; wider round Rabban Shimon; at the cock's crow off the way //
-        const go = ss(29.5, 31.5, t) * (1 - ss(TD - 0.2, TD + 1.6, t)), R = DR + 2.6 * ss(55, 57.5, t); //
-        const tt = Math.min(t, TD), ang = tt < 29.5 ? 0 : tt < 31.5 ? 0.3 * (tt - 29.5) * (tt - 29.5) / 4 : 0.3 * (tt - 30.5);   // the speed rises 0 .. 0.3 in two seconds //
+        if (L && fnc(L.drive)) L.drive(t < L0 ? -1 : Math.min(23.4, t - L0)); //
+        // the dancers: standing in their ring until DZ, then round it; wider round Rabban Shimon; at the cock's crow off the way //
+        const go = ss(DZ, DZ + 2, t) * (1 - ss(TD - 0.2, TD + 1.6, t)), R = DR + 2.6 * ss(RS - 1, RS + 1.5, t); //
+        const tt = Math.min(t, TD), ang = tt < DZ ? 0 : tt < DZ + 2 ? 0.3 * (tt - DZ) * (tt - DZ) / 4 : 0.3 * (tt - DZ - 1);   // the speed rises 0 .. 0.3 in two seconds //
         const aside = ss(TD - 0.2, TD + 2.2, t); //
         b.dancers.forEach((d, i) => { //
           const a = d.ph + ang; //
@@ -64184,21 +65344,32 @@ void main() {
         }); //
         // Rabban Shimon ben Gamliel: in the middle; his eight torches (56-61.5), then they are put down; the kidah (62-65.5) //
         { //
-          const r = b.rsbg, jug = ss(55.6, 56.4, t) * (1 - ss(61.2, 61.8, t)); //
+          const r = b.rsbg, jug = ss(RS - 0.4, RS + 0.4, t) * (1 - ss(RS + 5.2, RS + 5.8, t)); //
           r.G.position.set(CXc, Y0, -5.6 * ss(TD - 0.2, TD + 2.2, t)); //
-          r.G.rotation.y = Math.PI / 2 + 0.9 * Math.sin(0.5 * t) * (t > 56 && t < 61.5 ? 1 : 0.25); //
+          // KIDAH_WEST_305 (the user, 22:22: "בודאי כל ההשתחויות בבהמ"ק היו להיכל ולא חלילה ההיפך כמו שאמרו... אחוריהם אל ההיכל //
+          // ופניהם קדמה"): before the kidah he turns to the west, his face to the heichal, and after it back (until 2.0.13 - to the east) //
+          const wst = ss(RS + 5.4, RS + 6.2, t) * (1 - ss(RS + 9.9, RS + 10.6, t)); //
+          r.G.rotation.y = (Math.PI / 2 + 0.9 * Math.sin(0.5 * t) * (t > RS && t < RS + 5.5 ? 1 : 0.25)) * (1 - wst) - (Math.PI / 2) * wst; //
           for (const tg of r.tor) tg.visible = jug > 0.02; //
           if (jug > 0.02) { juggle(r.tor, t, 2.4, 0.9, 1); for (const tg of r.tor) tg.scale.setScalar(jug); } //
-          const kd = ss(62, 63.3, t) * (1 - ss(64.2, 65.5, t)); //
+          const kd = ss(RS + 6.3, RS + 7.6, t) * (1 - ss(RS + 8.5, RS + 9.8, t)); //
           r.Tl.rotation.x = 1.38 * kd; //
         } //
         // the Levites of the steps' reading; the two priests //
         const rid = ridSteps(); //
-        for (const [k, g] of Object.entries(b.lev)) g.visible = (k === "rid") === rid; //
-        if (!b.lev[rid ? "rid" : "rambam"]) b.levFor(rid).visible = true; //
+        for (const [k, st] of Object.entries(b.lev)) st.g.visible = (k === "rid") === rid; //
+        if (!b.lev[rid ? "rid" : "rambam"]) b.levFor(rid).g.visible = true; //
+        // MUSICIANS_305: the music's eighth - the loop's own clock while it sounds (D.music.beat, 92-sounds), else the screen's - //
+        // and how much they play: from the dance to the cock's crow, as the music (below) //
+        const bt = D.music && fnc(D.music.beat) ? D.music.beat() : null, e8 = bt != null ? bt : performance.now() / 200; //
+        const vM = ss(DZ, DZ + 1.7, t) * (1 - ss(TD - 1.2, TD + 0.2, t)); //
+        b.lev[rid ? "rid" : "rambam"].play(e8, vM); //
+        if (b.flute) b.flute.play(e8, vM); //
         if (!D.way || D.rid !== rid) { D.way = kohWay(rid); D.rid = rid; } //
         const on = t >= TD - 0.05; //
-        const blow = BLASTS.some((s) => t >= s - 0.3 && t < s + 5) || LONGS.some((s) => t >= s - 0.2 && t < s + 3); //
+        const blow = blowing(t); //
+        const dt = Math.max(0, Math.min(0.2, t - (D.lt == null ? t : D.lt))); //
+        D.lt = t; //
         for (const k of b.koh) { //
           k.G.visible = on; //
           if (!on) continue; //
@@ -64206,21 +65377,22 @@ void main() {
           const walking = D.way.some((p, i) => i + 1 < D.way.length && t > p[0] && t < D.way[i + 1][0] && D.way[i + 1][1] !== p[1]); //
           k.G.position.set(x, stepY(x, z, rid) + (walking ? 0.05 * Math.abs(Math.sin(t * 9)) : 0), z); //
           k.G.rotation.y = Math.PI / 2 + Math.PI * ss(TD + 34, TD + 35.2, t);   // east, then the face to the west //
-          k.tr.position.set(0, blow ? 2.78 : 1.55, blow ? 0.16 : 0.32); //
-          k.tr.rotation.set(blow ? -0.12 : 1.25, 0, 0); //
+          k.up += ((blow ? 1 : 0) - k.up) * Math.min(1, dt * 7);   // MUSICIANS_305: to the mouth in about a third of a second //
+          k.set.figs[0].up = k.up; //
+          k.set.play(0, 0); //
         } //
         // the night, and the first light from the cock's crow //
         const NK = SH.nightKit; //
         if (NK && D.saved && D.saved.night) { //
-          if (t < 19.3) NK.set("simchaNight", "simchaNight", 0); //
-          else if (t < TD + 8) NK.set("simchaNight", "simchaLit", ss(19.3, 23, t)); //
+          if (t < L0 + 13.3) NK.set("simchaNight", "simchaNight", 0); //
+          else if (t < TD + 8) NK.set("simchaNight", "simchaLit", ss(L0 + 13.3, L0 + 17, t)); //
           else NK.set("simchaLit", "simchaDawn", ss(TD + 8, TD + 42, t)); //
         } //
         // the music: from the dance to the cock's crow //
-        if (D.music) D.music.set(D.pausedAt != null ? 0 : 0.9 * ss(29.5, 31.2, t) * (1 - ss(TD - 1.2, TD + 0.2, t))); //
+        if (D.music) D.music.set(D.pausedAt != null ? 0 : 0.9 * ss(DZ, DZ + 1.7, t) * (1 - ss(TD - 1.2, TD + 0.2, t))); //
         // the caption //
         let txt = ""; //
-        for (const [ct, x] of CAPS) if (t >= ct) txt = x; //
+        for (const [ct, x] of CAPS) if (t >= ct) txt = typeof x === "function" ? x() : x; //
         const c = capEl(); //
         if (c.textContent !== txt) c.textContent = txt; //
         c.style.display = txt ? "block" : "none"; //
@@ -64260,6 +65432,7 @@ void main() {
         D.fl = 0; //
         D.snd = -1; //
         D.way = null; //
+        D.lt = null; //
         D.music = fnc(SH.sfxLoop) ? SH.sfxLoop("simcha") : null; //
         D.t0 = performance.now(); //
         D.run = true; //
@@ -64285,9 +65458,10 @@ void main() {
         while (D.fl < FLY.length && t >= FLY[D.fl][0]) { const f = FLY[D.fl++]; try { if (fnc(ctx2.flyTo)) ctx2.flyTo(f[1], f[2], 1800); } catch (_) {} } //
         // the trumpets and the cymbals, each once a run (SOUNDS_300) //
         if (fnc(SH.sfx) && D.snd < t) { //
-          for (const s of BLASTS) if (D.snd < s && t >= s) SH.sfx("trumpets"); //
-          for (const s of LONGS) if (D.snd < s && t >= s) SH.sfx("trumpets", { pattern: "long" }); //
-          for (const s of [31.5, 43, 52]) if (D.snd < s && t >= s) SH.sfx("cymbals", { gain: 0.5 }); //
+          const tyt = WALK.mode === "tyt";   // TERUAH_305; the cymbals - in the loop now (MUSICIANS_305) //
+          for (const s of tyt ? BLASTS : BLASTS.slice(0, 2)) if (D.snd < s && t >= s) SH.sfx("trumpets"); //
+          if (tyt) { for (const s of LONGS) if (D.snd < s && t >= s) SH.sfx("trumpets", { pattern: "long" }); } //
+          else if (D.snd < DRAWN[0] && t >= DRAWN[0]) SH.sfx("trumpets", { pattern: "drawn", dur: (DRAWN[1] - t) * SLOW() }); //
         } //
         D.snd = t; //
       }); //
@@ -65276,11 +66450,12 @@ void main() {
   var ui_AUTO_OFF_S = 15;   // 1.0.1-L (L.27): a feature a PLACE switched on goes off by itself after this many seconds //
   // 1.0.2 (C): the window "מה חדש" - shown once for this version (ver = manifest.json's version); short plain Hebrew, one line a feature //
   var UI_NEWS = { //
-    ver: "2.0.13",   // tools/assemble.mjs writes manifest.json's version here //
-    items: ["**חדש: הדגמת שמחת בית השואבה** — בקבוצת ״הדגמות״, וגם בכפתור שעל עזרת הנשים. לילה של חג הסוכות בעזרת הנשים: על הזיזים שבכתלים מניחים קרשים ומעקה, וכך נעשות שלוש הגזוזטראות — בצפון, בדרום ובמזרח. פרחי הכהונה עולים בסולמות ומדליקים את המנורות של זהב, ומאז כל העזרה מוארת באור חם. העם — אלפי אנשים וילדים בכל הגילים — ממלא את העזרה. באמצע, החסידים ואנשי מעשה מרקדים באבוקות של אש חיה, ושניים מהם זורקים ארבע אבוקות. הלוים עומדים על חמש עשרה המעלות, בכנורות, בנבלים, במצלתים ובחצוצרות, ונשמעים החליל וכלי השיר. רבן שמעון בן גמליאל זורק שמונה אבוקות, ומשתחווה בקידה. ובקריאת הגבר, שני כהנים בחצוצרות יורדים מן השער העליון, תוקעים והולכים עד השער המזרחי, ושם הופכים את פניהם למערב ואומרים ״ואנו ליה עינינו״. הכתוביות — בלשון המשנה, הגמרא והתוספתא, ובכרטיס — כל המקורות.", "**הזיזים של הגזוזטרא — באמצע גובה הכתלים** — בכתלי עזרת הנשים, בצפון, בדרום ובמזרח, נראים עכשיו תמיד הזיזים — אבנים בולטות מן הכותל, שעליהן הניחו את הקרשים של הגזוזטרא. מקומם באמצע גובה הכתלים, כדברי התפארת ישראל: ״תקרה בולטת מאמצע גובה כתליה״. הקרשים והמעקה נראים רק בזמן ההדגמה. עד עכשיו עמדה שם תמיד גזוזטרא נמוכה יותר, ועליה סריג.", "**תרומת הדשן — הכהן מקיף את המזבח** — בהדגמת ״סדר עבודת הבוקר״, הכהן שזכה בתרומת הדשן עולה במזרח הכבש, מקיף את כל המזבח, ויורד במערב הכבש — ״כל העולין למזבח עולין דרך ימין, ומקיפין, ויורדין דרך שמאל״ (זבחים ו, ג). אחר כך הוא מקיף את רגל הכבש אל מזרחו, הולך צפונה כעשר אמות, וצובר שם את הגחלים. עד עכשיו ירד מיד, בלי להקיף. בכרטיס נוספו שתי שאלות, עם כל הדעות ובלי הכרעה: האם הדשן נבלע במקומו, ובאיזה בית.", "**סוף הלילה על המזבח** — בתחילת אותה הדגמה, על המזבח ערמת גחלים לוחשות ולהבה נמוכה, בלי עצים שלמים — ״אלא מהלך לאור המערכה״ (תמיד א, ד). כשמסדרים את המערכה הגדולה, העצים חוזרים.", "**הפרוכות — שיטת הרשב״א בדעת הרמב״ם** — במחלוקת ״הפרוכות״ (בתפריט, תחת ״שיטות ומחלוקות״) נוספה אפשרות: שתי פרוכות, החיצונה פרופה מן הצפון והפנימית מן הדרום (שו״ת הרשב״א, חלק א, סימן שפח; הובא בכסף משנה, עבודת יום הכפורים ד, ב). בשיטה זו, בהדגמת כניסת הכהן הגדול, הוא נכנס בין הפרוכות בצפון, מהלך עד הדרום, ושם נכנס לקודש הקדשים."],   // SIMCHA_304, CIRCUIT_304, NIGHT_COALS_304, RASHBA_304 //
+    ver: "2.0.14",   // tools/assemble.mjs writes manifest.json's version here //
+    items: ["**חדש: מעיין השילוח והדגמת ניסוך המים** — בעמק שמדרום להר הבית יש עכשיו בריכת השילוח, מוצא המעיין, ושביל אליה משער חולדה המערבי (״מעיין השילוח״ בקבוצת ״שערי הר הבית וחצרות״, אחרי ״שערי חולדה״). ובקבוצת ״הדגמות״ — ״ניסוך המים — מן השילוח״: כהן יוצא בצלוחית של זהב, ממלא אותה מן השילוח וחוזר. כשהוא מגיע לשער המים תוקעים, מריעים ותוקעים; הוא עולה בכבש, פונה לשמאלו, ומנסך ביד מורמת לתוך הספל המערבי — ״נסוך המים כיצד... הגיעו לשער המים, תקעו והריעו ותקעו. עלה בכבש ופנה לשמאלו״; ״ולמנסך אומרים לו, הגבה ידך״ (סוכה ד, ט). אין מקור שמתאר את הדרך אל השילוח ואת מקומו: הדרך, צורת הבריכה ומוצא המעיין הם בחירות מודל, וכך כתוב בכרטיס.", "**חדש: הלילה שלפני עבודת הבוקר** — הדגמת ״סדר עבודת הבוקר״ מתחילה עכשיו בלילה. איש הר הבית מחזר על המשמרות, ואבוקות דולקות לפניו (מידות א, ב): שומר אחד ער וקם לפניו, ושומרים אחרים ישנים — יושבים על אבניהם, עטופים בכסותם. את הישן הוא חובט במקלו ושורף את כסותו — ״קול בן לוי לוקה ובגדיו נשרפין, שישן לו על משמרו״. מופיע גם בן בבי, הממונה ״על הפקיע״ (שקלים ה, א). אחר כך המצלמה מלווה את הממונה בדרכו אל בית המוקד, ואחריו נשמעת קריאת גביני הכרוז: ״עמדו כהנים לעבודתכם, ולוים לדוכנכם, וישראל למעמדכם״ (יומא כ:). בשיטות ומחלוקות נוספה השורה: מי אומר ״שלום עליך״ — במשנה איש הר הבית אומר לשומר, ובגמרא וברמב״ם השומר אומר לאיש הר הבית.", "**הלויים מנגנים** — בהדגמת שמחת בית השואבה ובהדגמת ״סדר עבודת הבוקר״ הלויים אינם עומדים עוד כפסלים: ידיהם מנגנות בכלים, והמשוררים נעים עם השיר; בעבודת הבוקר השיר נפסק בין פרק לפרק. הכהנים אוחזים את החצוצרות בידיהם, וקולות התרועה נשמעים ברורים. בשיטות ומחלוקות נוספה השורה ״התקיעות בהליכה לשער המזרח — שמחת בית השואבה״: לפי רש״י וברטנורא, התקיעה, התרועה והתקיעה נמשכות בהליכה; לפי התפארת ישראל — תקיעה בלי תרועה.", "**שמחת בית השואבה — עוד מן הגמרא** — נוספו כתוביות מן הגמרא שהיו חסרות (סוכה נא:–נג:), ביניהן: ״אשה היתה בוררת חטים לאור של בית השואבה״; דברי הלל הזקן — ״אם אני כאן — הכל כאן, ואם איני כאן — מי כאן״; ודברי רבי יהושע בן חנניה — ״כשהיינו שמחים שמחת בית השואבה, לא ראינו שינה בעינינו״. ולפני הקידה, רבן שמעון בן גמליאל פונה עכשיו למערב, אל ההיכל; עד עכשיו פנה למזרח.", "**שיטת רבי מאיר — עם שולחנות שלמה ומנורותיו** — בהדגמת כניסת הכהן הגדול ביום הכיפורים, בשיטת רבי מאיר (״בין שלחן למזבח״, יומא נא:), ההיכל מוצג עכשיו עם עשרת השולחנות של שלמה ועם מנורותיו. תחילה השולחנות מונחים צפון ודרום, כתירוץ הראשון בגמרא, ובהמשך מזרח ומערב, כתירוץ השני. הכהן הגדול הולך כדברי רש״י — מצפון למזבח, בין המזבח לראשי השולחנות. עד עכשיו הוצג ההיכל בשיטה זו בלי השולחנות והמנורות של שלמה.", "**מזבח הזהב — אמה ורבע מזרחה** — כמו בבית ראשון: מזבח הזהב הוזז אמה ורבע לצד מזרח, בכל הקריאות, כדי שתהיה דרך בינו ובין השולחנות — ״שאין המזבח מכוון כנגד השולחן, אלא משוך קימעא כלפי חוץ״ (רש״י, יומא נא:). כמה הוא ״קימעא״ לא נאמר, ואמה ורבע — בחירת מודל.", "**המנורה — מעט צרה יותר** — המנורה, וכן מנורות שלמה בקריאות שבהן הן מוצגות, צרות מעט מבעבר: הנרות קרובים יותר זה לזה, והגובה והצורה כמו שהיו. רוחב המנורה אינו נזכר במקורות, והוא בחירת מודל.", "**האבנט של הכהנים** — בהדגמת שמחת בית השואבה, בלשכות ואצל הממונים, אבנט הכהנים עשוי עכשיו כמו של הכהן שבהדגמת הפייס: חגורה אחת בגובה המרפקים, בשלושה סיבובים, באריג הצבוע (או לבן, בשיטה ״של בוץ״). עד עכשיו היו שם שלושה פסים נפרדים במותניים ושני קצוות תלויים.", "**סידור הטבעות — שתי השיטות** — בשיטות ומחלוקות נוספה השורה ״סידור הטבעות״: לפי תנא קמא, ״ששה סדרים של ארבע ארבע״ (מידות ג, ה) — שש שורות, בכל אחת ארבע טבעות, כפירוש רבינו שמעיה: ״היו הטבעות בשורה אחת ובכל סדר ארבעה טבעות״; ולפי ״ויש אומרים״ — ארבעה סדרים של שש שש. דברי רבינו שמעיה נוספו גם לכרטיס של הטבעות.", "**הדלקת מנורות הזהב — שוב ברשימת ההדגמות** — ההדגמה הקצרה של הדלקת מנורות הזהב בעזרת הנשים, בלי כל השמחה, נמצאת שוב בקבוצת ״הדגמות״. עד עכשיו הגיעו אליה רק דרך עץ המקומות."],   // SHILOACH_305, NIGHT_WATCH_305, MUSICIANS_305, CAPTIONS_305, MEIR_TABLES_305, ALTAR_EAST_305, MENOROT_305, AVNET_305, RINGS_305, DEMOLIST_305 //
   }; //
   // what is new by version, newest first - one who saw a version is shown only the versions after it //
   var UI_NEWS_VERS = [ //
+    ["2.0.14", ["**חדש: מעיין השילוח והדגמת ניסוך המים** — בעמק שמדרום להר הבית יש עכשיו בריכת השילוח, מוצא המעיין, ושביל אליה משער חולדה המערבי (״מעיין השילוח״ בקבוצת ״שערי הר הבית וחצרות״, אחרי ״שערי חולדה״). ובקבוצת ״הדגמות״ — ״ניסוך המים — מן השילוח״: כהן יוצא בצלוחית של זהב, ממלא אותה מן השילוח וחוזר. כשהוא מגיע לשער המים תוקעים, מריעים ותוקעים; הוא עולה בכבש, פונה לשמאלו, ומנסך ביד מורמת לתוך הספל המערבי — ״נסוך המים כיצד... הגיעו לשער המים, תקעו והריעו ותקעו. עלה בכבש ופנה לשמאלו״; ״ולמנסך אומרים לו, הגבה ידך״ (סוכה ד, ט). אין מקור שמתאר את הדרך אל השילוח ואת מקומו: הדרך, צורת הבריכה ומוצא המעיין הם בחירות מודל, וכך כתוב בכרטיס.", "**חדש: הלילה שלפני עבודת הבוקר** — הדגמת ״סדר עבודת הבוקר״ מתחילה עכשיו בלילה. איש הר הבית מחזר על המשמרות, ואבוקות דולקות לפניו (מידות א, ב): שומר אחד ער וקם לפניו, ושומרים אחרים ישנים — יושבים על אבניהם, עטופים בכסותם. את הישן הוא חובט במקלו ושורף את כסותו — ״קול בן לוי לוקה ובגדיו נשרפין, שישן לו על משמרו״. מופיע גם בן בבי, הממונה ״על הפקיע״ (שקלים ה, א). אחר כך המצלמה מלווה את הממונה בדרכו אל בית המוקד, ואחריו נשמעת קריאת גביני הכרוז: ״עמדו כהנים לעבודתכם, ולוים לדוכנכם, וישראל למעמדכם״ (יומא כ:). בשיטות ומחלוקות נוספה השורה: מי אומר ״שלום עליך״ — במשנה איש הר הבית אומר לשומר, ובגמרא וברמב״ם השומר אומר לאיש הר הבית.", "**הלויים מנגנים** — בהדגמת שמחת בית השואבה ובהדגמת ״סדר עבודת הבוקר״ הלויים אינם עומדים עוד כפסלים: ידיהם מנגנות בכלים, והמשוררים נעים עם השיר; בעבודת הבוקר השיר נפסק בין פרק לפרק. הכהנים אוחזים את החצוצרות בידיהם, וקולות התרועה נשמעים ברורים. בשיטות ומחלוקות נוספה השורה ״התקיעות בהליכה לשער המזרח — שמחת בית השואבה״: לפי רש״י וברטנורא, התקיעה, התרועה והתקיעה נמשכות בהליכה; לפי התפארת ישראל — תקיעה בלי תרועה.", "**שמחת בית השואבה — עוד מן הגמרא** — נוספו כתוביות מן הגמרא שהיו חסרות (סוכה נא:–נג:), ביניהן: ״אשה היתה בוררת חטים לאור של בית השואבה״; דברי הלל הזקן — ״אם אני כאן — הכל כאן, ואם איני כאן — מי כאן״; ודברי רבי יהושע בן חנניה — ״כשהיינו שמחים שמחת בית השואבה, לא ראינו שינה בעינינו״. ולפני הקידה, רבן שמעון בן גמליאל פונה עכשיו למערב, אל ההיכל; עד עכשיו פנה למזרח.", "**שיטת רבי מאיר — עם שולחנות שלמה ומנורותיו** — בהדגמת כניסת הכהן הגדול ביום הכיפורים, בשיטת רבי מאיר (״בין שלחן למזבח״, יומא נא:), ההיכל מוצג עכשיו עם עשרת השולחנות של שלמה ועם מנורותיו. תחילה השולחנות מונחים צפון ודרום, כתירוץ הראשון בגמרא, ובהמשך מזרח ומערב, כתירוץ השני. הכהן הגדול הולך כדברי רש״י — מצפון למזבח, בין המזבח לראשי השולחנות. עד עכשיו הוצג ההיכל בשיטה זו בלי השולחנות והמנורות של שלמה.", "**מזבח הזהב — אמה ורבע מזרחה** — כמו בבית ראשון: מזבח הזהב הוזז אמה ורבע לצד מזרח, בכל הקריאות, כדי שתהיה דרך בינו ובין השולחנות — ״שאין המזבח מכוון כנגד השולחן, אלא משוך קימעא כלפי חוץ״ (רש״י, יומא נא:). כמה הוא ״קימעא״ לא נאמר, ואמה ורבע — בחירת מודל.", "**המנורה — מעט צרה יותר** — המנורה, וכן מנורות שלמה בקריאות שבהן הן מוצגות, צרות מעט מבעבר: הנרות קרובים יותר זה לזה, והגובה והצורה כמו שהיו. רוחב המנורה אינו נזכר במקורות, והוא בחירת מודל.", "**האבנט של הכהנים** — בהדגמת שמחת בית השואבה, בלשכות ואצל הממונים, אבנט הכהנים עשוי עכשיו כמו של הכהן שבהדגמת הפייס: חגורה אחת בגובה המרפקים, בשלושה סיבובים, באריג הצבוע (או לבן, בשיטה ״של בוץ״). עד עכשיו היו שם שלושה פסים נפרדים במותניים ושני קצוות תלויים.", "**סידור הטבעות — שתי השיטות** — בשיטות ומחלוקות נוספה השורה ״סידור הטבעות״: לפי תנא קמא, ״ששה סדרים של ארבע ארבע״ (מידות ג, ה) — שש שורות, בכל אחת ארבע טבעות, כפירוש רבינו שמעיה: ״היו הטבעות בשורה אחת ובכל סדר ארבעה טבעות״; ולפי ״ויש אומרים״ — ארבעה סדרים של שש שש. דברי רבינו שמעיה נוספו גם לכרטיס של הטבעות.", "**הדלקת מנורות הזהב — שוב ברשימת ההדגמות** — ההדגמה הקצרה של הדלקת מנורות הזהב בעזרת הנשים, בלי כל השמחה, נמצאת שוב בקבוצת ״הדגמות״. עד עכשיו הגיעו אליה רק דרך עץ המקומות."]],   // SHILOACH_305, NIGHT_WATCH_305, MUSICIANS_305, CAPTIONS_305, MEIR_TABLES_305, ALTAR_EAST_305, MENOROT_305, AVNET_305, RINGS_305, DEMOLIST_305 //
     ["2.0.13", ["**חדש: הדגמת שמחת בית השואבה** — בקבוצת ״הדגמות״, וגם בכפתור שעל עזרת הנשים. לילה של חג הסוכות בעזרת הנשים: על הזיזים שבכתלים מניחים קרשים ומעקה, וכך נעשות שלוש הגזוזטראות — בצפון, בדרום ובמזרח. פרחי הכהונה עולים בסולמות ומדליקים את המנורות של זהב, ומאז כל העזרה מוארת באור חם. העם — אלפי אנשים וילדים בכל הגילים — ממלא את העזרה. באמצע, החסידים ואנשי מעשה מרקדים באבוקות של אש חיה, ושניים מהם זורקים ארבע אבוקות. הלוים עומדים על חמש עשרה המעלות, בכנורות, בנבלים, במצלתים ובחצוצרות, ונשמעים החליל וכלי השיר. רבן שמעון בן גמליאל זורק שמונה אבוקות, ומשתחווה בקידה. ובקריאת הגבר, שני כהנים בחצוצרות יורדים מן השער העליון, תוקעים והולכים עד השער המזרחי, ושם הופכים את פניהם למערב ואומרים ״ואנו ליה עינינו״. הכתוביות — בלשון המשנה, הגמרא והתוספתא, ובכרטיס — כל המקורות.", "**הזיזים של הגזוזטרא — באמצע גובה הכתלים** — בכתלי עזרת הנשים, בצפון, בדרום ובמזרח, נראים עכשיו תמיד הזיזים — אבנים בולטות מן הכותל, שעליהן הניחו את הקרשים של הגזוזטרא. מקומם באמצע גובה הכתלים, כדברי התפארת ישראל: ״תקרה בולטת מאמצע גובה כתליה״. הקרשים והמעקה נראים רק בזמן ההדגמה. עד עכשיו עמדה שם תמיד גזוזטרא נמוכה יותר, ועליה סריג.", "**תרומת הדשן — הכהן מקיף את המזבח** — בהדגמת ״סדר עבודת הבוקר״, הכהן שזכה בתרומת הדשן עולה במזרח הכבש, מקיף את כל המזבח, ויורד במערב הכבש — ״כל העולין למזבח עולין דרך ימין, ומקיפין, ויורדין דרך שמאל״ (זבחים ו, ג). אחר כך הוא מקיף את רגל הכבש אל מזרחו, הולך צפונה כעשר אמות, וצובר שם את הגחלים. עד עכשיו ירד מיד, בלי להקיף. בכרטיס נוספו שתי שאלות, עם כל הדעות ובלי הכרעה: האם הדשן נבלע במקומו, ובאיזה בית.", "**סוף הלילה על המזבח** — בתחילת אותה הדגמה, על המזבח ערמת גחלים לוחשות ולהבה נמוכה, בלי עצים שלמים — ״אלא מהלך לאור המערכה״ (תמיד א, ד). כשמסדרים את המערכה הגדולה, העצים חוזרים.", "**הפרוכות — שיטת הרשב״א בדעת הרמב״ם** — במחלוקת ״הפרוכות״ (בתפריט, תחת ״שיטות ומחלוקות״) נוספה אפשרות: שתי פרוכות, החיצונה פרופה מן הצפון והפנימית מן הדרום (שו״ת הרשב״א, חלק א, סימן שפח; הובא בכסף משנה, עבודת יום הכפורים ד, ב). בשיטה זו, בהדגמת כניסת הכהן הגדול, הוא נכנס בין הפרוכות בצפון, מהלך עד הדרום, ושם נכנס לקודש הקדשים."]],   // SIMCHA_304, CIRCUIT_304, NIGHT_COALS_304, RASHBA_304 //
     ["2.0.12", ["**שיטות ומחלוקות — בקבוצות** — הרשימה ״שיטות ומחלוקות״ שבתפריט מחולקת עכשיו לעשר קבוצות לפי המקומות, מבחוץ פנימה: ״הר הבית והחיל״, ״עזרת נשים״, ״העזרה״, ״לשכות העזרה ובית המוקד״, ״המזבח, הכבש והכיור״, ״האולם״, ״בניין ההיכל, התאים והעלייה״, ״כלי ההיכל״, ״הפרוכות״ ו״סדר העבודה ובגדי הכהנים״. כל קבוצה נפתחת בלחיצה, ובכותרתה מספר המחלוקות שבה. החיפוש שבראש התפריט פותח לבד את הקבוצה של מה שנמצא, ושם של קבוצה מוצא את כל המחלוקות שבה. גם במצגת, כל שיטה נוספת מראה את שם הקבוצה שלה.", "**האור החוזר מהקירות — בוטל** — השורה ״אור חוזר מהקירות (כבד מאוד)״ ירדה מן ההגדרות. כשסימנו אותה יחד עם ״צל רך בפינות״, כל המבט התעמעם באפור, והופיעו כתמים על הרצפה ועל הקירות. ״צל רך בפינות״ נשאר: הוא מוסיף צל עדין רק בפינות, בחיבורים ובתחתית הקירות."]],   // OPS_GROUPS_303, GI_OFF_303 //
     ["2.0.11", ["@גדול **שימו לב: ייתכן שהטעינה תהיה איטית מעט יותר** — מנוע הציור עודכן לגרסה חדשה, שמחשבת בטעינה את ההשתקפויות בזהב ובשיש בדיוק רב יותר. זה אמור להשתלם: התנועה בתוך המודל לא נעשתה איטית יותר, ובמחשב עם כרטיס גרפי ההבדל בטעינה אמור להיות קטן. אם אצלכם הטעינה איטית במיוחד, או שמשהו נראה אחרת — נשמח מאוד שתדווחו לנו, בכפתור ״דיווח״ שבסרגל העליון (באוצריא).", "**חדש: המסיבה ובית הטבילה** — הדרך שבה כהן שאירע לו קרי בלילה יורד מבית המוקד לטבול (תמיד א, א): מעלות סביב עמוד יורדות מן הלשכה הצפונית מערבית אל מחילה שמתחת לקרקע, ונרות דולקים משני צדיה; בסופה המדורה, בית כסא של כבוד, ודלתו פתוחה, ובית הטבילה. במקום ״המסיבה ובית הטבילה״ (בקבוצת ״לשכות״) הקרקע נעשית שקופה, ורואים את כל הדרך מלמעלה. ובהדגמה החדשה ״הכהן יורד לבית הטבילה״ (בקבוצת ״הדגמות״) — ההליכה כולה, בגובה העיניים.", "**ספלי הניסוך — צוירו מחדש, בשתי השיטות** — שני הספלים שבראש המזבח, בקרן דרומית מערבית, קבועים עכשיו בגג המזבח. בשיטת רש״י: חוטם לכל ספל, ונקב בגג המזבח לכל אחד. בשיטת התוספות: נקב בתחתית כל ספל, ספל המים תחתיתו עבה, ומעל כל נקב כיסוי קטן כמין חוטם (״ושמא כמין בליטת חוטם״). במקום ״ספלי הניסוך״ פינת המזבח נעשית שקופה, ורואים את הנקבים יורדים אל השיתין. ובהדגמת ״סדר עבודת הבוקר״ הכהן מנסך את היין כשהוא עומד מצפון לספלים — עד עכשיו עמד בתוך ספל המים.", "**צל השמש — פחות עבודה למחשב** — צל השמש מצויר עכשיו מחדש רק כשמשהו בו משתנה: כשהאור או חלק מן המודל זזים, או כשמשתמשים בחתך. עד עכשיו הוא צויר מחדש בכל תמונה ותמונה, גם כשדבר לא השתנה. בזכות זה התנועה חלקה יותר, בעיקר במחשבים חלשים.", "**שתי אפשרויות חדשות לתאורה** — בהגדרות נוספו שתי שורות: ״איכות גבוהה: צל רך בפינות״ — צל עדין בפינות, בחיבורים ובתחתית הקירות; ו״אור חוזר מהקירות (כבד מאוד)״ — האור שחוזר מן הקירות ומן הזהב אל מה שסביבם. שתיהן כבויות מראש. במחשב חלש הן מאטות את התנועה, והשנייה מאוד.", "**השער הגדול — הכהן יוצא מן המבט** — בהדגמות ״הכניסה בפשפש״ ו״פתיחת השער הגדול״, אחרי שהשער נפתח, הכהן נכנס להיכל, פונה צפונה לאורך הכותל המזרחי, ויוצא מן המבט לפני סוף ההדגמה. עד עכשיו הוא הלך באמצע ההיכל, מול העין, ונעלם פתאום כשההדגמה נגמרה."]], //
@@ -66189,7 +67364,7 @@ body.tm-measuring canvas{cursor:crosshair}
       // and its chips follow; a card opened from the table itself shows the new reading's explanation. Subject -> rows: UI_OPS_V by view key, //
       // UI_OPS_P by place title, UI_OPS_L by a label's text or layer (model choice: the rows that the subject's own text or picture shows). ===== //
       const UI_OPS_V = {"mizbeach": ["sh14", "sh16", "sh17", "sh18", "sh19", "sh20", "sh21", "sh23", "sh24", "sh25"], "ulam": ["sh28", "sh29", "sh30", "sh58"], "heichalFront": ["sh29", "sh33", "sh35", "sh36", "sh58"], "ezratNashim": ["sh4", "sh5", "sh6", "sh9"], "harHabayit": ["sh1", "sh55"], "shushanGate": ["sh1", "sh2"], "azarah": ["sh9", "sh16", "sh27", "sh34", "sh54", "sh58"], "nikanor": ["sh9", "sh58"], "kodeshHakodashim": ["sh47", "sh56", "sh49"], "kodesh": ["sh39", "sh40", "sh41", "sh42", "sh45", "sh47", "sh56", "sh49", "sh57"]}; //
-      const UI_OPS_P = {"המזבח": ["sh16", "sh17", "sh18", "sh19", "sh20", "sh21", "sh23", "sh24", "sh25"], "ספלי הניסוך": ["sh23"], "מידות המזבח — 32, 30, 28, 26, 24, והמזבח הקודם 28 על 28": ["sh17"], "ההיכל": ["sh29", "sh33", "sh35", "sh36"], "גובה ההיכל — מאה אמה מרצפת העזרה (1.1.0)": ["sh33", "sh36"], "העזרה": ["sh9", "sh16", "sh34", "sh58"], "הכיור": ["sh26"], "הדגמת המוכני — הכיור יורד לבור ועולה": ["sh26"], "הכבש הגדול": ["sh24", "sh25"], "כבשים קטנים — רש״י": ["sh25"], "כבשים קטנים — תוספות": ["sh25"], "הכבש והכבשים הקטנים (1.0.21)": ["sh25"], "נקבי המזבח והרבובה (1.0.13)": ["sh19"], "שער טדי": ["sh55"], "שער טדי — פתח פתוח בצורת גג (1.0.19)": ["sh55"], "הסורג": ["sh3"], "הנברשת והטבלא של הילני": ["sh31", "sh32"], "שושן הבירה — שתי אמות המידה": ["sh2"], "שער עזרת נשים — המזרחי": ["sh2", "sh4", "sh9"], "עזרת נשים": ["sh4", "sh9"], "שער שושן": ["sh1"], "כותל המזרח הנמוך (1.0.6)": ["sh1"], "״השער העליון״ — השם הוסר משער עזרת נשים (1.1.0)": ["sh9"], "שער ניקנור": ["sh9", "sh58"], "שער הניצוץ": ["sh9", "sh54", "sh58"], "שער הקרבן": ["sh9", "sh54", "sh58"], "שער הדלק": ["sh9", "sh58"], "שער הבכורות": ["sh9", "sh58"], "שער המים": ["sh9", "sh58"], "בית המוקד": ["sh12", "sh50", "sh51", "sh52", "sh54", "sh58"], "לשכת עושי לחם הפנים": ["sh46", "sh52"], "לשכת עושי חביתין": ["sh53"], "לשכת החותמות — בבית המוקד": ["sh51"], "בין האולם ולמזבח": ["sh27"], "דוכן הלויים": ["sh10"], "עזרת ישראל": ["sh34"], "עזרת כהנים": ["sh34"], "חמש עשרה המעלות — כחצי גורן": ["sh5", "sh6"], "לשכת הנזירים": ["sh5"], "לשכת העצים": ["sh5"], "לשכת המצורעים": ["sh5"], "לשכת שמנים": ["sh5"], "פשפשי בית החליפות": ["sh29", "sh35"], "לשכת הגזית — הסנהדרין": ["sh11", "sh12"], "ארבעת הפייסות ו״ברקאי״ — הדגמה": ["sh12", "sh13"], "בגדי הכהנים": ["sh13"], "שתי הסנהדראות הקטנות": ["sh8", "sh11"], "שתי הפרוכות — בין הקודש לקודש הקדשים": ["sh47", "sh56", "sh49"], "כני הזהב שבהיכל — ביום הכיפורים": ["sh48"], "הכהן הגדול נכנס בקטורת — הדגמה": ["sh47", "sh56"], "הרובד הרביעי — ביום הכיפורים": ["sh28"], "פשפשי ההיכל": ["sh39", "sh40"], "בית המטבחים": ["sh14", "sh15"], "המסיבה": ["sh38"], "הליכה במסיבה — הדגמה": ["sh38"], "העלייה והלולין": ["sh37", "sh59"], "התפוח": ["sh19", "sh20", "sh21"], "מעלות האולם (1.0.12)": ["sh28"], "האולם": ["sh28", "sh29", "sh30", "sh58"], "השער הגדול — ארבע הדלתות": ["sh41", "sh58"], "פתיחת השער הגדול — הדגמה": ["sh41"], "המנורה": ["sh42", "sh44", "sh45", "sh57"], "שולחן לחם הפנים": ["sh42", "sh44", "sh45", "sh46", "sh57"], "הקודש": ["sh40", "sh41", "sh42", "sh44", "sh45", "sh57"], "התאים — שלושים ושמונה בשלוש קומות": ["sh38"], "אבן השתייה": [], "אבן השתייה — גבוהה שלוש אצבעות (1.1.0)": [], "קודש הקדשים": [], "קודש הקדשים ואבן השתייה": [], "פתח העלייה ופנים העלייה": ["sh59"], "שלוש עשרה הפרוכות": ["sh58", "sh59", "sh47", "sh56"]}; //
+      const UI_OPS_P = {"המזבח": ["sh16", "sh17", "sh18", "sh19", "sh20", "sh21", "sh23", "sh24", "sh25"], "ספלי הניסוך": ["sh23"], "מידות המזבח — 32, 30, 28, 26, 24, והמזבח הקודם 28 על 28": ["sh17"], "ההיכל": ["sh29", "sh33", "sh35", "sh36"], "גובה ההיכל — מאה אמה מרצפת העזרה (1.1.0)": ["sh33", "sh36"], "העזרה": ["sh9", "sh16", "sh34", "sh58"], "הכיור": ["sh26"], "הטבעות": ["sh62"], "הדגמת המוכני — הכיור יורד לבור ועולה": ["sh26"], "הכבש הגדול": ["sh24", "sh25"], "כבשים קטנים — רש״י": ["sh25"], "כבשים קטנים — תוספות": ["sh25"], "הכבש והכבשים הקטנים (1.0.21)": ["sh25"], "נקבי המזבח והרבובה (1.0.13)": ["sh19"], "שער טדי": ["sh55"], "שער טדי — פתח פתוח בצורת גג (1.0.19)": ["sh55"], "הסורג": ["sh3"], "הנברשת והטבלא של הילני": ["sh31", "sh32"], "שושן הבירה — שתי אמות המידה": ["sh2"], "שער עזרת נשים — המזרחי": ["sh2", "sh4", "sh9"], "עזרת נשים": ["sh4", "sh9"], "שער שושן": ["sh1"], "כותל המזרח הנמוך (1.0.6)": ["sh1"], "״השער העליון״ — השם הוסר משער עזרת נשים (1.1.0)": ["sh9"], "שער ניקנור": ["sh9", "sh58"], "שער הניצוץ": ["sh9", "sh54", "sh58"], "שער הקרבן": ["sh9", "sh54", "sh58"], "שער הדלק": ["sh9", "sh58"], "שער הבכורות": ["sh9", "sh58"], "שער המים": ["sh9", "sh58"], "בית המוקד": ["sh12", "sh50", "sh51", "sh52", "sh54", "sh58"], "לשכת עושי לחם הפנים": ["sh46", "sh52"], "לשכת עושי חביתין": ["sh53"], "לשכת החותמות — בבית המוקד": ["sh51"], "בין האולם ולמזבח": ["sh27"], "דוכן הלויים": ["sh10"], "עזרת ישראל": ["sh34"], "עזרת כהנים": ["sh34"], "חמש עשרה המעלות — כחצי גורן": ["sh5", "sh6"], "לשכת הנזירים": ["sh5"], "לשכת העצים": ["sh5"], "לשכת המצורעים": ["sh5"], "לשכת שמנים": ["sh5"], "פשפשי בית החליפות": ["sh29", "sh35"], "לשכת הגזית — הסנהדרין": ["sh11", "sh12"], "ארבעת הפייסות ו״ברקאי״ — הדגמה": ["sh12", "sh13"], "בגדי הכהנים": ["sh13"], "שתי הסנהדראות הקטנות": ["sh8", "sh11"], "שתי הפרוכות — בין הקודש לקודש הקדשים": ["sh47", "sh56", "sh49"], "כני הזהב שבהיכל — ביום הכיפורים": ["sh48"], "הכהן הגדול נכנס בקטורת — הדגמה": ["sh47", "sh56"], "הרובד הרביעי — ביום הכיפורים": ["sh28"], "פשפשי ההיכל": ["sh39", "sh40"], "בית המטבחים": ["sh14", "sh15"], "המסיבה": ["sh38"], "הליכה במסיבה — הדגמה": ["sh38"], "העלייה והלולין": ["sh37", "sh59"], "התפוח": ["sh19", "sh20", "sh21"], "מעלות האולם (1.0.12)": ["sh28"], "האולם": ["sh28", "sh29", "sh30", "sh58"], "השער הגדול — ארבע הדלתות": ["sh41", "sh58"], "פתיחת השער הגדול — הדגמה": ["sh41"], "המנורה": ["sh42", "sh44", "sh45", "sh57"], "שולחן לחם הפנים": ["sh42", "sh44", "sh45", "sh46", "sh57"], "הקודש": ["sh40", "sh41", "sh42", "sh44", "sh45", "sh57"], "התאים — שלושים ושמונה בשלוש קומות": ["sh38"], "אבן השתייה": [], "אבן השתייה — גבוהה שלוש אצבעות (1.1.0)": [], "קודש הקדשים": [], "קודש הקדשים ואבן השתייה": [], "פתח העלייה ופנים העלייה": ["sh59"], "שלוש עשרה הפרוכות": ["sh58", "sh59", "sh47", "sh56"]}; //
       const UI_OPS_L = [ //
         [/^(?:המזבח|הכבש|כבש )/, ["sh16", "sh17", "sh18", "sh19", "sh20", "sh21", "sh23", "sh24", "sh25"]], //
         [/^שער טדי/, ["sh55"]], //
@@ -67348,7 +68523,9 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "הכהן הגדול נכנס בקטורת", place: "הכהן הגדול נכנס בקטורת — הדגמה" }, //
           { t: "הליכה במסיבה", place: "הליכה במסיבה — הדגמה" }, //
           { t: "הכהן יורד לבית הטבילה", pill: "mes-tevila-demo" }, //
-          { t: "שמחת בית השואבה", place: "שמחת בית השואבה — הדגמה" }   // SIMCHA_304 (until 2.0.12: the lamps alone - their place stays) //
+          { t: "שמחת בית השואבה", place: "שמחת בית השואבה — הדגמה" },   // SIMCHA_304 (until 2.0.12: the lamps alone - their place stays) //
+          { t: "הדלקת מנורות הזהב בעזרת נשים", place: "מנורות של זהב — שמחת בית השואבה" },   // DEMOLIST_305: the lamps alone, kept (the user, 23:49) //
+          { t: "ניסוך המים — מן השילוח", place: "ניסוך המים מן השילוח — הדגמה" }   // SHILOACH_305 //
         ]; //
       } //
       const PLACES = [ //
@@ -67360,6 +68537,8 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "שער טדי", tg: [55, 13, -174.5], cam: [55, 16, -224], info: "לשון המשנה (מידות א, ג): ״טדי מן הצפון, לא היה משמש כלום״; ובסוף הפרק (א, ט): ״רבי אליעזר בן יעקב אומר, במסבה ההולכת תחת החיל יוצא והולך לו בטדי״; ובשערי הבית (ב, ג): ״כל השערים שהיו שם, היו להן שקופות, חוץ משער טדי, שהיו שם שתי אבנים מטות זו על גב זו״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״שער טדי — צורת האבנים״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• ״שתי אבנים מטות זו על גב זו״ (ברירת המחדל).\n• לראבי״ה — ״שני אבנים זקופות״ (״לא מאומת״).\n**ברטנורא:** של צפון — טדי שמו. לרבי אליעזר בן יעקב, מי שאירע בו קרי בבית המוקד טובל במחילה שתחת החיל ויוצא בטדי ואינו חוזר לבית המוקד, לפי שהוא טבול יום — ואין הלכה כמותו, אלא כמשנה בריש תמיד, שבא ויושב אצל אחיו הכהנים עד שהשערים נפתחים (ברטנורא מידות א, ג; א, ט).\n**תוספות יום טוב:** ״טדי״ בדל״ת (ר׳ שמעיה והערוך); פסקי התוספות — לשון הצנע (״בטעמים יטידוך״), ולפי זה נקרא כן לפי שלא היה משמש כלום, ואף היציאה בו לבעל קרי — בצנעה, שאין שם עוברים ושבים; ובסוף ספר הראבי״ה, בסדר בניין בית שני, כתוב ״טרי״ בריש — שער טרי, שני אבנים זקופות, ״ולכך נקרא טרי פי׳ מוצב״ (תוספות יום טוב מידות א, ג).\n**תפארת ישראל:** ״טדי״ — תרגום של סוד והצנע, שעשוי למי שנכנס או יוצא בהצנע, כבעל קרי; ויש גורסים ״טרי״ — שמשקופו עשוי משתי אבנים זקופות הנשענות זו על זו כמשולש, ו״טרי״ ביוונית משולש, סימן למי שרוצה לצאת בהצנע; ״לא היה משמש כלום״ — אלא לפרקים לבעל קרי, ובשלטי הגיבורים: לחתנים ולאבלים (תפארת ישראל מידות א, ג).\nבמודל: השער הצפוני של הר הבית; במשקופו שתי אבנים מוטות זו על זו (ב, ג), ובתפריט, תחת ״שיטות ומחלוקות״ ״אבנים זקופות״ — שיטת הראבי״ה והתפארת ישראל — לא מאומת. הדלתות מסתיימות באלכסון, כצורת ראש השער, וכשהן סגורות הן סותמות גם את המשולש שבין שתי האבנים — בחירת מודל; אין לכך מקור.\nהמדרגות שמחוץ לשער — שלושים ושש מעלות מן העיר, ומעקה משני צדיהן — בחירת מודל: במקורות אין תיאור של העלייה מן העיר אל שערי הר הבית.", refs: [["מידות א, ג", "Mishnah_Middot.1.3"], ["ברטנורא א, ג", "Bartenura_on_Mishnah_Middot.1.3"], ["תוי״ט א, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.1.3"], ["תפא״י א, ג", "Yachin_on_Mishnah_Middot.1.3"], ["מידות א, ט", "Mishnah_Middot.1.9"], ["מידות ב, ג", "Mishnah_Middot.2.3"], ["תמיד א, א", "Mishnah_Tamid.1.1"]] }, //
           { t: "שער קיפונוס", tg: [-154, 10, 0], cam: [-204, 16, 0], info: "לשון המשנה (מידות א, ג): ״קיפונוס מן המערב, משמש כניסה ויציאה״.\nבקצרה — שמו: לתפארת ישראל — על שם גינת ורדים שמאחורי קודש הקדשים; ויש אומרים — על שם המתנדב שבנאו.\n**ברטנורא:** שער הר הבית שבצד מערב — קיפונוס שמו, ושל צפון — טדי (ברטנורא מידות א, ג).\n**תוספות יום טוב:** לא ידע טעם לשמו; בשלטי הגיבורים — לשון יוון, ועניינו עבודת הגן, שאפשר שהיה שם גן של ורדים מחוץ להר הבית (כפת הירדן שבפיטום הקטורת — רש״י: גינת ורדים הייתה בירושלים). וסדר המשנה — דרום, מערב, צפון, מזרח — אינו הקפה דרך ימין: ״בחושבנא בעלמא לית לן בה״ (תוספות יום טוב מידות א, ג).\n**תפארת ישראל:** אפשר שנקרא על שם גינת ורדים שהייתה מאחורי קודש הקדשים (״קיפוס״ ביוונית — גן), ועשוה שם לכבוד קודש הקדשים שלפניה במזרח; ויש אומרים — על שם המתנדב שבנאו, כשער ניקנור (תפארת ישראל מידות א, ג).\nבמודל: השער המערבי של הר הבית, על ציר ההיכל, מאחורי קודש הקדשים.\nהמדרגות שמחוץ לשער — שלושים ושש מעלות מן העיר, ומעקה משני צדיהן — בחירת מודל: במקורות אין תיאור של העלייה מן העיר אל שערי הר הבית.", refs: [["מידות א, ג", "Mishnah_Middot.1.3"], ["ברטנורא א, ג", "Bartenura_on_Mishnah_Middot.1.3"], ["תוי״ט א, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.1.3"], ["תפא״י א, ג", "Yachin_on_Mishnah_Middot.1.3"]] }, //
           { t: "שערי חולדה", tg: [40, 11, 340], cam: [40, 52, 540], info: "לשון המשנה (מידות א, ג): ״חמשה שערים היו להר הבית. שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״; ובפרק ב (ב, ב): ״כל הנכנסין להר הבית נכנסין דרך ימין ומקיפין ויוצאין דרך שמאל, חוץ ממי שארעו דבר, שהוא מקיף לשמאל״.\n**ברטנורא:** ״משמשין כניסה ויציאה״ — שבהן היו נכנסים ויוצאים להר הבית (ברטנורא מידות א, ג).\n**תוספות יום טוב:** שני שערים בדרום, לפי שרוב תשמיש הר הבית בדרום (ריש פרק ב); ושמם — ייתכן על שם חולדה הנביאה, ״והיא יושבת בירושלים במשנה״ (מלכים ב כב) — בתוך שער זה, שהוא ״משנה״, ששניים הם ברוח זו, מה שאין כן ברוחות האחרות (תוספות יום טוב מידות א, ג).\n**תפארת ישראל:** רוב הכניסה והיציאה ורוב תשמישי העזרה בדרום (וכן תוספות יום טוב, מידות א, ג: ״לפי שרוב תשמיש הר הבית בדרום כדתנן בר״פ דלקמן״), והוצרכו שם שני שערים; ונקראו שערי חולדה, שבמקדש ראשון הייתה חולדה הנביאה רגילה לקרוא שם נבואותיה באוזני רוב העם הנכנסים והיוצאים (תפארת ישראל מידות א, ג).\nבמודל: שני שערים בכותל הדרומי של הר הבית, ומהם מדרגות אל ההר; מקומם בכותל — בחירת מודל.\nהמדרגות שמחוץ לשער — שלושים ושש מעלות מן העיר, ומעקה משני צדיהן — בחירת מודל: במקורות אין תיאור של העלייה מן העיר אל שערי הר הבית.", refs: [["מידות א, ג", "Mishnah_Middot.1.3"], ["ברטנורא א, ג", "Bartenura_on_Mishnah_Middot.1.3"], ["תוי״ט א, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.1.3"], ["תפא״י א, ג", "Yachin_on_Mishnah_Middot.1.3"], ["מידות ב, ב", "Mishnah_Middot.2.2"]], noFade: true }, //
+          { t: "מעיין השילוח", tg: [30, -53, 545], cam: [6, -24, 506], info: (ctx.shared.shiloach || {}).info || "", refs: (ctx.shared.shiloach || {}).refs || [] },   // SHILOACH_305 //
+          { t: "ניסוך המים מן השילוח — הדגמה", action: () => { const S = ctx.shared.shiloach; if (S && typeof S.demo === "function") S.demo(); }, info: (ctx.shared.shiloach || {}).info || "", refs: (ctx.shared.shiloach || {}).refs || [] },   // SHILOACH_305 //
           { t: "הסטיו המלכותי", view: "royalStoa", key: "royalStoa", tourThen: [{"cam": [150, 10, 270], "tg": [60, 14, 310]}] }, //
           { t: "הסורג", tg: [246, 1.2, 8], cam: [262, 4.2, 22], info: "לשון המשנה (מידות ב, ג): ״לפנים ממנו, סורג, גבוה עשרה טפחים. ושלש עשרה פרצות היו שם, שפרצום מלכי יון. חזרו וגדרום, וגזרו כנגדם שלש עשרה השתחויות״.\n**ברטנורא:** ״לפנים״ — מחומת הר הבית; סורג — מחיצה העשויה נקבים נקבים כמיטה מסורגת בחבלים, מדפי עץ ארוכים וקצרים המורכבים זה על זה באלכסון; וכשמגיע כנגד כל פרצה ופרצה — משתחווה ומודה על אובדן מלכות יוון (ברטנורא מידות ב, ג).\n**תוספות יום טוב:** הראבי״ה — הסורג והחיל מקיפים לכל ארבע הרוחות, והסורג לא היה פתוח אלא לצד מזרח, והיוונים פרצו בו שלוש עשרה פרצות כנגד שערי העזרה; אבל לדעת הר״ב (סוף הפרק; שקלים ו), מאן דאמר שההשתחוויות כנגד הפרצות אינו סובר שלוש עשרה שערים. ״גבוה עשרה טפחים״ — הכסף משנה בשם הרא״ש: הסורג נעשה לטלטול בשבת, כדין מחיצה; והתוי״ט תמה, שאין שבות במקדש ואין צורך בכך, ולדעתו (בספרו צורת הבית) הסורג בא להבדיל בין הגויים הבאים להתפלל ובין ישראל — ״החיל מקדש ממנו, שאין גוים וטמא מת נכנסים לשם״ (כלים א, ח) — ולכן פרצוהו היוונים, ולכן תיקנו על כל גדר השתחוויה (תוספות יום טוב מידות ב, ג).\n**תפארת ישראל:** מחיצה של דפים ארוכים וקצרים המורכבים באלכסון זה על גב זה, מלאה נקבים כמיטה מסורגת; מקיפה את חומת העזרה מבחוץ ברחוק עשר אמות ממנה, ורק לסימן שאין נכרי וטמא מת רשאים להיכנס ממנה ולפנים; וכנגד כל שער הסורג פתוח — ודוחה את הראבי״ה: לא ייתכן שכל הנכנסים והיוצאים בכל השערים נדחקים בפתח אחד; ועשוהו סורג לנוי, וגם כדי שיוכלו להציץ דרך הנקבים אל מקום הקודש; היוונים פרצוהו מכמה צדדים כדי שייכנסו גם נכרים, וכשגברו ישראל גדרו את הפרצות, והמקיף משתחווה כנגד כל גדר בפישוט ידיים ורגליים (תפארת ישראל מידות ב, ג).\nבמודל: מחיצת סורג של עץ — דפים המורכבים זה על זה באלכסון, כלשון הברטנורא — בגובה עשרה טפחים, סביב העזרה ועזרת הנשים, ובה פתחים כנגד השערים, כתפארת ישראל; לפנים ממנה החיל, עשר אמות פנויות. שלוש עשרה הפרצות: כברירת מחדל הסורג שלם — ״חזרו וגדרום״; ובמתג ״הסורג — שלוש עשרה הפרצות״ (בתפריט, תחת ״שיטות ומחלוקות״) הוא נראה כבימי מלכי יון, פרוץ בשלושה עשר מקומות. מקומות הפרצות, גוון העץ ועוביו — בחירת מודל.", refs: [["מידות ב, ג", "Mishnah_Middot.2.3"], ["ברטנורא ב, ג", "Bartenura_on_Mishnah_Middot.2.3"], ["תוי״ט ב, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.2.3"], ["תפא״י ב, ג", "Yachin_on_Mishnah_Middot.2.3"], ["כלים א, ח", "Mishnah_Kelim.1.8"]] }, //
           { t: "החיל", feature: (ctx.shared.features || {})["zoneHel"] || null, tg: [150, 5, -40], cam: [330, 120, -150], info: "לשון המשנה (מידות ב, ג): ״לפנים ממנו, החיל, עשר אמות. ושתים עשרה מעלות היו שם. רום המעלה חצי אמה, ושלחה חצי אמה. כל המעלות שהיו שם, רום מעלה חצי אמה, ושלחה חצי אמה, חוץ משל אולם״.\n**ברטנורא:** לפנים מן הסורג היה מקום פנוי עשר אמות, והוא נקרא חיל; שתים עשרה מעלות — לעלות משם לעזרת נשים; ״רום מעלה״ — כל מעלה גבוהה מחברתה חצי אמה, והראשונה גבוהה מן הקרקע חצי אמה; ״שלחה״ — משך רוחב המעלה, מקום דריסת הרגל, חצי אמה; ״חוץ משל אולם״ — המעלות שבין האולם ולמזבח לא היו כולן כן (ברטנורא מידות ב, ג).\n**תוספות יום טוב:** הרמב״ם (בית הבחירה ה, ג, ובפירושו) — החיל חומה נמוכה הסובבת את העזרה, ועליה נאמר ״ויאבל חיל וחומה״; והתוי״ט דוחה מן הגמרא (פסחים פו.) — ״בר שורא״ שבכתוב היא חומה קטנה הסמוכה לקרקע העזרה, לחיזוק הקרקע — ולכן נראים דברי הר״ב, שהחיל אינו חומה כלל אלא המקום שבין הסורג לעזרה, ולכך לא שנו בו גובה כבסורג. ״שלחה חצי אמה״ — ואורכה בכל רוחב ההר, לצפון ולדרום (רש״י יומא טז.) (תוספות יום טוב מידות ב, ג).\n**תפארת ישראל:** בפרק א (ה) — חומה נמוכה שעל שיפוע ההר בין שתי החומות, שווה לקרקע שלמעלה ממנה, ועליה הסורג, וכל הרווח נקרא חיל; ובפרקנו — הרווח מן הסורג עד חומת העזרה, עשר אמות: ארבע האמות הראשונות קרקע שווה, ושש האמות הנותרות משופעות ובהן שתים עשרה המעלות, תכופות זו לזו; ולדעתו המעלות מקיפות את כל ההר סביב — ״סטיו כפול היה״ (פסחים יג:) — ולא רק כנגד השער, וכן כל המעלות שבעזרה היו לכל רוחבה מצפון לדרום (תפארת ישראל מידות ב, ג; א, ה).\nבמודל: החיל — מקום פנוי של עשר אמות לפנים מן הסורג, כלשון הברטנורא, מסביב לחומות; ובגובה הר הבית, כדברי הרמב״ם (בית הבחירה ו, א): ״מהלך עד סוף החיל בשוה״. הוא נצבע כשלוחצים על המקום; קדושתו: ״החיל מקדש ממנו, שאין גוים וטמא מת נכנסים לשם״ (כלים א, ח; וכן ברמב״ם, בית הבחירה ז, טז). שתים עשרה המעלות — בתוך החיל, ומשם עולים לעזרת נשים: ברטנורא — ״כדי לעלות משם לעזרת נשים״; הרמב״ם בפירוש המשניות — ״והיה אדם עולה מקרקע החיל י״ב מעלות ואז הולך בקרקע ישרה והיא עזרת הנשים״; הרא״ש — ״וי״ב מעלות היו. בחיל״; ותפארת ישראל — ארבע אמות שוות ושש של מעלות. שערי העזרה שבצפון ובדרום גבוהים מקרקע החיל שלוש עשרה אמה וחצי — שש של שתים עשרה המעלות (מידות ב, ג) ושבע וחצי של חמש עשרה המעלות (ב, ה): לפני כל שער רחבה צמודה לכותל, וממנה עשרים ושבע מעלות יורדות לאורך הכותל, בתוך החיל — ״רום מעלה חצי אמה, ושלחה חצי אמה״; וכן לפני שער בית המוקד הפתוח לחיל ולפני פתח לשכת הגזית. מעלות השערים שבצדדים אינן מפורשות במשנה: מקומן, רוחבן וכיוונן — בחירת מודל.", refs: [["מידות ב, ג", "Mishnah_Middot.2.3"], ["ברטנורא ב, ג", "Bartenura_on_Mishnah_Middot.2.3"], ["תוי״ט ב, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.2.3"], ["תפא״י ב, ג", "Yachin_on_Mishnah_Middot.2.3"], ["תפא״י א, ה", "Yachin_on_Mishnah_Middot.1.5"], ["כלים א, ח", "Mishnah_Kelim.1.8"], ["רמב״ם בית הבחירה ז, טז", "Mishneh_Torah,_The_Chosen_Temple.7.16"], ["רמב״ם בית הבחירה ה, ג", "Mishneh_Torah,_The_Chosen_Temple.5.3"], ["פירוש המשניות לרמב״ם מידות ב, ג", "Rambam_Commentary_on_Middot.2.3"], ["הרא״ש מידות ב, ג", "Rosh_on_Mishnah_Middot.2.3"], ["רמב״ם בית הבחירה ו, א", "Mishneh_Torah,_The_Chosen_Temple.6.1"]] }, //
@@ -67367,7 +68546,7 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "עזרת נשים", view: "ezratNashim", key: "ezratNashim", feature: (ctx.shared.features || {})["zoneEzn"] || null }, //
           { t: "חמש עשרה המעלות — כחצי גורן", tg: () => (ctx.shared.steps15 && ctx.shared.steps15.mode === "rid" ? [100, 9.5, 0] : [104, 9.5, 5]), cam: () => (ctx.shared.steps15 && ctx.shared.steps15.mode === "rid" ? [150, 44, 34] : [141, 33, 37]), info: "לשון המשנה (מידות ב, ה): ״וחמש עשרה מעלות עולות מתוכה לעזרת ישראל, כנגד חמש עשרה מעלות שבתהלים, שעליהן הלוים אומרים בשיר. לא היו טרוטות, אלא מקפות כחצי גרן עגלה״.\nבקצרה — המחלוקות בכרטיס זה (הפירוט — במתגים שבתפריט, תחת ״שיטות ומחלוקות״):\n• **ארבע לשכות עזרת נשים — מקומן:** לתוספות יום טוב — במקצועותיה שבפנים (ברירת המחדל); לרא״ש — מבחוץ, כציורו.\n• **חמש עשרה המעלות — צורתן:** לרמב״ם — המעלות אינן ארוכות, כל מעלה חצי עיגול, לפני השער (ברירת המחדל); לרי״ד ולרבינו יהונתן — אורך המעלה כרוחב העזרה, מכותל לכותל.\n**הרמב״ם** (פירוש המשניות, מידות ב, ה): ״שמעלות עזרת נשים לא היו ארוכים כשאר המעלות כמו שהוא מפורסם היום מצורת המדרגות אלא היתה כל מעלה כמו חצי עגולה עד שתהא כל מעלה חצי גורן כזה״ (הציור שבמקום זה אינו בנוסח שבספרייה), ״ולפיכך היתה צורת המעלה כמי שלקח קצת אצטבא ונתן אותה על המעלה עד שמשלים צורת הסולם וזה אי אפשר לציירו בפשוט אבל יובן בקירוב״. ובבית הבחירה (ו, ב): ״רום כל מעלה חצי אמה ושלחה חצי אמה״.\n**פסקי הרי״ד** (סוכה נג.): ״וכל מעלה היתה גבוהה חצי אמה ורחבה חצי אמה כדתנן במידות... ואורך המעלה היה קל״ה אמה כרוחב העזרה מכותל לכותל״. **רבינו יהונתן מלוניל** (סוכה נא:): ״אורך המעלה כרוחב העזרה, ורוחב המעלה חצי אמה ורומה חצי אמה״.\n**המאירי:** ״מוקפות כחצי גורן, שהתחתונה קצרה, והשניה עודפת לה משני קצותיה, וכן שלישית לשניה, וכלם על סדר זה, עד שכשהיו כלם מסודרות בסדר זה היתה צורתם דומה להקף של חצי גורן״.\n**הרא״ש:** ״אלא מוקפות כחצי גורן עגולה. כזו״ — וצייר חצאי עיגולים, זה בתוך זה. בציורו אין סימן לאיזה צד פונות המעלות, ולא איזו מעלה היא הגבוהה.\nבמודל (ברירת המחדל, הרמב״ם): חמישה עשר חצאי עיגולים לפני שער ניקנור, כל אחד מונח על זה שמתחתיו; העליון הוא הקטן, וכל מעלה שמתחתיו רחבה ממנו בחצי אמה. רדיוס המעלה העליונה חמש עשרה אמה — השער ושני פשפשיו עומדים עליה — ושל התחתונה עשרים ושתיים. חמש המעלות התחתונות נקטעות אצל כותלי שתי הלשכות הקטנות שמצדי השער. מידות הרדיוס והקטיעה — בחירות מודל.", refs: [["מידות ב, ה", "Mishnah_Middot.2.5"], ["פירוש המשניות לרמב״ם מידות ב, ה", "Rambam_Commentary_on_Middot.2.5"], ["רמב״ם בית הבחירה ו, ב", "Mishneh_Torah,_The_Chosen_Temple.6.2"], ["פסקי הרי״ד סוכה נג.", "Kovetz_Shitot_Kamai_Middot.53.1"], ["רבינו יהונתן סוכה נא:", "Kovetz_Shitot_Kamai_Middot.51.2"], ["מאירי מידות ב, ה", "Meiri_on_Middot.2.5"], ["הרא״ש מידות ב, ה", "Rosh_on_Mishnah_Middot.2.5"], ["מידות ב, ג", "Mishnah_Middot.2.3"]] }, //
           { t: "מנורות של זהב — שמחת בית השואבה", feature: (ctx.shared.features || {})["simchaMenorot"] || null, action: () => { const S = ctx.shared.simchaDemo; if (S && typeof S.start === "function") S.start(); }, tg: [161, 30, 0], cam: [215, 60, 80], info: "לשון המשנה (סוכה ה, ב–ג): ״במוצאי יום טוב הראשון של חג, ירדו לעזרת נשים, ומתקנין שם תקון גדול. ומנורות של זהב היו שם, וארבעה ספלים של זהב בראשיהן, וארבעה סלמות לכל אחד ואחד, וארבעה ילדים מפרחי כהנה ובידיהם כדים של שמן של מאה ועשרים לג, שהן מטילין לכל ספל וספל. מבלאי מכנסי כהנים ומהמיניהן מהן היו מפקיעין, ובהן היו מדליקין, ולא היתה חצר בירושלים שאינה מאירה מאור בית השואבה״.\nבקצרה — המחלוקת בכרטיס זה: גובה המנורות — בגמרא (סוכה נב:) ״חמשים אמה״ (כך במודל); ולתפארת ישראל — המנורות עצמן לא היו גבוהות כל כך, אלא עמדו על בימות גבוהות, או סביב שפת הגזוזטרא.\n**הגמרא** (סוכה נב:): ״תנא: גובהה של מנורה חמשים אמה... ובידיהם כדי שמן של שלשים שלשים לוג, שהם כולם מאה ועשרים לוג״; ועל הסולמות: ״הכא סולמות, וזקיף טובא״. ומהו התיקון הגדול (שם נא:): ״חלקה היתה בראשונה. והקיפוה גזוזטרא, והתקינו שיהו נשים יושבות מלמעלה ואנשים מלמטה״.\n**רש״י** (סוכה נא.): ״ילדים — בחורים ובידיהם כדי שמן ועולים כל אחד בסולמו״; ״לפי שהמנורות גבוהין חמשים אמה והר הבית גבוה והאורה זורחת בכל העיר, וכותל מזרחי שהוא לסוף עזרת נשים היה נמוך... והמנורות עולין למעלה הימנה״.\n**ברטנורא** (סוכה ה, ג): ״לפי שהמנורות גבוהות חמשים אמה והר הבית גבה, והאורה זורחת בכל העיר״.\n**תפארת ישראל** (סוכה ה): ״בראש כל מנורה היה ד׳... ותוך הספלים הניחו הפתילה העבה ביותר והבעירוה״; ״סולם לכל ספל״; ועל הגובה: ״וזהו גוזמא גדולה שיהיו מנורות רבות גבוהות ועבות כל כך כליל זהב, אלא שהיו המנורות עומדות על בימות גבוהות כל כך, או סביב שפת הגזוזטרא שעשו״.\n**הרמב״ם** (כלי המקדש ח, ו): ״מכנסי כהנים הדיוטים שבלו ואבנטיהם היו עושין מהן פתילות ומדליקין בהן במקדש בשמחת בית השואבה״.\nבמודל: ארבע מנורות זהב בעזרת נשים, גובה כל אחת חמשים אמה, ובראשה ארבעה ספלים; לכל ספל סולם, ולרגלי כל סולם פרח כהונה בבגדים לבנים, וכד שמן בידו. כשבוחרים במקום זה בתפריט, מתחילה הדגמה: הם עולים בסולמות, יוצקים שמן לספלים, הפתילות נדלקות, והם יורדים. מספר המנורות אינו מפורש במשנה — בחירת מודל; וכן מקומן בעזרה, צורתן, והזרועות שהספלים עליהן. המנורות מוצגות רק כשבוחרים במקום זה, ונעלמות כשעוברים למקום אחר.", refs: [["משנה סוכה ה, ב", {"book": 56, "index": 52}], ["משנה סוכה ה, ג", {"book": 56, "index": 53}], ["סוכה נא:", {"book": 108, "index": 1323}], ["סוכה נב:", {"book": 108, "index": 1355}], ["סוכה נב: (הסולמות)", {"book": 108, "index": 1357}], ["רש״י סוכה נא.", {"book": 2163, "index": 2408}], ["ברטנורא סוכה ה, ג", {"book": 588, "index": 246}], ["יכין סוכה ה, ב (אות ז)", {"book": 772, "index": 518}], ["יכין סוכה ה, ב (אות ח)", {"book": 772, "index": 520}], ["רמב״ם כלי המקדש ח, ו", {"book": 338, "index": 128}], ["יכין סוכה ה, ב (אות ט)", {"book": 772, "index": 522}]] }, //
-          { t: "שמחת בית השואבה — הדגמה", action: () => { const S = ctx.shared.simchaShoeva; if (S && typeof S.start === "function") S.start(); }, info: "לשון המשנה (סוכה ה, א–ד): ״אמרו, כל מי שלא ראה שמחת בית השואבה, לא ראה שמחה מימיו״; ״במוצאי יום טוב הראשון של חג, ירדו לעזרת נשים, ומתקנין שם תקון גדול״; ״חסידים ואנשי מעשה היו מרקדים לפניהם באבוקות של אור שבידיהן, ואומרים לפניהן דברי שירות ותשבחות. והלוים בכנורות ובנבלים ובמצלתים ובחצוצרות ובכלי שיר בלא מספר, על חמש עשרה מעלות היורדות מעזרת ישראל לעזרת נשים״.\nההדגמה — מתג, כבויה כברירת מחדל; עם קולות (״קולות בהדגמות״ שבתפריט משתיק אותם). הלילה, הגזוזטראות, המנורות של זהב, העם, הריקודים והלוים — רק בזמן ההדגמה.\n**הגזוזטראות:** ״מאי תיקון גדול? אמר רבי אלעזר: כאותה ששנינו: חלקה היתה בראשונה. והקיפוה גזוזטרא, והתקינו שיהו נשים יושבות מלמעלה ואנשים מלמטה״ (סוכה נא:; מידות ב, ה); ״עשו שלש גזוזטראות בעזרה כנגד שלש רוחות״ (תוספתא סוכה ד, א). התפארת ישראל: ״שהניחו קרשים עם מעקה סביב על הזיזין שיוצאין מהחומות סביב״ (סוכה ה, ב), ו״תקרה בולטת מאמצע גובה כתליה״ (מידות ב, ה). במודל — הזיזים קבועים בכתלים ונראים תמיד, והקרשים והמעקה — רק בהדגמה. שלוש גזוזטראות: בצפון, בדרום ובמזרח (משני צדי השער), לאורך הכותל שבין הלשכות, באמצע גובה הכתלים. עומקן, מספר הזיזים וצורתם — בחירת מודל.\n**המנורות:** ארבעה ילדים מפרחי כהונה מדליקים את המנורות של זהב, כבמקום ״מנורות של זהב — שמחת בית השואבה״.\n**העם:** אלפי אנשים וילדים בכל הגילים, בבגדיהם, ממלאים את העזרה סביב המרקדים — ״היו מרקדים לפניהם לפני כל העם שעמדו סביב אצל החומות״ (תפארת ישראל, סוכה ה, ד). מספרם וצפיפותם — בחירת מודל.\n**האור:** ״ולא היתה חצר בירושלים שאינה מאירה מאור בית השואבה״ (סוכה ה, ג) — משנדלקות המנורות, כל העזרה מוארת באור חם; והאבוקות והספלים בוערים באש חיה. עוצמת האור — בחירת מודל.\n**החסידים ואנשי מעשה:** מרקדים במעגל באמצע עזרת הנשים, אבוקה ביד כל אחד; ״בארבע אבוקות או בשמונה, זורק זו ומקבל את זו״ (ברטנורא, סוכה ה, ד) — בהדגמה שניים מהם זורקים ארבע אבוקות. ומה היו אומרים: ״יש מהן אומרים: אשרי ילדותנו שלא ביישה את זקנותנו — אלו חסידים ואנשי מעשה. ויש מהן אומרים: אשרי זקנותנו שכפרה את ילדותנו — אלו בעלי תשובה. אלו ואלו אומרים: אשרי מי שלא חטא, ומי שחטא — ישוב וימחול לו״ (סוכה נג.). ומי היו המרקדים: ״גדולי חכמי ישראל וראשי הישיבות והסנהדרין והחסידים והזקנים ואנשי מעשה הם שהיו מרקדין ומספקין ומנגנין ומשמחין במקדש בימי חג הסכות״ (רמב״ם, הלכות שופר וסוכה ולולב ח, יד).\n**הלוים והחליל:** ״החליל מכה ומנגנין בכנור ובנבלים ובמצלתים וכל אחד ואחד בכלי שיר שהוא יודע לנגן בו״ (רמב״ם שם, ח, יג); ״זהו החליל של בית השואבה״ (סוכה ה, א); ובתוספתא (סוכה ד, ה): ״ולוים בכנורות ובנבלים וכל כלי שיר מהן אומרים שיר המעלות הנה ברכו... יש מהן שהיו אומרים שאו ידיכם קדש״. והתפארת ישראל (מידות ב, ה): ״עמדו שם בט״ו שורות על הט״ו מעלות, ובכל שורה שררו שיר המעלות אחר, שורה אחר שורה. ולהכי נקראין המזמורים ההם שיר המעלות, וסיימו העומדים וגו׳ בלילות של סוכות״. בהדגמה — שורה של לוים על כל אחת מחמש עשרה המעלות, בכנורות, בנבלים, במצלתים ובחצוצרות, ושני מחללים למרגלות המעלות; מספרם ומקומם — בחירת מודל. הנגינה בהדגמה — לחן כללי, ולא שחזור של נגינת המקדש.\n**רבן שמעון בן גמליאל:** ״כשהיה שמח שמחת בית השואבה, היה נוטל שמנה אבוקות של אור, וזורק אחת ונוטל אחת ואין נוגעות זו בזו. וכשהוא משתחוה, נועץ שני גודליו בארץ ושוחה ונושק את הרצפה וזוקף, ואין כל בריה יכולה לעשות כן, וזו היא קידה״ (סוכה נג.).\n**קרא הגבר:** ״ועמדו שני כהנים בשער העליון שיורד מעזרת ישראל לעזרת נשים, ושתי חצוצרות בידיהן. קרא הגבר, תקעו והריעו ותקעו. הגיעו למעלה עשירית, תקעו והריעו ותקעו. הגיעו לעזרה, תקעו והריעו ותקעו״ (סוכה ה, ד). איזו היא המעלה העשירית — ״בעי רבי ירמיה: למעלה עשירית — דנחית חמשה וקאי אעשרה, או דלמא דנחית עשרה וקאי אחמשה? תיקו״ (סוכה נג:). בהדגמה — ירדו חמש, ועומדים על העשירית; זו בחירת תצוגה, ולא הכרעה. ״הגיעו לעזרה״ — ״לרצפת עזרת נשים״ (תפארת ישראל). ״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח. הגיעו לשער היוצא ממזרח, הפכו פניהן למערב, ואמרו, אבותינו שהיו במקום הזה אחוריהם אל היכל ה׳ ופניהם קדמה, והמה משתחוים קדמה לשמש, ואנו ליה עינינו״ (סוכה ה, ד).", refs: [["סוכה ה, א", "Mishnah_Sukkah.5.1"], ["סוכה ה, ב", "Mishnah_Sukkah.5.2"], ["סוכה ה, ג", "Mishnah_Sukkah.5.3"], ["סוכה ה, ד", "Mishnah_Sukkah.5.4"], ["מידות ב, ה", "Mishnah_Middot.2.5"], ["סוכה נא: (תיקון גדול)", {"book": 108, "index": 1323}], ["סוכה נג. (אשרי ילדותנו)", {"book": 108, "index": 1361}], ["סוכה נג. (רבן שמעון בן גמליאל)", {"book": 108, "index": 1366}], ["סוכה נג: (מעלה עשירית)", {"book": 108, "index": 1376}], ["רמב״ם בית הבחירה ה, ט", "Mishneh_Torah,_The_Chosen_Temple.5.9"], ["יכין סוכה ה, ב (אות ו)", {"book": 772, "index": 516}], ["יכין סוכה ה, ד (אות טז)", {"book": 772, "index": 536}], ["יכין סוכה ה, ד (אות כה)", {"book": 772, "index": 554}], ["יכין מידות ב, ה (אות מט)", {"book": 819, "index": 243}], ["יכין מידות ב, ה (אות נד)", {"book": 819, "index": 253}]] },   // SIMCHA_304 //
+          { t: "שמחת בית השואבה — הדגמה", action: () => { const S = ctx.shared.simchaShoeva; if (S && typeof S.start === "function") S.start(); }, info: "לשון המשנה (סוכה ה, א–ד): ״אמרו, כל מי שלא ראה שמחת בית השואבה, לא ראה שמחה מימיו״; ״במוצאי יום טוב הראשון של חג, ירדו לעזרת נשים, ומתקנין שם תקון גדול״; ״חסידים ואנשי מעשה היו מרקדים לפניהם באבוקות של אור שבידיהן, ואומרים לפניהן דברי שירות ותשבחות. והלוים בכנורות ובנבלים ובמצלתים ובחצוצרות ובכלי שיר בלא מספר, על חמש עשרה מעלות היורדות מעזרת ישראל לעזרת נשים״.\nההדגמה — מתג, כבויה כברירת מחדל; עם קולות (״קולות בהדגמות״ שבתפריט משתיק אותם). הלילה, הגזוזטראות, המנורות של זהב, העם, הריקודים והלוים — רק בזמן ההדגמה.\n**הגזוזטראות:** ״מאי תיקון גדול? אמר רבי אלעזר: כאותה ששנינו: חלקה היתה בראשונה. והקיפוה גזוזטרא, והתקינו שיהו נשים יושבות מלמעלה ואנשים מלמטה״ (סוכה נא:; מידות ב, ה); ״עשו שלש גזוזטראות בעזרה כנגד שלש רוחות״ (תוספתא סוכה ד, א). התפארת ישראל: ״שהניחו קרשים עם מעקה סביב על הזיזין שיוצאין מהחומות סביב״ (סוכה ה, ב), ו״תקרה בולטת מאמצע גובה כתליה״ (מידות ב, ה). במודל — הזיזים קבועים בכתלים ונראים תמיד, והקרשים והמעקה — רק בהדגמה. שלוש גזוזטראות: בצפון, בדרום ובמזרח (משני צדי השער), לאורך הכותל שבין הלשכות, באמצע גובה הכתלים. עומקן, מספר הזיזים וצורתם — בחירת מודל.\n**המנורות:** ארבעה ילדים מפרחי כהונה מדליקים את המנורות של זהב, כבמקום ״מנורות של זהב — שמחת בית השואבה״.\n**העם:** אלפי אנשים וילדים בכל הגילים, בבגדיהם, ממלאים את העזרה סביב המרקדים — ״היו מרקדים לפניהם לפני כל העם שעמדו סביב אצל החומות״ (תפארת ישראל, סוכה ה, ד). מספרם וצפיפותם — בחירת מודל.\n**האור:** ״ולא היתה חצר בירושלים שאינה מאירה מאור בית השואבה״ (סוכה ה, ג) — משנדלקות המנורות, כל העזרה מוארת באור חם; והאבוקות והספלים בוערים באש חיה. עוצמת האור — בחירת מודל.\n**החסידים ואנשי מעשה:** מרקדים במעגל באמצע עזרת הנשים, אבוקה ביד כל אחד; ״בארבע אבוקות או בשמונה, זורק זו ומקבל את זו״ (ברטנורא, סוכה ה, ד) — בהדגמה שניים מהם זורקים ארבע אבוקות. ומה היו אומרים: ״יש מהן אומרים: אשרי ילדותנו שלא ביישה את זקנותנו — אלו חסידים ואנשי מעשה. ויש מהן אומרים: אשרי זקנותנו שכפרה את ילדותנו — אלו בעלי תשובה. אלו ואלו אומרים: אשרי מי שלא חטא, ומי שחטא — ישוב וימחול לו״ (סוכה נג.). ומי היו המרקדים: ״גדולי חכמי ישראל וראשי הישיבות והסנהדרין והחסידים והזקנים ואנשי מעשה הם שהיו מרקדין ומספקין ומנגנין ומשמחין במקדש בימי חג הסכות״ (רמב״ם, הלכות שופר וסוכה ולולב ח, יד).\n**הלוים והחליל:** ״החליל מכה ומנגנין בכנור ובנבלים ובמצלתים וכל אחד ואחד בכלי שיר שהוא יודע לנגן בו״ (רמב״ם שם, ח, יג); ״זהו החליל של בית השואבה״ (סוכה ה, א); ובתוספתא (סוכה ד, ה): ״ולוים בכנורות ובנבלים וכל כלי שיר מהן אומרים שיר המעלות הנה ברכו... יש מהן שהיו אומרים שאו ידיכם קדש״. והתפארת ישראל (מידות ב, ה): ״עמדו שם בט״ו שורות על הט״ו מעלות, ובכל שורה שררו שיר המעלות אחר, שורה אחר שורה. ולהכי נקראין המזמורים ההם שיר המעלות, וסיימו העומדים וגו׳ בלילות של סוכות״. בהדגמה — שורה של לוים על כל אחת מחמש עשרה המעלות, בכנורות, בנבלים, במצלתים ובחצוצרות, ושני מחללים למרגלות המעלות; מספרם ומקומם — בחירת מודל. הכלים בידיהם, והם מנגנים בקצב הלחן: הכנור ביד שמאל והפריטה בימין, הנבל בשתי הידיים, המצלתיים נקשים בראש כל פסוק של הלחן, והחצוצרות עולות לפה בקריאה שבו; והגוף נע מעט עם השיר. התנועות — בחירת מודל. הנגינה בהדגמה — לחן כללי, ולא שחזור של נגינת המקדש.\n**רבן שמעון בן גמליאל:** ״כשהיה שמח שמחת בית השואבה, היה נוטל שמנה אבוקות של אור, וזורק אחת ונוטל אחת ואין נוגעות זו בזו. וכשהוא משתחוה, נועץ שני גודליו בארץ ושוחה ונושק את הרצפה וזוקף, ואין כל בריה יכולה לעשות כן, וזו היא קידה״ (סוכה נג.). בהדגמה הוא קד ופניו אל ההיכל — ״אבותינו שהיו במקום הזה אחוריהם אל היכל ה׳ ופניהם קדמה... ואנו ליה עינינו״ (סוכה ה, ד).\n**בכתוביות** גם שאר דברי הגמרא על השמחה (סוכה נא:–נג:): שלוש התקנות של מקום הנשים, ״והן משובחין היו יותר מבנה של מרתא בת בייתוס״, ״אשה היתה בוררת חטים לאור של בית השואבה״, דברי הלל הזקן ״אם אני כאן — הכל כאן״ ו״מקום שאני אוהב״, דברי רבי יהושע בן חנניה ״לא ראינו שינה בעינינו״, ו״המה משתחוים קדמה, ואנו ליה״.\n**קרא הגבר:** ״ועמדו שני כהנים בשער העליון שיורד מעזרת ישראל לעזרת נשים, ושתי חצוצרות בידיהן. קרא הגבר, תקעו והריעו ותקעו. הגיעו למעלה עשירית, תקעו והריעו ותקעו. הגיעו לעזרה, תקעו והריעו ותקעו״ (סוכה ה, ד). איזו היא המעלה העשירית — ״בעי רבי ירמיה: למעלה עשירית — דנחית חמשה וקאי אעשרה, או דלמא דנחית עשרה וקאי אחמשה? תיקו״ (סוכה נג:). בהדגמה — ירדו חמש, ועומדים על העשירית; זו בחירת תצוגה, ולא הכרעה. ״הגיעו לעזרה״ — ״לרצפת עזרת נשים״ (תפארת ישראל). ״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח. הגיעו לשער היוצא ממזרח, הפכו פניהן למערב, ואמרו, אבותינו שהיו במקום הזה אחוריהם אל היכל ה׳ ופניהם קדמה, והמה משתחוים קדמה לשמש, ואנו ליה עינינו״ (סוכה ה, ד).\n**התקיעות בהליכה — מתג ב״שיטות ומחלוקות״:** רש״י: ״והיו תוקעין והולכין — באלו שלש אחרונות מאריכין עד שמגיעין לשער היוצא מעזרת נשים להר הבית״ — התקיעה, התרועה והתקיעה של העזרה נמשכות לאורך ההליכה; וכך הברטנורא (סוכה ה, ה): ״הגיעו לעזרה תקעו והריעו ותקעו. ומאריכין בהן עד שהגיעו לשער התחתון״, ותוספות יום טוב. ולתפארת ישראל (יכין, סוכה ה, ה): ״ואע״ג דגם לאחר מעלה עשירית קאמר תוקעין והולכין, היינו רק תקיעה בלי תרועה״ — ובהדגמה, לשיטתו, שלוש תקיעות ארוכות בהליכה. ברירת המחדל — רש״י. אורך התקיעות — בחירת מודל.", refs: [["סוכה ה, א", "Mishnah_Sukkah.5.1"], ["סוכה ה, ב", "Mishnah_Sukkah.5.2"], ["סוכה ה, ג", "Mishnah_Sukkah.5.3"], ["סוכה ה, ד", "Mishnah_Sukkah.5.4"], ["מידות ב, ה", "Mishnah_Middot.2.5"], ["סוכה נא: (תיקון גדול)", {"book": 108, "index": 1323}], ["סוכה נג. (אשרי ילדותנו)", {"book": 108, "index": 1361}], ["סוכה נג. (רבן שמעון בן גמליאל)", {"book": 108, "index": 1366}], ["סוכה נג: (מעלה עשירית)", {"book": 108, "index": 1376}], ["רמב״ם בית הבחירה ה, ט", "Mishneh_Torah,_The_Chosen_Temple.5.9"], ["יכין סוכה ה, ב (אות ו)", {"book": 772, "index": 516}], ["יכין סוכה ה, ד (אות טז)", {"book": 772, "index": 536}], ["יכין סוכה ה, ד (אות כה)", {"book": 772, "index": 554}], ["יכין מידות ב, ה (אות מט)", {"book": 819, "index": 243}], ["יכין מידות ב, ה (אות נד)", {"book": 819, "index": 253}]] },   // SIMCHA_304 //
           { t: "שתי הסנהדראות הקטנות", action: () => { if (ctx.shared.openFor) ctx.shared.openFor("crt-lishkot-roofs", 15000); }, tg: () => (ctx.shared.lesserPlace && ctx.shared.lesserPlace.mode === "mount" ? [224.6, 3, -15] : [189, 3, -15]), cam: () => (ctx.shared.lesserPlace && ctx.shared.lesserPlace.mode === "mount" ? [224.6, 190, 62] : [189, 150, 46]),   // LESSER_BOTH_300: both courts in one view, from above (over the women's court's wall) //
           info: "לשון המשנה (סנהדרין יא, ב): ״שלשה בתי דינין היו שם, אחד יושב על פתח הר הבית, ואחד יושב על פתח העזרה, ואחד יושב בלשכת הגזית״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״שורות התלמידים שלפני הסנהדרין״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• לרש״י — אף הן כעגולה, על הקרקע (ברירת המחדל).\n• ליד רמה — שורות פשוטות, ולא בעיגול.\n**רש״י** (פו:): ״אחד יושב על פתח הר הבית — הוא שער המזרחי שלפנים מן החיל לפני עזרת נשים״; ״ואחד יושב למעלה הימנו — כשעברו עזרת נשים ובאין לפני עזרת ישראל״.\nועל ישיבתם (סנהדרין ד, ג–ד): ״סנהדרין היתה כחצי גרן עגלה, כדי שיהו רואין זה את זה. ושני סופרי הדינין עומדין לפניהם, אחד מימין ואחד משמאל״; ״ושלש שורות של תלמידי חכמים יושבין לפניהם, כל אחד ואחד מכיר את מקומו״.\nבמודל: כל בית דין יושב בלשכה סגורה — עשרים ושלושה כחצי גורן, חמש עשרה אמה קוטרו; לפניהם שני סופרי הדיינים ושלוש שורות התלמידים (צורת השורות — במתג ״שורות התלמידים שלפני הסנהדרין״). הלשכה, מידותיה, פתחה ומקומה המדויק — בחירת מודל. המבט כאן: אל בית הדין שלפני שער ניקנור; גג הלשכה מוסר לשעה.\nהדמויות — כבלשכת הגזית: הדיינים בגלימה שחורה ובכיפה, הזקן לבן סמוך לאמצע השורה וכהה בקצותיה; התלמידים בלי זקן; הסופרים עומדים — בחירת מודל.", refs: [["סנהדרין יא, ב", "Mishnah_Sanhedrin.11.2"], ["רש״י סנהדרין פו:", "Rashi_on_Sanhedrin.86.2"], ["רמב״ם סנהדרין א, ג", "Rambam_Sanhedrin.1.3"], ["מאירי סנהדרין יז.", "Meiri_on_Sanhedrin.17.1"], ["סנהדרין ד, ג", "Mishnah_Sanhedrin.4.3"], ["סנהדרין ד, ד", "Mishnah_Sanhedrin.4.4"]], tourThen: [{"cam": [251.5, 30, 10], "tg": [251.5, 2, -14.5]}] } //
         ]], //
@@ -67421,7 +68600,7 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "מידות המזבח — 32, 30, 28, 26, 24, והמזבח הקודם 28 על 28", feature: (ctx.shared.features || {})["altar28"] || null, tg: () => ui_altarCam(ctx, [56.5, 20.5, 8], "body"), cam: () => ui_altarCam(ctx, [84, 28.5, -24], "body"), info: "לשון המשנה (מידות ג, א): ״המזבח היה שלשים ושתים על שלשים ושתים. עלה אמה וכנס אמה, זה היסוד. נמצא שלשים על שלשים. עלה חמש וכנס אמה. זה הסובב. נמצא עשרים ושמנה על עשרים ושמנה. מקום הקרנות אמה מזה ואמה מזה. נמצא עשרים ושש על עשרים ושש. מקום הלוך רגלי הכהנים, אמה מזה ואמה מזה. נמצא עשרים וארבע על עשרים וארבע, מקום המערכה. אמר רבי יוסי, מתחלה לא היה אלא שמנה ועשרים על שמנה ועשרים, כונס ועולה במדה זו, עד שנמצא מקום המערכה עשרים על עשרים. וכשעלו בני הגולה, הוסיפו עליו ארבע אמות מן הדרום וארבע אמות מן המערב, כמין גמא״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״מידות המזבח״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• כמשנה — 32, 30, 28, 26, 24 (ברירת המחדל).\n• לרש״י — הסובב באמה בת חמישה.\n• לרמב״ם — היסוד והסובב באמה בת חמישה.\n• לראב״ד — הקרנות שני טפחים פנימה.\n• לרבי יוסי — המזבח הראשון, 28.\n**ברטנורא:** ״מתחלה״ — בימי שלמה; כונס ועולה של יסוד וסובב וקרנות והילוך הכהנים עד שנשאר מקום המערכה עשרים על עשרים; ״כמין גמא״ — גימל יוונית, כנו״ן הפוכה; הטעם (זבחים) — משום השיתין: בימי שלמה דרשו ״מזבח אדמה״ — אטום כאדמה, והנסכים ירדו לבור שאצל קרן דרומית־מערבית מחוץ למזבח; ובני הגולה הוסיפו בבניין עד שהבור קלוט בתוך המזבח ופתחו נקבים בראשו, ש״שתיה כאכילה״, ו״מזבח אדמה״ — שיהא מחובר באדמה, לא על גבי כיפים ומחילות (ברטנורא מידות ג, א).\n**תוספות יום טוב:** והכתוב ״הכל בכתב מיד ה׳ עלי השכיל״? — ״קרא אשכח ודרוש״: ״זה הוא בית ה׳ האלהים וזה מזבח לעולה״ — מה בית ששים אמה אף מזבח עד ששים אמה ראוי לו (זבחים סב.); ובבית ראשון היה יסוד לדרום, משוך בחלקו של טורף, חוץ מרוח מזרחית (תוספות זבחים סא:); ״גמא״ — צורתה כנגד ההולך מן האולם אל המזבח (תוספות יום טוב מידות ג, א).\n**תפארת ישראל:** בני הגולה ידעו שהנסכים צריכים לזוב למקום המזבח ולא לצדו, ולא יכלו להעתיק את השיתין — מחילה מששת ימי בראשית — ולא את המזבח ממקומו, לפיכך הרחיבוהו ארבע אמות לדרום מעל השיתין וארבע למערב כדי שיישאר ריבוע, והשאירו בשעת הבניין שני נקבים מגגו לשיתין בעזרת קנה ארוך (תפארת ישראל מידות ג, א).\nבמודל: חמישה קווים, כל אחד בגובהו ובצבע משלו — כחול 32 ברצפה, ירוק 30 על היסוד, ורוד 28 על הסובב, סגול 26 וכתום 24 על הגג. ליד המזבח חמש לוחיות, אחת לכל קו, ומסגרת כל לוחית בצבע הקו שלה; מן הצד הן עומדות זו מעל זו כסדר המדרגות, ומלמעלה — בשורה. בתפריט, תחת ״שיטות ומחלוקות״ (מידות המזבח) — שיטות רש״י והרמב״ם באמה בת חמישה טפחים (כלים יז, י), המזבח הראשון של רבי יוסי, 28 עד 20, ולבסוף שיטת הראב״ד, שנראית מלמעלה.", refs: [["מידות ג, א", "Mishnah_Middot.3.1"], ["ברטנורא ג, א", "Bartenura_on_Mishnah_Middot.3.1"], ["תוי״ט ג, א", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.1"], ["תפא״י ג, א", "Yachin_on_Mishnah_Middot.3.1"], ["רמב״ם בית הבחירה ב, ה", "Mishneh_Torah,_The_Chosen_Temple.2.5"], ["זבחים סא:", "Zevachim.61b"], ["זבחים סב.", "Zevachim.62a"], ["כלים יז, י", {"book": 91, "index": 151}]] }, //
           { t: "חלקי יהודה ובנימין — הרצועה שבדרום המזבח", feature: (ctx.shared.features || {})["tribes"] || null, tg: [70, 13, 5], cam: [95, 190, 95], info: "**הברייתא** (יומא יב.): ״מה היה בחלקו של יהודה — הר הבית, הלשכות והעזרות. ומה היה בחלקו של בנימין — אולם והיכל ובית קדשי הקדשים, ורצועה היתה יוצאה מחלקו של יהודה ונכנסת לחלקו של בנימין, ובה היה מזבח בנוי״.\n**רש״י** שם: ״צד המזרחי רוחב הר הבית, עזרת נשים כולה, ועזרת ישראל כולה, י״א אמה של מקום רגלי דריסת הכהנים... ושם המזבח מתחיל. משם ולמערב בחלקו של בנימין, אלא שבמקום מושב המזבח יוצאה רצועה מחלקו של יהודה ונכנסה לקרן מזרחית דרומית״.\n**בזבחים** (נג:) — לקרן מזרחית דרומית לא היה יסוד, ״לפי שלא היתה בחלקו של טורף. דאמר רב שמואל בר רב יצחק: מזבח אוכל בחלקו של יהודה אמה״. רש״י שם: ״אמה במזרחו אמה בדרומו״ — האמה שבמזרח כלה אמה לפני הקרן המזרחית הצפונית, והאמה שבדרום כלה אמה לפני הקרן הדרומית המערבית; ״והרצועה היתה יוצאה בדרום למזבח ונכנסת בחלקו של בנימין... ומזבח אוכל בה אמה״.\n**במודל**: בזהב — חלקו של יהודה: מקום דריסת רגלי הכהנים, עזרת ישראל ועזרת הנשים (צדו המזרחי של הר הבית אינו צבוע, והוא מסומן בתווית בלבד). בכחול — חלקו של בנימין, מקו כותל המזבח המזרחי ולמערב. בזהב כהה — הרצועה: בדרום המזבח, מאמתו הדרומית ועד כותל העזרה הדרומי; ובצד המזבח שתי רצועות זהב צרות — האמה שבמזרח והאמה שבדרום. עד היכן הרצועה מגיעה בדרום — המקורות אינם אומרים; בחירת מודל. הצבעים — בחירת מודל.", refs: [["יומא יב.", {"book": 107, "index": 256}], ["רש״י יומא יב.", {"book": 2157, "index": 332}], ["זבחים נג:", {"book": 130, "index": 1866}], ["רש״י זבחים נג: — האמה", {"book": 2191, "index": 2590}], ["רש״י זבחים נג: — הרצועה", {"book": 2191, "index": 2591}]] }, //
           { t: "השיתין — שני הנקבים וטבלת השיש", tg: [40.0, 16.8, 25.0], cam: [35.0, 20.4, 27.2], info: "לשון המשנה (מידות ג, ב): ״ובקרן מערבית דרומית היו שני נקבים, כמין שני חטמין דקין, שהדמים הנתנין על יסוד מערבי ועל יסוד דרומי, יורדין בהן ומתערבין באמה, ויוצאין לנחל קדרון״.\n**הרמב״ם** (בית הבחירה ב, יא): ״ובקרן מערבית דרומית היו שני נקבים כמין שני חטמין דקין. והן הנקראין שיתין שהדמים יורדין בהן ומתערבין באותה הקרן באמה ויוצאין לנחל קדרון״.\nולמטה מהם (מידות ג, ג): ״למטה ברצפה באותה הקרן, מקום היה שם אמה על אמה, וטבלא של שיש, וטבעת היתה קבועה בה, שבו יורדין לשית ומנקין אותו״; והרמב״ם (ב, יב): ״שבו יורדין לשיתין ומנקין אותו״.\nבמודל: שני הנקבים בראש היסוד, בקרן המערבית־דרומית, זה בצד זה; וברצפה שלידה טבלת השיש והטבעת. מקומם המדויק בתוך הקרן, וגודלם — בחירת מודל.", refs: [["מידות ג, ב", "Mishnah_Middot.3.2"], ["מידות ג, ג", "Mishnah_Middot.3.3"], ["רמב״ם בית הבחירה ב, יא", "Mishneh_Torah,_The_Chosen_Temple.2.11"], ["רמב״ם בית הבחירה ב, יב", "Mishneh_Torah,_The_Chosen_Temple.2.12"]] }, //
-          { t: "הטבעות", tg: [52, 14, -27], cam: [52, 46, -4], info: "לשון המשנה (מידות ג, ה): ״וטבעות היו לצפונו של מזבח, ששה סדרים של ארבע ארבע, ויש אומרים, ארבעה של שש שש, שעליהן שוחטין את הקדשים״; (ה, ב): ״מקום הטבעות עשרים וארבע״.\nבקצרה — ״ששה סדרים של ארבע ארבע, ויש אומרים, ארבעה של שש שש״ (מידות ג, ה): לר׳ שמעיה, בתוספות יום טוב — אלו ואלו עשרים וארבע; במודל — ששה סדרים של ארבע.\n**ברטנורא:** לפי שלא היו כופתים את התמיד, התקין יוחנן כהן גדול עשרים וארבע טבעות לעשרים וארבעה משמרות כהונה, קבועות ברצפה ועשויות כמין קשת, שמכניסים בהן צוואר הבהמה בשעת שחיטה ונועצים ראש הטבעת בארץ; בצפון — שקדשי קדשים שחיטתן בצפון (ברטנורא מידות ג, ה).\n**תוספות יום טוב:** ששה סדרים בשורה אחת ובכל סדר ארבע — כ״ד, ויש אומרים ארבעה סדרים של שש — גם כן כ״ד (ר׳ שמעיה); ועל כפיתת התמיד — בתחילת פרק ד של תמיד (תוספות יום טוב מידות ג, ה).\n**תפארת ישראל:** קבועות ברצפה בצפון המזבח, להכניס בהן צוואר הקרבנות בשעת שחיטה; ולדעתו שימשו רק לבהמה גסה, שהיא חזקה ומפרפרת, וראשה יהיה מונח בהשקט בשעת קבלת הדם — ותמה על הר״ב, שהרי התמיד נכפת יד עם רגל, ובסוטה (מח.) התקנה משום עגלי הקרבן (תפארת ישראל מידות ג, ה).\nבמודל: עשרים וארבע טבעות ברצפה בצפון המזבח, ששה סדרים של ארבע; צורתן — בחירת מודל.", refs: [["מידות ג, ה", "Mishnah_Middot.3.5"], ["ברטנורא ג, ה", "Bartenura_on_Mishnah_Middot.3.5"], ["תוי״ט ג, ה", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.5"], ["תפא״י ג, ה", "Yachin_on_Mishnah_Middot.3.5"], ["מידות ה, ב", "Mishnah_Middot.5.2"], ["רמב״ם בית הבחירה ה, יד", "Mishneh_Torah,_The_Chosen_Temple.5.14"], ["תמיד ד, א", "Mishnah_Tamid.4.1"]] }, //
+          { t: "הטבעות", tg: [52, 14, -27], cam: [52, 46, -4], info: "לשון המשנה (מידות ג, ה): ״וטבעות היו לצפונו של מזבח, ששה סדרים של ארבע ארבע, ויש אומרים, ארבעה של שש שש, שעליהן שוחטין את הקדשים״; (ה, ב): ״מקום הטבעות עשרים וארבע״.\nבקצרה — ״ששה סדרים של ארבע ארבע, ויש אומרים, ארבעה של שש שש״ (מידות ג, ה): לרבינו שמעיה — אלו ואלו עשרים וארבע, וכל סדר שורה אחת; במודל — ששה סדרים של ארבע, ובמתג ״סידור הטבעות״ גם ארבעה של שש.\n**ברטנורא:** לפי שלא היו כופתים את התמיד, התקין יוחנן כהן גדול עשרים וארבע טבעות לעשרים וארבעה משמרות כהונה, קבועות ברצפה ועשויות כמין קשת, שמכניסים בהן צוואר הבהמה בשעת שחיטה ונועצים ראש הטבעת בארץ; בצפון — שקדשי קדשים שחיטתן בצפון (ברטנורא מידות ג, ה).\n**תוספות יום טוב:** ששה סדרים בשורה אחת ובכל סדר ארבע — כ״ד, ויש אומרים ארבעה סדרים של שש — גם כן כ״ד (ר׳ שמעיה); ועל כפיתת התמיד — בתחילת פרק ד של תמיד (תוספות יום טוב מידות ג, ה).\n**רבינו שמעיה** (מידות ג, ה): ״ו׳ סדרים. היו הטבעות בשורה אחת ובכל סדר ארבעה טבעות, שהן כ״ד טבעות לכ״ד משמרות. וי״א ד׳ סדרים היו של שש שש טבעות, שהן נמי כ״ד״ — כל סדר שורה אחת של ארבע.\n**תפארת ישראל:** קבועות ברצפה בצפון המזבח, להכניס בהן צוואר הקרבנות בשעת שחיטה; ולדעתו שימשו רק לבהמה גסה, שהיא חזקה ומפרפרת, וראשה יהיה מונח בהשקט בשעת קבלת הדם — ותמה על הר״ב, שהרי התמיד נכפת יד עם רגל, ובסוטה (מח.) התקנה משום עגלי הקרבן (תפארת ישראל מידות ג, ה).\nבמודל: עשרים וארבע טבעות ברצפה בצפון המזבח, ששה סדרים של ארבע — כל סדר שורה אחת מצפון לדרום; ובמתג ״סידור הטבעות״ (שיטות ומחלוקות) — ארבעה של שש. צורתן — בחירת מודל.", refs: [["מידות ג, ה", "Mishnah_Middot.3.5"], ["ברטנורא ג, ה", "Bartenura_on_Mishnah_Middot.3.5"], ["תוי״ט ג, ה", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.5"], ["תפא״י ג, ה", "Yachin_on_Mishnah_Middot.3.5"], ["מידות ה, ב", "Mishnah_Middot.5.2"], ["רמב״ם בית הבחירה ה, יד", "Mishneh_Torah,_The_Chosen_Temple.5.14"], ["תמיד ד, א", "Mishnah_Tamid.4.1"]] }, //
           { t: "בית המטבחים", tg: [52, 14, -48], cam: [52, 78, -18], info: "לשון המשנה (מידות ג, ה): ״בית המטבחים היה לצפונו של מזבח, ועליו שמנה עמודים ננסין, ורביעין של ארז על גביהן, ואנקליות של ברזל היו קבועין בהם, ושלשה סדרים היו לכל אחד ואחד, שבהם תולין. ומפשיטין על שלחנות של שיש שבין העמודים״; (שקלים ו, ד): ״שלשה עשר שלחנות היו במקדש, שמונה של שיש בבית המטבחים, שעליהן מדיחין את הקרבים״; (ה, ב): ״מן הטבעות לשלחנות ארבע, מן השלחנות ולננסין ארבע. מן הננסין לכתל העזרה שמנה אמות״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״בית המטבחים — העמודים והאונקליות״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• ברטנורא (ברירת המחדל): ״חתיכות מרבעות של ארז היו על העמודים״, והאונקליות בהן.\n• המאירי: ״כעין קורות קצרות באים מעמוד לעמוד״.\n• הראבי״ה: שמונה העמודים בשורה אחת ממזרח למערב, והשולחנות בשורה משלהם לפניהם.\n• הגר״א: שורה אחת מצפון לדרום, ושולחן בין עמוד לעמוד; השמיני, ארבע אמות אורכו, בראש השורה.\n**ברטנורא:** ״עמודים ננסים״ — עמודי אבן נמוכים; ״רביעין של ארז״ — חתיכות מרובעות של ארז על העמודים; ״אנקליות״ — כעין מזלגות, קבועים ברביעין, ותולים בהם את הבהמה; שלושה סדרים של אנקליות זה למעלה מזה, לבהמה גדולה או קטנה; שולחנות של שיש — ״ולא עשאום של כסף או של זהב דהא אין עניות במקום עשירות, לפי שהזהב והכסף מרתיחים ומסריחים והשיש מצנן ושומר הבשר שלא יסריח״ (ברטנורא מידות ג, ה; ברטנורא שקלים ו, ד).\n**תוספות יום טוב:** ״ועליו״ — באותו מקום (ר׳ שמעיה); הראבי״ה — האנקליות בשלושת הצדדים, מזרח צפון ודרום, ולא למערב, שלא יהפכו המפשיטים אחוריהם לקודש הקדשים; והשולחנות ״שבין העמודים״ — בין המזבח לעמודים, שמונה עמודים ושמונה שולחנות (תוספות יום טוב מידות ג, ה).\n**תפארת ישראל:** לא בית מוקף כתלים — שאם כן אין שוחטים ״על ירך המזבח צפונה״ — אלא כל מקום קבוע קרוי בית; הרביעין מונחים על העמודים ולא מחוברים בהם, משום ״לא תטע לך אשרה כל עץ״; האנקליות לשלושה צדדים ולא למערב; ״על שולחנות״ — אצל השולחנות מפשיטים, ומניחים עליהם את הסכין, ולתוספות (יומא טז.) את תחתית הבהמה הגדולה; ושמונה שולחנות של שיש — ״כדי שיקרר הבשר שיניחו עליו, ולא יסריח״ (תפארת ישראל מידות ג, ה; תפארת ישראל שקלים ו, ד).\nבמודל: בצפון המזבח — שמונה עמודים ננסים, ועליהם הארז והאונקליות, ושמונה שולחנות שיש; מקומם ביחס לטבעות — כמידות ה, ב. ברירת המחדל — כברטנורא: חתיכת ארז מרובעת על כל עמוד, ובה שלושה סדרים של אונקליות. הכפתור ״האונקליות״ שעל המודל מקרב את המבט ומסמן אותן בצבע צף ל־15 שניות. גובה העמודים ומקום האונקליות — בחירת מודל.", refs: [["מידות ג, ה", "Mishnah_Middot.3.5"], ["ברטנורא ג, ה", "Bartenura_on_Mishnah_Middot.3.5"], ["תוי״ט ג, ה", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.5"], ["תפא״י ג, ה", "Yachin_on_Mishnah_Middot.3.5"], ["מידות ה, ב", "Mishnah_Middot.5.2"], ["שקלים ו, ד", "Mishnah_Shekalim.6.4"], ["ברטנורא ו, ד", "Bartenura_on_Mishnah_Shekalim.6.4"], ["תפא״י ו, ד", "Yachin_on_Mishnah_Shekalim.6.4"], ["רמב״ם בית הבחירה ה, יג", "Mishneh_Torah,_The_Chosen_Temple.5.13"], ["מאירי מידות ג, ה", "Meiri_on_Middot.3.5"], ["ביאור הגר״א מידות ה, ב", "Gra_on_Middot.5.2"]] }, //
           { t: "ספלי הניסוך", feature: (ctx.shared.features || {})["sfalimSee"] || null, tg: () => ui_altarCam(ctx, SFALIM_TG, "cups"), cam: () => ui_altarCam(ctx, SFALIM_CAM, "cups"), info: "לשון המשנה (סוכה ד, ט): ״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם. רבי יהודה אומר, של סיד היו, אלא שהיו משחרין פניהם מפני היין. ומנקבין כמין שני חטמין דקין, אחד מעבה ואחד דק, כדי שיהו שניהם כלין בבת אחת. מערבי של מים, מזרחי של יין״; (מידות ג, א): ״וכשעלו בני הגולה, הוסיפו עליו ארבע אמות מן הדרום וארבע אמות מן המערב, כמין גמא״.\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״נקבי ספלי הניסוך״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• לרש״י ולברטנורא — ״כמין שני חוטמין״ (ברירת המחדל).\n• לתוספות, לריטב״א ולמאירי — הנקבים בתחתית הספלים.\n**ברטנורא:** ״ופנה לשמאלו״ — שהנסכים נעשים בקרן מערבית־דרומית, וכשפונה לשמאלו היא הראשונה; ״כמין שני חטמין״ — חוטם אחד בכל ספל ונקב אחד בחוטמו, הכהן מערה בפי הספלים, והנסכים מקלחים ויורדים דרך החוטמים על גג המזבח, ״ובמזבח היה נקב שבו היין והמים יורדין לשתין של מזבח, שהן חלולים ועמקים מאד״; נקב היין עבה ושל המים דק, שהמים ממהרים לצאת; ״הספלים היו נתונים אצל הקרן סמוכים זה לזה, זה לפני זה, אחד לצד מערב ואחד לפנים ממנו״ (ברטנורא סוכה ד, ט).\n**תוספות יום טוב:** ״ופנה לשמאלו״ — טעמו בזבחים ו, ג; התוספות הקשו — היאך מורידים בקודש מצלוחית של זהב לספלים של כסף? ותירצו: ״די״ל דספלים היו קבועים בסיד. ולא כלים נינהו דנחשבים כגופו של מזבח״; ״משחרין״ — שאם עירה של יין לתוך של מים, של מים בא להשחיר (תוספות יום טוב סוכה ד, ט).\n**תפארת ישראל:** ״שני ספלים... מחוברין בסיד במזבח, א׳ ליין וא׳ למים״; הכהן מערה בזמן אחד את המים ואת היין, כל אחד לספלו, ומשם דרך החוטם לגג המזבח, ״ומשם דרך נקב שבגג יורדין לשיתין. והוא חלול עמוק מאוד שתחת המזבח״; ומן המזבח (מידות ג, א): בני הגולה השאירו בבניין שני נקבים מגגו לשיתין בעזרת קנה ארוך, ובבועז (מידות ג, ב) — התנא לא הזכירם, שהם בכלל שטח המזבח (תפארת ישראל סוכה ד, ט; תפארת ישראל מידות ג, א).\nבמודל: שני הספלים בראש המזבח בקרן דרומית־מערבית, קבועים בגג, המערבי של מים והמזרחי של יין; מהם יורדים הנסכים אל השיתין שתחת הקרן, היורדים עד התהום (סוכה מט.). צורת הנקבים — חוטם בולט (רש״י וברטנורא) או נקב בתחתית (תוספות) — בתפריט, תחת ״שיטות ומחלוקות״.\nבמקום הזה פינת המזבח נעשית שקופה, וגם הרצפה שתחתיה: רואים את הנקבים יורדים מראש המזבח אל השיתין — ״חלל שתחת המזבח כנגד מקום הנסכים״ (רש״י סוכה מט.). הספלים קבועים בגג בסיד, כדברי התוספות והתפארת ישראל. בשיטת רש״י: חוטם לכל ספל, ונקב בגג לכל אחד — אחד למים ואחד ליין (וכך גם לתפארת ישראל במידות ג, א), מעט אחרי פי החוטם, במקום שהנסך נופל. בשיטת התוספות: הנקב בתחתית כל ספל, ויורד ממנו ישר; ״ולשון מעובה משמע ששולי הספל היו עבים ומתוך כך אין המשקה ממהר לצאת״ (תוספות סוכה מח:) — במודל, בשיטה זו, ספל המים תחתיתו עבה: המים ממהרים לצאת מן היין (״שהמים ממהרים לצאת״, רש״י שם), והתחתית העבה משווה ביניהם; והנקבים שווים. ועוד בתוספות שם: ״ושמא כמין בליטת חוטם היה עשוי על הנקב שלא יפול עליו דבר לסותמו״ — במודל, מעל הנקב שבכל ספל, כיסוי קטן כמין חוטם, פתוח לדרום. גודל הספלים, מקומם המדויק, צורת החוטם שמעל הנקב, וגודל השיתין ועומקם — בחירת מודל.", refs: [["סוכה ד, ט", "Mishnah_Sukkah.4.9"], ["ברטנורא ד, ט", "Bartenura_on_Mishnah_Sukkah.4.9"], ["תוי״ט ד, ט", "Tosafot_Yom_Tov_on_Mishnah_Sukkah.4.9"], ["תפא״י ד, ט", "Yachin_on_Mishnah_Sukkah.4.9"], ["מידות ג, א", "Mishnah_Middot.3.1"], ["ברטנורא ג, א", "Bartenura_on_Mishnah_Middot.3.1"], ["תפא״י ג, א", "Yachin_on_Mishnah_Middot.3.1"], ["בועז ג, ב", "Boaz_on_Mishnah_Middot.3.2"], ["סוכה מח:", "Sukkah.48b"], ["סוכה מט.", "Sukkah.49a"], ["זבחים סא:", "Zevachim.61b"], ["תמיד ז, ג", "Mishnah_Tamid.7.3"], ["רמב״ם תמידין ומוספין י, ז", "Mishneh_Torah,_Daily_Offerings_and_Additional_Offerings.10.7"], ["תוי״ט ג, א", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.1"], ["סוכה מח.", "Sukkah.48a"], ["רש״י סוכה מט.", { book: 2163, index: 2307 }], ["תוספות סוכה מח:", { book: 1903, index: 504 }], ["תוספות סוכה מח. (בסיד)", { book: 1903, index: 502 }]] }, //
           { t: "כבשים קטנים — רש״י", action: () => { const r = OPS_BY_ID["sh25"]; if (r) { r.mark("o0"); try { r.onPick("o0"); } catch (_) {} } }, tg: () => ui_altarCam(ctx, [42, 17, 30], "ramp"), cam: () => ui_altarCam(ctx, [26, 45, 48], "ramp"), info: "לשון המשנה (מידות ג, ג): ״וכבש היה לדרומו של מזבח, שלשים ושתים על רחב שש עשרה״ — הכבשים הקטנים אינם במשנה אלא בגמרא: ״שני כבשים קטנים יוצאין מן הכבש, שבהן פונים ליסוד ולסובב, ומובדלין מן המזבח מלא נימא״ (זבחים סב:).\nבקצרה — המחלוקת בכרטיס זה (הפירוט — במתג ״הכבשים הקטנים״ שבתפריט, תחת ״שיטות ומחלוקות״):\n• לרש״י — שני כבשים קטנים, לסובב וליסוד (ברירת המחדל).\n• לתוספות — גם שלישי.\n**רש״י** (זבחים סב: ד״ה שני כבשים): אחד לסובב ממזרח הכבש הגדול, מימין, ואחד ליסוד ממערבו, משמאל, אל היסוד הדרומי ששם שופכים שיירי החטאת.\nברטנורא ותפארת ישראל (מידות ג, ג): על הכבש הגדול בלבד — גשר משופע, שאין עולים למזבח במעלות; התפארת ישראל מוסיף שראש הכבש רחוק קצת מגג המזבח (תוספות זבחים סב:).\nבמודל: שני כבשים קטנים כרש״י; רוחבם ושיפועם — בחירת מודל. \nשני הכבשים הקטנים יוצאים מגוף הכבש הגדול (״יוצאים ממנו״, רמב״ם ב, יד). רש״י (זבחים סב:): ״אותו שפונין בו לסובב יצא במזרחו של כבש לימין ויוצא ומתחיל בשפולו של כבש ונמשך ועולה באלכסון עד שמגיע לסובב״.\n**הכבש העולה לסובב** (ולתוספות — שני הכבשים העולים לסובב), במודל: הוא יוצא מצד הכבש הגדול בשליש התחתון שלו, ״בשפולו של כבש״. בתחילתו הוא צמוד לכבש הגדול ובגובה הילוכו; משם הוא פונה ממנו באלכסון ועולה במתינות, ובינו לבין הכבש הגדול אוויר גמור עד הרצפה. קצהו העליון חתוך לאורך שפת הסובב ובגובהה — כהמשך לסובב — ובכל זאת ״ומובדלין מן המזבח מלא נימא״. כמה הוא נוטה ורוחבו — בחירת מודל.\n**הכבש היורד ליסוד — לרש״י:** ״והפונה ליסוד יוצא למערבו... פונה לשמאלו ליסוד דרומי, ומתחיל לצאת בשיפולו של כבש רחוק מן המזבח, כדי שיהא נוח לשפע ולירד ליסוד״. במודל הוא הולך באלכסון מצלעו המערבית של הכבש הגדול אל אמת היסוד שבקרן הדרומית־מערבית (מידות ג, א: ״ואוכל בדרום אמה אחת״), כציור התוספות יום טוב והתפארת ישראל.\n**הכבש היורד ליסוד — לתוספות,** כביאור התוספות יום טוב (זבחים ו, ג): הוא צמוד לכבש השלישי מבחוץ, לאורכו, מאותו שליש עד הקרן הדרומית־מערבית של היסוד — כבש אחד רחב, ומקצתו מוגבה עד הסובב.\n**שלא צויר:** כבש ליסוד הצמוד לכבש הגדול — אינו מוכרח מן המקורות, ואין לו דרך להגיע אל אמת היסוד.", refs: [["מידות ג, ג", "Mishnah_Middot.3.3"], ["ברטנורא ג, ג", "Bartenura_on_Mishnah_Middot.3.3"], ["תפא״י ג, ג", "Yachin_on_Mishnah_Middot.3.3"], ["זבחים סב:", "Zevachim.62b"], ["רמב״ם בית הבחירה ב, יד", "Mishneh_Torah,_The_Chosen_Temple.2.14"], ["מידות ג, א", "Mishnah_Middot.3.1"], ["רש״י זבחים סב:", {"book": 2191, "index": 3022}]] }, //
@@ -67446,7 +68625,7 @@ body.tm-measuring canvas{cursor:crosshair}
           { t: "הקודש", view: "kodesh", key: "kodesh" }, //
           { t: "טבלת השיש — עפר הסוטה", tg: [-8.6, 22.2, -7.4], cam: [-5.2, 26.4, -4.4], info: "לשון המשנה (סוטה ב, ב): ״נכנס להיכל ופנה לימינו, ומקום היה שם אמה על אמה, וטבלא של שיש, וטבעת היתה קבועה בה. וכשהוא מגביהה, נוטל עפר מתחתיה ונותן כדי שיראה על המים״.\n**רש״י** (סוטה טו:): ״טבעת קבועה בה — לאחזה בטבעתה ולהגביהה מבין הרצפה, שהיא כולה באבני שיש״.\nבמודל: טבלה של אמה על אמה ובה טבעת, ברצפת ההיכל, לימין הנכנס — בצפון, סמוך לפתח. מקומה המדויק וצורת הטבעת — בחירת מודל.", refs: [["סוטה ב, ב", "Mishnah_Sotah.2.2"], ["רש״י סוטה טו:", "Rashi_on_Sotah.15.2"]] }, //
           { t: "המנורה", view: "menorah", info: "לשון המשנה (תמיד ג, ט): ״מי שזכה בדשון המנורה, נכנס ומצא שני נרות מזרחיים דולקים, מדשן את השאר ומניח את אלו דולקין במקומן. מצאן שכבו, מדשנן ומדליקן מן הדולקים, ואחר כך מדשן את השאר. ואבן היתה לפני המנורה ובה שלש מעלות, שעליה הכהן עומד ומטיב את הנרות. והניח את הכוז על מעלה שניה ויצא״; (ו, א): ״מדשן את המזרחי, ומניח את המערבי דולק, שממנו היה מדליק את המנורה בין הערבים. מצאו שכבה, מדשנו ומדליקו ממזבח העולה״.\nבקצרה — המחלוקות בכרטיס זה (הפירוט — במתגים שבתפריט, תחת ״שיטות ומחלוקות״):\n• **חומר המנורה והשולחן:** זהב — ״חזרו והעשירו, עשאום של זהב״ (ברירת המחדל); כסף — ״העשירו, עשאום של כסף״; ברזל מחופה — ״שפודים של ברזל היו, וחיפום בבעץ״ (מנחות כח:).\n• **כיוון המנורה והשולחן:** לרמב״ם — המנורה צפון ודרום והשולחן מזרח ומערב (ברירת המחדל); לרבי — שניהם מזרח ומערב (מנחות צח:), וכמותו משנת תמיד לפי הראב״ד, התוספות והברטנורא; לרבי אלעזר ברבי שמעון — שניהם צפון ודרום.\n• **שולחנות שלמה:** לתוספות רי״ד — שולחן אחד ומנורה אחת (ברירת המחדל); לרש״י ולמפרש לתמיד — גם עשרת השולחנות ועשר המנורות של שלמה, ולא סידרו עליהם ולא הדליקו בהם.\n• **סידור הלחם והדלקת הנרות בכלי שלמה:** לתנא קמא ולרבי יוסי ברבי יהודה — רק בשל משה (ברירת המחדל); לרבי אלעזר בן שמוע — ״על כולם היו מסדרין... ובכולן היו מדליקין״.\n**ברטנורא:** תנא זה סובר שהמנורה מונחת מזרח ומערב; מדשן חמישה נרות שלצד מערב — מסיר שמן ופתילה ודשן ונותן בכוז, ונותן שמן ופתילה חדשים — ואחר שחיטת התמיד וזריקת דמו מדשן את שני המזרחיים, ש״בבקר בבקר בהיטיבו את הנרות״ — חילקה התורה את ההטבה לשני בקרים; נר מערבי — השני שבצד מזרח, שבו פוגע תחילה, ״לפני ה׳״, וממנו מדליקים את שאר הנרות בערב, ובימי שמעון הצדיק היה דולק תמיד בנס; האבן — שהמנורה גבוהה שמונה עשר טפחים, ושלוש מעלותיה כנגד שלוש העלאות שבתורה; ודברי הרמב״ם, שההטבה היא ההדלקה בבוקר — ״פליאה נשגבה בעיני״ (ברטנורא תמיד ג, ט; ו, א).\n**תפארת ישראל:** בהיכל עומדים שולחן בצפון ומנורה בדרום, ומזבח מכוון בין שניהם, משוך קצת כלפי חוץ, וכולם משליש אורך ההיכל ולפנים (יומא לג:) (תפארת ישראל תמיד ג, ט).\nהברייתא (מנחות כח:): גובהה שמונה עשר טפחים — ״הרגלים והפרח שלשה טפחים, וטפחיים חלק, וטפח שבו גביע וכפתור ופרח, וטפחיים חלק, וטפח כפתור... ושני קנים יוצאין ממנו... נשתיירו שם שלשה טפחים שבהן שלשה גביעין וכפתור ופרח״ (רמב״ם בית הבחירה ג, י); עשרים ושניים גביעים, אחד עשר כפתורים ותשעה פרחים, והכול משוקדים. עומדת בדרום, משמאל הנכנס, משוכה מן הכותל שתי אמות ומחצה (יומא לג:; רמב״ם א, ז), ונרותיה כנגד רוחב הבית (רמב״ם ג, יב).\nבמודל: המנורה כבמודל בית ראשון — בנויה בטפחים, כברייתא — ואחת בלבד; לפניה האבן ושלוש מעלותיה; חומרה — בתפריט, תחת ״שיטות ומחלוקות״ (מנחות כח:: של ברזל מחופה בבעץ, של כסף, של זהב).", refs: [["תמיד ג, ט", "Mishnah_Tamid.3.9"], ["ברטנורא ג, ט", "Bartenura_on_Mishnah_Tamid.3.9"], ["תפא״י ג, ט", "Yachin_on_Mishnah_Tamid.3.9"], ["תמיד ו, א", "Mishnah_Tamid.6.1"], ["ברטנורא ו, א", "Bartenura_on_Mishnah_Tamid.6.1"], ["מנחות כח:", "Menachot.28b"], ["רמב״ם בית הבחירה ג, י", "Mishneh_Torah,_The_Chosen_Temple.3.10"], ["רמב״ם בית הבחירה ג, יא", "Mishneh_Torah,_The_Chosen_Temple.3.11"], ["רמב״ם בית הבחירה ג, יב", "Mishneh_Torah,_The_Chosen_Temple.3.12"], ["יומא לג:", "Yoma.33b"], ["רמב״ם בית הבחירה א, ז", "Mishneh_Torah,_The_Chosen_Temple.1.7"]] }, //
-          { t: "מזבח הזהב", view: "goldenAltar", info: "לשון המשנה (תמיד ג, ט): ״מי שזכה בדשון מזבח הפנימי, נכנס ונטל הטני והניחו לפניו, והיה חופן ונותן לתוכו, ובאחרונה כבד את השאר לתוכו והניחו ויצא״; (ו, ב): ״מי שזכה במחתה, צבר את הגחלים על גבי המזבח ורדדן בשולי המחתה, והשתחוה ויצא״; (ו, ג): ״לא היה המקטיר מקטיר עד שהממנה אומר לו, הקטר... פרשו העם, והקטיר והשתחוה ויצא״.\n**ברטנורא:** ״ורדדן בשולי המחתה״ — מרקען ופושטן שלא יהיו משופעים, כדי שלא תיפול הקטורת מעל הגחלים; ועל מזבח הזהב היה מקטיר ולא בתוך המחתה, מה שאין כן ביום הכיפורים; המקטיר שופך את הקטורת על הגחלים לצד מערב, רחוק ממנו, ״כדי שיהא עשנה שוהה לבא״ (יומא מט.), ועושה את הגל לצד מערב שלא ייכווה; ״פרשו העם״ — כל הכהנים פורשים מבין האולם ולמזבח בשעת ההקטרה — ״וכל אדם לא יהיה באהל מועד״ (ברטנורא תמיד ו, ב; ו, ג).\n**תפארת ישראל:** המזבח מכוון בין השולחן והמנורה, משוך קצת כלפי חוץ, משליש אורך ההיכל ולפנים (יומא לג:); וליונתן בן עוזיאל היו גם למזבח הזהב קרנות זקופות, וכן משמע מן הכתוב, ושיעורן לא הוזכר; ומזר הזהב — שהקרנות לפנים מן הזר וגבוהות קצת ממנו (תפארת ישראל תמיד ג, ט).\n**הרמב״ם** (בית הבחירה ג, יז): ״מזבח הקטרת היה מרבע אמה על אמה. והוא נתון בהיכל מכון בין הצפון לדרום משוך בין השלחן והמנורה לחוץ. ושלשתן היו מנחין משליש ההיכל ולפנים כנגד הפרכת״. ארבע קרנותיו ממנו (שמות ל, ב) וזר זהב סביב (ל, ג).\nבמודל: כבמודל בית ראשון, בלי השכבות של בית ראשון; גובהו שתי אמות כמזבח המשכן — ״ואמתים קומתו״ (שמות ל, ב) — בחירת מודל, שהרמב״ם לא פירש את גובהו בבית (במודל — שתי אמות, כבמודל בית ראשון); עליו גחלים, ועשן הקטורת עולה בעמוד ישר — ״מתמר ועולה כמקל״ (יומא כא:).", refs: [["תמיד ג, ט", "Mishnah_Tamid.3.9"], ["תפא״י ג, ט", "Yachin_on_Mishnah_Tamid.3.9"], ["תמיד ו, ב", "Mishnah_Tamid.6.2"], ["ברטנורא ו, ב", "Bartenura_on_Mishnah_Tamid.6.2"], ["תמיד ו, ג", "Mishnah_Tamid.6.3"], ["ברטנורא ו, ג", "Bartenura_on_Mishnah_Tamid.6.3"], ["רמב״ם בית הבחירה ג, יז", "Mishneh_Torah,_The_Chosen_Temple.3.17"], ["יומא לג:", "Yoma.33b"], ["רמב״ם בית הבחירה א, ז", "Mishneh_Torah,_The_Chosen_Temple.1.7"]] }, //
+          { t: "מזבח הזהב", view: "goldenAltar", info: "לשון המשנה (תמיד ג, ט): ״מי שזכה בדשון מזבח הפנימי, נכנס ונטל הטני והניחו לפניו, והיה חופן ונותן לתוכו, ובאחרונה כבד את השאר לתוכו והניחו ויצא״; (ו, ב): ״מי שזכה במחתה, צבר את הגחלים על גבי המזבח ורדדן בשולי המחתה, והשתחוה ויצא״; (ו, ג): ״לא היה המקטיר מקטיר עד שהממנה אומר לו, הקטר... פרשו העם, והקטיר והשתחוה ויצא״.\n**ברטנורא:** ״ורדדן בשולי המחתה״ — מרקען ופושטן שלא יהיו משופעים, כדי שלא תיפול הקטורת מעל הגחלים; ועל מזבח הזהב היה מקטיר ולא בתוך המחתה, מה שאין כן ביום הכיפורים; המקטיר שופך את הקטורת על הגחלים לצד מערב, רחוק ממנו, ״כדי שיהא עשנה שוהה לבא״ (יומא מט.), ועושה את הגל לצד מערב שלא ייכווה; ״פרשו העם״ — כל הכהנים פורשים מבין האולם ולמזבח בשעת ההקטרה — ״וכל אדם לא יהיה באהל מועד״ (ברטנורא תמיד ו, ב; ו, ג).\n**תפארת ישראל:** המזבח מכוון בין השולחן והמנורה, משוך קצת כלפי חוץ, משליש אורך ההיכל ולפנים (יומא לג:); וליונתן בן עוזיאל היו גם למזבח הזהב קרנות זקופות, וכן משמע מן הכתוב, ושיעורן לא הוזכר; ומזר הזהב — שהקרנות לפנים מן הזר וגבוהות קצת ממנו (תפארת ישראל תמיד ג, ט).\n**הרמב״ם** (בית הבחירה ג, יז): ״מזבח הקטרת היה מרבע אמה על אמה. והוא נתון בהיכל מכון בין הצפון לדרום משוך בין השלחן והמנורה לחוץ. ושלשתן היו מנחין משליש ההיכל ולפנים כנגד הפרכת״. ארבע קרנותיו ממנו (שמות ל, ב) וזר זהב סביב (ל, ג).\nמקומו במודל: ארבע אמות ושלושה רבעים מזרחה לקו השולחן והמנורה — כדי שכשעשרת שולחנות שלמה מונחים צפון ודרום (במתג), יהיה מעבר בינם ובין המזבח, כתירוץ רש״י (יומא נא:): ״ואם תאמר אף בין המזבח לשולחן אין דרך... שאין המזבח מכוון כנגד השולחן, אלא משוך קימעא כלפי חוץ״. ״קימעא״ — בלי מידה; המידה בחירת מודל.\nבמודל: כבמודל בית ראשון, בלי השכבות של בית ראשון; גובהו שתי אמות כמזבח המשכן — ״ואמתים קומתו״ (שמות ל, ב) — בחירת מודל, שהרמב״ם לא פירש את גובהו בבית (במודל — שתי אמות, כבמודל בית ראשון); עליו גחלים, ועשן הקטורת עולה בעמוד ישר — ״מתמר ועולה כמקל״ (יומא כא:).", refs: [["תמיד ג, ט", "Mishnah_Tamid.3.9"], ["תפא״י ג, ט", "Yachin_on_Mishnah_Tamid.3.9"], ["תמיד ו, ב", "Mishnah_Tamid.6.2"], ["ברטנורא ו, ב", "Bartenura_on_Mishnah_Tamid.6.2"], ["תמיד ו, ג", "Mishnah_Tamid.6.3"], ["ברטנורא ו, ג", "Bartenura_on_Mishnah_Tamid.6.3"], ["רמב״ם בית הבחירה ג, יז", "Mishneh_Torah,_The_Chosen_Temple.3.17"], ["יומא לג:", "Yoma.33b"], ["רמב״ם בית הבחירה א, ז", "Mishneh_Torah,_The_Chosen_Temple.1.7"]] }, //
           { t: "שולחן לחם הפנים", view: "shulchan", info: "לשון המשנה (מנחות יא, ה): ״השלחן, ארכו עשרה, ורחבו חמשה. לחם הפנים, ארכן עשרה ורחבן חמשה. נותן ארכו כנגד רחבו של שלחן, וכופל טפחים ומחצה מכאן וטפחים ומחצה מכאן, נמצא ארכו ממלא כל רחבו של שלחן, דברי רבי יהודה. רבי מאיר אומר, השלחן ארכו שנים עשר ורחבו ששה. לחם הפנים ארכו עשרה ורחבו חמשה. נותן ארכו כנגד רחבו של שלחן, וכופל טפחים מכאן וטפחים מכאן וטפחים רוח באמצע, כדי שתהא הרוח מנשבת ביניהן. אבא שאול אומר, שם היו נותנין שני בזיכי לבונה של לחם הפנים״; (יא, ז): ״המכניסים עומדים בצפון, ופניהם לדרום. המוציאין עומדים בדרום, ופניהם לצפון. אלו מושכין ואלו מניחין, וטפחו של זה כנגד טפחו של זה״.\nבקצרה — המחלוקות בכרטיס זה (הפירוט — במתגים שבתפריט, תחת ״שיטות ומחלוקות״):\n• **חומר המנורה והשולחן:** זהב — ״חזרו והעשירו, עשאום של זהב״ (ברירת המחדל); כסף — ״העשירו, עשאום של כסף״; ברזל מחופה — ״שפודים של ברזל היו, וחיפום בבעץ״ (מנחות כח:).\n• **כיוון המנורה והשולחן:** לרמב״ם — המנורה צפון ודרום והשולחן מזרח ומערב (ברירת המחדל); לרבי — שניהם מזרח ומערב (מנחות צח:), וכמותו משנת תמיד לפי הראב״ד, התוספות והברטנורא; לרבי אלעזר ברבי שמעון — שניהם צפון ודרום.\n• **שולחנות שלמה:** לתוספות רי״ד — שולחן אחד ומנורה אחת (ברירת המחדל); לרש״י ולמפרש לתמיד — גם עשרת השולחנות ועשר המנורות של שלמה, ולא סידרו עליהם ולא הדליקו בהם.\n• **סידור הלחם והדלקת הנרות בכלי שלמה:** לתנא קמא ולרבי יוסי ברבי יהודה — רק בשל משה (ברירת המחדל); לרבי אלעזר בן שמוע — ״על כולם היו מסדרין... ובכולן היו מדליקין״.\n• **צורת לחם הפנים:** לרבי יוחנן — כמין ספינה רוקדת, והסניפין על גבי השולחן (ברירת המחדל); לרבי חנינא — כמין תיבה פרוצה, והסניפין על גבי קרקע, וכמותו פסק הרמב״ם לכסף משנה.\n**ברטנורא:** ״אמתים ארכו ואמה רחבו״ — לרבי יהודה אמת כלים בת חמישה טפחים, ולרבי מאיר כל אמה בת שישה — ״והלכה כרבי מאיר״; כופל את הלחם למעלה מכאן ומכאן, ״והן הן הקרנות״; שני הסדרים תופסים עשרה טפחים באורך השולחן, ונותרו טפחיים רווח בין סדר לסדר ״שתהא רוח מנשבת בהם שלא יתעפשו״; אבא שאול — הבזיכים באותו רווח, ״ועליו מטה מנשה״ — סמוך, והלכה כמותו; המכניסים בצפון — ״דאותן שמסדרים העבודה יהיו בצפון״ (ברטנורא מנחות יא, ה; יא, ז).\n**תוספות יום טוב:** מגיה בדברי הר״ב ״ובהן הן הקרנות״ — שהקרנות בולטות בראש הדופן, כקרנות המזבח, ודוחה את פירוש הרמב״ם שהקרנות הן עובי הלחם ואת הרלב״ג שהלחם בעל שמונה צלעות; ורבי יוחנן: למאן דאמר טפחיים ומחצה קופל — השולחן מקדש חמישה עשר טפחים למעלה (תוספות יום טוב מנחות יא, ה).\n**תפארת ישראל:** ״לחם הפנים״ — פנים רבים: שנים עשר פנים לכל לחם, כמניין הלחם, על ידי הכפילה מכאן ומכאן; ״וקיי״ל בלחה״פ כר״מ, משום דאבא שאול מודה לו״; הרווח — שלא יתעפש, שאין סומכים על הנס שנשאר חם (יומא כא:); הבזיכים בצד הסדרים, כרמב״ם (תפארת ישראל מנחות יא, ה).\n**הרמב״ם** (בית הבחירה ג, יב–יד): ״השלחן היה ארכו שנים עשר טפח ורחבו ששה טפחים. והיה מנח ארכו לארך הבית ורחבו לרחב הבית״ (כרבי מאיר); ארבעה סניפים של זהב סומכים את שתי המערכות — ״קשותיו״; עשרים ושמונה קנים כחצי קנה חלול — ״מנקיותיו״; ושני הבזיכים — ״כפותיו״. עומד בצפון, מימין הנכנס, משוך מן הכותל שתי אמות ומחצה (יומא לג:; רמב״ם א, ז).\nבמודל: השולחן כבמודל בית ראשון, עם שתים עשרה החלות, הסניפים, הקנים והבזיכים — כרבי מאיר והרמב״ם; חומרו — בתפריט, תחת ״שיטות ומחלוקות״ (רמב״ם א, יט).\nבמודל: צורת החלות — לפי המתג ״צורת לחם הפנים״: לרבי יוחנן (ברירת המחדל) ״כמין ספינה רוקדת״, והסניפין על השולחן; לרבי חנינא ״כמין תיבה פרוצה״, והסניפין על הרצפה.", refs: [["מנחות יא, ה", "Mishnah_Menachot.11.5"], ["ברטנורא יא, ה", "Bartenura_on_Mishnah_Menachot.11.5"], ["תוי״ט יא, ה", "Tosafot_Yom_Tov_on_Mishnah_Menachot.11.5"], ["תפא״י יא, ה", "Yachin_on_Mishnah_Menachot.11.5"], ["מנחות יא, ז", "Mishnah_Menachot.11.7"], ["ברטנורא יא, ז", "Bartenura_on_Mishnah_Menachot.11.7"], ["רמב״ם בית הבחירה ג, יב", "Mishneh_Torah,_The_Chosen_Temple.3.12"], ["רמב״ם בית הבחירה ג, יג", "Mishneh_Torah,_The_Chosen_Temple.3.13"], ["רמב״ם בית הבחירה ג, יד", "Mishneh_Torah,_The_Chosen_Temple.3.14"], ["יומא לג:", "Yoma.33b"], ["רמב״ם בית הבחירה א, ז", "Mishneh_Torah,_The_Chosen_Temple.1.7"], ["תפא״י ג, ט", "Yachin_on_Mishnah_Tamid.3.9"], ["מנחות צד:", {"book": 131, "index": 3364}], ["מנחות צד: (הסניפין)", {"book": 131, "index": 3369}], ["מנחות צה.", {"book": 131, "index": 3372}], ["רמב״ם תמידין ומוספין ה, ט", {"book": 344, "index": 78}], ["כסף משנה תמידין ה, ט", {"book": 4261, "index": 187}]] }, //
           { t: "פיתוחי הקירות — כרובים דצורתא", tg: [-35, 42, -9.5], cam: [-14, 30, 2], info: "לשון המשנה (מידות ד, א): ״והפנימיות נפתחות לתוך הבית לכסות אחר הדלתות, שכל הבית טוח בזהב, חוץ מאחר הדלתות״.\n**ברטנורא:** הדלתות הפנימיות, כשנפתחות, מכסות חמש אמות מפה וחמש אמות מפה מרוחב כותל ההיכל בפנים, ״ושם לא היה הכתל טוח בזהב כמו שאר הבית, לפי שלא היה נראה״ (ברטנורא מידות ד, א).\n**תפארת ישראל:** ״אמה כיור״ — פטורי ציצים של גבס מוזהבים כשפה סביב ראש הכתלים, מבפנים ומבחוץ (תפארת ישראל מידות ד, ו).\nהגמרא (יומא נד.): ״רב אחא בר יעקב אמר: לעולם במקדש שני, וכרובים דצורתא הוו קיימי, דכתיב: ואת כל קירות הבית מסב קלע כרובים ותמרות ופטורי ציצים וצפה זהב מישר על המחוקה״ — בבית שני לא היו כרובי הכפורת, שהארון נגנז, אבל כרובים ציוריים — חקוקים או מצוירים — היו על הקירות.\nבמודל: פיתוחי הזהב כבמודל בית ראשון — כרובים, תמורות, פטורי ציצים וחבלים — על קירות הקודש וקודש הקדשים; מאחורי הדלתות — בלא ציפוי, כמשנה.", refs: [["מידות ד, א", "Mishnah_Middot.4.1"], ["ברטנורא ד, א", "Bartenura_on_Mishnah_Middot.4.1"], ["תפא״י ד, ו", "Yachin_on_Mishnah_Middot.4.6"], ["יומא נד.", "Yoma.54a"]] }, //
           { t: "שלוש עשרה הפרוכות", tg: [18.6, 38, 0], cam: [64, 44, 52], info: "רב (כתובות קו.; יומא נד.): ״שלש עשרה פרכות היו במקדש שני: שבע כנגד שבעה שערים, אחת לפתחו של היכל, ואחת לפתחו של אולם, שתים בדביר, שתים כנגדן בעליה״. וכן פסק הרמב״ם (כלי המקדש ז, יז).\n**רש״י** (כתובות קו.): ״בדבבי — בפרכות שכנגד הפתחים, דלצניעותא עבידי״; ״ז׳ שערים — לעזרה״; ״ושתים כנגדן בעליה — להבדיל בין עליית היכל לעליית קדשי הקדשים״.\n**פרוכת ההיכל** (תוספתא שקלים ג, יא): ״ארכה עשרים אמה ורחבה עשר... והיתה פרוסה על פתחו של היכל מבחוץ״. **האולם** — ״כל הפתחים שהיו שם היו להן דלתות, חוץ משל אולם״ (מידות ב, ג), ולכן לפתחו פרוכת בלבד (ברטנורא תמיד ז, א).\nבמודל: שבע הפרוכות של שערי העזרה, פרוכת ההיכל ופרוכת האולם — תלויות מבחוץ, לפני הפתחים, פרוסות או מוגבהות לפי המתג ״פרוכות הפתחים״. בזמן הדגמה, וכשהמבט עובר דרך פתח, הפרוכת שלו מוגבהת מעצמה. שתיים בדביר — ״שתי הפרוכות — בין הקודש לקודש הקדשים״; ושתיים בעלייה — לפי המתג ״הפרוכות שבעלייה״.", refs: [["כתובות קו.", {"book": 116, "index": 3032}], ["יומא נד.", {"book": 107, "index": 1412}], ["רש״י כתובות קו.", {"book": 2168, "index": 4902}], ["רמב״ם כלי המקדש ז, יז", {"book": 338, "index": 118}], ["תוספתא שקלים ג, יא", {"book": 193, "index": 40}], ["מידות ב, ג", {"book": 89, "index": 14}], ["ברטנורא תמיד ז, א", {"book": 634, "index": 222}]] }, //
@@ -68362,6 +69541,16 @@ body.tm-measuring canvas{cursor:crosshair}
           onPick: (k) => { const B = ctx.shared.soregBreach; if (B && typeof B.set === "function") B.set(k === "o1" ? "greeks" : "repaired"); }, //
           fly: (k) => { const c = {"o0": [[82, 6, 94], [70, 1, 80]], "o1": [[82, 6, 94], [70, 1, 80]]}[k]; if (c && c[0] && c[1]) fly(c[0], c[1]); if (c && c[1] && ctx.shared.fadeHold) ctx.shared.fadeHold.set(c[1]); } //
         }); //
+        opRow({   // NIGHT_WATCH_305 (the user, 19.11.2026 23:49: "שלום עליך - א") //
+          id: "sh61", short: "״שלום עליך״ — איש הר הבית או השומר", cardFly: true, //
+          cap: "״שלום עליך״ — איש הר הבית או השומר (מידות א, ב)", //
+          refs: [["מידות א, ב", "Mishnah_Middot.1.2"], ["תמיד כז:–כח.", "Tamid.27b"], ["רמב״ם בית הבחירה ח, י", "Mishneh_Torah,_The_Chosen_Temple.8.10"], ["יכין מידות א, ב", {"book": 819, "index": 32}], ["המפרש תמיד כז:", {"book": 2105, "index": 173}]], //
+          options: [["o0", "המשנה ותפארת ישראל — איש הר הבית אומר לשומר", "**המשנה** (מידות א, ב), כמו שהיא באוצריא: ״וכל משמר שאינו עומד, אומר לו איש הר הבית, שלום עליך. נכר שהוא ישן, חובטו במקלו״.\n**תפארת ישראל** (יכין שם): ״שלום עליך — דאולי נחלש ולא יכול לקום, או אולי בעל מחשבות הוא. לפיכך דורש השר בשלומו, שאם הוא ער יענהו״.\nבהדגמת עבודת הבוקר: השומר בשער הקרבן ער וקם לפני איש הר הבית; לשומר בשער הניצוץ, שאינו קם, איש הר הבית אומר ״שלום עליך״, ואין עונה."], //
+            ["o1", "הגמרא והרמב״ם — השומר אומר לאיש הר הבית", "**הגמרא** (תמיד כז:–כח.): ״וכל משמר שאינו עומד ואומר לו: איש הר הבית שלום עליך — ניכר שהוא ישן, חובטו במקלו״. וכן **הרמב״ם** (בית הבחירה ח, י): ״וכל משמר שאינו עומד ואומר לו איש הר הבית שלום עליך נכר שהוא ישן״; ו**המפרש** (תמיד כז:): ״כל משמר שאינו עומד כנגדו ואומר לו שלום עליך ניכר שהוא ישן״.\nתפארת ישראל מביא גרסה זו (״וי״ג״), ומקשה: ״וק״ל אמירה למה. הרי כשקם לחוד כבר ניכר שהוא ער״.\nבהדגמת עבודת הבוקר: השומר בשער הקרבן קם, ואומר ״איש הר הבית, שלום עליך״; השומר בשער הניצוץ אינו קם ואינו אומר — ניכר שהוא ישן."]], //
+          current: "o0", //
+          onPick: (k) => { const T = ctx.shared.tamid; if (T && typeof T.setShalom === "function") T.setShalom(k === "o1" ? "gemara" : "mishna"); }, //
+          fly: () => { const c = [[-60, 14, -96], [-72, 2, -76]]; fly(c[0], c[1]); } //
+        }); //
         opRow({ //
           id: "sh4", short: "שערי עזרת נשים", cardFly: true, //
           cap: "שערי עזרת נשים", //
@@ -68388,6 +69577,16 @@ body.tm-measuring canvas{cursor:crosshair}
           current: "o0", //
           onPick: (k) => { const S = ctx.shared.steps15; if (S && typeof S.set === "function") S.set(k === "o1" ? "rid" : "rambam"); }, //
           fly: (k) => { const c = {"o0": [[141, 33, 37], [104, 9.5, 5]], "o1": [[150, 44, 34], [100, 9.5, 0]]}[k]; if (c && c[0] && c[1]) fly(c[0], c[1]); if (c && c[1] && ctx.shared.fadeHold) ctx.shared.fadeHold.set(c[1]); } //
+        }); //
+        opRow({   // TERUAH_305 //
+          id: "sh60", short: "התקיעות בהליכה לשער המזרח — שמחת בית השואבה", cardFly: true, //
+          cap: "התקיעות בהליכה לשער המזרח — שמחת בית השואבה", //
+          refs: [["סוכה ה, ד", "Mishnah_Sukkah.5.4"], ["סוכה ה, ה", "Mishnah_Sukkah.5.5"], ["ברטנורא סוכה ה, ה", "Bartenura_on_Mishnah_Sukkah.5.5"], ["תוספות יום טוב סוכה ה, ד", "Tosafot_Yom_Tov_on_Mishnah_Sukkah.5.4"], ["יכין סוכה ה, ה", {"book": 772, "index": 581}]], //
+          options: [["o0", "רש״י וברטנורא — התקיעה, התרועה והתקיעה של העזרה נמשכות בהליכה", "לשון המשנה (סוכה ה, ד): ״הגיעו לעזרה, תקעו והריעו ותקעו. היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח״.\n**רש״י:** ״והיו תוקעין והולכין — באלו שלש אחרונות מאריכין עד שמגיעין לשער היוצא מעזרת נשים להר הבית״. וכך הברטנורא (סוכה ה, ה): ״הגיעו לעזרה תקעו והריעו ותקעו. ומאריכין בהן עד שהגיעו לשער התחתון, כדתנן היו תוקעין והולכין״; ותוספות יום טוב (סוכה ה, ד): ״ומאריכין בהן עד שמגיעין וכו׳ רש״י, וכפירוש הר״ב במשנה דלקמן״.\nבהדגמה: מן העזרה ועד השער היוצא למזרח — תקיעה ארוכה, תרועה ארוכה ותקיעה ארוכה, והכהנים הולכים. אורכן — בחירת מודל."], //
+            ["o1", "תפארת ישראל — תקיעה בלי תרועה", "לשון המשנה (סוכה ה, ד): ״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח״.\n**תפארת ישראל** (יכין, סוכה ה, ה): ״הך תנא ס״ל שלא תקעו למעלה העשירית, ואע״ג דגם לאחר מעלה עשירית קאמר תוקעין והולכין, היינו רק תקיעה בלי תרועה״.\nבהדגמה: אחרי התקיעה, התרועה והתקיעה שבעזרה — שלוש תקיעות ארוכות בהליכה, בלי תרועה. מספרן ואורכן — בחירת מודל."]], //
+          current: "o0", //
+          onPick: (k) => { const W = ctx.shared.simchaWalk; if (W && typeof W.set === "function") W.set(k === "o1" ? "tyt" : "rashi"); }, //
+          fly: () => { const c = [[205, 42, 62], [150, 9, 0]]; fly(c[0], c[1]); if (ctx.shared.fadeHold) ctx.shared.fadeHold.set(c[1]); } //
         }); //
         opRow({ //
           id: "sh7", short: "לשכת בית האבן — מקומה", cardFly: true, //
@@ -68450,7 +69649,7 @@ body.tm-measuring canvas{cursor:crosshair}
           refs: [["רמב״ם כלי המקדש ח, א", "Rambam_Klei_HaMikdash.8.1"], ["רמב״ם כלי המקדש ח, ב", "Rambam_Klei_HaMikdash.8.2"], ["רמב״ם כלי המקדש ח, יא", "Rambam_Klei_HaMikdash.8.11"], ["רמב״ם כלי המקדש ח, יג", "Rambam_Klei_HaMikdash.8.13"], ["כסף משנה כלי המקדש ח, א", "Kesef_Mishneh_on_Klei_HaMikdash.8.1"], ["רמב״ן שמות לט, כח", "Ramban_on_Exodus.39.28"], ["יומא יב:", "Yoma.12b"]], //
           options: [["o0", "הרמב״ם, כרבי — רקום בצמר צבוע", "**הרמב״ם** (כלי המקדש ח, א): ״וארבעתן של פשתן לבנים וחוטן כפול ששה. והאבנט לבדו רקום בצמר״. ועוד שם (ח, ב): ״ואבנטו של כהן גדול מעשה רקם הוא והוא דומה במעשיו לאבנט כהן הדיוט״; (ח, יא): ״בגדי כהנה מתר להנות בהן. לפיכך לבשם ביום עבודתו ואפלו שלא בשעת עבודה חוץ מן האבנט מפני שהוא שעטנז״.\n**כסף משנה**: ״לא נחלקו אלא באבנטו של כהן הדיוט בין בשאר ימות השנה בין בי״ה שרבי אומר של כלאים ורבי אלעזר בר״ש אומר של בוץ וידוע שהלכה כרבי מחבירו״.\n**רמב״ן** (שמות לט, כח): ״נודע שהוא רקום בארבע מינין הללו… והאבנט הזה הוא גם באהרן ובניו כדעת האומר (יומא יב) אבנטו של כהן גדול זהו אבנטו של כהן הדיוט״.\nהצבעים — הרמב״ם (ח, יג): ״ותכלת האמורה בכל מקום היא הצמר הצבוע כעצם שמים שהוא פתוך מן הכחל. הארגמן הוא הצמר הצבוע אדום. ותולעת השני הוא הצמר הצבוע בתולעת״.\nבמודל — ברירת המחדל: האבנט ארוג חוטים דקים — תכלת, ארגמן, תולעת שני ולבן — שצבעיהם מתמזגים לגוון אחד. לחיצה מעמידה שלושה כהנים בעזרת הכהנים לרבע דקה; ובהדגמת הפייסות, ברגע הבגדים, השיטה השנייה מוצגת לכמה שניות.", [["רמב״ם כלי המקדש ח, א", "Rambam_Klei_HaMikdash.8.1"], ["רמב״ם כלי המקדש ח, ב", "Rambam_Klei_HaMikdash.8.2"], ["רמב״ם כלי המקדש ח, יא", "Rambam_Klei_HaMikdash.8.11"], ["רמב״ם כלי המקדש ח, יג", "Rambam_Klei_HaMikdash.8.13"], ["כסף משנה כלי המקדש ח, א", "Kesef_Mishneh_on_Klei_HaMikdash.8.1"], ["רמב״ן שמות לט, כח", "Ramban_on_Exodus.39.28"]]], ["o1", "רבי אלעזר ברבי שמעון — של בוץ", "בגמרא (יומא יב:): ״כי אתא רב דימי, אמר: אבנטו של כהן הדיוט, רבי ורבי אלעזר ברבי שמעון, חד אמר: של כלאים, וחד אמר: של בוץ״. ולפי **כסף משנה**: ״ורבי אלעזר בר״ש אומר של בוץ״.\n״בוץ״ הוא פשתן — הרמב״ם (כלי המקדש ח, יג): ״וכל מקום שנאמר בתורה שש או בד הוא הפשתים והוא הבוץ״.\n**רמב״ן** (שמות לט, כח): ״ועל דעת האומר (שם) לא זהו אבנטו של כהן הדיוט פרש בשל אהרן שהוא מעשה רוקם ולא הצרך להזכיר של בניו שהוא שש… וכלן שש ככתנות״.\nבמודל: האבנט כולו לבן, כשאר הבגדים. לחיצה מעמידה שלושה כהנים בעזרת הכהנים לרבע דקה.", [["יומא יב:", "Yoma.12b"], ["כסף משנה כלי המקדש ח, א", "Kesef_Mishneh_on_Klei_HaMikdash.8.1"], ["רמב״ם כלי המקדש ח, יג", "Rambam_Klei_HaMikdash.8.13"], ["רמב״ן שמות לט, כח", "Ramban_on_Exodus.39.28"]]]], //
           current: "o0", //
-          onPick: (k) => { const P = ctx.shared.payis, T = ctx.shared.tamid; if (P && typeof P.setAvnet === "function") P.setAvnet(k === "o1" ? "butz" : "rambam"); if (T && T.active && typeof T.setBelt === "function") T.setBelt(k === "o1" ? "white" : "kilayim"); else if (P && typeof P.garments === "function") P.garments(15000); }, //
+          onPick: (k) => { const P = ctx.shared.payis, T = ctx.shared.tamid; if (P && typeof P.setAvnet === "function") P.setAvnet(k === "o1" ? "butz" : "rambam"); { const PA = ctx.shared.peopleAvnet; if (PA) PA.set(k === "o1" ? "butz" : "rambam"); } if (T && T.active && typeof T.setBelt === "function") T.setBelt(k === "o1" ? "white" : "kilayim"); else if (P && typeof P.garments === "function") P.garments(15000); }, //
           fly: (k) => { const c = {"o0": [[85.4, 18.7, 0], [78.5, 17.9, 0]], "o1": [[85.4, 18.7, 0], [78.5, 17.9, 0]]}[k]; if (c && c[0] && c[1]) fly(c[0], c[1]); } //
         }); //
         opRow({ //
@@ -68470,6 +69669,16 @@ body.tm-measuring canvas{cursor:crosshair}
           current: "o2", //
           onPick: (k) => { const F = (ctx.shared.features || {}).northZones; if (F) { try { const was = !!F.isOn(); autoOff.run(F); if (!was) leaveFeat = F; } catch (_) {} } const N = ctx.shared.northZones; if (N && typeof N.set === "function") { if (typeof N.setLine === "function") N.setLine(k === "o3" ? "rambam" : "rashi"); N.set(["yose", "elazar", "rebbi", "rebbi"][+k.slice(1)] || "rebbi"); } }, //
           fly: (k) => { const c = {"o0": [[72, 112, 40], [40, 16, -30]], "o1": [[72, 112, 40], [40, 16, -30]], "o2": [[72, 112, 40], [40, 16, -30]], "o3": [[72, 112, 40], [40, 16, -30]]}[k]; if (c && c[0] && c[1]) fly(c[0], c[1]); } //
+        }); //
+        opRow({   // RINGS_305 (the user, 20.11.2026 01:30: "מתג") //
+          id: "sh62", short: "סידור הטבעות — ששה של ארבע או ארבעה של שש", cardFly: true, //
+          cap: "סידור הטבעות (מידות ג, ה)", //
+          refs: [["מידות ג, ה", "Mishnah_Middot.3.5"], ["תוי״ט מידות ג, ה", "Tosafot_Yom_Tov_on_Mishnah_Middot.3.5"], ["מידות ה, ב", "Mishnah_Middot.5.2"]], //
+          options: [["o0", "תנא קמא — ששה סדרים של ארבע ארבע", "**המשנה** (מידות ג, ה): ״וטבעות היו לצפונו של מזבח, ששה סדרים של ארבע ארבע״.\n**רבינו שמעיה** (שם): ״ו׳ סדרים. היו הטבעות בשורה אחת ובכל סדר ארבעה טבעות, שהן כ״ד טבעות לכ״ד משמרות״ — כל סדר שורה אחת של ארבע.\nבמודל: שש שורות מצפון לדרום, ובכל אחת ארבע טבעות, בעשרים וארבע האמות של מקום הטבעות (מידות ה, ב)."], //
+            ["o1", "ויש אומרים — ארבעה של שש שש", "**המשנה** (מידות ג, ה): ״ויש אומרים, ארבעה של שש שש״.\n**רבינו שמעיה** (שם): ״וי״א ד׳ סדרים היו של שש שש טבעות, שהן נמי כ״ד״; וכך בתוספות יום טוב.\nבמודל: ארבע שורות מצפון לדרום, ובכל אחת שש טבעות, באותן עשרים וארבע אמות."]], //
+          current: "o0", //
+          onPick: (k) => { const R = ctx.shared.ringsLayout; if (R && typeof R.set === "function") R.set(k === "o1" ? "four6" : "six4"); }, //
+          fly: () => { fly([52, 46, -4], [52, 14, -27]); } //
         }); //
         opRow({ //
           id: "sh16", short: "מקום המזבח בעזרה", cardFly: true, //
@@ -68764,7 +69973,7 @@ body.tm-measuring canvas{cursor:crosshair}
           id: "sh47", short: "הפרוכות ודרך הכהן הגדול", cardFly: true, //
           cap: "הפרוכות ודרך הכהן הגדול — רבי יהודה, רבי יוסי, רבי מאיר, או הרשב״א בדעת הרמב״ם", //
           refs: [["יומא ה, א", {"book": 55, "index": 38}], ["יומא נא:", {"book": 107, "index": 1317}], ["רמב״ם בית הבחירה ד, ב", {"book": 337, "index": 63}], ["יכין יומא ה", {"book": 762, "index": 444}], ["לחם שמים מידות ד, ה", {"book": 1145, "index": 95}], ["תוי״ט יומא ה, ה", {"book": 898, "index": 179}], ["יומא נא: (רב חסדא)", {"book": 107, "index": 1318}], ["יומא נא: (רבי מאיר)", {"book": 107, "index": 1319}], ["מאירי יומא נא:", {"book": 2199, "index": 464}], ["תוי״ט יומא ה, ה (הרשב״א)", {"book": 898, "index": 180}], ["יומא ה, ה", {"book": 55, "index": 42}], ["רמב״ם עבודת יום הכפורים ד, ב", {"book": 342, "index": 33}], ["מאירי יומא נד.", {"book": 2199, "index": 489}]], //
-          options: [["o0", "תנא קמא — שתי פרוכות, ואמה ביניהן", "המשנה (יומא ה, א): ״היה מהלך בהיכל, עד שמגיע לבין שתי הפרכות המבדילות בין הקדש ובין קדש הקדשים, וביניהן אמה... החיצונה היתה פרופה מן הדרום, והפנימית מן הצפון. מהלך ביניהן, עד שמגיע לצפון״.\nהגמרא (יומא נא:): ״ורבנן אמרי לך: הני מילי במשכן, אבל במקדש שני כיון דלא הואי אמה טרקסין, ובמקדש ראשון הוא דהואי, ואיסתפקא להו לרבנן בקדושתיה, אי כלפנים אי כלחוץ, ועבוד שתי פרוכת״.\n**הרמב״ם** (בית הבחירה ד, ב): ״ולא בנו כתל בבית שני אלא עשו שתי פרוכות אחת מצד קדש הקדשים ואחת מצד הקדש וביניהן אמה כנגד עבי הכתל שהיה בראשון״.\nבמודל (ברירת המחדל): שתי פרוכות ואמה ביניהן; החיצונה פתוחה בדרום, והפנימית בצפון. המבט — מתוך האמה שביניהן, מן הדרום אל הצפון.\nבהדגמת הכהן הגדול — דרכו כרבי יהודה: ״בין המזבח למנורה היה מהלך... ורבי יהודה אמר לך: פיתחא בדרום קאי״ (יומא נא:).", [["יומא ה, א", {"book": 55, "index": 38}], ["יומא נא:", {"book": 107, "index": 1317}], ["רמב״ם בית הבחירה ד, ב", {"book": 337, "index": 63}], ["יכין יומא ה", {"book": 762, "index": 444}], ["לחם שמים מידות ד, ה", {"book": 1145, "index": 95}], ["תוי״ט יומא ה, ה", {"book": 898, "index": 179}]]], ["o1", "רבי יוסי — פרוכת אחת בלבד", "המשנה (יומא ה, א): ״רבי יוסי אומר, לא היתה שם אלא פרכת אחת בלבד, שנאמר (שמות כו), והבדילה הפרכת לכם בין הקדש ובין קדש הקדשים״.\n**מקומה** — **יכין** (יומא ה): ״ס״ל דעובי אותה אמה כלפנים״. **לחם שמים** (מידות ד, ה): ״למ״ד פרוכת אחת הואי. לא מפסקא פרוכת אלא בצד אחד (דהיינו כפי הנראה צד החיצון)״.\n**פתחה** — הגמרא (יומא נא:): ״מאן יש אומרים? אמר רב חסדא: רבי יוסי היא, דאמר: פיתחא בצפון קאי״. **תוספות יום טוב** (יומא ה, ה): ״ובפרוכת אחת פתחא בצפון דהכי ס״ל ר״י״; ושם כתב שהרמב״ם, בסדר עבודת יום הכיפורים, ״העתיק דעת רבי יוסי שלא היתה אלא פרוכת אחת״ — ״לפי שכן יהיה לעתיד״.\nבמודל: פרוכת אחת, בצד האמה שכלפי ההיכל, ופתחה בצפון; האמה שמאחוריה פתוחה אל קודש הקדשים. המבט — כבשיטה הראשונה, מן הדרום אל הצפון: מימין הפרוכת, ומשמאל קודש הקדשים, המכוסה בענן במודל. ראש הפרוכת כפוף מעט כלפי פנים, כראש הפרוכת הפנימית שבשיטה הראשונה — בחירת מודל.\nבהדגמת הכהן הגדול — דרכו ״בין שלחן לכותל״, אל הפתח שבצפון.", [["יומא ה, א", {"book": 55, "index": 38}], ["יומא נא:", {"book": 107, "index": 1317}], ["רמב״ם בית הבחירה ד, ב", {"book": 337, "index": 63}], ["יכין יומא ה", {"book": 762, "index": 444}], ["לחם שמים מידות ד, ה", {"book": 1145, "index": 95}], ["תוי״ט יומא ה, ה", {"book": 898, "index": 179}], ["יומא נא: (רב חסדא)", {"book": 107, "index": 1318}]]], ["o2", "רבי מאיר — פרוכת אחת, ודרכו בין השולחן למזבח", "הברייתא (יומא נא:): ״תנו רבנן: בין המזבח למנורה היה מהלך, דברי רבי יהודה. רבי מאיר אומר: בין שלחן למזבח. ויש אומרים: בין שלחן לכותל״.\\nהגמרא שואלת: ״ורבי מאיר כמאן סבירא ליה? אי כרבי יהודה סבירא ליה — ניעול כרבי יהודה, אי כרבי יוסי סבירא ליה — ניעול כרבי יוסי!״ ומשיבה: ״לעולם כרבי יוסי סבירא ליה, ואמר לך: שולחנות צפון ודרום מונחין, ומפסקא ליה שלחן ולא מתעייל ליה. ואיבעית אימא: לעולם מזרח ומערב מונחין, ומשום שכינה לאו אורח ארעא למיעל להדיא״.\\n**רש״י** (יומא נא:): ״בין שולחן ולמזבח — דרך הצפון״. ״שולחנות צפון ודרום מונחין — עשר שולחנות עשה שלמה... חמש בשורה אחת... ועל כרחך צריך היה לסמוך ראש השולחן הצפוני לכותל... הלכך מפסקי שולחנות את הדרך ולא מתעייל ליה בין שולחן לכותל״. ועל ״למיעל להדיא״ (נב.): ״לילך אצל הכותל הצפוני כל אורך ההיכל, וכל שעה עיניו נזונות מבית קדשי הקדשים דרך הפריפה שכנגדו״.\\n**הריטב״א** (יומא נא:): ״שבא מדרום המזבח ונכנס בין השלחן שבצפון ולמזבח, ויוצא ונכנס בפתח שבצפון, דסבי׳ לי׳ כר׳ יוסי דפתח׳ בצפון קאי״.\\n**המאירי** (יומא נא:): ״ור׳ מאיר אף הוא סובר שלא היתה שם אלא פרוכת אחת, אלא שאומר שדרך מהלכו היה בין מזבח לשלחן משתי סבות״. והסיבה השנייה: ״אם הוא נכנס בין שלחן לכותל נמצא בעודו בהיכל מכוון כנגד הפירוף ורואה לפנים... ונוח לו שיעקם בין מזבח לשלחן שלא יראה בפנים עד שיגיע לפירוף עצמו״.\\n**תוספות יום טוב** (יומא ה, א): ״כדאמר בגמרא אליבא דר״מ דס״ל כר׳ יוסי שלא היה אלא פרוכת אחת, ומצריכו שלא יכנס בהיכל כנגד הפריפה כדי שלא יזונו עיניו״.\\n**רבינו חננאל** גורס בברייתא הפוך: ״בין המזבח למנורה... דברי ר׳ מאיר״, ו״ר׳ יהודה שהיה אומר בין המזבח לשלחן... לעולם ר׳ יהודה פתחא בצפון קאי״. גם לגרסתו, מי שהולך בין השולחן למזבח סובר שהפתח בצפון.\\n**לחם שמים** (מידות ד, ה): דברי רב, ששתי פרוכות היו בדביר ושתיים כנגדן בעלייה — ״אליבא דרבי מאיר התם, דשתי פרוכות הוו למטה״; כלומר, לדעתו לרבי מאיר שתי פרוכות. ובפירושו ליומא (ה, א) הוא מבאר את דרכו בבית ראשון: ״דרך ישר נגד הפתח, והוא בין שולחן למזבח כר״מ״.\\nבמודל: פרוכת אחת, כרבי יוסי, ופתחה בצפון — כמאירי וכתוספות יום טוב. בהדגמת הכהן הגדול: הוא מהלך בין השולחן למזבח, ואחרי השולחן פונה לצפון, אל הפתח, ונכנס בו כבשיטת רבי יוסי.", [["יומא נא:", {"book": 107, "index": 1318}], ["יומא נא: (כמאן סבירא ליה)", {"book": 107, "index": 1319}], ["יומא נא: (שולחנות צפון ודרום)", {"book": 107, "index": 1320}], ["יומא נב. (למיעל להדיא)", {"book": 107, "index": 1323}], ["רש״י יומא נא:", {"book": 2157, "index": 1951}], ["רש״י יומא נב.", {"book": 2157, "index": 1953}], ["ריטב״א יומא נא:", {"book": 1940, "index": 789}], ["מאירי יומא נא:", {"book": 2199, "index": 464}], ["תוי״ט יומא ה, א (מן הדרום)", {"book": 898, "index": 156}], ["רבינו חננאל יומא נא:", {"book": 2135, "index": 478}], ["לחם שמים מידות ד, ה", {"book": 1145, "index": 95}], ["לחם שמים יומא ה, א", {"book": 1094, "index": 215}]]], ["o3", "הרשב״א בדעת הרמב״ם — שתי פרוכות; החיצונה מן הצפון והפנימית מן הדרום", "**הרשב״א** (בתשובה, סי׳ שפ״ח; הובאה בכסף משנה, הלכות עבודת יום הכפורים ד, ב), בדעת הרמב״ם: התנא של ״מהיכן הוא מתחיל, מקרן מזרחית צפונית״ (יומא ה, ה) סובר ששתי פרוכות היו, ״אלא שהחיצונה פרופה מן הצפון ופנימית מן הדרום, וכי נפיק נפיק מן הצפון. ובזה יתקיימו דברי הרב ז״ל שהוא פסק בפרוכות כת״ק״. ולכן הרמב״ם פסק ששתי פרוכות היו (בית הבחירה ד, ב), ופסק גם שמתחיל להזות ״מקרן מזרחית צפונית״ (עבודת יום הכפורים ד, ב).\nהשאלה שעליה השיב: ״עכ״פ משנה זו שנויה לדעת ר׳ יוסי שסובר שלא היתה שם אלא פרוכת אחת ופרופה לצפון לימין הנכנס... ונפלאתי מדברי הרמב״ם ז״ל אחר שפסק גם הוא כרבנן היאך פסק בזו דמצפונית מזרחית הוא מתחיל״. אותה תמיהה כתב **המאירי** (יומא נד.).\n**תוספות יום טוב** (יומא ה, ה) מביא את הרשב״א: ״וסברה דחיצונה פרופה מן הצפון ופנימי מן הדרום, וכי נפיק נפיק מן הצפון״; ומיישב בעצמו אחרת: הרמב״ם כתב את סדר העבודה כפי שיהיה לעתיד, ״כשאין כאן אלא פרוכת אחת״, ופתחה בצפון.\n**מראה הפנים** (ירושלמי יומא ה, ה–ו) מבאר את הרמב״ם כרשב״א: ״ופיתחא בצפון קאי״. **מהר״י קורקוס** (הובא בכסף משנה, מעשה הקרבנות ה, יד): ״כמ״ש בפ״ד מהל׳ עבודת יוה״כ, כי מצד צפון יוצא״.\nומנגד, **הלחם משנה** (עבודת יום הכפורים ד, ב): ״דאית ליה לרבינו ז״ל פתחא בדרום קאי״.\nבמודל: שתי הפרוכות כשל תנא קמא, אבל בתמונת ראי — החיצונה פרופה בצד צפון, והפנימית בצד דרום. בהדגמה ״הכהן הגדול נכנס בקטורת״ הוא נכנס בפתח שבצפון, מהלך בין הפרוכות עד הדרום, נכנס בפתח הפנימית, ויוצא בדרך כניסתו — אל הצפון. דרכו בהיכל עד הפתח, בצד צפון — בחירת מודל."]], //
+          options: [["o0", "תנא קמא — שתי פרוכות, ואמה ביניהן", "המשנה (יומא ה, א): ״היה מהלך בהיכל, עד שמגיע לבין שתי הפרכות המבדילות בין הקדש ובין קדש הקדשים, וביניהן אמה... החיצונה היתה פרופה מן הדרום, והפנימית מן הצפון. מהלך ביניהן, עד שמגיע לצפון״.\nהגמרא (יומא נא:): ״ורבנן אמרי לך: הני מילי במשכן, אבל במקדש שני כיון דלא הואי אמה טרקסין, ובמקדש ראשון הוא דהואי, ואיסתפקא להו לרבנן בקדושתיה, אי כלפנים אי כלחוץ, ועבוד שתי פרוכת״.\n**הרמב״ם** (בית הבחירה ד, ב): ״ולא בנו כתל בבית שני אלא עשו שתי פרוכות אחת מצד קדש הקדשים ואחת מצד הקדש וביניהן אמה כנגד עבי הכתל שהיה בראשון״.\nבמודל (ברירת המחדל): שתי פרוכות ואמה ביניהן; החיצונה פתוחה בדרום, והפנימית בצפון. המבט — מתוך האמה שביניהן, מן הדרום אל הצפון.\nבהדגמת הכהן הגדול — דרכו כרבי יהודה: ״בין המזבח למנורה היה מהלך... ורבי יהודה אמר לך: פיתחא בדרום קאי״ (יומא נא:).", [["יומא ה, א", {"book": 55, "index": 38}], ["יומא נא:", {"book": 107, "index": 1317}], ["רמב״ם בית הבחירה ד, ב", {"book": 337, "index": 63}], ["יכין יומא ה", {"book": 762, "index": 444}], ["לחם שמים מידות ד, ה", {"book": 1145, "index": 95}], ["תוי״ט יומא ה, ה", {"book": 898, "index": 179}]]], ["o1", "רבי יוסי — פרוכת אחת בלבד", "המשנה (יומא ה, א): ״רבי יוסי אומר, לא היתה שם אלא פרכת אחת בלבד, שנאמר (שמות כו), והבדילה הפרכת לכם בין הקדש ובין קדש הקדשים״.\n**מקומה** — **יכין** (יומא ה): ״ס״ל דעובי אותה אמה כלפנים״. **לחם שמים** (מידות ד, ה): ״למ״ד פרוכת אחת הואי. לא מפסקא פרוכת אלא בצד אחד (דהיינו כפי הנראה צד החיצון)״.\n**פתחה** — הגמרא (יומא נא:): ״מאן יש אומרים? אמר רב חסדא: רבי יוסי היא, דאמר: פיתחא בצפון קאי״. **תוספות יום טוב** (יומא ה, ה): ״ובפרוכת אחת פתחא בצפון דהכי ס״ל ר״י״; ושם כתב שהרמב״ם, בסדר עבודת יום הכיפורים, ״העתיק דעת רבי יוסי שלא היתה אלא פרוכת אחת״ — ״לפי שכן יהיה לעתיד״.\nבמודל: פרוכת אחת, בצד האמה שכלפי ההיכל, ופתחה בצפון; האמה שמאחוריה פתוחה אל קודש הקדשים. המבט — כבשיטה הראשונה, מן הדרום אל הצפון: מימין הפרוכת, ומשמאל קודש הקדשים, המכוסה בענן במודל. ראש הפרוכת כפוף מעט כלפי פנים, כראש הפרוכת הפנימית שבשיטה הראשונה — בחירת מודל.\nבהדגמת הכהן הגדול — דרכו ״בין שלחן לכותל״, אל הפתח שבצפון.", [["יומא ה, א", {"book": 55, "index": 38}], ["יומא נא:", {"book": 107, "index": 1317}], ["רמב״ם בית הבחירה ד, ב", {"book": 337, "index": 63}], ["יכין יומא ה", {"book": 762, "index": 444}], ["לחם שמים מידות ד, ה", {"book": 1145, "index": 95}], ["תוי״ט יומא ה, ה", {"book": 898, "index": 179}], ["יומא נא: (רב חסדא)", {"book": 107, "index": 1318}]]], ["o2", "רבי מאיר — פרוכת אחת, ודרכו בין השולחן למזבח", "הברייתא (יומא נא:): ״תנו רבנן: בין המזבח למנורה היה מהלך, דברי רבי יהודה. רבי מאיר אומר: בין שלחן למזבח. ויש אומרים: בין שלחן לכותל״.\\nהגמרא שואלת: ״ורבי מאיר כמאן סבירא ליה? אי כרבי יהודה סבירא ליה — ניעול כרבי יהודה, אי כרבי יוסי סבירא ליה — ניעול כרבי יוסי!״ ומשיבה: ״לעולם כרבי יוסי סבירא ליה, ואמר לך: שולחנות צפון ודרום מונחין, ומפסקא ליה שלחן ולא מתעייל ליה. ואיבעית אימא: לעולם מזרח ומערב מונחין, ומשום שכינה לאו אורח ארעא למיעל להדיא״.\\n**רש״י** (יומא נא:): ״בין שולחן ולמזבח — דרך הצפון״. ״שולחנות צפון ודרום מונחין — עשר שולחנות עשה שלמה... חמש בשורה אחת... ועל כרחך צריך היה לסמוך ראש השולחן הצפוני לכותל... הלכך מפסקי שולחנות את הדרך ולא מתעייל ליה בין שולחן לכותל״. ועל ״למיעל להדיא״ (נב.): ״לילך אצל הכותל הצפוני כל אורך ההיכל, וכל שעה עיניו נזונות מבית קדשי הקדשים דרך הפריפה שכנגדו״.\\n**הריטב״א** (יומא נא:): ״שבא מדרום המזבח ונכנס בין השלחן שבצפון ולמזבח, ויוצא ונכנס בפתח שבצפון, דסבי׳ לי׳ כר׳ יוסי דפתח׳ בצפון קאי״.\\n**המאירי** (יומא נא:): ״ור׳ מאיר אף הוא סובר שלא היתה שם אלא פרוכת אחת, אלא שאומר שדרך מהלכו היה בין מזבח לשלחן משתי סבות״. והסיבה השנייה: ״אם הוא נכנס בין שלחן לכותל נמצא בעודו בהיכל מכוון כנגד הפירוף ורואה לפנים... ונוח לו שיעקם בין מזבח לשלחן שלא יראה בפנים עד שיגיע לפירוף עצמו״.\\n**תוספות יום טוב** (יומא ה, א): ״כדאמר בגמרא אליבא דר״מ דס״ל כר׳ יוסי שלא היה אלא פרוכת אחת, ומצריכו שלא יכנס בהיכל כנגד הפריפה כדי שלא יזונו עיניו״.\\n**רבינו חננאל** גורס בברייתא הפוך: ״בין המזבח למנורה... דברי ר׳ מאיר״, ו״ר׳ יהודה שהיה אומר בין המזבח לשלחן... לעולם ר׳ יהודה פתחא בצפון קאי״. גם לגרסתו, מי שהולך בין השולחן למזבח סובר שהפתח בצפון.\\n**לחם שמים** (מידות ד, ה): דברי רב, ששתי פרוכות היו בדביר ושתיים כנגדן בעלייה — ״אליבא דרבי מאיר התם, דשתי פרוכות הוו למטה״; כלומר, לדעתו לרבי מאיר שתי פרוכות. ובפירושו ליומא (ה, א) הוא מבאר את דרכו בבית ראשון: ״דרך ישר נגד הפתח, והוא בין שולחן למזבח כר״מ״.\\nבמודל: פרוכת אחת, כרבי יוסי, ופתחה בצפון — כמאירי וכתוספות יום טוב.\n**בהדגמת הכהן הגדול** — עשרת שולחנות שלמה עומדים בהיכל, כרש״י, בכל מצב של המתג ״שולחנות שלמה ומנורותיו״: תוספות רי״ד מדייק מכאן ״דעשרה שולחנות שעשה שלמה הי׳ בבית שני״, ומקשה מן המשנה בשקלים (ו, ד); ומסקנתו ״אלמא לא הי׳ בהיכל אלא שלחן אחד בלבד בבית שני״ — והיא שיטה החולקת על רבי מאיר. בתחילה השולחנות צפון ודרום, כתירוץ הראשון: הכהן הגדול מהלך מצפון למזבח, עובר בין המזבח לראש השורה המזרחית — ״שאין המזבח מכוון כנגד השולחן, אלא משוך קימעא כלפי חוץ״ (רש״י) — ממשיך מערבה לאורך ראשי השולחנות, ובין השורה המערבית לפרוכת פונה צפונה, אל הפתח, ונכנס בו כבשיטת רבי יוסי. בכתובית של התירוץ השני — השולחנות ממזרח למערב. מנורות שלמה עומדות בדרום, חמש וחמש, מן הכותל הדרומי, והכהן הגדול הולך בין ראשי השולחנות לראשי המנורות — כלשון הריטב״א (יומא נא:): ״הילכך בין מזבח לשולחן כי המזבח משוך הי׳ כלפי חוץ כדאיתא לעיל ונכנס בצד סוף השלחן הסמוך לו בין שלחן למנורה והולך לצפון״. כני הזהב שבהיכל עומדים במקומם, כמתג ״כני הזהב — שניים או אחד״. בסוף ההדגמה חוזר הכל כמו שנבחר במתגים. וכן כתבו התוספות (מנחות צח:): ״אע״ג דרבי מאיר סבירא ליה צפון ודרום מונחים כדמסיק התם, ניחא דיכול להלך בין שולחן למזבח, דשולחנות שלמה קיימי בתרי דרי... והמזבח היה בין שולחן דמשה למנורה דמשה, אלא שמשוך קימעא כלפי חוץ, ומזבח הזהב היה אמה על אמה — נמצא מקום פנוי הרבה שהיה יכול להלך בין המזבח לשולחנות״. והמאירי (יומא נא:): ״שהשלחנות עומדות צפון ודרום וראשי השלחנות מחברים לכותל ומפסיקות המהלך ומתוך כך בוקע בין מזבח לשלחן״. ותוספות רבינו פרץ (יומא נא:): ״לכן נראה לי שהיה המזבח בין השולחנות של שלמה למול שלחן של משה משוך קימעא לצד חוץ, פירוש למזרח, ויש דרך לעבור בינתים״. ובגרסת רבינו חננאל הדברים בשם רבי יהודה: ״ואמרינן לעולם ר׳ יהודה פתחא בצפון קאי וקסבר שלחנות בצפון ודרום היו מונחין ומפסקי ליה ולא מתעייל ליה״. הדרך המדויקת, מקום המזבח (אמה ורבע מזרחה יותר מבעבר, כדי שיהיה מעבר בינו ובין השולחנות), ומקום המנורות בשורותיהן — בחירת מודל לפי רש״י והריטב״א.", [["יומא נא:", {"book": 107, "index": 1318}], ["יומא נא: (כמאן סבירא ליה)", {"book": 107, "index": 1319}], ["יומא נא: (שולחנות צפון ודרום)", {"book": 107, "index": 1320}], ["יומא נב. (למיעל להדיא)", {"book": 107, "index": 1323}], ["רש״י יומא נא:", {"book": 2157, "index": 1951}], ["רש״י יומא נב.", {"book": 2157, "index": 1953}], ["ריטב״א יומא נא:", {"book": 1940, "index": 789}], ["מאירי יומא נא:", {"book": 2199, "index": 464}], ["תוי״ט יומא ה, א (מן הדרום)", {"book": 898, "index": 156}], ["רבינו חננאל יומא נא:", {"book": 2135, "index": 478}], ["לחם שמים מידות ד, ה", {"book": 1145, "index": 95}], ["לחם שמים יומא ה, א", {"book": 1094, "index": 215}]]], ["o3", "הרשב״א בדעת הרמב״ם — שתי פרוכות; החיצונה מן הצפון והפנימית מן הדרום", "**הרשב״א** (בתשובה, סי׳ שפ״ח; הובאה בכסף משנה, הלכות עבודת יום הכפורים ד, ב), בדעת הרמב״ם: התנא של ״מהיכן הוא מתחיל, מקרן מזרחית צפונית״ (יומא ה, ה) סובר ששתי פרוכות היו, ״אלא שהחיצונה פרופה מן הצפון ופנימית מן הדרום, וכי נפיק נפיק מן הצפון. ובזה יתקיימו דברי הרב ז״ל שהוא פסק בפרוכות כת״ק״. ולכן הרמב״ם פסק ששתי פרוכות היו (בית הבחירה ד, ב), ופסק גם שמתחיל להזות ״מקרן מזרחית צפונית״ (עבודת יום הכפורים ד, ב).\nהשאלה שעליה השיב: ״עכ״פ משנה זו שנויה לדעת ר׳ יוסי שסובר שלא היתה שם אלא פרוכת אחת ופרופה לצפון לימין הנכנס... ונפלאתי מדברי הרמב״ם ז״ל אחר שפסק גם הוא כרבנן היאך פסק בזו דמצפונית מזרחית הוא מתחיל״. אותה תמיהה כתב **המאירי** (יומא נד.).\n**תוספות יום טוב** (יומא ה, ה) מביא את הרשב״א: ״וסברה דחיצונה פרופה מן הצפון ופנימי מן הדרום, וכי נפיק נפיק מן הצפון״; ומיישב בעצמו אחרת: הרמב״ם כתב את סדר העבודה כפי שיהיה לעתיד, ״כשאין כאן אלא פרוכת אחת״, ופתחה בצפון.\n**מראה הפנים** (ירושלמי יומא ה, ה–ו) מבאר את הרמב״ם כרשב״א: ״ופיתחא בצפון קאי״. **מהר״י קורקוס** (הובא בכסף משנה, מעשה הקרבנות ה, יד): ״כמ״ש בפ״ד מהל׳ עבודת יוה״כ, כי מצד צפון יוצא״.\nומנגד, **הלחם משנה** (עבודת יום הכפורים ד, ב): ״דאית ליה לרבינו ז״ל פתחא בדרום קאי״.\nבמודל: שתי הפרוכות כשל תנא קמא, אבל בתמונת ראי — החיצונה פרופה בצד צפון, והפנימית בצד דרום. בהדגמה ״הכהן הגדול נכנס בקטורת״ הוא נכנס בפתח שבצפון, מהלך בין הפרוכות עד הדרום, נכנס בפתח הפנימית, ויוצא בדרך כניסתו — אל הצפון. דרכו בהיכל עד הפתח, בצד צפון — בחירת מודל."]], //
           current: "o0", //
           onPick: (k) => { const R = ctx.shared.parochotCount; if (R && typeof R.set === "function") R.set(k === "o3" ? "rashba" : k === "o2" ? "meir" : k === "o1" ? "one" : "two"); }, //
           fly: (k) => { const c = {"o0": [[-45.0, 29.5, 9.0], [-45.1, 25.3, -9.3]], "o1": [[-45.0, 29.5, 9.0], [-45.1, 25.3, -9.3]], "o2": [[-30.5, 31.0, 2.5], [-41.0, 26.2, -6.0]], "o3": [[-45.0, 29.5, -9.0], [-45.1, 25.3, 9.3]]}[k]; if (c && c[0] && c[1]) fly(c[0], c[1]); } //
@@ -68878,9 +70087,9 @@ body.tm-measuring canvas{cursor:crosshair}
       // lost: it stands after the groups, in "עוד". A row of a card only (row.cardOnly) keeps its place in OPS and is not counted. //
       { //
         const GROUPS = [ //
-          ["הר הבית והחיל", ["sh0", "sh1", "sh2", "sh55", "sh3"]], //
-          ["עזרת נשים", ["sh4", "sh5", "sh6"]], //
-          ["העזרה", ["sh9", "sh54", "sh8", "sh11", "sh10", "sh14", "sh15"]], //
+          ["הר הבית והחיל", ["sh0", "sh1", "sh2", "sh55", "sh3", "sh61"]], //
+          ["עזרת נשים", ["sh4", "sh5", "sh6", "sh60"]], //
+          ["העזרה", ["sh9", "sh54", "sh8", "sh11", "sh10", "sh14", "sh15", "sh62"]], //
           ["לשכות העזרה ובית המוקד", ["sh7", "sh50", "sh51", "sh52", "sh53"]], //
           ["המזבח, הכבש והכיור", ["sh16", "sh17", "sh18", "sh19", "sh20", "sh21", "sh23", "sh24", "sh25", "sh26"]], //
           ["האולם", ["sh27", "sh28", "sh29", "sh30", "sh31", "sh32"]], //
@@ -75952,6 +77161,7 @@ body.tm-measuring #tm-tour-box{bottom:96px}
   // night and the dawn, and gives them back), and the floor under a point (the solids' downward ray of the walking mode: a figure's feet) //
   ctx.shared.sky = { sky, sun, hemi, sunDir: sunDir.clone(), sunInt: sun.intensity, hemiInt: hemi.intensity, exposure: renderer.toneMappingExposure, fogColor: scene.fog.color.getHex(), env: scene.environment }; //
   ctx.shared.floorY = (x, y, z) => cam_floorY({ x, y, z }); //
+  ctx.shared.viewLimits = { get: () => ({ R: ent_view.R, yMin: ent_view.yMin, yMax: ent_view.yMax }), set: (o) => { if (o) Object.assign(ent_view, o); }, include: (q) => ent_viewInclude(q) };   // SHILOACH_305: the Shiloach's walk //
   // 1.9.2 / 1.3.4 (the user's recording: a chamber's roof came back while the eye was inside it, and all one saw was the stone): //
   // ctx.shared.camUnder(list) - is the eye under one of these pieces (inside its plan, below its top)? Their boxes are taken once. //
   // ctx.shared.openFor(id, ms) - a place or a row opens a pill for a while (another call within it starts the count again; a pill the user //
@@ -76281,6 +77491,10 @@ body.tm-measuring #tm-tour-box{bottom:96px}
         if (e % 4 === 0) put(e, ["h", BASS[p][h], 6]); //
         if (e % 4 === 2) put(e, ["c", 0, 0]); //
       } //
+      // MUSICIANS_305: the Levites' trumpets - a call at the head of the first and the third phrase (D, A) - and the cymbals: one clash //
+      // at the head of every phrase (until 2.0.13 three clashes at the head of the cycle, unseen) //
+      put(0, ["t", 0, 4]); put(32, ["t", 7, 4]); //
+      for (let e = 0; e < 64; e += 16) put(e, ["y", 0, 0]); //
       return { E8, hz, at }; //
     })(); //
     const simchaStep = (a, t, step, lv) => { //
@@ -76289,6 +77503,8 @@ body.tm-measuring #tm-tour-box{bottom:96px}
         if (kind === "f") pipe(a, t, SIM.hz(n), LEVEL.flute * lv, l * SIM.E8 * 0.95); //
         else if (kind === "l") pluck(a, t, SIM.hz(n), LEVEL.lyre * lv * (e % 2 ? 0.6 : 1), 0.9); //
         else if (kind === "h") pluck(a, t, SIM.hz(n), LEVEL.harp * lv, 1.6); //
+        else if (kind === "t") brass(a, t, l * SIM.E8 * 0.92, LEVEL.trumpets * 0.45 * lv, SIM.hz(n)); //
+        else if (kind === "y") { const k = LEVEL.cymbals * 0.6 * lv; noise(a, t, 1.5, 0.75 * k, "highpass", 5200, 0.7, 0.005, 1.4); noise(a, t, 0.5, 0.38 * k, "bandpass", 3200, 3, 0.005, 0.45); } //
         else noise(a, t, 0.05, LEVEL.clap * lv, "bandpass", 1300, 1.4, 0.002, 0.045); //
       } //
     }; //
@@ -76312,9 +77528,18 @@ body.tm-measuring #tm-tour-box{bottom:96px}
       }, //
       trumpets(a, t, k, o) { //
         if (o.pattern === "long") { brass(a, t, 2.6, k, 466); brass(a, t + 0.03, 2.6, k * 0.8, 470); return; } //
+        if (o.pattern === "drawn") {   // TERUAH_305: Rashi's - the tekia, the teruah and the tekia drawn out over o.dur seconds //
+          const d = Math.max(4.5, +o.dur || 20) / 3; //
+          brass(a, t, d - 0.25, k); //
+          for (let i = 0, n = Math.max(9, Math.round((d - 0.3) / 0.2)); i < n; i++) brass(a, t + d + i * 0.2, 0.13, k * 1.1); //
+          brass(a, t + 2 * d + 0.15, d - 0.15, k); //
+          return; //
+        } //
         brass(a, t, 1.4, k); //
-        for (let i = 0; i < 9; i++) brass(a, t + 1.8 + i * 0.16, 0.08, k); //
-        brass(a, t + 3.4, 1.4, k); //
+        // TERUAH_305 (the user, 21:10: "ונראה לי יש תרועה שם גם"): the teruah's nine short blasts, each long enough to be heard as one //
+        // (0.08 s every 0.16 until 2.0.13 - one rattle) //
+        for (let i = 0; i < 9; i++) brass(a, t + 1.75 + i * 0.2, 0.13, k * 1.1); //
+        brass(a, t + 3.75, 1.4, k); //
       }, //
       cymbals(a, t, k) { //
         for (let i = 0; i < 3; i++) { //
@@ -76384,11 +77609,12 @@ body.tm-measuring #tm-tour-box{bottom:96px}
             loops.add(L); //
             L.step = 0; //
             L.at = ac.currentTime + 0.1; //
+            L.beat = () => (L.timer && ac ? L.step - (L.at - ac.currentTime) / SIM.E8 : null);   // MUSICIANS_305: the eighth that sounds now //
             L.timer = setInterval(() => { //
               if (!ac || ctx.shared.soundOff) return; //
               if (L.at < ac.currentTime) L.at = ac.currentTime + 0.05; //
               while (L.at < ac.currentTime + 0.25) { //
-                if (L.level > 0.02) { try { simchaStep(ac, L.at, L.step, L.level); if (L.step % 64 === 0 && L.step > 0) make.cymbals(ac, L.at, LEVEL.cymbals * 0.35 * L.level); } catch (_) {} } //
+                if (L.level > 0.02) { try { simchaStep(ac, L.at, L.step, L.level); } catch (_) {} } //
                 L.step++; //
                 L.at += SIM.E8; //
               } //
@@ -76639,7 +77865,7 @@ body.tm-measuring #tm-tour-box{bottom:96px}
       if (!flyAnim && !cam_drag) { //
         // CAM_219 (4): not in walk mode - there the eye keeps its height over the floor under ITSELF (cam_walkFloor); the target's floor //
         // held it up when one walked backward down a stair (the target still on the top step) //
-        const lo = Math.max(-27.5, !ent_wm.on && isFinite(cam.floorY) ? cam.floorY + 0.35 : -Infinity); //
+        const lo = Math.max(typeof ctx.shared.camLow === "number" ? ctx.shared.camLow : -27.5, !ent_wm.on && isFinite(cam.floorY) ? cam.floorY + 0.35 : -Infinity);   // SHILOACH_305: ctx.shared.camLow - the walk in the valley //
         if (p.y < lo) p.y = lo; //
         // 1.2.0 (the user: "לראות אותו מאחור... מתוך הבית"): "סיבוב בתוך הבית בלבד" - indoors the eye never leaves the room: when a //
         // building surface (userData.tmPass) stands between the target and the eye, the eye is drawn back to the surface's inner side //

@@ -65,11 +65,11 @@
     m.compose(new Vector3(x, y, z), new Quaternion().setFromEuler(new Euler(rx, ry, rz)), new Vector3(sx, sy, sz));
     return m;
   }
-  // NOZZLE_211b (LAMPS_MIDDLE_211): a lamp's nozzle - a short tube rising out of its top from 0.04 to 0.125 off its centre (x) toward
+  // NOZZLE_211b (LAMPS_MIDDLE_211): a lamp's nozzle - a short tube rising out of its top from 0.035 to 0.111 (MENOROT_305) off its centre (x) toward
   // (dirX, dirZ), the wick's mouth at the rim (3.205 over the menorah's foot; the lamps' tops 3.16). Its form and size - model choices
   function int_nozzle211(dirX, dirZ, x) {
-    const B = new Vector3(x + dirX * 0.04, 3.13, dirZ * 0.04), T = new Vector3(x + dirX * 0.125, 3.205, dirZ * 0.125), v = T.clone().sub(B);
-    const sg = new CylinderGeometry(0.02, 0.034, v.length(), 8);
+    const B = new Vector3(x + dirX * 0.035, 3.13, dirZ * 0.035), T = new Vector3(x + dirX * 0.111, 3.205, dirZ * 0.111), v = T.clone().sub(B);   // MENOROT_305: 0.04, 0.125 until 1.4.13
+    const sg = new CylinderGeometry(0.018, 0.03, v.length(), 8);
     sg.applyQuaternion(new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), v.clone().normalize()));
     sg.translate((B.x + T.x) / 2, (B.y + T.y) / 2, (B.z + T.z) / 2);
     return sg;
@@ -1698,7 +1698,10 @@
     // priests (Rashi 99a, after Menachot 98b on the ark's staffs). Rambam 3:12 rules like Rabbi for the table.
     // 1.0.1-K (K.4): LAMP_R 0.28 -> 0.27 so that, in the north-south layout, the five menorot of a column fit between the last table and the
     // gold skin of the south wall (with 0.28 the end cups went 0.17 into the skin; review K.4)
-    const LAMP_R = 0.27;                   // lamp pitch: 7 lamps over ~1.6 amot (the spread is a model choice) so five menorot fit a 10-amah row
+    // MENOROT_305 (the user, 19.11.2026 23:41 / 23:49: "רוחב מנורות - א - בתנאי שאתה לא פוגע בעיצוב", "גם בית ראשון"): 0.27 until 1.4.13 - the menorah
+    // 1.67 wide (1.88), as the Second House's (its five north-south leave a way between them and the tables' heads, the Ritva on Yoma 51b);
+    // the form and the height as they were, the lamps and their nozzles narrower in the same proportion (0.889)
+    const LAMP_R = 0.24;                   // lamp pitch (the spread is a model choice; its breadth is not given, Menachot 28b: its height alone)
 
     // ---- 1.0.1-K (K.4): THE TABLES, rebuilt (the user: "שלחנות, חייבים תיקון משמעותי" - they looked like chairs) ----
     // The table (Ex 25:23-25 with Rashi; Mishnah Menachot 11:5-6; Menachot 94b-97a with Rashi); Solomon's ten tables (II Chr 4:8 "ויעש שלחנות
@@ -2008,13 +2011,13 @@
           group3(top, up, q);                                                          // its three cups, knob and flower
         }
       });
-      for (const dx of [-3, -2, -1, 0, 1, 2, 3]) add(new CylinderGeometry(0.13, 0.08, 0.16, 8), dx * LAMP_R, 3.08, 0);   // the seven lamps ("נרתיה")
+      for (const dx of [-3, -2, -1, 0, 1, 2, 3]) add(new CylinderGeometry(0.115, 0.071, 0.16, 8), dx * LAMP_R, 3.08, 0);   // the seven lamps ("נרתיה"); MENOROT_305: 0.13, 0.08 until 1.4.13
       // LAMPS_MIDDLE_211 (as the Second Temple's 45-vessels.js; Menachot 98b "מלמד שהיו מצדדין פניהם כלפי נר אמצעי"; Rashi: the middle
       // "פי הפתילה כלפי מערב", "ושאר הפתילות מצודדות פיהן כלפי האמצעי"): a spout on every side lamp toward the middle; the middle one's,
       // toward the west, is set per menorah in buildLayout (each menorah has its own turn). Their form and size - model choices.
-      // NOZZLE_211b: the lamps stand LAMP_R (0.27) apart and their tops are 0.26 wide, so a spout cannot reach out sideways (the first try
+      // NOZZLE_211b: the lamps stand LAMP_R (0.24; MENOROT_305) apart and their tops are 0.23 wide, so a spout cannot reach out sideways (the first try
       // put each side flame in its neighbour's lamp) - each is a short nozzle rising out of its own lamp's top on the side of its face,
-      // from 0.04 to 0.125 off the lamp's centre, the wick's mouth at the rim (int_nozzle211; the flames on them in buildLayout)
+      // from 0.035 to 0.111 off the lamp's centre, the wick's mouth at the rim (int_nozzle211; the flames on them in buildLayout)
       // LAMPS_REBBI_211 (the review, R-08 / S4-12; the user, 15.11.2026 18:12: "5. לשנות את רבי לד' הרמבם"): Rashi's picture - the middle
       // one west and the others toward it - was said for the one who sets the lamps NORTH-SOUTH ("לעולם צפון ודרום מנחי...", Menachot
       // 98b). For Rebbi, EAST-WEST (this model's default), the Rambam drew the seven in a row between west and east - "ופיות כל הנרות
@@ -2134,10 +2137,10 @@
         const c = Math.cos(m.rot), s = Math.sin(m.rot);
         for (const dx of lampX) {                                        // the flames in the seven lamps (the lamps end at 3.16; 1.0.1-L, verifier of L.73: the flames' feet in them - at 3.2 they hovered over the lamps)
           // LAMPS_MIDDLE_211 (NOZZLE_211b): on the nozzles' mouths, each in its own lamp - north-south: the side ones toward the middle, the
-          // middle one west; LAMPS_REBBI_211: east-west - every flame 0.115 west of its lamp's middle
-          const ew = Math.abs(s) < 1e-6;
-          const d = Math.abs(dx) < 1e-6 ? 0 : dx - Math.sign(dx) * 0.115;
-          const b = ew ? { x: m.x + dx * c - 0.115, y: FL + 3.17, z: m.z, rot: m.rot } : { x: m.x + d * c - (Math.abs(dx) < 1e-6 ? 0.115 : 0), y: FL + 3.17, z: m.z - d * s, rot: m.rot };
+          // middle one west; LAMPS_REBBI_211: east-west - every flame SPT west of its lamp's middle (MENOROT_305: SPT 0.102, 0.115 until 1.4.13)
+          const ew = Math.abs(s) < 1e-6, SPT = 0.102;
+          const d = Math.abs(dx) < 1e-6 ? 0 : dx - Math.sign(dx) * SPT;
+          const b = ew ? { x: m.x + dx * c - SPT, y: FL + 3.17, z: m.z, rot: m.rot } : { x: m.x + d * c - (Math.abs(dx) < 1e-6 ? SPT : 0), y: FL + 3.17, z: m.z - d * s, rot: m.rot };
           (m.moses ? baseMoses : baseTen).push(b);
           (m.moses ? flamesMoses : flamesTen).push(int_m4(b.x, b.y, b.z, 0, m.rot, 0));
         }
@@ -2245,7 +2248,11 @@
       mosesTable: { x: xr(37.5), z: zr(4.75), rot: 0 },
       menorot: [28, 30, 32, 34, 36].flatMap((x_r) => [{ x: xr(x_r), z: zr(17), rot: 0 }, { x: xr(x_r), z: zr(13.5), rot: 0 }]),
       mosesMenorah: { x: xr(38.5), z: zr(15.25), rot: 0, lightDx: 5 },   // A20: its light 5 east of it (x -37): 2.9 from the south post of the devir it read 139.8 against the north post's 93.3, now 105.5 / 94.2
-      altar: { x: xr(24.5), z: 0 }
+      // ALTAR_EAST_305 (the user, 19.11.2026 22:41: "להזיז אמה ורבע בכל המודל, בשני הבתים ובכל הקריאות"): 1.25 further east than L.69 -
+      // x_r 23.25 (x -26.75), its west face 2.25 east of the tables' east ends - so that Rashi's answer on Yoma 51b holds in every layout:
+      // "ואם תאמר אף בין המזבח לשולחן אין דרך... שאין המזבח מכוון כנגד השולחן אלא משוך קימעא כלפי חוץ" (a way between the tables and
+      // the altar; "קימעא" has no measure - the amah and a quarter: the user's decision)
+      altar: { x: xr(23.25), z: 0 }
     });
     buildLayout("rashbash", {
       // R. Elazar b. R. Shimon ("צפון ודרום", Menachot 98b): the tables' length across the house (z). Two columns of five at x_r 37 and 30
@@ -2269,7 +2276,7 @@
       mosesTable: { x: xr(33), z: zr(3), rot: 0 },
       menorot: [11.19, 13.09, 14.99, 16.89, 18.79].flatMap((z_r) => [{ x: xr(38), z: zr(z_r), rot: Math.PI / 2 }, { x: xr(30), z: zr(z_r), rot: Math.PI / 2 }]),
       mosesMenorah: { x: xr(34), z: zr(14.99), rot: Math.PI / 2 },
-      altar: { x: xr(27.25), z: 0 }
+      altar: { x: xr(26), z: 0 }   // ALTAR_EAST_305: 1.25 further east (x_r 27.25 until 1.4.13) - 2.0 east of the tables' east column
     });
 
     // ---- 1.0.1-K (K.4): the layers of the incense altar: ctx.shared.incenseAltar.layers + an on-model button (FIXES K 0.5b, 0.5f) ----
@@ -2362,7 +2369,7 @@
         // 1.0.1-L (L.13): the altar of one amah from a standing eye (3 above the floor): its roof with the coals, the horns, the crown and
         // the south face (the opened side); K.4 looked at the 2-high altar's mid height. The target 0.05 before its south face (the ray test:
         // a target inside the altar counts as blocked)
-        incenseAltar: { pos: [-25.5, 15, 2.1], target: [-28, 12.75, 0.55] }          // 1.0.1-L (L.69): the altar at x -28, just east of the rows
+        incenseAltar: { pos: [-24.25, 15, 2.1], target: [-26.75, 12.75, 0.55] }      // 1.0.1-L (L.69): the altar just east of the rows; ALTAR_EAST_305: x -26.75
       },
       rashbash: {
         // 1.0.1-K review (interior-5): from above the corridor between the columns, south of Moses' table (1.0.1-K: [-34.6, 20.5, 2]), the camera
@@ -2385,7 +2392,7 @@
         menorot: { pos: [-32.5, 19, 9.3], target: [-37.5, 15, 4.99] },   // A17: Moses' menorah at x -37.5
         // 1.0.1-L (L.69): the altar at x -31.75, east of the columns; from the south-east (the old south-west place is now among the lamps of the
         // east column's first menorah), its opened south face in view
-        incenseAltar: { pos: [-28.5, 15.2, 2.3], target: [-30.75, 12.75, 0.55] }    // A17: the altar at x -30.75
+        incenseAltar: { pos: [-27.25, 15.2, 2.3], target: [-29.5, 12.75, 0.55] }     // A17; ALTAR_EAST_305: the altar at x -29.5
       }
     };
     const setLayoutFlyPoints = (key) => {

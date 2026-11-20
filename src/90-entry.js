@@ -1713,6 +1713,7 @@
       { name: "courts.js", build: buildCourts },
       { name: "altar.js", build: buildAltar },
       { name: "vessels.js", build: buildVessels },
+      { name: "shitin.js", build: buildShitinDemo },   // DAVID_SHITIN_305 (46-shitin.js): "בשעה שכרה דוד שיתין" - built on first use
       { name: "heichal.js", build: buildHeichal },
       { name: "interior.js", build: buildInterior },
       { name: "kelim.js", build: buildKelim },   // 1.0.1-L (L.88): the vessels of I Kings 7 (57-kelim.js); before ui.js, it reads the labels
@@ -1728,6 +1729,7 @@
       "טוען את חצר הכהנים ושעריה",
       "טוען את מזבח הנחושת",
       "טוען את הים, המכונות ויכין ובועז",
+      "מכין את הדגמת השיתין",
       "טוען את האולם, ההיכל והיציע",
       "טוען את הקודש וקודש הקדשים",
       "טוען את כלי הבית",
