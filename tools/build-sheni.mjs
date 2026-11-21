@@ -12,7 +12,7 @@
 //                      source file it comes from). 3.0.6's bundle: git show 3c82e60:sheni-src/bundle.js > /tmp/sheni-306.js
 //   --house <dir>      the house's built folder for tools/build-unified.mjs --sheni <dir>: bundle.js minified (terser with the options
 //                      of tools/build.mjs and tools/round-3.0.0/minify.mjs, then safe-lines), index.html and manifest.json written by
-//                      tools/round-2.0.18/house_sheni.py. The house's version: UI_NEWS.ver in sheni/src/70-ui.js (--version, when
+//                      tools/round-2.0.18/house_sheni.py. The house's version: UI_NEWS.ver - the slot UI_NEWS in sheni/src/slots/70-ui.slots.js (--version, when
 //                      given, must agree with it)
 //
 // The parts run inside ONE function (var OtzariaPlugin = (() => { ... })(); 00-lib.js opens it, TAIL closes it): no part is valid
@@ -122,9 +122,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
 
   if (opt('--house')) {
     const m = /\n {2}var UI_NEWS = \{\n {4}ver: "(\d+\.\d+\.\d+)"/.exec(plain);
-    if (!m) throw new Error('no UI_NEWS.ver in sheni/src/70-ui.js');
+    if (!m) throw new Error('no UI_NEWS.ver (the slot UI_NEWS in sheni/src/slots/70-ui.slots.js)');
     const ver = opt('--version') || m[1];
-    if (ver !== m[1]) throw new Error('--version ' + ver + ' but UI_NEWS.ver (sheni/src/70-ui.js) is ' + m[1] + ': "what\'s new" and the bar would disagree');
+    if (ver !== m[1]) throw new Error('--version ' + ver + ' but UI_NEWS.ver (the slot UI_NEWS in sheni/src/slots/70-ui.slots.js) is ' + m[1] + ': "what\'s new" and the bar would disagree');
     const { minify } = await import('terser');
     const t1 = Date.now();
     const res = await minify(code, MINIFY);
