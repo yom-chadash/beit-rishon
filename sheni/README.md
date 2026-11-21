@@ -86,5 +86,6 @@ node tools/build-unified.mjs --rishon plugin --sheni build/sheni/house --out dis
   3. מפרקים מחדש:
      `node tools/split-sheni.mjs build/sheni/bundle.readable.js sheni/src --force --base /tmp/base.js`
   - במיזוג: `--base` הוא הקובץ הגדול שממנו יצא הענף האחר. למשל, ענף שיצא מ־3.0.6: `git show 3c82e60:sheni-src/bundle.js > /tmp/base.js`.
+  - אם מיזוג מחזיר את `sheni-src/bundle.js`, והוא שונה ממה ש־`sheni/src` בונה — `build-sheni.mjs` נעצר. הוא ממשיך רק אחרי שהשינוי הועבר ל־`sheni/src` והקובץ נמחק.
   - הכלי כותב רק אם הקבצים שב־`sheni/src` בונים **בדיוק** את `--base`. אם הם שונו מאז — הוא מסרב, כדי ששום שינוי לא יאבד בשקט. שינוי כזה מעבירים ביד.
   - והוא אינו כותב כלום לפני שהוכיח שהקבצים החדשים מחזירים את הקובץ המתוקן בדיוק.

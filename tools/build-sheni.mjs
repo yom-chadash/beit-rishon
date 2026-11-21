@@ -81,6 +81,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const log = (m) => console.log('[sheni] ' + m);
   const t0 = Date.now();
   const { parts, plain, code } = assemble();
+  // the old big file was removed (21.11.2026); a merge with a branch that changed it brings it back - and two sources drift apart
+  // without a word. Its change is ported by tools/split-sheni.mjs --force --base (sheni/README.md), then it is deleted
+  const old = path.join(root, 'sheni-src', 'bundle.js');
+  if (fs.existsSync(old)) {
+    if (fs.readFileSync(old, 'utf8') === code) log('NOTE: sheni-src/bundle.js is here again, the same as what sheni/src builds: delete it (sheni/src is the source)');
+    else {
+      console.error('[sheni] sheni-src/bundle.js is here again, and it is NOT what sheni/src builds: a change made in it would be lost. Port it to sheni/src:');
+      console.error('  node tools/split-sheni.mjs sheni-src/bundle.js sheni/src --force --base <the bundle it was made from>   - then delete it (sheni/README.md)');
+      process.exit(1);
+    }
+  }
   const out = path.resolve(opt('--out') || path.join(root, 'build', 'sheni', 'bundle.readable.js'));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, code, 'utf8');

@@ -31,6 +31,8 @@ const force = argv.includes('--force');
 const IN = path.resolve(args[0] || path.join(root, 'sheni-src', 'bundle.js'));
 const OUT = path.resolve(args[1] || path.join(root, 'sheni', 'src'));
 const fail = (m) => { console.error('[split] ' + m); process.exit(1); };
+if (!fs.existsSync(IN)) fail('no ' + IN + (args[0] ? '' : ' (sheni-src/bundle.js was removed after the split, 21.11.2026: name the bundle to split)'));
+if (BASE && !fs.existsSync(BASE)) fail('no --base ' + BASE);
 if (fs.existsSync(OUT) && fs.readdirSync(OUT).length) {
   if (!force || !BASE) fail(OUT + ' has files: not written over (--force --base <the bundle the new one was made from>)');
   // the files there now must be exactly the base of the new bundle: nothing in them is lost
