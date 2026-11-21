@@ -21,6 +21,9 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const HOUSES = { rishon: 'src', sheni: path.join('sheni', 'src') };
+// every file is read with its line ends as LF (a checkout with CRLF - git on Windows - builds the same bundle; a CR before a line
+// break never changes JavaScript: not in a string, where it cannot stand, and not in a template literal, which reads CRLF and CR as LF)
+const read = (f) => fs.readFileSync(f, 'utf8').replace(/\r\n?/g, '\n');
 const SLOT = /^\s*\/\/@@slot (\S+)$/, INCLUDE = /^\s*\/\/@@include (\S+)$/, BEGIN = /^\/\/@@begin (\S+)$/;
 // the shared files and the slots files each house's build read (verifyHouse: none may be left out)
 const USED = { rishon: new Set(), sheni: new Set() };
@@ -28,7 +31,7 @@ const USED = { rishon: new Set(), sheni: new Set() };
 export function readSlots(file) {
   const map = new Map();
   if (!fs.existsSync(file)) return map;
-  const L = fs.readFileSync(file, 'utf8').split('\n');
+  const L = read(file).split('\n');
   for (let i = 0; i < L.length; i++) {
     const m = BEGIN.exec(L[i]);
     if (!m) { if (L[i].trim()) throw new Error(file + ':' + (i + 1) + ': a line outside //@@begin ... //@@end'); continue; }
@@ -46,7 +49,7 @@ export function readSlots(file) {
 // the shared text with one house's slots
 export function fill(sharedFile, slotsFile) {
   const slots = readSlots(slotsFile), used = new Set(), out = [];
-  for (const l of fs.readFileSync(sharedFile, 'utf8').split('\n')) {
+  for (const l of read(sharedFile).split('\n')) {
     const m = SLOT.exec(l);
     if (!m) { out.push(l); continue; }
     if (!slots.has(m[1])) throw new Error(path.relative(ROOT, slotsFile) + ': no slot ' + m[1] + ' (' + path.relative(ROOT, sharedFile) + ')');
@@ -72,7 +75,7 @@ export function houseText(house, file, root = ROOT) {
     const slots = path.join(root, dir, 'slots', base + '.slots.js');
     text = fill(shared, slots);
     used.add(path.resolve(shared)); used.add(path.resolve(slots));
-  } else if (fs.existsSync(own)) text = fs.readFileSync(own, 'utf8');
+  } else if (fs.existsSync(own)) text = read(own);
   else throw new Error('missing module ' + file + ' (neither ' + dir + '/' + file + ' nor shared/' + file + ')');
   if (text.includes('//@@include ')) {
     text = text.split('\n').map((l) => {
