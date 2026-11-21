@@ -23,6 +23,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { safeLines } from './safe-lines.mjs';
+import { houseText } from './house-slots.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const SRC = path.join(root, 'sheni', 'src');
@@ -37,13 +38,17 @@ export const ORDER = [
 ];
 export const TAIL = '})();\n/**\n * @license\n * Copyright 2010-2023 Three.js Authors\n * SPDX-License-Identifier: MIT\n */\n';
 
+// 21.11.2026 (stage 2 of the split: the interface written once): sheni/src/ is read through tools/house-slots.mjs - a file of this
+// folder, or the file of shared/ with this house's slots (sheni/src/slots/) and the figures' kits (shared/frag/) put in. The text that
+// comes out is the same as before, byte for byte. Another folder (tools/split-sheni.mjs writes whole files to one) is read as it is.
 export function readParts(dir = SRC) {
-  const extra = fs.readdirSync(dir).filter((f) => !ORDER.includes(f) && !f.startsWith('.') && !/\.md$/i.test(f));
+  const own = path.resolve(dir) === path.resolve(SRC);
+  const extra = fs.readdirSync(dir).filter((f) => !ORDER.includes(f) && !(own && f === 'slots') && !f.startsWith('.') && !/\.md$/i.test(f));
   if (extra.length) throw new Error(dir + ': not in ORDER (tools/build-sheni.mjs): ' + extra.join(', '));
   return ORDER.map((f) => {
     const p = path.join(dir, f);
-    if (!fs.existsSync(p)) throw new Error('missing ' + p);
-    let text = fs.readFileSync(p, 'utf8');
+    if (!own && !fs.existsSync(p)) throw new Error('missing ' + p);
+    let text = own ? houseText('sheni', f, root) : fs.readFileSync(p, 'utf8');
     if (!text.endsWith('\n')) text += '\n';   // as tools/assemble.mjs: a file's last line never runs into the next file's first
     return { f, text };
   });

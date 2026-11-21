@@ -33,6 +33,12 @@ const OUT = path.resolve(args[1] || path.join(root, 'sheni', 'src'));
 const fail = (m) => { console.error('[split] ' + m); process.exit(1); };
 if (!fs.existsSync(IN)) fail('no ' + IN + (args[0] ? '' : ' (sheni-src/bundle.js was removed after the split, 21.11.2026: name the bundle to split)'));
 if (BASE && !fs.existsSync(BASE)) fail('no --base ' + BASE);
+// 21.11.2026 (stage 2): the modules both houses share live in shared/ (tools/house-slots.mjs), not in sheni/src/. A split writes whole
+// files - into sheni/src/ that would put a second copy next to shared/ (the build stops on it). Split into another (empty) folder,
+// and port the change by hand: to shared/<file> if it is for both houses, to sheni/src/slots/<file>.slots.js if for this house only
+const SHARED = path.join(root, 'shared');
+if (path.resolve(OUT) === path.join(root, 'sheni', 'src') && fs.existsSync(SHARED) && ORDER.some((f) => fs.existsSync(path.join(SHARED, f))))
+  fail('shared/ holds modules of both houses (' + ORDER.filter((f) => fs.existsSync(path.join(SHARED, f))).join(', ') + '): a split into sheni/src would duplicate them. Split into an empty folder and port by hand (unified/DEV_NOTES.md, "הקוד המשותף")');
 if (fs.existsSync(OUT) && fs.readdirSync(OUT).length) {
   if (!force || !BASE) fail(OUT + ' has files: not written over (--force --base <the bundle the new one was made from>)');
   // the files there now must be exactly the base of the new bundle: nothing in them is lost

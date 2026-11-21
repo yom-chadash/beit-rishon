@@ -5,18 +5,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { houseText } from './house-slots.mjs';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
 const src = path.join(root, 'src');
+// 21.11.2026 (stage 2 of the split): a module is checked as the bundle gets it (tools/house-slots.mjs: from src/, or from shared/ with
+// src/slots/ and shared/frag/ put in), written to build/check/ for node --check
+const chk = path.join(root, 'build', 'check');
+fs.mkdirSync(chk, { recursive: true });
 const mods = { '10-core.js': [], '20-mount.js': ['buildMount'], '30-courts.js': ['buildCourts'], '40-altar.js': ['buildAltar'], '45-vessels.js': ['buildVessels'], '50-heichal.js': ['buildHeichal'], '55-interior.js': ['buildInterior'], '57-kelim.js': ['buildKelim'], '60-palace.js': ['buildPalace'], '70-ui.js': ['buildUI'], '72-words.js': ['buildWords'], '75-tour.js': ['buildTour'], '90-entry.js': [] };
 let problems = 0;
 const warn = (m) => { problems++; console.log('PROBLEM: ' + m); };
 const decls = {};
 const texts = {};
 for (const [f, fns] of Object.entries(mods)) {
-  const p = path.join(src, f);
-  if (!fs.existsSync(p)) { warn(f + ' is missing'); continue; }
-  const t = fs.readFileSync(p, 'utf8');
+  let t;
+  try { t = houseText('rishon', f); } catch (e) { warn(f + ': ' + e.message); continue; }
   texts[f] = t;
+  const p = path.join(chk, f);
+  fs.writeFileSync(p, t, 'utf8');
   try { execFileSync('node', ['--check', p], { stdio: 'pipe' }); } catch (e) { warn(f + ' does not parse: ' + String(e.stderr || e.message).slice(0, 400)); }
   if (/^\s*(import|export)\s/m.test(t)) warn(f + ' contains import/export');
   for (const fn of fns) {
