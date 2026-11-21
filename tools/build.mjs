@@ -1,6 +1,7 @@
 // Build the plugin folder from src/: node tools/build.mjs [--no-min] [--pack]
 //   1. tools/assemble.mjs -> a readable bundle (build/bundle.readable.js; kept for reading and for diffs, not shipped)
-//   2. the version token __PLUGIN_VERSION__ (src/index.html, src/70-ui.js UI_NEWS.ver) <- plugin/manifest.json "version" (ONE source)
+//   2. the version token __PLUGIN_VERSION__ (src/index.html; UI_NEWS.ver - the slot UI_NEWS in src/slots/70-ui.slots.js, since the
+//      split's stage 2, 21.11.2026) <- plugin/manifest.json "version" (ONE source)
 //   3. node --check, then tools/check.mjs (static integration checks on src/)
 //   4. terser -> plugin/bundle.js (minified: comments and whitespace out, names mangled inside the IIFE; the three.js @license kept)
 //      --no-min writes the readable bundle to plugin/bundle.js instead (for debugging inside Otzaria)
@@ -30,7 +31,7 @@ execFileSync('node', [path.join(root, 'tools', 'assemble.mjs'), readable], { std
 let code = fs.readFileSync(readable, 'utf8');
 // 2. the version
 const n = code.split(TOKEN).length - 1;
-if (n < 1) throw new Error('the bundle has no ' + TOKEN + ' (src/70-ui.js UI_NEWS.ver)');
+if (n < 1) throw new Error('the bundle has no ' + TOKEN + ' (UI_NEWS.ver: the slot UI_NEWS in src/slots/70-ui.slots.js)');
 code = code.split(TOKEN).join(version);
 fs.writeFileSync(readable, code, 'utf8');
 log('version ' + version + ' written at ' + n + ' place(s) of the bundle');

@@ -22,6 +22,8 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const HOUSES = { rishon: 'src', sheni: path.join('sheni', 'src') };
 const SLOT = /^\s*\/\/@@slot (\S+)$/, INCLUDE = /^\s*\/\/@@include (\S+)$/, BEGIN = /^\/\/@@begin (\S+)$/;
+// the shared files and the slots files each house's build read (verifyHouse: none may be left out)
+const USED = { rishon: new Set(), sheni: new Set() };
 
 export function readSlots(file) {
   const map = new Map();
@@ -63,20 +65,40 @@ export function houseText(house, file, root = ROOT) {
   if (!dir) throw new Error('no house ' + house);
   const own = path.join(root, dir, file), shared = path.join(root, 'shared', file);
   const base = file.replace(/\.js$/, '');
+  const used = USED[house];
   let text;
   if (fs.existsSync(shared)) {
     if (fs.existsSync(own)) throw new Error(file + ' is both in shared/ and in ' + dir + '/: one of them must go');
-    text = fill(shared, path.join(root, dir, 'slots', base + '.slots.js'));
+    const slots = path.join(root, dir, 'slots', base + '.slots.js');
+    text = fill(shared, slots);
+    used.add(path.resolve(shared)); used.add(path.resolve(slots));
   } else if (fs.existsSync(own)) text = fs.readFileSync(own, 'utf8');
   else throw new Error('missing module ' + file + ' (neither ' + dir + '/' + file + ' nor shared/' + file + ')');
-  if (!text.includes('//@@include ')) return text;
-  return text.split('\n').map((l) => {
-    const m = INCLUDE.exec(l);
-    if (!m) return l;
-    const frag = path.join(root, 'shared', 'frag', m[1] + '.js');
-    if (!fs.existsSync(frag)) throw new Error(dir + '/' + file + ': //@@include ' + m[1] + ' - no shared/frag/' + m[1] + '.js');
-    return fill(frag, path.join(root, dir, 'slots', m[1] + '.slots.js'));
-  }).join('\n');
+  if (text.includes('//@@include ')) {
+    text = text.split('\n').map((l) => {
+      const m = INCLUDE.exec(l);
+      if (!m) return l;
+      const frag = path.join(root, 'shared', 'frag', m[1] + '.js'), slots = path.join(root, dir, 'slots', m[1] + '.slots.js');
+      if (!fs.existsSync(frag)) throw new Error(dir + '/' + file + ': //@@include ' + m[1] + ' - no shared/frag/' + m[1] + '.js');
+      used.add(path.resolve(frag)); used.add(path.resolve(slots));
+      return fill(frag, slots);
+    }).join('\n');
+  }
+  // a mark that was not taken - "//@@include x " with a space at the end, "//@@Slot", a mark inside a slot - would leave a piece out
+  // without a word (REFUTE ק־9): no "//@@" may be left in what the build gets (the sources of 3.0.6 have none)
+  const left = text.split('\n').findIndex((l) => l.includes('//@@'));
+  if (left >= 0) throw new Error(dir + '/' + file + ' (as built), line ' + (left + 1) + ': a //@@ mark that is not "//@@slot <name>" or "//@@include <name>" exactly: ' + JSON.stringify(text.split('\n')[left].trim().slice(0, 100)));
+  return text;
+}
+
+// after a house's build has read all its files: every slots file of the house, every module of shared/ and every piece of shared/frag/
+// must have been read (a file left out - an orphan slots file, a piece no //@@include brings in - would be edited for nothing)
+export function verifyHouse(house, root = ROOT) {
+  const dir = path.join(root, HOUSES[house]), used = USED[house], missing = [];
+  const list = (d, re) => (fs.existsSync(d) ? fs.readdirSync(d).filter((f) => re.test(f)).map((f) => path.join(d, f)) : []);
+  for (const f of [...list(path.join(dir, 'slots'), /\.slots\.js$/), ...list(path.join(root, 'shared'), /\.js$/), ...list(path.join(root, 'shared', 'frag'), /\.js$/)])
+    if (!used.has(path.resolve(f))) missing.push(path.relative(root, f));
+  if (missing.length) throw new Error(house + ': files that the build did not read (a slots file of a module that is not shared, a piece no //@@include brings in, or a shared module not in the build order): ' + missing.join(', '));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

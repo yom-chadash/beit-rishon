@@ -23,7 +23,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { safeLines } from './safe-lines.mjs';
-import { houseText } from './house-slots.mjs';
+import { houseText, verifyHouse } from './house-slots.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const SRC = path.join(root, 'sheni', 'src');
@@ -45,13 +45,15 @@ export function readParts(dir = SRC) {
   const own = path.resolve(dir) === path.resolve(SRC);
   const extra = fs.readdirSync(dir).filter((f) => !ORDER.includes(f) && !(own && f === 'slots') && !f.startsWith('.') && !/\.md$/i.test(f));
   if (extra.length) throw new Error(dir + ': not in ORDER (tools/build-sheni.mjs): ' + extra.join(', '));
-  return ORDER.map((f) => {
+  const parts = ORDER.map((f) => {
     const p = path.join(dir, f);
     if (!own && !fs.existsSync(p)) throw new Error('missing ' + p);
     let text = own ? houseText('sheni', f, root) : fs.readFileSync(p, 'utf8');
     if (!text.endsWith('\n')) text += '\n';   // as tools/assemble.mjs: a file's last line never runs into the next file's first
     return { f, text };
   });
+  if (own) verifyHouse('sheni', root);   // every file of shared/ and sheni/src/slots/ was read
+  return parts;
 }
 export const joinParts = (parts) => parts.map((p) => p.text).join('') + TAIL;
 
