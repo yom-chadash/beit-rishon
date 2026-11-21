@@ -1,0 +1,712 @@
+  // plugin/js/mount.js
+  async function build(ctx2) {
+    const { M: M2, H: H2 } = ctx2;
+    const g = new Group();
+    g.name = "har-habayit";
+    ctx2.root.add(g);
+    const CX = (CO.harW + CO.harE) / 2;
+    const CZ = (CO.harN + CO.harS) / 2;
+    const T = 5;
+    const WH = 27;
+    // (1.9.1: the eastern wall's height is per reading - see ctx2.shared.eastWall below; until 1.9.0 one height, 24)
+    const GROUND_Y = -28;
+    const M4 = new Matrix4();
+
+    const sm = (a2, b2, x) => {
+      const t = Math.min(1, Math.max(0, (x - a2) / (b2 - a2)));
+      return t * t * (3 - 2 * t);
+    };
+    const vn = (x, z) => {
+      const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz;
+      const u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+      const r = (i, j) => hash((ix + i) * 157.3 + (iz + j) * 113.9);
+      return (r(0, 0) * (1 - u) + r(1, 0) * u) * (1 - v) + (r(0, 1) * (1 - u) + r(1, 1) * u) * v;
+    };
+    const fbm = (x, z) => vn(x, z) * 0.55 + vn(x * 2.1, z * 2.1) * 0.28 + vn(x * 4.3, z * 4.3) * 0.17;
+    const bump = (x, z, cx, cz, rx, rz, amp) => amp * Math.exp(-(((x - cx) / rx) ** 2) - ((z - cz) / rz) ** 2);
+    const rectDist = (x, z) => Math.hypot(Math.max(CO.harW - x, x - CO.harE, 0), Math.max(CO.harN - z, z - CO.harS, 0));
+    // TERRAIN_211 (the user, 14.11.2026: "רק כבש1 כהצעה 1" - one ramp, the Parah's, and the mountain's shape): the mount stands on its
+    // ridge - the ground falls away from the walls' feet (level for 35 amot, where the stairs stand) into the Kidron on the east (its bed
+    // some 150 amot east of the wall, 32 lower), down the slope on the south and into the valley on the west; on the north the ridge goes
+    // on level. The depths, widths and places - model choices (no source gives them). Until 2.0.1 the ground lay level round the mount.
+    const valley = (x, z) => {
+      let v = 0;
+      if (x > CO.harE) v += 32 * Math.exp(-((((x - CO.harE) - 150) / 85) ** 2));   // (the Parah ramp's lowest row goes down to 34 under the wall's foot)
+      if (z > CO.harS) v += 30 * Math.exp(-((((z - CO.harS) - 200) / 140) ** 2));
+      if (x < CO.harW) v += 24 * Math.exp(-((((CO.harW - x) - 110) / 70) ** 2));
+      return v;
+    };
+    const terrainH = (x, z) => {
+      const d = rectDist(x, z);
+      const ramp = sm(70, 380, d);
+      let h = bump(x, z, 1100, 30, 460, 950, 190) + bump(x, z, -700, 620, 420, 330, 130) + bump(x, z, -560, -760, 460, 380, 100) + bump(x, z, 220, 1350, 560, 320, 130) + bump(x, z, 380, -1380, 620, 360, 120);
+      h += (fbm(x * 3e-3, z * 3e-3) - 0.5) * 120 + (fbm(x * 0.012, z * 0.012) - 0.5) * 22;
+      const rim = sm(1500, 2500, Math.hypot(x - CX, z - CZ)) * 260;
+      return GROUND_Y + ramp * Math.max(h * 0.2, -5) + rim * 0.15 * ramp - sm(35, 100, d) * valley(x, z);
+    };
+    {
+      const SIZE = 5200, SEG = 220;
+      const geo = new PlaneGeometry(SIZE, SIZE, SEG, SEG);
+      geo.rotateX(-Math.PI / 2);
+      const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i) + CX, z = pos.getZ(i) + CZ, h = terrainH(x, z);
+        pos.setXYZ(i, x, h, z);
+        const k = 0.86 + fbm(x * 0.02, z * 0.02) * 0.2, up = sm(-20, 160, h - GROUND_Y);
+        col[i * 3] = Math.min(1, k * (0.93 - up * 0.03));
+        col[i * 3 + 1] = Math.min(1, k * (0.94 - up * 0.03));
+        col[i * 3 + 2] = Math.min(1, k * (0.84 - up * 0.04));
+      }
+      geo.setAttribute("color", new BufferAttribute(col, 3));
+      geo.attributes.uv.array.forEach((v, i, arr) => arr[i] = v * SIZE);
+      geo.computeVertexNormals();
+      const tm = M2.ground.clone();
+      tm.vertexColors = true;
+      tm.color.set(15527123);
+      const terrain = new Mesh(geo, tm);
+      terrain.receiveShadow = true;
+      g.add(terrain);
+    }
+    // MESIBAH_303: the mount's floor in four pieces round the mouth of the way down to the bath (30-courts.js: the stair's shaft under
+    // Beit HaMoked's north-west chamber, x -30..-26.5, z -75..-71.5); each piece's texture as the whole floor's
+    {
+      const hx0 = -30, hx1 = -26.5, hz0 = -75, hz1 = -71.5, h5 = CO.HAR / 2, x0 = CX - h5, x1 = CX + h5, z0 = CZ - h5, z1 = CZ + h5;
+      for (const [a, b, c, d] of [[x0, hx0, z0, z1], [hx1, x1, z0, z1], [hx0, hx1, z0, hz0], [hx0, hx1, hz1, z1]]) {
+        const m = H2.box(g, b - a, 1.5, d - c, M2.pave, (a + b) / 2, -1.5, (c + d) / 2);
+        const p = m.geometry.attributes.position, n = m.geometry.attributes.normal, uv = m.geometry.attributes.uv, o = m.position;
+        for (let i = 0; i < p.count; i++) {
+          const x = p.getX(i) + o.x, y = p.getY(i) + o.y, z = p.getZ(i) + o.z, nx = n.getX(i), ny = n.getY(i), nz = n.getZ(i);
+          if (nx > 0.5) uv.setXY(i, z1 - z, y + 1.5); else if (nx < -0.5) uv.setXY(i, z - z0, y + 1.5);
+          else if (ny > 0.5) uv.setXY(i, x - x0, z1 - z); else if (ny < -0.5) uv.setXY(i, x - x0, z - z0);
+          else if (nz > 0.5) uv.setXY(i, x - x0, y + 1.5); else uv.setXY(i, x1 - x, y + 1.5);
+        }
+        uv.needsUpdate = true;
+      }
+    }
+    const fndN = H2.occ(H2.box(g, 505, 30, T, M2.stone, CX, -30, CO.harN));
+    const fndS = H2.occ(H2.box(g, 505, 30, T, M2.stone, CX, -30, CO.harS));
+    const fndE = H2.occ(H2.box(g, T, 30, 495, M2.stone, CO.harE, -30, CZ));
+    const fndW = H2.occ(H2.box(g, T, 30, 495, M2.stone, CO.harW, -30, CZ));
+    const wallN = H2.wall(g, {
+      axis: "x",
+      length: 505,
+      height: WH,
+      thickness: T,
+      mat: M2.stone,
+      cx: CX,
+      cz: CO.harN,
+      y: 0,
+      openings: [{ center: 55 - CX, width: 10, height: 20, gable: 4 }] // Tadi gate: 20x10 (+ an open triangular top 4 high between the two leaning stones, 1.0.19) like all gates there - Middot 2:3 ("כל הפתחים והשערים שהיו שם, גבהן עשרים אמה ורחבן עשר"), Rambam Beit HaBechira 5:2; only its lintel differs (two inclined stones)
+    });
+    const wallS = H2.wall(g, {
+      axis: "x",
+      length: 505,
+      height: WH,
+      thickness: T,
+      mat: M2.stone,
+      cx: CX,
+      cz: CO.harS,
+      y: 0,
+      openings: [
+        { center: 0 - CX, width: 10, height: 20 },
+        { center: 110 - CX, width: 10, height: 20 }
+      ] // 1.0.19: Har HaBayit gates are rectangular with a stone lintel (Middot 2:3), not arched
+    });
+    // 1.9.1 (the user: "הכונה לכותל שנמצא מעל שער שושן ותעשה את שיטת הרמבם תפאי פסקי תוס"): THE LOW EASTERN WALL (Middot 2:4 "כל
+    // הכתלים שהיו שם היו גבוהים, חוץ מכותל המזרחי") is the Mount's eastern wall, over the Shushan gate - Rashi (Yoma 16a), the Bartenura
+    // and the Rambam (Beit HaBechirah 6:5 and his commentary); until 1.9.0 the women's court's east wall was the low one (no source was found
+    // for that; it is high again - 30-courts.js). Four drawn readings (ctx2.shared.eastWall.set, the opinions table):
+    //  "rambam" (default) - the wall high (27) and only the wall over the gate low: a span of 20 over the gate, its top 23 (model choice);
+    //  "tiferet" - Tiferet Yisrael (Yachin 2:34): the whole eastern wall "only a little more than twenty" - 23 along its length;
+    //  "piskei" - Piskei Tosafot (Middot 8) as written, "כותל מזרחי גבוה שש אמות" (so the Rashash read it): the whole wall 6, the gate a
+    //    gatehouse 20 wide, 23 high (model choice, so that the gate does not hang in the air);
+    //  "chok" - the Chok Natan's reading of the Piskei Tosafot: six amot over the gate, along the whole east - 26.
+    // Ezekiel's measures are NOT a source here (the user: Ezekiel is the Third Temple). Every piece is an occluder; the gate's trim, the
+    // emblem, the foundation and the pilasters follow the active reading's gate piece (userData.fadeWith, switched in set()).
+    //  "shemaya" (1.9.1, the user: "ר' שמעיה צייר") - Rabbenu Shemaya: the low wall is the chel's eastern wall, about ten amot (drawn on
+    //    the women's court's east wall line - 30-courts.js, ctx2.shared.eznEastWall); the Mount's wall stays high, 27.
+    const ewG = { rambam: new Group(), tiferet: new Group(), piskei: new Group(), chok: new Group(), shemaya: new Group() };
+    const ewGate = {};
+    for (const k of Object.keys(ewG)) { ewG[k].visible = k === "rambam"; g.add(ewG[k]); }
+    const ewPiece = (k, z0, z1, h, gate) => {
+      const len = z1 - z0, cz = (z0 + z1) / 2;
+      const w = H2.wall(ewG[k], { axis: "z", length: len, height: h, thickness: T, mat: M2.stone, cx: CO.harE, cz, y: 0,
+        openings: gate ? [{ center: cz, width: 10, height: 20 }] : [] });   // the opening at world z 0 (a z wall's local x = cz - z)
+      const cor = H2.occ(H2.box(ewG[k], 6.6, 1.3, len + 1, M2.stoneLight, CO.harE, h - 1.64, cz));
+      cor.userData.fadeWith = w;
+      const cr = H2.crenellate(ewG[k], { x1: CO.harE + 0.1, z1: z0 + 1, x2: CO.harE + 0.1, z2: z1 - 1, y: h, mat: M2.stoneLight });
+      cr.userData.fadeWith = w;
+      if (gate) ewGate[k] = w;
+      return w;
+    };
+    ewPiece("rambam", -165, -10, WH); ewPiece("rambam", 10, 330, WH); ewPiece("rambam", -10, 10, 23, true);
+    ewPiece("tiferet", -165, 330, 23, true);
+    ewPiece("piskei", -165, -10, 6); ewPiece("piskei", 10, 330, 6); ewPiece("piskei", -10, 10, 23, true);
+    ewPiece("chok", -165, 330, 26, true);
+    ewPiece("shemaya", -165, 330, WH, true);
+    const wallE = ewGate.rambam;   // the reference the gate's trim etc. are built with; switched in ctx2.shared.eastWall.set
+    ctx2.layers = ctx2.layers || {};
+    ctx2.layers.ewRambam = ewG.rambam;
+    ctx2.layers.ewTiferet = ewG.tiferet;
+    ctx2.layers.ewPiskei = ewG.piskei;
+    ctx2.layers.ewChok = ewG.chok;
+    ctx2.layers.ewShemaya = ewG.shemaya;
+    ctx2.labels.push(
+      { text: "הכותל שעל גבי שער שושן נמוך — הרמב״ם", x: CO.harE + 6, y: 31, z: 22, size: 2.2, layer: "ewRambam" },
+      { text: "כל כותל המזרח מעט יותר מעשרים — תפארת ישראל", x: CO.harE + 6, y: 27, z: 40, size: 2.2, layer: "ewTiferet" },
+      { text: "כותל מזרחי גבוה שש אמות — פסקי תוספות", x: CO.harE + 6, y: 10, z: 40, size: 2.2, layer: "ewPiskei" },
+      { text: "שש אמות מעל השער — פסקי תוספות לחק נתן", x: CO.harE + 6, y: 30, z: 40, size: 2.2, layer: "ewChok" }
+    );
+    const wallW = H2.wall(g, {
+      axis: "z",
+      length: 495,
+      height: WH,
+      thickness: T,
+      mat: M2.stone,
+      cx: CO.harW,
+      cz: CZ,
+      y: 0,
+      openings: [{ center: CZ, width: 10, height: 20 }] // 1.0.19: rectangular + stone lintel (Middot 2:3)
+    });
+    const corN = H2.occ(H2.box(g, 506, 1.3, 6.6, M2.stoneLight, CX, 25.36, CO.harN));
+    const corS = H2.occ(H2.box(g, 506, 1.3, 6.6, M2.stoneLight, CX, 25.36, CO.harS));
+    const corW = H2.occ(H2.box(g, 6.6, 1.3, 496, M2.stoneLight, CO.harW, 25.3, CZ));
+    // the foundation (below ground) and the cornice fade together with their wall (they used to stay opaque, e.g. under the Shushan gate)
+    fndN.userData.fadeWith = corN.userData.fadeWith = wallN;
+    fndS.userData.fadeWith = corS.userData.fadeWith = wallS;
+    fndE.userData.fadeWith = wallE;
+    fndW.userData.fadeWith = corW.userData.fadeWith = wallW;
+    const crenN = H2.crenellate(g, { x1: -149.5, z1: -169.5, x2: 355.5, z2: -169.5, y: WH, mat: M2.stoneLight });
+    const crenS = H2.crenellate(g, { x1: -149.5, z1: 334.5, x2: 355.5, z2: 334.5, y: WH, mat: M2.stoneLight });
+    const crenW = H2.crenellate(g, { x1: -149.1, z1: -165, x2: -149.1, z2: 330, y: WH, mat: M2.stoneLight });
+    crenN.userData.fadeWith = wallN;
+    crenS.userData.fadeWith = wallS;
+    crenW.userData.fadeWith = wallW;
+    const pil = [];
+    for (let x = -135; x <= 340.1; x += 25) {
+      if (Math.abs(x - 55) > 10) pil.push({ x, z: CO.harN - T / 2 - 0.35, r: 0, w: "N" });
+      if (Math.abs(x) > 10 && Math.abs(x - 110) > 10) pil.push({ x, z: CO.harS + T / 2 + 0.35, r: 0, w: "S" });
+    }
+    for (let z = -150; z <= 325.1; z += 25) {
+      if (Math.abs(z) > 10) {
+        pil.push({ x: CO.harE + T / 2 + 0.35, z, r: Math.PI / 2, sy: 0.83, w: "E" });
+        pil.push({ x: CO.harW - T / 2 - 0.35, z, r: Math.PI / 2, w: "W" });
+      }
+    }
+    const pilGeo = H2.uvWorldBox(new BoxGeometry(2.6, 17.4, 1.1), 2.6, 17.4, 1.1);
+    let pilE = null;
+    for (const [tag, wl] of [["N", wallN], ["S", wallS], ["E", wallE], ["W", wallW]]) {
+      const list = pil.filter((p) => p.w === tag);
+      if (!list.length) continue;
+      const pilInst = new InstancedMesh(pilGeo, M2.stoneLight, list.length);
+      list.forEach((p, i) => {
+        M4.makeRotationY(p.r);
+        if (p.sy) M4.scale(new Vector3(1, p.sy, 1));
+        M4.setPosition(p.x, p.sy ? 8 + 17.4 * p.sy / 2 : 16.7, p.z);
+        pilInst.setMatrixAt(i, M4);
+      });
+      pilInst.castShadow = pilInst.receiveShadow = true;
+      g.add(pilInst);
+      H2.occ(pilInst).userData.fadeWith = wl;
+      if (tag === "E") pilE = pilInst;   // 1.9.1: hidden in the six-amot reading
+    }
+    function gateTrim({ axis, gx, gz, arched = true, doorH = 15, doorMat = M2.cedar, inward = 1, wl = null, leaves = true }) {
+      const tr = (m) => {
+        if (wl) H2.occ(m).userData.fadeWith = wl;
+        return m;
+      };
+      const jw = 1.8, jh = 21.8, jd = T + 1.6; // 1.0.19: jambs reach the top of the stone lintel
+      if (axis === "x") {
+        for (const s of [-1, 1]) tr(H2.box(g, jw, jh, jd, M2.stoneLight, gx + s * 5.9, 0, gz));
+        if (arched) tr(H2.box(g, 13.6, 1.8, T + 1.2, M2.stoneLight, gx, 20, gz)); // flat stone lintel (shakuf) directly on the 20-amah opening
+        tr(H2.box(g, 11.8, 0.18, T + 1.4, M2.stoneSmooth, gx, 0, gz));
+      } else {
+        for (const s of [-1, 1]) tr(H2.box(g, jd, jh, jw, M2.stoneLight, gx, 0, gz + s * 5.9));
+        if (arched) tr(H2.box(g, T + 1.2, 1.8, 13.6, M2.stoneLight, gx, 20, gz)); // flat stone lintel (shakuf) directly on the 20-amah opening
+        tr(H2.box(g, T + 1.4, 0.18, 11.8, M2.stoneSmooth, gx, 0, gz));
+      }
+      const pw = 4.8;
+      for (const s of leaves ? [-1, 1] : []) {   // 1.9.5: Tadi has its own leaves (tadiLeaves, below) - the two upright cedar ones stood before them
+        const leaf = new Group();
+        const ajar = s === 1 ? 0.38 : 0.2;
+        if (axis === "x") {
+          leaf.position.set(gx + s * 5, 0, gz);
+          tr(H2.box(leaf, pw, doorH, 0.4, doorMat, -s * (pw / 2 + 0.05), 0, 0));
+        } else {
+          leaf.position.set(gx, 0, gz + s * 5);
+          tr(H2.box(leaf, 0.4, doorH, pw, doorMat, 0, 0, -s * (pw / 2 + 0.05)));
+        }
+        leaf.rotation.y = s * ajar * inward;
+        g.add(leaf);
+      }
+    }
+    gateTrim({ axis: "z", gx: CO.harE, gz: 0, doorMat: M2.bronze, inward: 1, wl: wallE });
+    for (const eb of [H2.box(g, 0.6, 1.7, 10, M2.stoneLight, CO.harE + 2.6, 20.5, 0), H2.box(g, 0.5, 1.4, 8.4, M2.stoneSmooth, CO.harE + 2.9, 20.65, 0), H2.box(g, 0.45, 1.0, 5, M2.marble, CO.harE + 3.1, 20.85, 0)]) H2.occ(eb).userData.fadeWith = wallE;
+    // 1.9.1: the readings' switch - whatever was built to fade with the gate piece (the trim, the emblem, the foundation, the pilasters)
+    // follows the active reading's gate piece
+    {
+      const followers = [];
+      g.traverse((o) => { if (o.userData && o.userData.fadeWith === wallE && !ewG.rambam.children.includes(o)) followers.push(o); });
+      ctx2.shared.eastWall = {
+        mode: "rambam",
+        set(m) {
+          this.mode = ["tiferet", "piskei", "chok", "shemaya"].includes(m) ? m : "rambam";
+          for (const k of Object.keys(ewG)) ewG[k].visible = k === this.mode;
+          for (const o of followers) o.userData.fadeWith = ewGate[this.mode];
+          if (pilE) pilE.visible = this.mode !== "piskei";
+          if (typeof ctx2.shared.eznEastWall === "function") ctx2.shared.eznEastWall(this.mode === "shemaya");
+        }
+      };
+    }
+    gateTrim({ axis: "x", gx: 55, gz: CO.harN, arched: false, inward: 1, wl: wallN, leaves: false });
+    // 1.5.0 (the user: "תצייר בלי ותכתוב לא מאומת"): the other reading of Tadi's top - "אבנים זקופות", two UPRIGHT stones (one on each
+    // jamb, standing straight up beside the opening's top) instead of the leaning pair - drawn as a toggle (ctx2.shared.tadi), UNVERIFIED
+    const tadiM = new Group(), tadiZ = new Group();
+    g.add(tadiM); g.add(tadiZ);
+    tadiZ.visible = false;
+    ctx2.layers = ctx2.layers || {};
+    ctx2.layers.tadiMutot = tadiM;
+    ctx2.layers.tadiZekufot = tadiZ;
+    ctx2.shared.tadi = { mode: "mutot", set(m) { this.mode = m === "zekufot" ? "zekufot" : "mutot"; tadiM.visible = this.mode === "mutot"; tadiZ.visible = this.mode === "zekufot"; } };
+    for (const s of [-1, 1]) {
+      const up = H2.box(tadiZ, 1.2, 5.5, T + 1.2, M2.stoneLight, 55 + s * 4.4, 20, CO.harN);
+      H2.occ(up).userData.fadeWith = wallN;
+    }
+    ctx2.labels.push({ text: "אבנים זקופות — לא מאומת", x: 55, y: 28, z: CO.harN - 4, size: 2, layer: "tadiZekufot" });
+    for (const s of [-1, 1]) {
+      // Middot 2:3: Tadi has no flat lintel but "two stones leaning on each other" (an inverted V).
+      // 1.0.19: the triangle between them is OPEN (a gable-shaped hole in the wall, see wallN opening.gable);
+      // each stone lies on its hole edge: inner face flush with the edge, from the jamb top (x=+-5, y=20) up to the apex (x=0, y=24).
+      const GH = 4, TH = 1.0, ang = Math.atan2(GH, 5), edgeL = Math.hypot(5, GH);
+      const stone = H2.box(tadiM, edgeL + 0.6, TH, T + 1.2, M2.stoneLight, 0, 0, 0);
+      H2.occ(stone).userData.fadeWith = wallN;
+      stone.position.set(55 + s * (2.5 + Math.sin(ang) * TH / 2), 20 + GH / 2 + Math.cos(ang) * TH / 2, CO.harN);
+      stone.rotation.z = -s * ang;
+    }
+    gateTrim({ axis: "x", gx: 0, gz: CO.harS, inward: -1, wl: wallS });
+    gateTrim({ axis: "x", gx: 110, gz: CO.harS, inward: -1, wl: wallS });
+    gateTrim({ axis: "z", gx: CO.harW, gz: 0, inward: -1, wl: wallW });
+    const RUN = 36 * 0.8;
+    H2.stairs(g, { width: 16, totalRise: 28, steps: 36, dir: "N", x: 0, y: GROUND_Y, z: CO.harS + T / 2 + RUN, tread: 0.8 });
+    H2.stairs(g, { width: 16, totalRise: 28, steps: 36, dir: "N", x: 110, y: GROUND_Y, z: CO.harS + T / 2 + RUN, tread: 0.8 });
+    // (1.9.5: no steps at the Shushan gate - the ramp of the Parah, below)
+    H2.stairs(g, { width: 12, totalRise: 28, steps: 36, dir: "S", x: 55, y: GROUND_Y, z: CO.harN - T / 2 - RUN, tread: 0.8 });
+    H2.stairs(g, { width: 12, totalRise: 28, steps: 36, dir: "E", x: CO.harW - T / 2 - RUN, y: GROUND_Y, z: 0, tread: 0.8 });
+    // 1.9.1 (the user: "מדרגות — להשאיר, להוסיף מעקה"): a railing on both sides of each of the five outer stairs - posts on every fourth
+    // step and a sloped handrail two amot over the steps. The stairs and their railings are a model choice (the Mishnah gives the gates of
+    // the Mount, not the way up to them); the cards say so
+    {
+      const railMat = M2.stoneSmooth || M2.marble;
+      const rise = 28 / 36, tread = 0.8;
+      const rail = (width, dir, x, z) => {
+        const grp = new Group();
+        for (const sz of [-1, 1]) {
+          const lz = sz * (width / 2 - 0.25);
+          for (let i = 0; i <= 36; i += 4) { const k = Math.min(i, 35); H2.box(grp, 0.3, 2, 0.3, railMat, k * tread + tread / 2, (k + 1) * rise, lz); }
+          const x0 = tread / 2, x1 = 35 * tread + tread / 2, y0 = rise + 2, y1 = 36 * rise + 2;
+          const bar = new Mesh(new BoxGeometry(Math.hypot(x1 - x0, y1 - y0), 0.25, 0.35), railMat);
+          bar.position.set((x0 + x1) / 2, (y0 + y1) / 2, lz);
+          bar.rotation.z = Math.atan2(y1 - y0, x1 - x0);
+          bar.castShadow = true;
+          grp.add(bar);
+        }
+        grp.rotation.y = { W: Math.PI, E: 0, N: Math.PI / 2, S: -Math.PI / 2 }[dir];
+        grp.position.set(x, GROUND_Y, z);
+        g.add(grp);
+        H2.instancify(grp);   // 1.9.2: the posts - one draw per railing (they were 110 pieces)
+      };
+      rail(16, "N", 0, CO.harS + T / 2 + RUN);
+      rail(16, "N", 110, CO.harS + T / 2 + RUN);
+      rail(12, "S", 55, CO.harN - T / 2 - RUN);
+      rail(12, "E", CO.harW - T / 2 - RUN, 0);
+    }
+    // 1.9.5 (a remark sent on to the user, 11.11.2026: "בשער שושן לא הי' מדרגות אלא כבש להר הזיתים לשחיטת פרה ולשעיר המשתלח"; the user:
+    // "אפשרות א" - a ramp instead of the steps): THE RAMP OF THE PARAH. Parah 3:6 (book 94, line 18): "וכבש היו עושים מהר הבית להר
+    // המשחה, כפין על גבי כפין, וכפה כנגד האטם, מפני קבר התהום"; Middot 1:3: "שער המזרחי... שבו כהן גדול השורף את הפרה ופרה וכל
+    // מסעדיה יוצאים להר המשחה"; the Rambam, Parah Adumah 3:1 (372, line 28): "וכבש היו עושין מהר הבית להר המשחה ותחתיו בנוי כפין
+    // כפין וכפה על כל שני כפין כדי שיהיו שני רגלי הכפה על גג שני כפין שתחתיה. כדי שתהיה תחת הכל חלול מפני קבר התהום"; the
+    // Bartenura (632, line 103): "רגלי הכפה שהכפה נשענת עליהם נקראין אטם. ואין רגלי הכפה העליונה כנגד רגלי התחתונה, אלא כנגד הכפה
+    // עצמה, דכנגד אטם העליונה עומד חלל התחתונה". So: out of the Shushan gate eastward, a paved way on two rows of arches - every
+    // pier of the upper row stands over the hollow of a lower arch, and every upper arch over a lower pier. It is drawn for 150 amot
+    // only (the Mount of Olives is not built), level with the gate's sill, ten amot wide as the gate, a low kerb on both its sides.
+    // Its height, width and length and the arches' measures - model choices. The 36 steps of 1.0 and their railing are gone here.
+    {
+      const X0 = CO.harE + T / 2, LEN = 150, WID = 10, BAY = 10, PIER = 3, YB = GROUND_Y - 2.5, YM = GROUND_Y + 14, YD = -1;
+      const cw = new Group();
+      cw.name = "parahRamp";
+      g.add(cw);
+      const R = (BAY - PIER) / 2;
+      const tier = (y0, y1, c0, floor) => {   // a wall 0..LEN long, y0..y1, an arched hollow on every centre c0, c0 + BAY, ...
+        const sh = new Shape();
+        sh.moveTo(0, y0); sh.lineTo(LEN, y0); sh.lineTo(LEN, y1); sh.lineTo(0, y1); sh.closePath();
+        const spring = y1 - 1.5 - R;
+        for (let c = c0; c + R < LEN - 0.5; c += BAY) {
+          const h = new Path();
+          h.moveTo(c - R, floor); h.lineTo(c + R, floor); h.lineTo(c + R, spring);
+          h.absarc(c, spring, R, 0, Math.PI, false);
+          h.lineTo(c - R, floor);
+          sh.holes.push(h);
+        }
+        const geo = new ExtrudeGeometry(sh, { depth: WID, bevelEnabled: false, curveSegments: 14 });
+        const m = new Mesh(geo, M2.stone);
+        m.position.set(X0, 0, -WID / 2);
+        m.castShadow = m.receiveShadow = true;
+        cw.add(m);
+        return m;
+      };
+      // TERRAIN_211: the ground now falls away eastward under the ramp (into the Kidron) - a third row of arches below, from 34 under the
+      // ground's level by the wall (hidden there) to the lower row's foot; its hollows on 10, 20, ... - under the lower row's piers
+      tier(GROUND_Y - 34, YB, BAY, GROUND_Y - 33.6);
+      tier(YB, YM, BAY / 2, YB + 0.4);          // the lower row: hollows on 5, 15, ... 145 (their floors under the ground by the wall)
+      tier(YM, YD, BAY, YM + 0.03);             // the upper row: hollows on 10, 20, ... 140 - over the lower piers; its piers over the lower hollows
+      H2.box(cw, LEN, 1, WID, M2.pave, X0 + LEN / 2, YD, 0);                                            // the way itself, its top level with the gate's sill
+      for (const sz of [-1, 1]) H2.box(cw, LEN, 1, 0.5, M2.stoneSmooth, X0 + LEN / 2, 0, sz * (WID / 2 - 0.25));   // a low kerb
+      ctx2.labels.push(
+        { text: "כבש הפרה — כיפין על גבי כיפין, וכיפה כנגד האוטם (פרה ג, ו)", x: X0 + 55, y: 7, z: 0, size: 2.6 },
+        { text: "אל הר המשחה (אינו מצויר)", x: X0 + LEN - 6, y: 4.5, z: 0, size: 2 });
+    }
+    const colPos = [];
+    const addRun = (axis, fixed, from, to, step, gaps) => {
+      for (let v = from; v <= to + 0.01; v += step) {
+        if (gaps.some((c) => Math.abs(v - c) < 9)) continue;
+        colPos.push(axis === "x" ? { x: v, z: fixed } : { x: fixed, z: v });
+      }
+    };
+    addRun("z", 346, -142, 277, 13, [0]);
+    addRun("z", 336, -142, 277, 13, [0]);
+    addRun("z", -140.5, -142, 277, 13, [0]);
+    addRun("z", -130.5, -142, 277, 13, [0]);
+    addRun("x", -160.5, -136, 326, 13.2, [55]);
+    addRun("x", -150.5, -136, 326, 13.2, [55]);
+    H2.colonnade(g, colPos, { height: 22, rShaft: 1.1, mat: M2.marble, style: "corinthian" });
+    H2.box(g, 2.4, 1.6, 431, M2.stoneLight, 346, 22, 67.5);
+    H2.box(g, 2.4, 1.6, 431, M2.stoneLight, 336, 22, 67.5);
+    const roofE = H2.box(g, 17, 0.9, 431, M2.cedar, 342, 23.6, 67.5);
+    H2.box(g, 2.4, 1.6, 431, M2.stoneLight, -140.5, 22, 67.5);
+    H2.box(g, 2.4, 1.6, 431, M2.stoneLight, -130.5, 22, 67.5);
+    const roofW = H2.box(g, 17, 0.9, 431, M2.cedar, -136, 23.6, 67.5);
+    H2.box(g, 478, 1.6, 2.4, M2.stoneLight, 94.5, 22, -160.5);
+    H2.box(g, 478, 1.6, 2.4, M2.stoneLight, 94.5, 22, -150.5);
+    const roofN = H2.box(g, 478, 0.9, 17, M2.cedar, 94.5, 23.6, -156.5);
+    const stoaRows = [288, 301, 314, 327];
+    const stoaPos = [];
+    for (const z of stoaRows)
+      for (let x = -133; x <= 339; x += 12.3) stoaPos.push({ x, z });
+    H2.colonnade(g, stoaPos, { height: 25, rShaft: 1.35, mat: M2.marble, style: "corinthian" });
+    for (const z of stoaRows) H2.box(g, 486, 1.8, 2.8, M2.stoneLight, CX, 25, z);
+    const aisleN = H2.box(g, 486, 1, 16, M2.cedar, CX, 26.8, 294.5);
+    const aisleS = H2.box(g, 486, 1, 16, M2.cedar, CX, 26.8, 320.5);
+    H2.box(g, 486, 9.5, 1.4, M2.plaster, CX, 26.8, 301);
+    H2.box(g, 486, 9.5, 1.4, M2.plaster, CX, 26.8, 314);
+    const naveRoof = H2.box(g, 490, 1.2, 16.5, M2.cedar, CX, 36.3, 307.5);
+    for (const ex of [-140, 346]) {
+      H2.wall(g, {
+        axis: "z",
+        length: 45,
+        height: 26.8,
+        thickness: 2.5,
+        mat: M2.stoneLight,
+        cx: ex,
+        cz: 307.5,
+        y: 0,
+        openings: [
+          { center: 0, width: 9, height: 16, arched: true },
+          { center: 13, width: 7, height: 12, arched: true },
+          { center: -13, width: 7, height: 12, arched: true }
+        ]
+      });
+      H2.box(g, 2.5, 9.5, 15.5, M2.stoneLight, ex, 26.8, 307.5);
+    }
+    // 1.2.0: the roofs of the royal stoa and of the porticos have their own list and their own pill on the model (not the heichal's cutaway)
+    ctx2.stoaCut = [naveRoof, aisleN, aisleS, roofE, roofW, roofN];
+    {
+      const MB = Array.isArray(ctx2.shared.modelButtons) ? ctx2.shared.modelButtons : (ctx2.shared.modelButtons = []);
+      let on = false;
+      MB.push({
+        id: "mnt-stoa-roofs", label: "פתח את הסטיו", labelOn: "סגור את הסטיו", removal: true, maxDist: 450,
+        title: "מסיר את גגות הסטיו המלכותי והאכסדראות כדי לראות את העמודים ואת החללים שבפנים. כלי צפייה בלבד.",
+        anchor: () => [103, 37.6, 307.5],   // the ridge of the royal stoa's nave roof
+        get: () => on,
+        set: (v) => { on = !!v; for (const m of ctx2.stoaCut) m.visible = !on; },
+        under: () => !!(ctx2.shared.camUnder && ctx2.shared.camUnder(ctx2.stoaCut))   // 1.9.2: not closed over the eye
+      });
+    }
+    const sx1 = CO.azW - 12.5, sx2 = CO.eznE + 12.5;
+    const sz1 = CO.azN - 12.5, sz2 = CO.azS + 12.5;
+    const posts = [], postKeys = /* @__PURE__ */ new Set();
+    const addPost = (x, z) => {
+      const k = x.toFixed(1) + "|" + z.toFixed(1);
+      if (!postKeys.has(k)) {
+        postKeys.add(k);
+        posts.push({ x, z });
+      }
+    };
+    // SOREG_211 (the user, 14.11.2026: "הסורג, צריך להיות עבה יותר ולא טס מתכת"; Bartenura Middot 2:3: "מחצה העשויה נקבים נקבים כמטה
+    // מסרגת בחבלים, והיא עשויה מדפי עץ ארכים וקצרים שמרכיבין אותן זו על זו באלכסון"): a lattice of cedar slats crossed on the diagonal,
+    // one layer leaning each way, between a low rail and a top rail - ten tefachim in all ("גבוה עשרה טפחים", 2:3). The slats of each
+    // group are instanced (one draw per direction). The breaches of the Greeks: SOREG_BREACH_211 below.
+    const SG_H = 1.7, SG_R = 0.17, SG_T = 0.3, SG_SP = 0.62, SG_IN = SG_H - 2 * SG_R;
+    const SG_SLATS = new Map();   // parent group -> [[axis, fixed, t], ...]
+    const SG_MAT = M2.cedar.clone();   // the user: "צבע הסורג עץ כהה"
+    SG_MAT.color.setHex(0x5e4636);
+    const soregRun = (parent, axis, fixed, r0, r1) => {
+      const len = r1 - r0, mid = (r0 + r1) / 2;
+      for (const y of [0, SG_H - SG_R]) {
+        if (axis === "x") H2.box(parent, len, SG_R, SG_T, SG_MAT, mid, y, fixed);
+        else H2.box(parent, SG_T, SG_R, len, SG_MAT, fixed, y, mid);
+      }
+      if (!SG_SLATS.has(parent)) SG_SLATS.set(parent, []);
+      const list = SG_SLATS.get(parent);
+      for (let t = r0 + SG_IN / 2; t <= r1 - SG_IN / 2 + 1e-6; t += SG_SP) list.push([axis, fixed, t]);
+    };
+    const soregSlats = () => {
+      const L = SG_IN * Math.SQRT2;
+      const gX = new BoxGeometry(0.1, L, 0.07), gZ = new BoxGeometry(0.07, L, 0.1);
+      for (const [parent, list] of SG_SLATS) {
+        for (const axis of ["x", "z"]) {
+          const mine = list.filter((e) => e[0] === axis);
+          if (!mine.length) continue;
+          for (const sgn of [1, -1]) {
+            const im = new InstancedMesh(axis === "x" ? gX : gZ, SG_MAT, mine.length);
+            mine.forEach(([, fixed, t], i) => {
+              if (axis === "x") M4.makeRotationZ(sgn * Math.PI / 4).setPosition(t, SG_R + SG_IN / 2, fixed + sgn * 0.075);
+              else M4.makeRotationX(sgn * Math.PI / 4).setPosition(fixed + sgn * 0.075, SG_R + SG_IN / 2, t);
+              im.setMatrixAt(i, M4);
+            });
+            im.castShadow = im.receiveShadow = true;
+            parent.add(im);
+          }
+        }
+      }
+    };
+    // SOREG_BREACH_211 (the user: "הפרצות היו רק בימי היוונים, אפשר לעשות מתג"; Middot 2:3: "ושלש עשרה פרצות היו שם, שפרצום מלכי
+    // יון. חזרו וגדרום"): thirteen stretches of three amot are built apart - the repair ("חזרו וגדרום", shown by default) - and in the
+    // Greeks' days they are open, the slats fallen by the gap. Their places are not said: spread round the soreg, away from its
+    // openings (a model choice). ctx2.shared.soregBreach.set("greeks" | "repaired")
+    const repairG = new Group(), breachG = new Group();
+    g.add(repairG, breachG);
+    breachG.visible = false;
+    const BRW = 3;
+    const soregBreachAt = (axis, fixed, c) => {
+      soregRun(repairG, axis, fixed, c - BRW / 2, c + BRW / 2);
+      const P = (t, off) => axis === "x" ? [t, off] : [off, t];
+      const pieces = [[-1.2, 0.35, 0.4, 0.9], [-0.3, -0.5, 1.7, 1.3], [0.6, 0.6, 2.6, 1.1], [1.1, -0.2, 0.9, 1.7], [0.2, 0.9, 3.4, 0.8]];
+      for (const [dt, doff, rot, len] of pieces) {
+        const [x, z] = P(c + dt, fixed + doff);
+        const m = H2.box(breachG, 0.1, 0.06, len, SG_MAT, x, 0.02, z);
+        m.rotation.y = rot;
+      }
+      for (const sgn of [-1, 1]) {   // a broken stub of the top rail hanging at each side of the gap
+        const [x, z] = P(c + sgn * (BRW / 2 - 0.25), fixed);
+        const m = H2.box(breachG, axis === "x" ? 0.5 : SG_T, SG_R, axis === "x" ? SG_T : 0.5, SG_MAT, x, SG_H - SG_R - 0.25, z);
+        m.rotation[axis === "x" ? "z" : "x"] = sgn * 0.5;
+      }
+    };
+    const soregSide = (axis, fixed, from, to, gaps, breaches = []) => {
+      const runs0 = [];
+      let a = from;
+      for (const c of gaps.slice().sort((p, q) => p - q)) {
+        runs0.push([a, c - 2]);
+        a = c + 2;
+      }
+      runs0.push([a, to]);
+      const runs = [];   // SOREG_BREACH_211: the runs without the thirteen stretches
+      for (const [q0, q1] of runs0) {
+        let b0 = q0;
+        for (const c of breaches.filter((c) => c - BRW / 2 > q0 && c + BRW / 2 < q1).sort((p, q) => p - q)) {
+          runs.push([b0, c - BRW / 2]);
+          soregBreachAt(axis, fixed, c);
+          b0 = c + BRW / 2;
+        }
+        runs.push([b0, q1]);
+      }
+      for (const [r0, r1] of runs) {
+        const len = r1 - r0;
+        if (len < 0.6) continue;
+        const mid = (r0 + r1) / 2;
+        soregRun(g, axis, fixed, r0, r1);   // SOREG_211
+        const n = Math.max(1, Math.round(len / 12));
+        for (let i = 0; i <= n; i++) {
+          const t = r0 + len * i / n;
+          if (axis === "x") addPost(t, fixed);
+          else addPost(fixed, t);
+        }
+      }
+    };
+    soregSide("x", sz1, sx1, sx2, [-78, -48, 3.5, 161], [-63, 15, 70, 120, 200]);   // CHEL_211: the third opening of the north at the foot of Beit HaMoked's flight (x 3.5; -18 until 2.0.1)   // 1.4.0: the gaps face the gates of 1.3.0 (west part of the walls; -18 = Beit HaMoked / the Water Gate) and Josephus' side gates; SOREG_BREACH_211: five breaches here
+    soregSide("x", sz2, sx1, sx2, [-78, -48, -18, 161], [-90, 15, 70, 120, 200]);
+    soregSide("z", sx2, sz1, sz2, [0], [-45]);
+    soregSide("z", sx1, sz1, sz2, [0], [-45, 45]);
+    // ===== ROOF_ALL_211 (the user, 15.11.2026 00:53: a row of opinions for THE ROOFING OF THE TEMPLE MOUNT). The Rambam (Beit HaBechirah
+    // 5:1, book 337 line 76): "הר הבית... וכלו היה מקרה סטיו לפנים מסטיו" (Pesachim 13b, 106 line 388: "הר הבית סטיו כפול היה... סטיו
+    // לפנים מסטיו"). THE TOSAFOT YOM TOV (Middot 2:1, 948 line 64): "ודאי שאין הר הבית מכוסה, שלא היה מסוכך אלא ע"ג האצטבאות... והן
+    // בצדדים סביב לא באמצע" - the model until now, and the default: the double colonnades along the east, north and west walls and the
+    // royal stoa in the south, the middle of the mount open. THE LECHEM SHAMAYIM (Middot 2:1, 1145 line 35): "הר הבית סטיו לפנים מסתיו
+    // היה, א"כ כולו עשוי אצטבאות, ממילא כולו מקורה... ותו הרמב"ם נפק לאפיה... שכולו מקורה היה. והוא האמת" - drawn here: rings of
+    // columns, a ring within a ring, over the whole mount outside the soreg, and one roof on them (see-through, so that the mount under
+    // it is seen). The courts themselves stay open (Boaz, Middot 2:1, 1329 line 9: the four chambers of the Women's Court were not
+    // roofed, "וכ"ש העזרה שחוצה לה"; against the Shiltei HaGiborim). ctx2.shared.harRoof = { mode: "sides" | "all", set(m) }.
+    // MODEL CHOICES: its height (the side colonnades'), the rings and their columns. (How far in it reached: ROOF_CHEL_211, below.)
+    {
+      const RG = new Group();
+      RG.name = "harRoofAll";
+      RG.visible = false;
+      g.add(RG);
+      ctx2.layers.harRoofAll = RG;
+      const W0 = CO.harW, E0 = CO.harE, N0 = CO.harN, S0 = 284;                   // (the royal stoa takes the south, from z 284)
+      const inSoreg = (x, z) => x > sx1 - 7 && x < sx2 + 7 && z > sz1 - 7 && z < sz2 + 7;
+      const pos = [], seen = new Set();
+      // NOTE 10 (U-58): no column within six amot of the eye of the row "הסורג — שלוש עשרה הפרצות" (82, 94) or of its line of sight -
+      // one stood right before it and filled the view when both rows were chosen
+      const EYES = [[82, 94], [76, 87]], nearEye = (x, z) => EYES.some(([ex, ez]) => Math.hypot(x - ex, z - ez) < 6);
+      const put = (x, z) => { const k = Math.round(x) + "," + Math.round(z); if (seen.has(k) || inSoreg(x, z) || nearEye(x, z)) return; seen.add(k); pos.push({ x, z }); };
+      for (let d = 34; d < 260; d += 24) {                                          // a ring every 24 amot, in from the side colonnades
+        const x0 = W0 + d, x1 = E0 - d, z0 = N0 + d, z1 = S0 - (d - 34);
+        if (x1 - x0 < 20 || z1 - z0 < 20) break;
+        for (let x = x0; x <= x1 + 0.01; x += (x1 - x0) / Math.max(1, Math.round((x1 - x0) / 13))) { put(x, z0); put(x, z1); }
+        for (let z = z0; z <= z1 + 0.01; z += (z1 - z0) / Math.max(1, Math.round((z1 - z0) / 13))) { put(x0, z); put(x1, z); }
+      }
+      const cols = H2.colonnade(RG, pos, { height: 22, rShaft: 0.95, mat: M2.marble, style: "corinthian" });
+      cols.userData.noPick = true;
+      const roofM = new MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.85, transparent: true, opacity: 0.4, depthWrite: false, side: DoubleSide });
+      const slab = (x0, x1, z0, z1) => { const m = new Mesh(new BoxGeometry(x1 - x0, 0.7, z1 - z0), roofM); m.position.set((x0 + x1) / 2, 23.5, (z0 + z1) / 2); m.userData.noPick = true; m.renderOrder = 6; RG.add(m); };
+      const X0 = -127.5, X1 = 333.5, Z0 = -148, Z1 = 286.5;                          // between the side colonnades' own roofs
+      // ROOF_CHEL_211 (the review, S3-05; the user, 15.11.2026 18:12: "להאריך"): the roof goes on OVER THE CHEL, to the courts' wall - the
+      // Tiferet Yisrael, whom the card follows for the open courts, says so: "דרק הר הבית שמחוץ לחומה הפנימית מקורה היה" (Boaz Middot
+      // 2:1, 1329:9), and of the chel's steps "וכולו מחופה בגג" (Tzurat Beit HaMikdash, siman 8; 6029:25). Until this fix the roof
+      // stopped at the soreg - a choice of the model's that stood against him. The columns still end at the soreg; over the chel the
+      // roof leans on the courts' wall (their outer faces: x -96 / 231, z -70 / 70 - CHEL_211).
+      const IX0 = -96, IX1 = 231, IZ0 = -70, IZ1 = 70;
+      slab(X0, X1, Z0, IZ0);
+      slab(X0, X1, IZ1, Z1);
+      slab(X0, IX0, IZ0, IZ1);
+      slab(IX1, X1, IZ0, IZ1);
+      ctx2.labels.push({ text: "״וכולו היה מקורה, סטיו לפנים מסטיו״ (רמב״ם) — כל הר הבית, כלחם שמים", x: 250, y: 30, z: 160, size: 5, layer: "harRoofAll" });
+      ctx2.shared.harRoof = { mode: "sides", count: pos.length, set(m) { this.mode = m === "all" ? "all" : "sides"; RG.visible = this.mode === "all"; return this.mode; } };
+    }
+    ctx2.labels.push({ text: "שלוש עשרה פרצות — שפרצום מלכי יון (מידות ב, ג)", x: 70, y: 4.5, z: sz2 + 1, size: 2.2, layer: "soregBreach" });
+    ctx2.layers = ctx2.layers || {};
+    ctx2.layers.soregBreach = breachG;
+    ctx2.layers.soregRepair = repairG;
+    ctx2.shared.soregBreach = {
+      mode: "repaired",
+      set(m) {
+        this.mode = m === "greeks" ? "greeks" : "repaired";
+        breachG.visible = this.mode === "greeks";
+        repairG.visible = !breachG.visible;
+        if (ctx2.requestRender) ctx2.requestRender();
+      }
+    };
+    // 1.8.0 (the user: "שערי עזרת נשים לפי חז״ל לא מבטל את השערים של יוסף בן מתתיהו"): the gaps at x 161 face Josephus' side gates of the
+    // women's court only - by Chazal (the default) the soreg runs on there: a filler piece in each long side, hidden by ctx2.shared.eznGates
+    {
+      const fill = new Group();
+      g.add(fill);
+      ctx2.layers = ctx2.layers || {};
+      ctx2.layers.soregChazal = fill;
+      for (const z of [sz1, sz2]) soregRun(fill, "x", z, 161 - 2.05, 161 + 2.05);   // SOREG_211
+    }
+    soregSlats();   // SOREG_211
+    const postGeo = H2.uvWorldBox(new BoxGeometry(0.55, 2.05, 0.55), 0.55, 2.05, 0.55);
+    const postInst = new InstancedMesh(postGeo, M2.stoneSmooth, posts.length);
+    posts.forEach((p, i) => {
+      M4.makeTranslation(p.x, 1.025, p.z);
+      postInst.setMatrixAt(i, M4);
+    });
+    postInst.castShadow = postInst.receiveShadow = true;
+    g.add(postInst);
+    for (const z of [-26, 8, 34]) H2.box(g, 0.5, 2.2, 1.1, M2.marble, 243.1, 0, z);
+    ctx2.labels.push(
+      { text: "הר הבית", x: CX, y: 55, z: 210, size: 8 },
+      { text: "שער שושן", x: 362, y: 30, z: 0, size: 5 },
+      { text: "שער טדי", x: 55, y: 30, z: -176, size: 5 },
+      { text: "שערי חולדה", x: 55, y: 30, z: 341, size: 5 },
+      { text: "שער קיפונוס", x: -156, y: 30, z: 0, size: 5 },
+      { text: "הסטיו המלכותי", x: CX, y: 46, z: 307, size: 6 },
+      { text: "הסורג — מדפי עץ באלכסון, נקבים נקבים (ברטנורא, מידות ב, ג)", x: 246, y: 6, z: 14, size: 3 }
+    );
+    // 1.5.0: the doors of the five gates of the Mount (Middot 1:3) - gold leaves (2:3), ajar into the Mount; Tadi's between its two leaning
+    // stones. Huldah x 0 and 110 (south), Kiponus (west), Tadi x 55 (north), Shushan (east, z 0).
+    for (const x of [0, 110]) H2.doors(g, { axis: "x", cx: x, cz: CO.harS, y: 0, width: 10, height: 20, inward: -1, mat: M2.gateGold, open: 1.0, inset: 2 });
+    // 1.9.5 (a remark sent on to the user, 11.11.2026: "בשער טדי לכאו' הדלת הסתיימה באלכסון כמו השער - לא ממקורות אלא מהעובדה כי זה הי'
+    // שער הכניסה לעיר מצפון"; the user: "8. תשנה"): TADI'S LEAVES END ASLANT, as the gate's head - each leaf as high as the jamb at
+    // its hinge (20) and as the gable at the gate's middle (24), so that the two, shut, close the triangle between the two leaning
+    // stones too (until 1.9.4 two upright leaves of 20, the triangle open over them). No source - a model choice; the card says so.
+    {
+      const grp = new Group();
+      grp.name = "tadiLeaves";
+      const lw = 4.9, th = 0.4, h0 = 19.7, h1 = 19.7 + 4 * (lw / 5);
+      for (const sd of [-1, 1]) {
+        const sh = new Shape();
+        sh.moveTo(0, 0); sh.lineTo(lw, 0); sh.lineTo(lw, h1); sh.lineTo(0, h0); sh.closePath();
+        const geo = new ExtrudeGeometry(sh, { depth: th, bevelEnabled: false });
+        geo.translate(0, 0, -th / 2);
+        const leaf = new Mesh(geo, M2.gateGold);
+        leaf.position.set(sd * 5, 0.15, 2);
+        leaf.rotation.y = sd < 0 ? -0.3 : Math.PI + 0.3;   // a little ajar into the Mount, so that their slanted heads are seen from outside ("טדי מן הצפון, לא היה משמש כלום", Middot 1:3); the other gates' leaves stand wide open
+        leaf.castShadow = leaf.receiveShadow = true;
+        H2.box(leaf, lw - 0.2, 0.35, th + 0.08, M2.bronze, lw / 2, 9.8, 0);
+        grp.add(leaf);
+      }
+      grp.position.set(55, 0, CO.harN);
+      g.add(grp);
+    }
+    H2.doors(g, { axis: "z", cx: CO.harE, cz: 0, y: 0, width: 10, height: 20, inward: -1, mat: M2.gateGold, open: 1.0, inset: 2 });
+    H2.doors(g, { axis: "z", cx: CO.harW, cz: 0, y: 0, width: 10, height: 20, inward: 1, mat: M2.gateGold, open: 1.0, inset: 2 });
+    // 1.5.0: THE CHEL as a zone (see 30-courts.js): the 10 amot between the soreg and the courts' walls (Middot 2:3), lit by its place.
+    // 1.9.1 (the user: "תוסיף צבע צף לחיל שיהיה ברור מהו בדיוק, כמו בעזרת נשים"): the patch lay on the ground (y 0.12), under the courts'
+    // podiums - they run 7.5 amot into the chel on every side (30-courts.js: the azarah's at 13.5, the women's court's at 6; only the
+    // outer 2.5 amot by the soreg stay at the mount's level) - so almost nothing showed, and its label stood inside the podium. Now the
+    // patch floats on each part's own surface, with a bright frame like the courts' zones; on the east (the chel at the mount's level,
+    // 30-courts.js) a sloped patch lies over the twelve steps.
+    {
+      ctx2.layers = ctx2.layers || {};
+      ctx2.shared.features = ctx2.shared.features || {};
+      const grp = new Group();
+      grp.visible = false;
+      grp.name = "zoneHel";
+      const HEL = 0x3ad1c9;
+      const pm = new MeshBasicMaterial({ color: HEL, transparent: true, opacity: 0.42, depthWrite: false, side: DoubleSide });
+      const fm = new MeshBasicMaterial({ color: HEL });
+      const strip = (parent, x0, x1, z0, z1, y) => {
+        const p = new Mesh(new BoxGeometry(x1 - x0, 0.04, z1 - z0), pm);
+        p.position.set((x0 + x1) / 2, y + 0.08, (z0 + z1) / 2);
+        p.userData.noPick = true;
+        parent.add(p);
+        const bar = (w, d, x, z) => { const b = new Mesh(new BoxGeometry(w, 0.2, d), fm); b.position.set(x, y + 0.12, z); b.userData.noPick = true; parent.add(b); };
+        bar(x1 - x0, 0.35, (x0 + x1) / 2, z0); bar(x1 - x0, 0.35, (x0 + x1) / 2, z1);
+        bar(0.35, z1 - z0, x0, (z0 + z1) / 2); bar(0.35, z1 - z0, x1, (z0 + z1) / 2);
+      };
+      const ix0 = CO.azW - 2.5, ix1 = CO.eznE + 2.5, iz0 = CO.azN - 2.5, iz1 = CO.azS + 2.5;   // the walls' outer faces
+      const px0 = CO.azW - 10, pz0 = CO.azN - 10, pz1 = CO.azS + 10;                            // the podiums' outer edges (30-courts.js)
+      const yAz = LV.AZ, yEz = LV.EZN;
+      // CHEL_211: the whole chel is at the mount's level (until 2.0.1 the patch lay on the podiums' ledges, 7.5 of the ten amot):
+      // four strips round the courts - north, south, west and east
+      strip(grp, sx1, sx2, sz1, iz0, 0.04);
+      strip(grp, sx1, sx2, iz1, sz2, 0.04);
+      strip(grp, sx1, ix0, iz0, iz1, 0.04);
+      // the east: the chel at the mount's level, and the twelve steps inside it (x 231..237, 14 wide) - a sloped patch over them
+      strip(grp, ix1, sx2, iz0, iz1, 0.04);
+      {
+        const x0 = ix1, x1 = ix1 + 6, hw = 7, lift = 0.35;
+        const geo = new BufferGeometry();
+        geo.setAttribute("position", new Float32BufferAttribute([x1, lift, -hw, x1, lift, hw, x0, yEz + lift, hw, x0, yEz + lift, -hw], 3));
+        geo.setIndex([0, 1, 2, 0, 2, 3]);
+        const sl = new Mesh(geo, pm);
+        sl.userData.noPick = true;
+        grp.add(sl);
+      }
+      g.add(grp);
+      ctx2.layers.zoneHel = grp;
+      ctx2.shared.features.zoneHel = { key: "zoneHel", isOn: () => grp.visible, on: () => { grp.visible = true; }, off: () => { grp.visible = false; } };
+      ctx2.labels.push({ text: "החיל — עשר אמות בין הסורג לחומה (מידות ב, ג)", x: 20, y: 4, z: sz2 - 5, size: 3, layer: "zoneHel" });
+      ctx2.labels.push({ text: "החיל", x: sx2 - 5, y: 4, z: -45, size: 3, layer: "zoneHel" });
+    }
+    ctx2.shared.flyPoints = ctx2.shared.flyPoints || {};
+    Object.assign(ctx2.shared.flyPoints, {
+      harHabayit: { pos: [720, 320, 520], target: [100, 10, 80] },
+      shushanGate: { pos: [455, 24, -88], target: [392, -4, 0] },   // 1.9.5: from the north-east - the gate and the ramp of the Parah on its two rows of arches
+      royalStoa: { pos: [190, 14, 250], target: [80, 12, 305] }   // TOURFIX_195: inside the mount, along its columns (from outside the wall they were hidden); VIEWFIX_205: under the roof's height (from 34 the roof's top filled the view)
+    });
+  }
+

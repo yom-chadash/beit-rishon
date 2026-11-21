@@ -1,0 +1,83 @@
+/*
+ * ===== DEV NOTES (read first; full version in DEV_NOTES.md inside the plugin zip) =====
+ * Beit Sheni (Second Temple) 3D model (Otzaria plugin). Single bundled file, no build step; sections are marked "// plugin/...".
+ * STANDING RULE for any human/AI editing: after every change update DEV_NOTES.md + this header and bump manifest.json version;
+ * never change a halachic dimension without a mishnah reference in a comment (e.g. // Middot 2:3) and note disputes; do not guess - ask the user.
+ * Units: 1 = 1 amah. +x east, +z south, y up. Levels: Har 0, Ezrat Nashim 6, Israel 13.5, Kohanim 16, Heichal 22.
+ * STANDING RULE 7 (cross-check with the parallel plugin): whenever the First/Second Temple plugins are merged or ported, check EACH plugin against the other's DEV_NOTES.md: pull in improvements the other lacks (engine/UI freely; halachic dimensions only after a source check + user approval), or at least record them as an efficiency suggestion in DEV_NOTES.md ("הצעות ייעול").
+ * 1.9.0 (9.11.2026): the cells - five a storey in the north and the south (were fifteen), the mesibah 27..30 with a wall of 5, and eight
+ *   readings of how they widen (50-heichal.js CELLS_R / buildCells / ctx2.shared.cellsReading; the opinions table "צורת התאים", each in a
+ *   section across the house at x -38, its labels shown only there; tools/rows_190.py).
+ * 1.8.2 (9.11.2026): the north's names in the thirteen gates by the Tiferet Yisrael and the Chok Natan (30-courts.js NASHIM_X -36: the
+ *   women's small gate between the Korban gate and Beit HaMoked; tools/rows_182.py); the parochot in three readings (Rashi, Rambam, Maasei LaMelech).
+ * 1.8.1 (9.11.2026): every chamber flies to a view from above (tools/places_181.py); the ramp to the yesod by Rashi (Zevachim 62b); the
+ *   south chambers 10 deep and a winding mesibah (the big ramp no longer runs into them); the altar's measures numbered, in five readings
+ *   (ctx.shared.altarMeasures); the two ways from the pishpesh (ctx.shared.pishpeshWay), seen through the walls.
+ * 1.8.0 (9.11.2026): the opinions table renamed and merged (tools/shitot_180.py: 17 rows); drawn: the Ra'avad's tapuach (40-altar.js
+ *   ctx.shared.tapuach, topG), the 13 gates (30-courts.js ctx.shared.gates13, g7/g13), the Tiferet Yisrael's ulam (ulamT), the parochot's
+ *   figures (50-heichal.js ctx.shared.parochetArt), Beit HaMoked's two gates + wicket + pispasin; fixes: the soreg by Chazal, Nikanor's bronze,
+ *   Herod's marble (Bava Batra 4a with Rashi: stepped courses, white / green / blue), the parochot's place in the amah between them.
+ * 1.7.1 (9.11.2026): the ulam steps in three drawn readings (50-heichal.js ctx.shared.ulamSteps: Bartenura default, Tiferet Yisrael,
+ *   Rambam); new exports from the user's seforim.db (Bartenura/TYT/Yachin/Boaz on Shekalim, Menachot, Yoma, Sukkah) -> tools/cards_extra.py
+ *   (tables, lechem hapanim, siflei, parochot, Avtinas, kiyor, gates, chambers); Yachin alignment fixed (longest key, male/chaser spelling).
+ * 1.7.0 (9.11.2026; stage 4 - the texts): every card rewritten in the Mishnah's words with the Bartenura, the Tosafot Yom Tov and the
+ *   Tiferet Yisrael (tools/cards_ch1-5.py, cards_vessels.py -> tools/apply_cards.py -> content.json; tools/mishtool.py digests the exports,
+ *   qa/verify_quotes.py checks every quote); commentary deep links (tools/cm_links.json, OTZ_CM, UI_SRC_CM; bare "(ב, ג)" follows the
+ *   last named citation, default Middot).
+ * 1.6.0 (9.11.2026; stage 6 - polish): walk mode (pointer lock + WASD, 90-entry.js ent_walkModeSet) and the live clipping section with a slider
+ *   (ent_sectionSet; z or x axis; two-sided while cut, no caps); PBR, bump maps and the procedural sky were already in place.
+ * 1.5.0 (9.11.2026; the user's review of 1.4.0): every view checked by eye (qa/views.mjs); the altar 60.5 from the north wall (Rambam 5:15; Rashi 62.5
+ *   as a reading); the altar's measure lines 32/30/28/26/24 + the former 28x28; the laver rebuilt and moved south of the ulam steps; Yom Kippur pyre as
+ *   its own row; straight incense smoke; hollow furnished chambers (room/furnishers in 30-courts.js), the southern ones in the Tosafot Yom Tov's order;
+ *   Beit Avtinas over the Water Gate; doors on every gate (gold; Nikanor yellow bronze); floor zones (hel, azarah, Yisrael, Kohanim, ulam-altar, EZN);
+ *   the mesibah as 84 stairs + the corridor on the cells' roofs; "open the ulam" pill; the corrections group dropped; copy-selection only in the card.
+ * 1.4.0 (9.11.2026; stage 3 of 5 - "add everything"): Hel / Yisrael / Kohanim / between-Ulam-and-altar labels; duchan + Ulam steps full width (Tiferet Yisrael);
+ *   38 hollow cells in 3 storeys + mesibah (pill "hei-mesibah") + aliyah, lulin, pispasin; carved gold liners (Yoma 54a); nisuch bowls Rashi/Tosafot;
+ *   28x28 outline; maarachot 2/3/4 + Yom Kippur; 24 guards; Beit HaMoked hollow with its 4 chambers; Nikanor chambers, Nitzotz upper room, Parhedrin;
+ *   toggles Herod / 120 amot / parapet; soreg gaps at the gates. See DEV_NOTES.md 1.4.0.
+ * 1.3.0 (9.11.2026; stage 2 of 5 - the user's decisions): the court's gates in the WESTERN part of the walls (Rambam 5:4) with Beit HaMoked
+ *   itself as the third gate (Middot 1:5); the small ramps leave the big ramp, the yesod ramp diagonal (TYT, TI); the place of the altar
+ *   (Middot 5:2 default; R. Yehuda / R. Yose / "all in the south" switchable, ctx.shared.altarPlace); the ulam's width (Mishnah 70 + 15 /
+ *   Rambam 90); the foundation stone in the west (Rambam 4:1); splayed windows; the women's court: high long walls, the east wall in two
+ *   readings, Josephus' north/south gates as an off switch, the twelve steps outside the soreg / inside the chel; the First Temple's
+ *   menorah (18 tefachim + the stone of three steps), table and golden altar - one of each, placed by Rambam 3:17 and Yoma 33b (new
+ *   45-vessels.js), their metal switchable (gold / silver / iron-and-tin, Menachot 28b; Rambam 1:19); the gold recipe of the First Temple.
+ * 1.2.0 (8.11.2026, night; stage 1 of 5, the user: "transfer the controller", "buttons too", "the card at the left like the First Temple", "one tree with the search at the top",
+ *   "the presentation by the order of the Mishnayot"): the First Temple's UI ENGINE (70-ui.js, 75-tour.js, 90-entry.js, index.html of 1.2.7) adopted as is, with
+ *   the Second Temple's CONTENT generated into it (tools/port_ui.py, tools/port_tour.py from tools/content.json; src/ + tools/assemble.mjs build plugin/bundle.js).
+ *   One tree with search, collapsed groups, the explanation card at the left with chips (sources + readings), the label card, the top bar (presentation, help, print,
+ *   report, news), model buttons ("פתח את ההיכל" / "פתח את הלשכות" / "פתח את הסטיו" / the cloud / "↺ החזר הכל"), the compass and the in-place "look" mode indoors,
+ *   walking keys, the opinions table (12 subjects), the presentation in 3 modes (34 pointed Mishnayot of Middot), the book button in Middot (89) and the Rambam (337).
+ *   No First-Temple content was moved (no palace, no Yachin and Boaz, no ark). Manifest: the First Temple's permissions + startup program. See DEV_NOTES.md 1.2.0.
+ * 1.1.0 (8.11.2026, the user: "take all the improvements to the Second Temple", "learn all the Mishnayot and the Rambam"): renamed "בית שני". PORTED from the First Temple
+ * plugin 1.2.7 (engine/UI only, cross-check rule 7 done against its src/ + DEV_NOTES): no rendering while loading + paint yields + compileAsync incl. shadow-depth
+ * variants + first frame under the overlay (25.6s -> ~3s on software GL); pointerSafety 1.0.1-K (every pointer tracked); keyboard walking (arrows walk, PageUp/Down lift,
+ * Shift+arrows tilt, +/- zoom); "ניווט" help dialog; "מה חדש" once per version; touch-action on the panel. Sources open in Otzaria for ALL cited books (OTZ_BOOKS /
+ * refIndex / openBookAt: Rambam Beit HaBechirah 337, Tmidin 344, Klei HaMikdash 338, Mishnah Tamid/Shekalim/Yoma/Sanhedrin..., Yoma 107, Zevachim 130, Menachot 131, Sukkah 108...;
+ * tables from seforim.db line.heRef, verified). Tour menu: by topics / by the order of the Mishnah. FULL CHECK of Middot 1-5 and Rambam Beit HaBechirah 1-6, 8 against
+ * the code: FIXED heichal height (100 incl. the 6-amah otem, measured from the Azara floor; was 6 too tall), Azara/Ezrat Nashim gates rectangular with lintels (Middot 2:3),
+ * foundation stone 3 fingers high (Yoma 5:2), duchan treads 0.5 (Rambam 6:3), "השער העליון" renamed "שער עזרת נשים" (no source); ADDED the Ulam tables (Shekalim 6:4)
+ * and the Heichal wickets (Middot 4:2). 6 new documented disputes in SHITOT await the user (lishkot north/south, upper gate, gate order "סמוכים למערב", Beit HaMoked
+ * as the 3rd gate, Ulam width, foundation-stone place). QA: qa2.mjs / dump.mjs (headless). See DEV_NOTES.md.
+ * 1.0.32: fire redone to look more natural: new flame shader (softer body, ragged flickering tips, layered noise), 15 overlapping flames rooted inside the pyre, flickering coals in the gezirin gap, larger flames on the two small pyres. 1.0.31: slaughter rings stand upright and half-buried; the two gezirin moved to the top of the great pyre; fire sources raised to match. 1.0.30: merged into 1.0.29 - realistic fire (noise-shader flames, sparks, glow) and a straight smoke column rising high into the sky (altar.js; design only, no halachic dimension changed).
+ * 1.0.29: label card becomes a bottom sheet on phones (width <= 640px), as in the First Temple plugin; cross-check with the First Temple DEV_NOTES recorded in DEV_NOTES.md.
+ * 1.0.28: clicking a label in the model opens a floating card (title, text, source buttons) like the First Temple plugin; LABEL_MAP in ui.js maps each of the 56 labels to text that already exists in the plugin; hover shows a pointer cursor; closes with X / Esc / click on empty model.
+ * 1.0.27: keeping-the-fire pyre enlarged (2.4 x 2.4 x 1); ketoret pyre recalculated in amot (1.5 x 1.5 x 0.7); two gezirin (1 x 1 amah) drawn at the bottom of the great pyre. 1.0.26: the three pyres resized: great pyre 4.5 x 8 x 3 amot; ketoret pyre 1.6 x 1.6 x 0.8 (~5 seah of coals, calculation in altar.js comment); keeping-the-fire pyre 1.2 x 1.2 x 0.6; flames, light and smoke adjusted. 1.0.25: the tapuach is now a visible round ash heap (r 4.5, h 2.2, label) and the great pyre starts at its edge (x=59.7); shitot topic "התפוח". 1.0.24: shitot panel - ramps highlight now follows the panel switch; new topic "number of pyres" (Yoma 45a, documented only). 1.0.23: (1) bottom bar smaller again (buttons 26px, compass 56px); (2) the GREAT PYRE (maarachah gedolah) resized: east of the tapuach, 9.7 x 18 amot, 8 layers (Tamid 2:4) - the model size is a choice; (3) new panel group "שיטות ומחלוקות" (ramps Rashi/Tosafot, Ulam steps Mishnah/Rambam are drawn; other opinions documented only); (4) DEV_NOTES: rule 7.
+ * 1.0.22: bottom bar made smaller (buttons 32px, compass 70px). 
+ * 1.0.21: (1) Lishkat HaGazit is now a hollow hall: two doors, half holy/half unconsecrated, 71 Sanhedrin seats in half a circle + two scribes (Middot 5:4; Yoma 25a; Sanhedrin 1:6, 4:3); (2) ramps rebuilt as solid wedges; small ramps per Rashi (east->soveiv, west->yesod) or Tosafot (+ third, west->soveiv) - panel switch; (3) bottom bar like the First Temple plugin (compass with clickable directions, rotate, zoom, ruler, wall blur on/off, blur distance); (4) tour button moved to the header next to the version.
+ * 1.0.20: ported from the First Temple plugin (engine/UI only, NO halachic dimensions touched): (1) canvas never <2x2 + resize watchdog + guardCamera (NaN camera no longer freezes the view); (2) pointerSafety (lost pointerup no longer leaves the view spinning); (3) powerPreference high-performance, pixel ratio <=1.5, shadow map 2048, minPolarAngle 0.06; (4) keyboard arrows rotate/zoom; (5) COMPASS BUG FIXED: the arrow pointed south (rotate az+180) -> rotate(az), 'N' label at the arrow tip; (6) search box over the places + '> tour' (ctx.shared.tour) in the panel. Not ported (see DEV_NOTES.md section 'לא הועבר מבית ראשון').
+ * 1.0.19: (1) walls fade within 120 amot (was 40), FADE_DIST; (2) cloud button only when the cloud is really seen (ray test against visible solids); (3) Tadi gate: open triangular gable between the two leaning stones (wall opening.gable); (4) Har HaBayit gates rectangular with a flat stone lintel (were arched); (5) new user-visible group of corrections per the Mishnah (CORRECTIONS in ui.js): short explanation + link for each halachic fix.
+ * 1.0.18: Tadi gate opening 20x10 (was 17) per Middot 2:3 + Rambam Beit HaBechira 5:2; its two inclined stones now start at the top of the opening and meet at the apex. Sources can be checked in the Hebrew Mishnah/Rambam text files (not only Sefaria) - ask the user to upload them if needed.
+ * 1.0.17: (1) walls fade only when within 40 amot of the camera (FADE_DIST in ui.js) - no more fading from far away; (2) measuring tool: red dots + solid red line with white outline, constant screen size (Google-Maps style); (3) "remove cloud" button shows only while the cloud is really visible (>=90px tall on screen) and scales with its apparent size.
+ * 1.0.16: walls within 40 amot in front of the camera fade even if the orbit target is not behind them; loading screen stays transparent until the Otzaria theme arrives (no dark flash).
+ * 1.0.14: two tables (marble, silver) west of the ramp (Rambam 2:15); author credit in English.
+ * 1.0.13: author credit, no loading toast, Shushan wall foundations/cornices fade with the wall, nav buttons + ruler, cloud over the Holy of Holies with confirmation, links open Middot by deep-link index (reader.openBook bookUid id:89), altar: nekavim, rubuva window, 3 hook rows.
+ * 1.0.12: ulam steps per Middot 3:6 (tread 1 amah, landings 3/3/4, span 22 from the altar).
+ * 1.0.11: open via library.resolveRef + reader.openBook(bookUid,index) because openBook by id 89 returned data:false.
+ * 1.0.10: bigger source links, 5s timeout per call, success/progress toasts, activate the Middot tab after opening.
+ * 1.0.9: openSource shows a toast with the exact Otzaria error before falling back to Sefaria (diagnostics).
+ * 1.0.8: source links open inside Otzaria (reader.openBookAtRef, id 89, permission reader.open); Sefaria fallback.
+ * 1.0.7: places menu (PLACES in ui.js) with explanations+source links; flat neutral terrain; burger on the right; (openBookAtRef integration done in 1.0.8).
+ * Done in 1.0.6: step tread 0.5 (2:3); Hel = 10 from outer face of wall to soreg; east wall lower (2:4); Beit HaMoked 2 doors (1:6); source links; units line.
+ * Open: location of 12 steps vs Hel (machloket); east-wall height; exterior stairs; chapters 3-5 not yet reviewed.
+ */
