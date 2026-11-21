@@ -3721,6 +3721,10 @@ body.tm-measuring canvas{cursor:crosshair}
         c.update();
       };
       const zoomBy = (f) => {
+        // WALK_FLOOR_A2 (fix-a2): in walk mode + / − walk forward and back, climbing and descending with the floors (90-entry.js); until
+        // now they moved the eye level toward the view's target, into the steps
+        const wmz = ctx.shared && ctx.shared.walkMode;
+        if (wmz && wmz.on && typeof wmz.nudge === "function") { wmz.nudge(f < 1 ? 1 : -1); return; }
         ctx.camFlyStop && ctx.camFlyStop();   // CAM_219 (2): a nav button or key in a flight ends it, and acts at once
         const cam = ctx.camera, tg = ctx.controls.target;
         const off = cam.position.clone().sub(tg);

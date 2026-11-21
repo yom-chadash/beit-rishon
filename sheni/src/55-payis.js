@@ -524,9 +524,11 @@
       // ===== "צאו וראו": the watcher goes up; the east lights
       ev(0, () => { for (const f of K) f.visible = false; MEM.visible = true; WATCH.visible = true; T3.visible = T4.visible = false; });
       cap(0, "״אמר להם הממנה, צאו וראו אם הגיע זמן השחיטה״ (תמיד ג, ב)");
-      track(MEM, [[0, 84.2, Y, -50.6], [1, 84.2, Y, -50.6]], [89.4, -51.4]);
+      // DUCHAN_GAP_A2 (fix-a2): the duchan stands against the priests' court now (x 82.5..85, 30-courts.js) - the officer on the priests'
+      // court's edge, the watcher down the duchan's steps (until then both stood in the air, over the ditch that lay at x 82.5..85.5)
+      track(MEM, [[0, 82.2, Y, -50.6], [1, 82.2, Y, -50.6]], [89.4, -51.4]);
       cam(2.6, [70, 30, -30], [89, 24, -55]);
-      track(WATCH, [[0, 84.9, Y, -50.4], [1, 86.75, 14.75, -50.7], [2, 89.4, 13.5, -51], [7, 89.4, RY, -54.9], [9, 90.3, RY, WZ], [12.6, 91.6, WY, WZ], [13.6, WX, WY, WZ]], [WX + 40, WZ]);
+      track(WATCH, [[0, 82.3, Y, -50.4], [0.7, 84.5, 14.5, -50.6], [1.1, 85.5, 13.5, -50.7], [2, 89.4, 13.5, -51], [7, 89.4, RY, -54.9], [9, 90.3, RY, WZ], [12.6, 91.6, WY, WZ], [13.6, WX, WY, WZ]], [WX + 40, WZ]);
       cap(5, "להיכן יצאו? רש״י: ״על החומה או על הגג״; ״הרואה - זה שעלה לגג״. ברטנורא: ״על מקום גבוה שהיה להם במקדש״");
       cam(9.5, [72, 40, -40], [92, 36, -60]);
       cam(14.5, [79, 47.5, -57], [120, 39.5, -61]);

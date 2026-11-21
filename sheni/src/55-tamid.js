@@ -140,7 +140,7 @@
       haalaah: () => [V3(82, 46, 42), V3(57, 24, 8)],
       mincha: () => [V3(82, 46, 42), V3(57, 24, 8)],
       nesachim: () => [[64, 64, 48], [60, 18, 8]],
-      shir: () => [[62, 30, 6], [86, 18, 0]],
+      shir: () => [[62, 30, 6], [83.5, 18, 0]],   // DUCHAN_GAP_A2
       sof: () => [[150, 130, 130], [30, 16, 0]]
     };
     // a stage whose eye moves with it: keyframes [sec, pos, target] (smoothed between them), from the slide's own view at 0
@@ -1459,7 +1459,7 @@
       if (x > 17.5 && x <= 39.5 && Math.abs(z) <= 50) return F + 6 * clamp((39.5 - x) / 19, 0, 1);          // the ulam's steps
       if (x > 1.5 && x <= 17.5 && Math.abs(z) <= 50) return HEI;                                            // the ulam
       if (x <= 1.5 && x > -82.5 && Math.abs(z) <= 35) return HEI + houseRise(x);                            // the house
-      if (x > 85.5) return MK;                                                                               // the court of Israel
+      if (x > 85) return MK;                                                                                 // the court of Israel (DUCHAN_GAP_A2: the duchan x 82.5..85)
       return F;
     };
     const floorCache = new Map();
@@ -1487,7 +1487,7 @@
       if (x > 1.5 && x <= 12.5 && Math.abs(z) < 36) return "ulam";
       if (x > 12.5 && x <= 17.5 && Math.abs(z) < 10) return "ulamDoor";
       if (x > 17.5 && x < 39.4 && Math.abs(z) <= 50) return "steps";
-      if (x > 85.5) return "israel";
+      if (x > 85) return "israel";   // DUCHAN_GAP_A2
       if (x >= 71.6) return "courtE";
       if (lz <= -19.6) return "courtN";
       if (x > 63.5 && lz >= 12.6) return "courtSE";
@@ -2287,7 +2287,7 @@
       // and only west of the wicket frames (x 89.7) each turns to his place
       LEV_IDS.forEach((k, i) => {
         const s = LZ[i] < 0 ? -1.2 : 1.2;
-        a.walk(k, [[98.4, s], [89.4, s], [86.3, LZ[i]]], 7 + i * 0.12, 12.4 + i * 0.12, { yaw: -HP });
+        a.walk(k, [[98.4, s], [89.4, s], [83.3, LZ[i]]], 7 + i * 0.12, 12.4 + i * 0.12, { yaw: -HP });   // DUCHAN_GAP_A2: on the duchan's second step (x 83..83.5; until then 86.3)
         if (i < 9) a.hold(k, "lyre" + (i + 1), "L", 7);
         else if (i < 11) a.hold(k, "nevel" + (i - 8), "L", 7);
       });
@@ -2453,7 +2453,7 @@
       a.hold("tr1", "tru1", "R", 0); a.hold("tr2", "tru2", "R", 0);
       a.pose("tr1", "trumpet", 6, 10); a.pose("tr2", "trumpet", 6, 10);
       a.fx("tekia", 6.2);
-      const ba = [86.6, 0.6];
+      const ba = [83.6, 0.6];   // DUCHAN_GAP_A2 (86.6 until then)
       a.at("ba", ba[0], ba[1], -HP, 0);
       a.walk("tr1", [[tb[0] - 0.1, tb[1] - 0.4], ...route(sw1, [ba[0] - 0.2, ba[1] - 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });   // PACE_215: to 13.8 until 2.0.14 (they blow there at 21)
       a.walk("tr2", [[tb[0] + 0.1, tb[1] + 0.4], ...route(sw2, [ba[0] - 0.2, ba[1] + 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });

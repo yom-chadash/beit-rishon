@@ -189,8 +189,14 @@
     // as Tiferet Yisrael draws them (the Mishnah, 2:6, gives them no length); until 1.3.0 they were 60 wide
     const duchanDef = new Group();   // 1.9.3: the default reading's step and duchan, in a group of their own (hidden in the Chazon Ish's)
     g.add(duchanDef);
-    H2.stairs(duchanDef, { width: 135, totalRise: 1, steps: 1, dir: "W", x: 88, y: 13.5, z: 0, tread: 1 });
-    H2.stairs(duchanDef, { width: 135, totalRise: 1.5, steps: 3, dir: "W", x: 87, y: 14.5, z: 0, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
+    // DUCHAN_GAP_A2 (fix-a2, 22.11.2026; found walking in walk mode - the eye went down into a ditch and into the priests' court): since
+    // 1.1.0 (the treads cut to half an amah, their east end left at x 87) the duchan's top step ended at x 85.5, three amot short of
+    // the priests' court (its face x 82.5), and between them lay a ditch two and a half amot deep. The Rambam, Beit HaBechirah 6:3, 6:6
+    // (337, lines 96, 99): "ועולה ממנו לעזרת הכהנים במעלה גבוהה אמה ועליה דוכן יש בו שלש מעלות. רום כל מעלה חצי אמה ושלחה חצי אמה";
+    // "ועל הדוכן העולה מעזרת ישראל לעזרת הכהנים". So the step and the duchan stand against the priests' court: the step x 84..85, the
+    // three steps x 82.5..84 (the court of Israel's floor x 85..93.5).
+    H2.stairs(duchanDef, { width: 135, totalRise: 1, steps: 1, dir: "W", x: 85, y: 13.5, z: 0, tread: 1 });
+    H2.stairs(duchanDef, { width: 135, totalRise: 1.5, steps: 3, dir: "W", x: 84, y: 14.5, z: 0, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
     // 1.9.3 (the user, of the kuntres, point 18: "לשכת הדוכן (חזו״א) כשיטה"): THE DUCHAN'S CHAMBER - the Chazon Ish on Middot 2:6 (OC Moed;
     // book 5849, lines 6087-6088): "נראה דהמעלה היתה כעין לשכה כנוסה בזקיפת ההר של עזרת כהנים, שהרי עזרת כהנים גבוהה מעזרת ישראל ב' אמות
     // ומחצה על פני כל המזרח מדרום לצפון, וכנגד המזבח נכנסה לשכה, ארכה כנגד אורך המזבח ורחבה לא אתפרש... ובה בנוי כעין בימה לעלות הלוים
@@ -237,7 +243,7 @@
     lbl("עזרת ישראל — י״א אמה", 88, 16.5, 25, 2.2);
     lbl("עזרת כהנים — י״א אמה", 77, 19, 25, 2.2);
     lbl("בין האולם ולמזבח — כ״ב אמה", 28.5, 19.5, -30, 2.2);
-    lbl("דוכן הלויים", 85, 19.5, 0, 2.5);
+    lbl("דוכן הלויים", 83.5, 19.5, 0, 2.5);   // DUCHAN_GAP_A2: over the steps (x 82.5..85)
     {
       const guards = new Group();
       guards.visible = false;
@@ -1165,7 +1171,7 @@
     {
       const bs = (x0, x1, z0, z1) => { const m = H2.box(g, x1 - x0, 2.5, z1 - z0, M2.stoneSmooth, (x0 + x1) / 2, 13.5, (z0 + z1) / 2); m.name = "barShura"; return m; };
       for (const [z0, z1] of [[-65, -26], [-22, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 22], [26, 65]]) bs(90, 91, z0, z1);   // KLI_SHIR_211: broken at the chambers' doors (z +-24) too
-      for (const sg of [-1, 1]) bs(85.52, 90, sg < 0 ? -65 : 64, sg < 0 ? -64 : 65);
+      for (const sg of [-1, 1]) bs(85.02, 90, sg < 0 ? -65 : 64, sg < 0 ? -64 : 65);   // DUCHAN_GAP_A2: to the step's east face (x 85)
       lbl("בר שורא — חומה קטנה לפנים מן החומה (רש״י פסחים פו.)", 89.4, 17.6, 38, 1.2);
     }
     // 1.1.0: the stone lintels (shkufot, Middot 2:3) of the six north/south Azara gates (threshold y 13.5 -> lintel at 33.5), of the
@@ -3117,13 +3123,13 @@
       }
       zone("zoneEzn", 93.5, 228.5, -67.5, 67.5, 6, 0xc07aff, "עזרת נשים — 135 על 135 (מידות ב, ה)", 4);
       // 1.9.1 (the user: "דוכן הלויים — מבט מלמעלה"): the duchan glows on its steps for 15 s - a pale amber volume over the step of one amah
-      // and the three half-amah steps (x 85.5..88, the whole width of the court), its edges in a stronger line
+      // and the three half-amah steps (x 82.5..85 - DUCHAN_GAP_A2; until then 85.5..88), its edges in a stronger line
       {
         const grp = new Group();
         grp.visible = false;
         grp.name = "zoneDuchan";
         const pm = new MeshBasicMaterial({ color: 0xffc94a, transparent: true, opacity: 0.38, depthWrite: false });
-        const steps = [[87, 88, 13.5, 14.5], [86.5, 87, 13.5, 15], [86, 86.5, 13.5, 15.5], [85.5, 86, 13.5, 16]];   // [x0, x1, y0, y1]
+        const steps = [[84, 85, 13.5, 14.5], [83.5, 84, 13.5, 15], [83, 83.5, 13.5, 15.5], [82.5, 83, 13.5, 16]];   // [x0, x1, y0, y1]
         for (const [x0, x1, y0, y1] of steps) {
           const m = new Mesh(new BoxGeometry(x1 - x0 + 0.04, y1 - y0 + 0.06, 135), pm);
           m.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.03, 0);
@@ -3131,11 +3137,11 @@
           grp.add(m);
         }
         const fm = new MeshBasicMaterial({ color: 0xffa21a });
-        for (const [x, y] of [[88, 14.55], [85.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, 135), fm); b.position.set(x, y, 0); b.userData.noPick = true; grp.add(b); }
+        for (const [x, y] of [[85, 14.55], [82.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, 135), fm); b.position.set(x, y, 0); b.userData.noPick = true; grp.add(b); }
         g.add(grp);
         ctx2.layers.zoneDuchan = grp;
         ctx2.shared.features.zoneDuchan = { key: "zoneDuchan", isOn: () => grp.visible, on: () => { grp.visible = true; }, off: () => { grp.visible = false; } };
-        ctx2.labels.push({ text: "דוכן הלויים — מעלה של אמה ושלוש מעלות של חצי אמה", x: 86.5, y: 19.5, z: 30, size: 2, layer: "zoneDuchan" });
+        ctx2.labels.push({ text: "דוכן הלויים — מעלה של אמה ושלוש מעלות של חצי אמה", x: 83.5, y: 19.5, z: 30, size: 2, layer: "zoneDuchan" });
       }
     }
     ctx2.shared.flyPoints = ctx2.shared.flyPoints || {};
