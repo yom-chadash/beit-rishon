@@ -1929,10 +1929,10 @@
           ["הפרוכות", ["sh47", "sh56", "sh58", "sh59", "sh49"]],
           ["סדר העבודה ובגדי הכהנים", ["sh12", "sh22", "sh13"]]
 //@@end buildUI.after-GROUPS
-//@@begin buildUI.after-note
+//@@begin buildUI.after-note-code
         // 1.0.1-L: the pills of this round; what a PLACE switches on goes off by itself (L.27), what a pill switches on stays
         note.textContent = "פתיחה לצפייה (ההיכל, הלשכות, הסטיו) — בכפתורים שעל המודל עצמו; ״↺ החזר הכל״ סוגר הכול.";   // 1.1.0: short (the long list of the pills is gone from the tree)
-//@@end buildUI.after-note
+//@@end buildUI.after-note-code
 //@@begin buildUI.secLay
       const units = document.createElement("div");
       units.id = "tm-units";

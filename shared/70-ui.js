@@ -2910,7 +2910,7 @@ body.tm-measuring canvas{cursor:crosshair}
         const note = document.createElement("div");
         note.className = "s";
         note.style.lineHeight = "1.5";
-        //@@slot buildUI.after-note
+        //@@slot buildUI.after-note-code
         panel.appendChild(note);
       }
       toggleRow("תוויות", true, (on) => {

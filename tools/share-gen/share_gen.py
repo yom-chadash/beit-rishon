@@ -121,6 +121,8 @@ for p in pieces:
     else: base = decl or fn or 'top'
     p.append([KR[i] for i in code_r] == [KS[i] for i in code_s])   # True: the same code, only comments / spacing differ
     base = PREFIX + base + ('' if code_r or code_s else '-note')
+    if (code_r or code_s) and re.search(r'-note(-\d+)?$', base): base += '-code'   # "-note" is kept for comments-only slots
+                                                                                  # (REFUTE ק־18: "after-note" of `const note`)
     base = re.sub(r'[^\w.\-]', '_', base)
     seen[base] += 1
     p.append(base if seen[base] == 1 else '%s-%d' % (base, seen[base]))

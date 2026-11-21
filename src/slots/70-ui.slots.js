@@ -2522,10 +2522,10 @@
           ["הבית מבפנים", ["potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout"]],
           ["בית שלמה", ["forestHouse", "throneVersion"]]
 //@@end buildUI.after-GROUPS
-//@@begin buildUI.after-note
+//@@begin buildUI.after-note-code
         // 1.0.1-L: the pills of this round; what a PLACE switches on goes off by itself (L.27), what a pill switches on stays
         note.textContent = "פתיחה לצפייה (הבית, היציע, האולם, הנסרים, החתכים והשכבות) — בכפתורים שעל המודל עצמו. מה שנפתח מכפתור בלוח חוזר לבד אחרי 15 שניות; ״↺ החזר הכל״ מחזיר את המבט ואת כל המתגים.";   // 1.1.0: short (the long list of the pills is gone from the tree)
-//@@end buildUI.after-note
+//@@end buildUI.after-note-code
 //@@begin buildUI.secLay
       // ===== layers =====
       const secLay = document.createElement("div");
