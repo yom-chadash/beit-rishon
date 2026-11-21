@@ -1,5 +1,7 @@
 # webgpu round — the Second Temple (בית שני)
 
+> **מ־21.11.2026 זה כבר לא נכון:** לבית שני יש קובצי מקור, `sheni/src/`, ו־`sheni-src/bundle.js` הוסר. בונים ב־`node tools/build-sheni.mjs`. הפירוט, וגם איך להחיל תסריט ישן כמו אלה שכאן — `sheni/README.md`.
+
 The house has no module sources: its code is a readable bundle (2.0.18: `unified-plugin/sheni/bundle.js`; from 3.0: `sheni-src/bundle.js`,
 the input of `tools/round-3.0.0/make.sh`). Every change of this round is made by scripts that find their places by **text anchors**,
 never by line numbers, so they re-run on a newer readable bundle.

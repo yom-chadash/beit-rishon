@@ -1,8 +1,10 @@
 // Split the Second Temple's readable bundle into its source files - done ONCE, on 21.11.2026, on 3.0.6's sheni-src/bundle.js:
 //
-//   node tools/split-sheni.mjs [<readable bundle> [<out dir>]] [--force]
-//        defaults: sheni-src/bundle.js -> sheni/src/. A folder that already has files is refused (--force: written over - for a bundle
-//        that was patched in the old way, by text, after the split: the files come out of it again).
+//   node tools/split-sheni.mjs [<readable bundle> [<out dir>]] [--force --base <readable bundle>]
+//        defaults: sheni-src/bundle.js -> sheni/src/. A folder that already has files is refused. --force writes over it - for a
+//        bundle made from the sources and then patched in the old way, by text (or the bundle of another branch, at a merge) - and
+//        only with --base: the bundle the new one was made from. The files that are there now must build EXACTLY --base (else every
+//        change made in them since --base would be lost without a word: port such changes by hand).
 //
 // The cuts (tools/build-sheni.mjs ORDER):
 //   header.txt     the header comment, up to "var OtzariaPlugin = (() => {"
@@ -17,16 +19,23 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ORDER, TAIL, joinParts } from './build-sheni.mjs';
+import { ORDER, TAIL, joinParts, assemble } from './build-sheni.mjs';
 import { safeLines } from './safe-lines.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const args = process.argv.slice(2).filter((a) => a !== '--force');
-const force = process.argv.includes('--force');
+const argv = process.argv.slice(2);
+const bi = argv.indexOf('--base');
+const BASE = bi >= 0 ? path.resolve(argv[bi + 1]) : null;
+const args = argv.filter((a, i) => a !== '--force' && a !== '--base' && !(bi >= 0 && i === bi + 1));
+const force = argv.includes('--force');
 const IN = path.resolve(args[0] || path.join(root, 'sheni-src', 'bundle.js'));
 const OUT = path.resolve(args[1] || path.join(root, 'sheni', 'src'));
 const fail = (m) => { console.error('[split] ' + m); process.exit(1); };
-if (fs.existsSync(OUT) && fs.readdirSync(OUT).length && !force) fail(OUT + ' has files: not written over (--force)');
+if (fs.existsSync(OUT) && fs.readdirSync(OUT).length) {
+  if (!force || !BASE) fail(OUT + ' has files: not written over (--force --base <the bundle the new one was made from>)');
+  // the files there now must be exactly the base of the new bundle: nothing in them is lost
+  if (assemble(OUT).code !== fs.readFileSync(BASE, 'utf8')) fail('the files of ' + OUT + ' do not build --base ' + BASE + ' exactly: they were changed since. Not written over - port the change by hand');
+}
 
 const B = fs.readFileSync(IN, 'utf8');
 if (B.includes('\r')) fail('the bundle has \\r');
