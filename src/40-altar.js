@@ -778,12 +778,75 @@
       return new CanvasTexture(cv);
     })();
     const smoke = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 24; i++) {   // SMOKE_COLUMN_A2: 24 (7 until then) - thick over the pyre, below the column
       const sp = new Sprite(new SpriteMaterial({ map: smokeTexture, color: 0x8a8a8a, transparent: true, opacity: 0.15, depthWrite: false }));
       sp.renderOrder = 3;
       g.add(sp);
       smoke.push(sp);
     }
+    // SMOKE_COLUMN_A2 (fix-a2, 22.11.2026; the user: "לא פגש עשן עד היום" - the column of smoke of the great pyre; the incense's smoke
+    // is seen): the faint sprites below - a fifth opaque, grey on the pale sky, spread over the whole height - were not seen. Now THE
+    // COLUMN: a strip that turns to the eye about its own upright axis, its smoke drawn by a noise that rises, thick at the pyre and
+    // thinning upward, three amot wide and widening a little; the sprites rise thick over the pyre into it. Its shade follows the
+    // light of the sky (the fog's colour - dark at night), and at its foot the fire lights it. Straight: Yoma 21a (107:456) "ועשן
+    // המערכה, אפילו כל הרוחות שבעולם באות ומנשבות בו — אין מזיזות אותו ממקומו"; Avot 5:5 (78:84) "ולא נצחה הרוח את עמוד העשן"; and
+    // the smoke rises from the fire that men bring, Yoma 21b (107:465-466) "כי קא אמרינן — בדהדיוט". (״מתמר ועולה כמקל״ is said of the
+    // incense's smoke - Yoma 38a, 53a.) Its height, width and shade - model choices.
+    const SMK = { H: 220, W0: 3.2, W1: 11, OP: 0.9, DAYLUM: 0.84 };
+    const smokeColumn = (() => {
+      const geo = new PlaneGeometry(1, 1, 1, 40);
+      geo.translate(0.5, 0.5, 0);   // uv = position: x 0..1 across, y 0..1 up
+      const vs = [
+        "uniform float uH; uniform float uW0; uniform float uW1; varying vec2 vUv;",
+        "void main(){",
+        "  vUv = uv;",
+        "  vec4 base = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);",
+        "  vec3 toCam = cameraPosition - base.xyz; toCam.y = 0.0;",
+        "  float L = length(toCam);",
+        "  vec3 right = L > 1e-4 ? vec3(toCam.z, 0.0, -toCam.x) / L : vec3(1.0, 0.0, 0.0);",
+        "  float w = mix(uW0, uW1, pow(uv.y, 1.4));",
+        "  vec3 wp = base.xyz + right * (uv.x - 0.5) * w + vec3(0.0, uv.y * uH, 0.0);",
+        "  gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);",
+        "}"
+      ].join("\n");
+      const fs = [
+        "varying vec2 vUv; uniform float uTime; uniform float uOp; uniform float uDay; uniform float uFire;",
+        "float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }",
+        "float noise(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f);",
+        "  return mix(mix(hash(i), hash(i+vec2(1.0,0.0)), f.x), mix(hash(i+vec2(0.0,1.0)), hash(i+vec2(1.0,1.0)), f.x), f.y); }",
+        "float fbm(vec2 p){ return noise(p)*0.5 + noise(p*2.03)*0.25 + noise(p*4.1)*0.125 + noise(p*8.3)*0.0625; }",
+        "void main(){",
+        "  float x = vUv.x - 0.5, y = vUv.y;",
+        "  float n = fbm(vec2(x * 3.0 + 7.0, y * 24.0 - uTime * 0.5));",
+        "  float n2 = fbm(vec2(x * 7.0 + 1.3, y * 60.0 - uTime * 1.2));",
+        "  float xs = x + (n - 0.5) * 0.16;",
+        "  float a = exp(-xs * xs * 12.0) * (0.55 + 0.6 * n) * (0.8 + 0.4 * n2);",
+        "  a *= smoothstep(0.0, 0.02, y) * pow(1.0 - y, 1.1);",
+        "  vec3 col = vec3(0.30 + 0.24 * n) * mix(0.16, 1.0, uDay);",
+        "  col += vec3(1.0, 0.42, 0.10) * uFire * (1.0 - smoothstep(0.0, 0.05, y)) * (0.35 + 0.4 * (1.0 - uDay));",
+        "  gl_FragColor = vec4(col, clamp(a * uOp, 0.0, 1.0));",
+        "}"
+      ].join("\n");
+      const mat = new ShaderMaterial({
+        uniforms: { uTime: { value: 0 }, uOp: { value: SMK.OP }, uDay: { value: 1 }, uFire: { value: 1 }, uH: { value: SMK.H }, uW0: { value: SMK.W0 }, uW1: { value: SMK.W1 } },
+        vertexShader: vs, fragmentShader: fs, transparent: true, depthWrite: false, side: DoubleSide, fog: false
+      });
+      const m = new Mesh(geo, mat);
+      m.name = "smokeColumn";
+      m.frustumCulled = false;
+      m.castShadow = m.receiveShadow = false;
+      m.renderOrder = 2;
+      m.userData.noPick = true;
+      m.userData.noFade = true;
+      return m;
+    })();
+    const smokeDay = () => {   // 0 at night .. 1 by day: the fog's colour against the day's (55-tamid.js and the lots' demo darken it)
+      const f = (ctx.scene || {}).fog;
+      if (!f || !f.color) return 1;
+      const c = f.color, lum = 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
+      return Math.max(0, Math.min(1, lum / SMK.DAYLUM));
+    };
+    g.add(smokeColumn);
     // the ash heap (תפוח) in the middle of the top (model choice, as in the Second Temple model after Tamid 2:2)
     try {
       // 1.3.5 (the user, 10.11.2026: "התפוח שעל המזבח צריך להיות כעין אפר (אותה הצורה רק החומר והצבע משתנים)"): THE ASH - the heap kept
@@ -1051,18 +1114,24 @@
       }
       fireLight.intensity = 23 + 4.5 * Math.sin(s * 9.7) + 2.5 * Math.sin(s * 22.3 + 1.3);
       emberLight.intensity = 5.5 + 1.4 * Math.sin(s * 7.3);
+      // 1.2.8: a straight column, almost no drift. SMOKE_COLUMN_A2: the column (above) carries it up - "ועשן המערכה, אפילו כל הרוחות
+      // שבעולם באות ומנשבות בו — אין מזיזות אותו ממקומו" (Yoma 21a; "מתמר ועולה כמקל", written here until now, is the incense's - Yoma
+      // 38a); the sprites rise thick over the pyre (the lowest 24 amot) into its foot
+      const sday = smokeDay(), sg = 0.33 + 0.25 * sday;
+      smokeColumn.position.set(PX, TOP + 1.2, PZ);
+      { const u = smokeColumn.material.uniforms; u.uTime.value = s; u.uDay.value = sday; }
       for (let i = 0; i < smoke.length; i++) {
         const sp = smoke[i];
-        const p = (s * 0.045 + i / smoke.length) % 1;
-        // 1.2.8: a straight column (Yoma 21b: the smoke of the pyre "מתמר ועולה כמקל" - one of the ten wonders), almost no drift
+        const p = (s * 0.09 + i / smoke.length) % 1;
         sp.position.set(
-          PX + Math.sin(s * 0.55 + i * 1.9 + p * 5) * (0.15 + p * 0.5),
-          TOP + 1.6 + p * 70,
-          PZ + Math.cos(s * 0.5 + i * 2.7 + p * 4) * (0.12 + p * 0.4)
+          PX + Math.sin(s * 0.55 + i * 1.9 + p * 5) * (0.15 + p * 0.35),
+          TOP + 1.6 + p * 24,
+          PZ + Math.cos(s * 0.5 + i * 2.7 + p * 4) * (0.12 + p * 0.3)
         );
-        const sc2 = 2.2 + p * 4.5;
+        const sc2 = 2.0 + p * 3.2;
         sp.scale.set(sc2, sc2, 1);
-        sp.material.opacity = 0.17 * (p < 0.12 ? p / 0.12 : 1 - (p - 0.12) / 0.88);
+        sp.material.color.setRGB(sg, sg, sg);
+        sp.material.opacity = 0.42 * Math.min(1, p / 0.06) * Math.pow(1 - p, 1.2);
       }
     });
 
