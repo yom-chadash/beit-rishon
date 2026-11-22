@@ -2050,7 +2050,7 @@
     const ALT_W = 1, ALT_TOP = 2, ALT_HORN_H = INT_TEF, ALT_H = ALT_TOP - ALT_HORN_H, ALT_HORN = 0.18, ALT_CEDAR = 0.12, ALT_GOLD = 0.03;
     const ALT_CUT = 0.3;                    // 1.0.1-L: the layers' cut (K.4: 0.65 of 2) - below it the south half keeps its gold, as the book (p07R)
     const buildIncenseAltar = (parent, ax, az) => {
-      const out = { plain: [], layers: [] };
+      const out = { plain: [], layers: [], all: [], ax, az };   // ALTAR2_D: all - every mesh, for the 2 x 2 reading (ctx.shared.goldAltarSize)
       const hw = ALT_W / 2, hp = hw - ALT_HORN / 2, ci = hw - ALT_GOLD, si = ci - ALT_CEDAR, ct = ALT_H - ALT_GOLD, st = ct - ALT_CEDAR;
       const A = { gAlways: [], gPlain: [], gCut: [], cedar: [], stone: [], fAlways: [], fPlain: [] };
       const box = (arr, w, h, d, x, y, z) => { const b = uvWorldBox(new BoxGeometry(w, h, d), w, h, d); b.translate(ax + x, FL + y + h / 2, az + z); arr.push(b); };
@@ -2089,6 +2089,7 @@
         m.castShadow = m.receiveShadow = shadow;
         parent.add(m);
         if (list) list.push(m);
+        out.all.push(m);
         return m;
       };
       mesh(A.gAlways, goldAltar, null);
@@ -2298,6 +2299,26 @@
       }
     };
     ctx.shared.incenseAltar = { layers: altarLayers };
+    // ALTAR2_D (fix-d, 22.11.2026 - the user's decision 141 ב): TWO READINGS of the golden altar's width (the row "מזבח הזהב — רוחבו"):
+    // "rambam" (the default) - "מזבח הקטרת היה מרבע אמה על אמה" (Beit HaBechirah 3:17); "gra" - the Gra as the Har HaMoriah quotes him
+    // there (book 5474 line 167): "והגר"א כתב שם שהוסיף עוד אמה... וא"כ היה ב' אמות ארכו (ורחבו איני יודע כמה ולכאורה מראייתו שהביא
+    // דהמקדש היה כפול ממשכן משמע דהיה ב' על ב' וצ"ע)" - two by two (the width uncertain, as he says). Two amot high in both (Ex 30:2).
+    // The whole altar (its horns and crown too) is widened twice about its own middle, in every layout of the vessels; the coals and the
+    // smoke stay. The Gra's commentary on Kings itself is not in the library.
+    ctx.shared.goldAltarSize = {
+      current: "rambam", keys: ["rambam", "gra"],
+      set(k) {
+        this.current = k === "gra" ? "gra" : "rambam";
+        const f = this.current === "gra" ? 2 : 1;
+        for (const key in layouts) {
+          const P = layouts[key].altarParts;
+          if (!P || !P.all) continue;
+          for (const m of P.all) { m.scale.set(f, 1, f); m.position.set((1 - f) * P.ax, 0, (1 - f) * P.az); }
+        }
+        if (ctx.requestRender) ctx.requestRender();
+        return this.current;
+      }
+    };
 
     // labels of the vessels follow the layout (the UI makes one sprite per label; we move ours when the layout changes)
     const altarAt = (k, dx, y, dz) => { const a = layouts[k].altar; return [a.x + dx, FL + y, a.z + dz]; };   // 1.0.1-L (L.69): from the layouts' specs

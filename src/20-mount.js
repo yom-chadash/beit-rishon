@@ -419,15 +419,41 @@
     //    and a capital, at x 106, z 8: just east of the inner court's east gate steps (x 98.5..101.5, z +-6), which stay clear.
     try {
       const A = MNT_AMUD;
-      H2.cyl(g, A.r, A.r, A.h, M2.stoneLight, A.x, WC.y, A.z, 40);                                           // platform r 2, 1 high (y 3..4)
-      H2.cyl(g, A.pr + 0.3, A.pr + 0.4, 0.3, M2.stoneSmooth, A.x, WC.y + A.h, A.z, 24);                       // base of the pillar 0.3 high (y 4..4.3), r 0.9 / 1.0
-      H2.cyl(g, A.pr, A.pr, A.ph, M2.stoneSmooth, A.x, WC.y + A.h + 0.3, A.z, 24);                            // the pillar r 0.6, 3 high (y 4.3..7.3)
-      H2.cyl(g, A.pr + 0.4, A.pr + 0.1, 0.35, M2.stoneSmooth, A.x, WC.y + A.h + 0.3 + A.ph, A.z, 24);         // capital 0.35 high (y 7.3..7.65), r 1.0 / 0.7
+      // AMUD2_D (fix-d, 22.11.2026 - the user's decision 132): TWO READINGS, a row of the opinions table (ctx.shared.amudKing.set("bima" |
+      // "side")). "bima" (the default, as until now) - Rashi on II Chr 23:13 (book 3662 line 709) "עומד המלך או הדוכוס במקום גבוה כדי שיוכלו
+      // לראותו", Rashi on II Kings 11:14 (3680 line 418) "הוא מעמד המלך בבית ה'", Metzudat David there (3335 line 722) "על מקום מיוחד למלך
+      // לעמוד שם", the Targum "אסטונא": the platform with the short pillar on it. "side" - the Radak on II Kings 11:14 (3542 line 573) "פי'
+      // סמוך לעמוד", the Ralbag there (3644 line 366) "ר"ל אצל העמוד", the Radak on II Chr 34:31 (3522 line 541) "שעמד על רגליו סמוך לעמוד":
+      // a free-standing pillar on the court's floor, the king standing by it; its form and height (six amot, r 0.75) - model choices.
+      const gB = new Group(), gS = new Group();
+      gB.name = "amudBima"; gS.name = "amudSide"; gS.visible = false;
+      g.add(gB, gS);
+      H2.cyl(gB, A.r, A.r, A.h, M2.stoneLight, A.x, WC.y, A.z, 40);                                           // platform r 2, 1 high (y 3..4)
+      H2.cyl(gB, A.pr + 0.3, A.pr + 0.4, 0.3, M2.stoneSmooth, A.x, WC.y + A.h, A.z, 24);                       // base of the pillar 0.3 high (y 4..4.3), r 0.9 / 1.0
+      H2.cyl(gB, A.pr, A.pr, A.ph, M2.stoneSmooth, A.x, WC.y + A.h + 0.3, A.z, 24);                            // the pillar r 0.6, 3 high (y 4.3..7.3)
+      H2.cyl(gB, A.pr + 0.4, A.pr + 0.1, 0.35, M2.stoneSmooth, A.x, WC.y + A.h + 0.3 + A.ph, A.z, 24);         // capital 0.35 high (y 7.3..7.65), r 1.0 / 0.7
       // 2 steps on the east side, dir W, flight width 2; total rise 0.98 (= 1 less eps, so the top tread never shares the platform's top plane);
       // bottom at x 108.6: the flight x 107.6..108.6 runs 0.4 into the platform's round edge (x 108 at z 8), so there is no gap at its corners
-      H2.stairs(g, { width: 2, totalRise: A.h - 0.02, steps: 2, dir: "W", x: A.x + A.r + 0.6, y: WC.y, z: A.z, tread: MNT_STEP });
+      H2.stairs(gB, { width: 2, totalRise: A.h - 0.02, steps: 2, dir: "W", x: A.x + A.r + 0.6, y: WC.y, z: A.z, tread: MNT_STEP });
+      // the "side" reading: a plinth, the shaft and a capital (six amot in all)
+      H2.box(gS, 2.2, 0.5, 2.2, M2.stoneLight, A.x, WC.y, A.z);                                              // plinth 0.5 (y 3..3.5)
+      H2.cyl(gS, 1.0, 1.05, 0.4, M2.stoneSmooth, A.x, WC.y + 0.5, A.z, 24);                                  // base 0.4
+      H2.cyl(gS, 0.75, 0.75, 4.6, M2.stoneSmooth, A.x, WC.y + 0.9, A.z, 24);                                 // the shaft 4.6
+      H2.cyl(gS, 1.15, 0.8, 0.5, M2.stoneSmooth, A.x, WC.y + 5.5, A.z, 24);                                  // capital 0.5 (top y 9)
+      ctx.layers = ctx.layers || {};
+      ctx.layers.amudBima = gB; ctx.layers.amudSide = gS;
       lbl("העמוד (מלכים ב יא, יד)", A.x, WC.y + 11, A.z, 3);
       ocItem("amud", "העמוד (מלכים ב יא, יד)", A.x, WC.y + A.h + 1.5, A.z, [124, 13, 24]); // cam from the east-south-east, the inner court's east gate behind
+      ctx.shared.amudKing = {
+        current: "bima", keys: ["bima", "side"],
+        set(k) {
+          this.current = k === "side" ? "side" : "bima";
+          gB.visible = this.current === "bima";
+          gS.visible = this.current === "side";
+          if (ctx.requestRender) ctx.requestRender();
+          return this.current;
+        }
+      };
     } catch (e) {
       console.warn("[mount] outer court amud skipped:", e);
     }

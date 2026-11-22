@@ -487,18 +487,23 @@
     // choices. Shushan's picture is not drawn.
     {
       const A1 = 1, FNG = A1 / 24;
-      const rod = (grp, x, y, z, len, face) => {   // a rod along z on a marble plate, on a wall's face (face: +1 - the face looks east, -1 - west)
-        H2.box(grp, 0.08, 0.7, 1.7, M2.marble, x + face * 0.04, y - 0.4, z).userData.noPick = true;
-        H2.box(grp, 0.1, 0.1, len, M2.bronze, x + face * 0.13, y - 0.05, z);
-        for (const sg of [-1, 1]) H2.box(grp, 0.12, 0.28, 0.04, M2.bronze, x + face * 0.13, y - 0.14, z + sg * len / 2);   // the two end marks
+      // UPRIGHT_D (fix-d, 22.11.2026 - the user's decision 136 א): the rods stand UPRIGHT, one in the north-eastern corner and one in the
+      // south-eastern, in both readings - Rabbenu Gershom (Menachot 98a, in the Kovetz Shitot Kamai, book 7577 line 32573): "ב' מדות של
+      // אמות. ב' קנים. היו בשושן הבירה... אחת. היתה זקופה באותה לשכה על קרן מזרחית צפונית ואחת על קרן וכו'"; Rabbenu Chananel (Pesachim
+      // 86a, 7577 line 32575): "מדת ב' אמות של כסף או של זהב כגון שרביט"; the Riban (7577 line 32480): "אחת בקרן מזרחית צפונית ואחת בקרן
+      // מזרחית דרומית". (Until now they lay along the wall on marble plates.) y = the rod's foot.
+      const rod = (grp, x, y, z, len, face) => {   // an upright rod on a marble plate, on a wall's face (face: +1 - the face looks east, -1 - west)
+        H2.box(grp, 0.08, len + 0.5, 0.6, M2.marble, x + face * 0.04, y - 0.25, z).userData.noPick = true;
+        H2.box(grp, 0.1, len, 0.1, M2.bronze, x + face * 0.13, y, z);
+        for (const yy of [y, y + len]) H2.box(grp, 0.12, 0.04, 0.28, M2.bronze, x + face * 0.13, yy - 0.02, z);   // the two end marks
       };
       // the Rambam's: on the Shushan gate's jambs (20-mount.js gateTrim: they stand at z +-5.9, their east faces 3.3 east of the wall's line)
       const gR = new Group();
       gR.name = "shushanRodsGate";
       g.add(gR);
       const XJ = CO.harE + 3.3;
-      rod(gR, XJ, 4.2, -5.9, A1 + FNG / 2, 1);
-      rod(gR, XJ, 4.2, 5.9, A1 + FNG, 1);
+      rod(gR, XJ, 3.6, -5.9, A1 + FNG / 2, 1);   // UPRIGHT_D: the gate's north-eastern corner (its north jamb)
+      rod(gR, XJ, 3.6, 5.9, A1 + FNG, 1);        //   and its south-eastern
       // Rashi's: the room on the wall's top over the women's court's east gate (the wall's cap ends at y 40.9; its merlons, 1.5 high,
       // are inside the room's floor slab)
       const gT = new Group();
@@ -514,22 +519,22 @@
       H2.box(gT, WT, RH - 4.5, 3, M2.stone, RX - RW / 2 + WT / 2, FL + 4.5, 0);
       const roof = H2.box(gT, RW + 0.6, 0.6, RL + 0.6, M2.stoneLight, RX, FL + RH, 0);
       ctx2.lishkotCut.push(roof);
-      const xin = RX + RW / 2 - WT, zc = RL / 2 - WT - 1.3;   // the east wall's inner face; the rods' middles
-      rod(gT, xin, FL + 3.2, -zc, A1 + FNG / 2, -1);
-      rod(gT, xin, FL + 3.2, zc, A1 + FNG, -1);
+      const xin = RX + RW / 2 - WT, zc = RL / 2 - WT - 0.4;   // the east wall's inner face; UPRIGHT_D: the rods right in the room's corners (were 1.3 in)
+      rod(gT, xin, FL + 2.2, -zc, A1 + FNG / 2, -1);
+      rod(gT, xin, FL + 2.2, zc, A1 + FNG, -1);
       ctx2.layers = ctx2.layers || {};
       ctx2.layers.shushanRodsGate = gR; ctx2.layers.shushanRoom = gT;
       const n0 = ctx2.labels.length;
       ctx2.labels.push(
         { text: "שתי האמות שבשושן הבירה (כלים יז, ט)", x: XJ + 1, y: 8.2, z: 0, size: 1.1, layer: "shushanRodsGate" },
-        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: XJ + 0.5, y: 5.5, z: -5.9, size: 0.6, layer: "shushanRodsGate" },
-        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: XJ + 0.5, y: 5.5, z: 5.9, size: 0.6, layer: "shushanRodsGate" }
+        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: XJ + 0.5, y: 5.2, z: -5.9, size: 0.6, layer: "shushanRodsGate" },
+        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: XJ + 0.5, y: 5.2, z: 5.9, size: 0.6, layer: "shushanRodsGate" }
       );
       const n1 = ctx2.labels.length;
       ctx2.labels.push(
         { text: "שושן הבירה — חדר על גבי השער (רש״י)", x: RX, y: 40.9 + FL + RH + 2.6, z: 0, size: 1.8, layer: "shushanRoom" },
-        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: xin - 0.5, y: 40.9 + FL + 4.4, z: -zc, size: 0.6, layer: "shushanRoom" },
-        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: xin - 0.5, y: 40.9 + FL + 4.4, z: zc, size: 0.6, layer: "shushanRoom" }
+        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: xin - 0.5, y: 40.9 + FL + 3.8, z: -zc + 0.6, size: 0.6, layer: "shushanRoom" },
+        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: xin - 0.5, y: 40.9 + FL + 3.8, z: zc - 0.6, size: 0.6, layer: "shushanRoom" }
       );
       const roomLbl = ctx2.labels.slice(n1);
       ctx2.shared.shushanRods = {

@@ -410,9 +410,59 @@
       H2.box(cw, LEN, 1, WID, M2.pave, X0 + LEN / 2, YD, 0);                                            // the way itself, its top level with the gate's sill
       for (const sz of [-1, 1]) H2.box(cw, LEN, 1, 0.5, M2.stoneSmooth, X0 + LEN / 2, 0, sz * (WID / 2 - 0.25));   // a low kerb
       ctx2.labels.push(
-        { text: "כבש הפרה — כיפין על גבי כיפין, וכיפה כנגד האוטם (פרה ג, ו)", x: X0 + 55, y: 7, z: 0, size: 2.6 },
-        { text: "הכבש מגיע אל הר המשחה", x: X0 + LEN - 6, y: 4.5, z: 0, size: 2 });
+        { text: "כבש הפרה — כיפין על גבי כיפין, וכיפה כנגד האוטם (פרה ג, ו)", x: X0 + 55, y: 7, z: 0, size: 2.6, layer: "parahKippin" },
+        { text: "הכבש מגיע אל הר המשחה", x: X0 + LEN - 6, y: 4.5, z: 0, size: 2, layer: "parahKippin" });
       OLV.rampEnd = X0 + LEN;
+      // PARAH_PILLARS_D (fix-d, 22.11.2026 - the user's decision 135 ב): TWO READINGS of the way to the Mount of Anointing (the row
+      // "כבש הפרה"; ctx2.shared.parahRamp.set("kippin" | "pillars")). The default - the Mishnah's ramp of arches over arches, above. And
+      // Rabbi Eliezer in the Tosefta (Parah 3:5, book 230 line 18): "ר"א אומר לא היה שם כבש אלא עמודים של שיש היו וכלונסאות של ארז על
+      // גביהן והפרה לא היתה צריכה לצאת בכבש" - marble pillars in two rows, ten amot apart along the way, from the ground up, cedar beams
+      // along each row on their heads and cedar logs laid across them, side by side, the walking floor at the gate's sill (as the
+      // ramp's). The pillars' spacing and thickness, the beams and logs - model choices.
+      ctx2.layers = ctx2.layers || {};
+      ctx2.layers.parahKippin = cw;
+      const pw = new Group();
+      pw.name = "parahPillars";
+      pw.visible = false;
+      g.add(pw);
+      ctx2.layers.parahPillars = pw;
+      {
+        const LOG_R = 0.45, BEAM_H = 1, Y_LOG = -LOG_R, Y_BEAM = Y_LOG - LOG_R - BEAM_H, ZS = [-(WID / 2 - 1), WID / 2 - 1];
+        const cols = [];
+        for (let dx = 4; dx < LEN - 1; dx += 10) for (const z of ZS) cols.push([X0 + dx, z, terrainH(X0 + dx, z)]);
+        const colGeo = new CylinderGeometry(1.0, 1.1, 1, 18);
+        const colInst = new InstancedMesh(colGeo, M2.marble, cols.length);
+        cols.forEach(([x, z, y0], i) => {
+          const h = Math.max(0.5, Y_BEAM - y0);
+          M4.makeScale(1, h, 1).setPosition(x, y0 + h / 2, z);
+          colInst.setMatrixAt(i, M4);
+        });
+        colInst.castShadow = colInst.receiveShadow = true;
+        pw.add(colInst);
+        for (const z of ZS) H2.box(pw, LEN, BEAM_H, 1.1, M2.cedar, X0 + LEN / 2, Y_BEAM, z);   // the cedar beams on the pillars' heads
+        const nLog = Math.floor((LEN - 0.2) / (2 * LOG_R + 0.04));
+        const logGeo = new CylinderGeometry(LOG_R, LOG_R, WID, 10);
+        const logInst = new InstancedMesh(logGeo, M2.cedar, nLog);
+        for (let i = 0; i < nLog; i++) {
+          M4.makeRotationX(Math.PI / 2).setPosition(X0 + 0.1 + LOG_R + i * (2 * LOG_R + 0.04), Y_LOG, 0);
+          logInst.setMatrixAt(i, M4);
+        }
+        logInst.castShadow = logInst.receiveShadow = true;
+        pw.add(logInst);
+        ctx2.labels.push(
+          { text: "רבי אליעזר: לא היה שם כבש אלא עמודים של שיש וכלונסאות של ארז על גביהן (תוספתא פרה ג, ה)", x: X0 + 55, y: 7, z: 0, size: 2.4, layer: "parahPillars" },
+          { text: "הדרך מגיעה אל הר המשחה", x: X0 + LEN - 6, y: 4.5, z: 0, size: 2, layer: "parahPillars" });
+      }
+      ctx2.shared.parahRamp = {
+        mode: "kippin",
+        set(m) {
+          this.mode = m === "pillars" ? "pillars" : "kippin";
+          cw.visible = this.mode === "kippin";
+          pw.visible = this.mode === "pillars";
+          if (ctx2.requestRender) ctx2.requestRender();
+          return this.mode;
+        }
+      };
     }
     // OLIVES_B2: THE LINE OF SIGHT - the priest on the Mount of Olives' top, his face to the heichal, and the line from his eye to its door
     // (a feature of the place "הר המשחה — קו הראייה", untimed; while it is shown the parochot of the openings are raised - Nikanor's, the
@@ -569,50 +619,65 @@
       }
     };
     // SOREG_BREACH_211 (the user: "הפרצות היו רק בימי היוונים, אפשר לעשות מתג"; Middot 2:3: "ושלש עשרה פרצות היו שם, שפרצום מלכי
-    // יון. חזרו וגדרום"): thirteen stretches of three amot are built apart - the repair ("חזרו וגדרום", shown by default) - and in the
-    // Greeks' days they are open, the slats fallen by the gap. Their places are not said: spread round the soreg, away from its
-    // openings (a model choice). ctx2.shared.soregBreach.set("greeks" | "repaired")
+    // יון. חזרו וגדרום"): the repair ("חזרו וגדרום", shown by default) and the Greeks' days, in two groups. ctx2.shared.soregBreach.set("greeks" | "repaired")
+    // BREACH13_D (fix-d, 22.11.2026 - the user's decision 133 א, with the coordinator's answer "אפשרות א"): THE THIRTEEN BREACHES OPPOSITE
+    // THE THIRTEEN GATES, as the Ra'avyah in the Tosafot Yom Tov (Middot 2:3, book 948 line 68): "ולא היה פתוח ופרוץ אלא לצד מזרח ומשום
+    // חיזוק ושמירה ובאו בני יון ופרצו י"ג פרצים בסורג. כנגד י"ג שערי (מזרח) [עזרה] שיוכלו ליכנס בכל צד לעזרה בהרוחה"; the Tzurat Bayit
+    // Sheni (6030 line 14): "ובו י"ג פרצות כנגד י"ג שערים"; their places - the Yerushalmi Shekalim 6:2 (154 line 196): "ארבע בצפון וארבע
+    // בדרום שלש במזרח ושתים במערב כנגד שלשה עשר שערים" (the TYT there dissents: "ובשקלים פ"ו אינו כן... וצ"ל דלהראבי"ה גירסא אחרת
+    // בירושלמי"). In the Greeks' days the soreg is closed all round but for its opening in the east (opposite the women's court's gate),
+    // and broken opposite Abba Yose ben Chanan's thirteen gates as the model draws them (30-courts.js, gates13, Tiferet Yisrael's
+    // reading): north x -78 (Yechonya = HaNitzotz), -48 (HaKorban), -38.5 (HaNashim, small), -18 (HaShir = Beit HaMoked); south -88
+    // (HaElyon, small), -78, -48, -18; east - Nikanor (z 0) and its two wickets (z +-12): the east's opening broken wider, eight amot;
+    // west z +-20. In the repaired soreg (the default) - as before, Tiferet Yisrael's: open opposite the seven great gates.
+    // The breaches four amot wide (as the openings); the broken stubs and the fallen slats - model choices.
     const repairG = new Group(), breachG = new Group();
     g.add(repairG, breachG);
     breachG.visible = false;
-    const BRW = 3;
-    const soregBreachAt = (axis, fixed, c) => {
-      soregRun(repairG, axis, fixed, c - BRW / 2, c + BRW / 2);
+    const GAP_W = 4;
+    const soregDebris = (axis, fixed, c, w) => {   // the Greeks' days: slats fallen by the gap, a broken stub of the top rail at each side
       const P = (t, off) => axis === "x" ? [t, off] : [off, t];
       const pieces = [[-1.2, 0.35, 0.4, 0.9], [-0.3, -0.5, 1.7, 1.3], [0.6, 0.6, 2.6, 1.1], [1.1, -0.2, 0.9, 1.7], [0.2, 0.9, 3.4, 0.8]];
       for (const [dt, doff, rot, len] of pieces) {
-        const [x, z] = P(c + dt, fixed + doff);
+        const [x, z] = P(c + dt * w / 3, fixed + doff);
         const m = H2.box(breachG, 0.1, 0.06, len, SG_MAT, x, 0.02, z);
         m.rotation.y = rot;
       }
-      for (const sgn of [-1, 1]) {   // a broken stub of the top rail hanging at each side of the gap
-        const [x, z] = P(c + sgn * (BRW / 2 - 0.25), fixed);
+      for (const sgn of [-1, 1]) {
+        const [x, z] = P(c + sgn * (w / 2 - 0.25), fixed);
         const m = H2.box(breachG, axis === "x" ? 0.5 : SG_T, SG_R, axis === "x" ? SG_T : 0.5, SG_MAT, x, SG_H - SG_R - 0.25, z);
         m.rotation[axis === "x" ? "z" : "x"] = sgn * 0.5;
       }
     };
-    const soregSide = (axis, fixed, from, to, gaps, breaches = []) => {
-      const runs0 = [];
+    // gates: the openings opposite the court's gates (open in the repaired soreg, closed in the Greeks' days unless a breach is there);
+    // other: openings left as they are in both (x 161 - Josephus' side gates, closed by Chazal: soregChazal below); breaches: [c, w]
+    const soregSide = (axis, fixed, from, to, gates, other, breaches) => {
+      const near = (a, b) => Math.abs(a - b) < 0.01;
+      const cuts = [];
+      for (const c of gates) {
+        const br = breaches.find((b) => near(b[0], c));
+        const w = br ? Math.max(br[1], GAP_W) : GAP_W;
+        cuts.push([c - w / 2, c + w / 2, br ? "gateBreach" : "gate", c, w]);
+      }
+      for (const c of other) cuts.push([c - GAP_W / 2, c + GAP_W / 2, "other", c, GAP_W]);
+      for (const [c, w] of breaches) if (!gates.some((q) => near(q, c))) cuts.push([c - w / 2, c + w / 2, "breach", c, w]);
+      cuts.sort((p, q) => p[0] - q[0]);
+      const runs = [];
       let a = from;
-      for (const c of gaps.slice().sort((p, q) => p - q)) {
-        runs0.push([a, c - 2]);
-        a = c + 2;
-      }
-      runs0.push([a, to]);
-      const runs = [];   // SOREG_BREACH_211: the runs without the thirteen stretches
-      for (const [q0, q1] of runs0) {
-        let b0 = q0;
-        for (const c of breaches.filter((c) => c - BRW / 2 > q0 && c + BRW / 2 < q1).sort((p, q) => p - q)) {
-          runs.push([b0, c - BRW / 2]);
-          soregBreachAt(axis, fixed, c);
-          b0 = c + BRW / 2;
+      for (const [c0, c1, kind, c, w] of cuts) {
+        runs.push([a, c0]);
+        a = c1;
+        if (kind === "gate") soregRun(breachG, axis, fixed, c0, c1);            // closed in the Greeks' days
+        else if (kind === "breach") { soregRun(repairG, axis, fixed, c0, c1); soregDebris(axis, fixed, c, w); }
+        else if (kind === "gateBreach") {                                         // open in both; wider in the Greeks' days
+          if (w > GAP_W + 0.01) { soregRun(repairG, axis, fixed, c - w / 2, c - GAP_W / 2); soregRun(repairG, axis, fixed, c + GAP_W / 2, c + w / 2); }
+          soregDebris(axis, fixed, c, w);
         }
-        runs.push([b0, q1]);
       }
+      runs.push([a, to]);
       for (const [r0, r1] of runs) {
         const len = r1 - r0;
         if (len < 0.6) continue;
-        const mid = (r0 + r1) / 2;
         soregRun(g, axis, fixed, r0, r1);   // SOREG_211
         const n = Math.max(1, Math.round(len / 12));
         for (let i = 0; i <= n; i++) {
@@ -622,10 +687,13 @@
         }
       }
     };
-    soregSide("x", sz1, sx1, sx2, [-78, -48, 3.5, 161], [-63, 15, 70, 120, 200]);   // CHEL_211: the third opening of the north at the foot of Beit HaMoked's flight (x 3.5; -18 until 2.0.1)   // 1.4.0: the gaps face the gates of 1.3.0 (west part of the walls; -18 = Beit HaMoked / the Water Gate) and Josephus' side gates; SOREG_BREACH_211: five breaches here
-    soregSide("x", sz2, sx1, sx2, [-78, -48, -18, 161], [-90, 15, 70, 120, 200]);
-    soregSide("z", sx2, sz1, sz2, [0], [-45]);
-    soregSide("z", sx1, sz1, sz2, [0], [-45, 45]);
+    // CHEL_211: the third opening of the north at the foot of Beit HaMoked's flight (x 3.5; -18 until 2.0.1); 1.4.0: the gaps face the
+    // gates of 1.3.0 (west part of the walls; -18 = Beit HaMoked / the Water Gate) and Josephus' side gates (x 161)
+    const B4 = (c) => [c, GAP_W];
+    soregSide("x", sz1, sx1, sx2, [-78, -48, 3.5], [161], [B4(-78), B4(-48), B4(-38.5), B4(-18)]);
+    soregSide("x", sz2, sx1, sx2, [-78, -48, -18], [161], [B4(-88), B4(-78), B4(-48), B4(-18)]);
+    soregSide("z", sx2, sz1, sz2, [0], [], [[0, 8], B4(-12), B4(12)]);
+    soregSide("z", sx1, sz1, sz2, [0], [], [B4(-20), B4(20)]);
     // ===== ROOF_ALL_211 (the user, 15.11.2026 00:53: a row of opinions for THE ROOFING OF THE TEMPLE MOUNT). The Rambam (Beit HaBechirah
     // 5:1, book 337 line 76): "הר הבית... וכלו היה מקרה סטיו לפנים מסטיו" (Pesachim 13b, 106 line 388: "הר הבית סטיו כפול היה... סטיו
     // לפנים מסטיו"). THE TOSAFOT YOM TOV (Middot 2:1, 948 line 64): "ודאי שאין הר הבית מכוסה, שלא היה מסוכך אלא ע"ג האצטבאות... והן
@@ -646,8 +714,8 @@
       const inSoreg = (x, z) => x > sx1 - 7 && x < sx2 + 7 && z > sz1 - 7 && z < sz2 + 7;
       const pos = [], seen = new Set();
       // NOTE 10 (U-58): no column within six amot of the eye of the row "הסורג — שלוש עשרה הפרצות" (82, 94) or of its line of sight -
-      // one stood right before it and filled the view when both rows were chosen
-      const EYES = [[82, 94], [76, 87]], nearEye = (x, z) => EYES.some(([ex, ez]) => Math.hypot(x - ex, z - ez) < 6);
+      // one stood right before it and filled the view when both rows were chosen. BREACH13_D: and of its new eye (-30, 100) and line of sight
+      const EYES = [[82, 94], [76, 87], [-30, 100], [-39, 90]], nearEye = (x, z) => EYES.some(([ex, ez]) => Math.hypot(x - ex, z - ez) < 6);
       const put = (x, z) => { const k = Math.round(x) + "," + Math.round(z); if (seen.has(k) || inSoreg(x, z) || nearEye(x, z)) return; seen.add(k); pos.push({ x, z }); };
       for (let d = 34; d < 260; d += 24) {                                          // a ring every 24 amot, in from the side colonnades
         const x0 = W0 + d, x1 = E0 - d, z0 = N0 + d, z1 = S0 - (d - 34);
@@ -812,7 +880,7 @@
     };
     plainHouse("harSynagogue", 161, 112, 24, 16, 13, "בית הכנסת שבהר הבית — ״היה סמוך לעזרה בהר הבית״ (רש״י יומא סח:)");
     plainHouse("harMidrash", 40, 112, 20, 14, 11, "בית המדרש שבהר הבית (תוספתא חגיגה ב, ד)");
-    ctx2.labels.push({ text: "שלוש עשרה פרצות — שפרצום מלכי יון (מידות ב, ג)", x: 70, y: 4.5, z: sz2 + 1, size: 2.2, layer: "soregBreach" });
+    ctx2.labels.push({ text: "שלוש עשרה פרצות כנגד שלשה עשר שערים — הראבי״ה (תוספות יום טוב מידות ב, ג)", x: -48, y: 4.5, z: sz2 + 1, size: 2.2, layer: "soregBreach" });   // BREACH13_D: by the south breaches (was x 70)
     ctx2.layers = ctx2.layers || {};
     ctx2.layers.soregBreach = breachG;
     ctx2.layers.soregRepair = repairG;
