@@ -1067,7 +1067,7 @@
     // the user: "להסיר את שיטת הקירות, ולהעביר לרצפה"): the walls keep their stone in every reading, and the reading lays the three
     // marbles in THE AZARAH'S FLOOR (the pieces of 30-courts.js, ctx2.herodFloor) - the Rambam, Beit HaBechirah 1:10 "ומרצפין את כל
     // העזרה באבנים יקרות" (337, line 12), Har HaMoriah there "כוונתו באבני שיש" (5474, line 25). That the coloured marble was in the
-    // floor is told in the name of the book "חנוכת הבית" - not in the user's library, NOT VERIFIED; the card says so. The floor: slabs
+    // floor - by Shoshanei Yaakov (8031:2754) and the Aruch (7550:4119), verified in Otzaria; the card cites them. The floor: slabs
     // of two amot in the three marbles, their rows waving like the sea (the slabs' size and the rows' wave - model choices).
     const herodFloorTex = (() => {
       const SZ = 1024, N = 12, T = SZ / N;   // the tile is 24 amot: 12 x 12 slabs of 2 amot
