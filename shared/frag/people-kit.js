@@ -329,7 +329,8 @@
       // three lengths (their ends where they were: face.js's length is from the chin)
       const F2 = (g) => headT(g.clone());
       const beards = kind === "student" ? [["none", 0, 0]] : young ? [["short", 0, 2.0]] : [["full", 0.167, 1.1], ["full", 0.107, 3.3], ["full", 0.057, 5.2]];
-      const hairOf = (d) => beards.map(([b, len, w2]) => mergeGeometries([F2(FACE.hair({ d, len, w2, beard: b }))].concat(kind === "student" ? peyot().map(headT) : [])));
+      const rgba = (q) => { const c = q.attributes.color, a = new Float32Array(c.count * 4); for (let i = 0; i < c.count; i++) { a[i * 4] = c.getX(i); a[i * 4 + 1] = c.getY(i); a[i * 4 + 2] = c.getZ(i); a[i * 4 + 3] = 1; } q.setAttribute("color", new Float32BufferAttribute(a, 4)); return q; };   // (face.js's hair has an alpha)
+      const hairOf = (d) => beards.map(([b, len, w2]) => mergeGeometries([F2(FACE.hair({ d, len, w2, beard: b }))].concat(kind === "student" ? peyot().map((q) => rgba(headT(q))) : [])));
       let closeG = null;   // (the full face is made only when one of the crowd first comes near the eye)
       const head = F2(FACE.head("lo")), hair = hairOf("lo"), close = { HY, geo: () => closeG || (closeG = { head: F2(FACE.head("hi")), eyes: F2(FACE.eyes()), hair: hairOf("hi") }) };
       // PEOPLE_KIT_205 - the plain figure (from ~22 amot): the same body in a few faces - the robe, the lap, the arms, the kippah; the
