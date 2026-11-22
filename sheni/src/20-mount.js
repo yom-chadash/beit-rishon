@@ -36,7 +36,7 @@
       if (x < CO.harW) v += 24 * Math.exp(-((((CO.harW - x) - 110) / 70) ** 2));
       return v;
     };
-    const terrainH = (x, z) => {
+    const terrainH0 = (x, z) => {
       const d = rectDist(x, z);
       const ramp = sm(70, 380, d);
       let h = bump(x, z, 1100, 30, 460, 950, 190) + bump(x, z, -700, 620, 420, 330, 130) + bump(x, z, -560, -760, 460, 380, 100) + bump(x, z, 220, 1350, 560, 320, 130) + bump(x, z, 380, -1380, 620, 360, 120);
@@ -44,6 +44,16 @@
       const rim = sm(1500, 2500, Math.hypot(x - CX, z - CZ)) * 260;
       return GROUND_Y + ramp * Math.max(h * 0.2, -5) + rim * 0.15 * ramp - sm(35, 100, d) * valley(x, z);
     };
+    // OLIVES_B2 (fix-b2, 22.11.2026 - the user's decision 17: "הר המשחה וקו הראייה — רק בבית שני"): THE MOUNT OF OLIVES east of the Kidron.
+    // Middot 2:4 (89:15): "כל הכתלים שהיו שם היו גבוהים, חוץ מכותל המזרחי, שהכהן השורף את הפרה עומד בראש הר המשחה, ומתכוון ורואה בפתחו
+    // של היכל בשעת הזית הדם"; the Rambam, Beit HaBechirah 6:5 (337:98): "...ומפני זה עשו כתל שעל גבי שער זה נמוך. כדי שיהא כהן העומד בהר
+    // המשחה רואה פתח ההיכל בשעה שמזה מדם הפרה נכח ההיכל". A hill whose top (OLV.x, 0) is OLV.top over the Mount's floor: as high as it may be
+    // while the eye of one standing on it still sees the heichal's door through the gate of the women's court (its east wall high, 34 -
+    // 30-courts.js) and over the low wall above the Shushan gate. Its height, its place and its form - model choices; the real mountain
+    // is much higher and farther (the model's ground is drawn small - TERRAIN_211).
+    const OLV = { x: 1150, z: 0, rx: 380, rz: 650, top: 35 };
+    OLV.amp = OLV.top - terrainH0(OLV.x, OLV.z);
+    const terrainH = (x, z) => terrainH0(x, z) + sm(CO.harE, CO.harE + 120, x) * OLV.amp * Math.exp(-(((x - OLV.x) / OLV.rx) ** 2) - (((z - OLV.z) / OLV.rz) ** 2));
     {
       const SIZE = 5200, SEG = 220;
       const geo = new PlaneGeometry(SIZE, SIZE, SEG, SEG);
@@ -151,10 +161,16 @@
     ctx2.layers.ewPiskei = ewG.piskei;
     ctx2.layers.ewChok = ewG.chok;
     ctx2.layers.ewShemaya = ewG.shemaya;
+    // EW_EZEKIEL_B2 (fix-b2, 22.11.2026 - the user's decision 72 (ד)): the six amot again, as a reading of its own in the name of Ezekiel (40:5,
+    // 14:1058: "והנה חומה מחוץ לבית סביב סביב וביד האיש קנה המדה שש אמות באמה וטפח... וקומה קנה אחד") - drawn as the Piskei Tosafot's
+    // (the wall six amot high, the gate a gatehouse); two layers that only tell the labels which of the two is meant
+    const ewPL = new Group(), ewEL = new Group(); ewEL.visible = false;
+    ctx2.layers.ewPiskeiL = ewPL; ctx2.layers.ewEzekielL = ewEL;
     ctx2.labels.push(
       { text: "הכותל שעל גבי שער שושן נמוך — הרמב״ם", x: CO.harE + 6, y: 31, z: 22, size: 2.2, layer: "ewRambam" },
       { text: "כל כותל המזרח מעט יותר מעשרים — תפארת ישראל", x: CO.harE + 6, y: 27, z: 40, size: 2.2, layer: "ewTiferet" },
-      { text: "כותל מזרחי גבוה שש אמות — פסקי תוספות", x: CO.harE + 6, y: 10, z: 40, size: 2.2, layer: "ewPiskei" },
+      { text: "כותל מזרחי גבוה שש אמות — פסקי תוספות", x: CO.harE + 6, y: 10, z: 40, size: 2.2, layers: ["ewPiskei", "ewPiskeiL"] },
+      { text: "חומה — קנה אחד, שש אמות (יחזקאל מ, ה) — בשם יחזקאל", x: CO.harE + 6, y: 10, z: 40, size: 2.2, layers: ["ewPiskei", "ewEzekielL"] },
       { text: "שש אמות מעל השער — פסקי תוספות לחק נתן", x: CO.harE + 6, y: 30, z: 40, size: 2.2, layer: "ewChok" }
     );
     const wallW = H2.wall(g, {
@@ -250,10 +266,12 @@
       ctx2.shared.eastWall = {
         mode: "rambam",
         set(m) {
-          this.mode = ["tiferet", "piskei", "chok", "shemaya"].includes(m) ? m : "rambam";
-          for (const k of Object.keys(ewG)) ewG[k].visible = k === this.mode;
-          for (const o of followers) o.userData.fadeWith = ewGate[this.mode];
-          if (pilE) pilE.visible = this.mode !== "piskei";
+          this.mode = ["tiferet", "piskei", "chok", "shemaya", "ezekiel"].includes(m) ? m : "rambam";
+          const dm = this.mode === "ezekiel" ? "piskei" : this.mode;   // EW_EZEKIEL_B2: drawn as the Piskei Tosafot's
+          for (const k of Object.keys(ewG)) ewG[k].visible = k === dm;
+          ewPL.visible = this.mode === "piskei"; ewEL.visible = this.mode === "ezekiel";
+          for (const o of followers) o.userData.fadeWith = ewGate[dm];
+          if (pilE) pilE.visible = dm !== "piskei";
           if (typeof ctx2.shared.eznEastWall === "function") ctx2.shared.eznEastWall(this.mode === "shemaya");
         }
       };
@@ -331,7 +349,11 @@
     // only (the Mount of Olives is not built), level with the gate's sill, ten amot wide as the gate, a low kerb on both its sides.
     // Its height, width and length and the arches' measures - model choices. The 36 steps of 1.0 and their railing are gone here.
     {
-      const X0 = CO.harE + T / 2, LEN = 150, WID = 10, BAY = 10, PIER = 3, YB = GROUND_Y - 2.5, YM = GROUND_Y + 14, YD = -1;
+      // OLIVES_B2: the ramp goes on over the Kidron until it meets the Mount of Olives' slope ("וכבש היו עושים מהר הבית להר המשחה");
+      // until now it was drawn for 150 amot only
+      let LEN = 150;
+      for (let x = CO.harE + 160; x < OLV.x; x += 2) if (terrainH(x, 0) > -1.2) { LEN = Math.ceil(x - (CO.harE + T / 2)) + 6; break; }
+      const X0 = CO.harE + T / 2, WID = 10, BAY = 10, PIER = 3, YB = GROUND_Y - 2.5, YM = GROUND_Y + 14, YD = -1;
       const cw = new Group();
       cw.name = "parahRamp";
       g.add(cw);
@@ -363,7 +385,39 @@
       for (const sz of [-1, 1]) H2.box(cw, LEN, 1, 0.5, M2.stoneSmooth, X0 + LEN / 2, 0, sz * (WID / 2 - 0.25));   // a low kerb
       ctx2.labels.push(
         { text: "כבש הפרה — כיפין על גבי כיפין, וכיפה כנגד האוטם (פרה ג, ו)", x: X0 + 55, y: 7, z: 0, size: 2.6 },
-        { text: "אל הר המשחה (אינו מצויר)", x: X0 + LEN - 6, y: 4.5, z: 0, size: 2 });
+        { text: "הכבש מגיע אל הר המשחה", x: X0 + LEN - 6, y: 4.5, z: 0, size: 2 });
+      OLV.rampEnd = X0 + LEN;
+    }
+    // OLIVES_B2: THE LINE OF SIGHT - the priest on the Mount of Olives' top, his face to the heichal, and the line from his eye to its door
+    // (a feature of the place "הר המשחה — קו הראייה", untimed; while it is shown the parochot of the openings are raised - Nikanor's, the
+    // ulam's and the heichal's would stand in the line). The line's target on the door: as high as the gate of the women's court lets it.
+    {
+      const SG = new Group(); SG.name = "parahSight"; SG.visible = false; g.add(SG); ctx2.layers.parahSight = SG;
+      const yTop = terrainH(OLV.x, OLV.z), E = yTop + 3.2, DX = 1.65, k = (231 - DX) / (OLV.x - DX);
+      const yt = Math.min(32, (25.6 - E * k) / (1 - k));
+      OLV.eye = [OLV.x, E, 0]; OLV.door = [DX, yt, 0]; OLV.ok = yt >= 22.2;
+      const L = Math.hypot(OLV.x - DX, E - yt);
+      const lineM = new MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 0.85, depthWrite: false });
+      const ln = new Mesh(new CylinderGeometry(0.22, 0.22, L, 8, 1, true), lineM);
+      ln.rotation.z = Math.atan2(E - yt, OLV.x - DX) - Math.PI / 2; ln.position.set((OLV.x + DX) / 2, (E + yt) / 2, 0); ln.userData.noPick = true; ln.renderOrder = 7; SG.add(ln);
+      const dot = new Mesh(new SphereGeometry(0.7, 12, 8), lineM); dot.position.set(DX + 0.4, yt, 0); dot.userData.noPick = true; SG.add(dot);
+      const pad = new Mesh(new CylinderGeometry(3.2, 3.6, 0.6, 20), M2.stoneSmooth); pad.position.set(OLV.x, yTop + 0.1, 0); pad.receiveShadow = true; SG.add(pad);
+      let fig = null;
+      const ensureFig = () => {
+        if (fig) return;
+        fig = new Group(); SG.add(fig);
+        try { tm_people(ctx2).crowd(fig, [[OLV.x, 0, -Math.PI / 2]], { y: yTop + 0.4, s: 1.4, pose: "stand", kind: "kohen", robe: 0xf1ede2, exact: true, name: "parahPriest" }); } catch (_) {}
+      };
+      ctx2.labels.push(
+        { text: "״שהכהן השורף את הפרה עומד בראש הר המשחה, ומתכוון ורואה בפתחו של היכל בשעת הזית הדם״ (מידות ב, ד)", x: OLV.x - 10, y: E + 9, z: 0, size: 4, layer: "parahSight", far: 1600 },
+        { text: "כאן הכותל נמוך — הקו עובר מעליו", x: CO.harE + 4, y: 34, z: 6, size: 2.4, layer: "parahSight", far: 1600 },
+        { text: "פתח ההיכל", x: DX + 3, y: yt + 6, z: 4, size: 2.4, layer: "parahSight", far: 1600 });
+      let saved = null;
+      ctx2.shared.features = ctx2.shared.features || {};
+      ctx2.shared.features.parahSight = { key: "parahSight", timed: false, isOn: () => SG.visible,
+        on: () => { ensureFig(); SG.visible = true; const GP = ctx2.shared.gateParochot; if (GP && saved == null) { saved = GP.mode; GP.set("up"); } },
+        off: () => { SG.visible = false; const GP = ctx2.shared.gateParochot; if (GP && saved != null) { GP.set(saved); saved = null; } } };
+      ctx2.shared.olives = OLV;
     }
     const colPos = [];
     const addRun = (axis, fixed, from, to, step, gaps) => {
@@ -569,7 +623,38 @@
       const cols = H2.colonnade(RG, pos, { height: 22, rShaft: 0.95, mat: M2.marble, style: "corinthian" });
       cols.userData.noPick = true;
       const roofM = new MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.85, transparent: true, opacity: 0.4, depthWrite: false, side: DoubleSide });
-      const slab = (x0, x1, z0, z1) => { const m = new Mesh(new BoxGeometry(x1 - x0, 0.7, z1 - z0), roofM); m.position.set((x0 + x1) / 2, 23.5, (z0 + z1) / 2); m.userData.noPick = true; m.renderOrder = 6; RG.add(m); };
+      // SKYLIGHTS_B2 (fix-b2, 22.11.2026 - the user's decision 75): in the reading "all" the roof has skylights - the Tiferet Yisrael
+      // (Boaz Middot 2:1, 819:157): "ונ"ל שהי' ארובות בקרוי כדי להביא אור תחת הקרוי". Their number, size (8 by 8 amot, a curb round each)
+      // and places (on a grid of 48 amot, between the rings of columns) - model choices. The reading "in the name of Rav Chaim Kanievsky"
+      // (below) has the same roof without them (the booklet does not draw them). Two sets of slabs: RGH (with holes) and RGP (plain).
+      const RGH = new Group(), RGP = new Group();
+      RG.add(RGH); RG.add(RGP);
+      RGP.visible = false;
+      const SKY = [];
+      {
+        const IXa = -96 - 8, IXb = 231 + 8, IZa = -70 - 8, IZb = 70 + 8;
+        for (let x = -127.5 + 30; x < 333.5 - 10; x += 48) for (let z = -148 + 30; z < 286.5 - 10; z += 48) {
+          if (x > IXa && x < IXb && z > IZa && z < IZb) continue;               // the courts and the chel
+          if (pos.some((p) => Math.abs(p.x - x) < 6.5 && Math.abs(p.z - z) < 6.5)) continue;   // no column under it
+          SKY.push([x, z]);
+        }
+      }
+      const slab = (x0, x1, z0, z1) => {
+        const m = new Mesh(new BoxGeometry(x1 - x0, 0.7, z1 - z0), roofM); m.position.set((x0 + x1) / 2, 23.5, (z0 + z1) / 2); m.userData.noPick = true; m.renderOrder = 6; RGP.add(m);
+        // the same slab with its skylights: a shape with square holes, extruded 0.7
+        const holes = SKY.filter(([x, z]) => x - 5 > x0 && x + 5 < x1 && z - 5 > z0 && z + 5 < z1);
+        const sh = new Shape();
+        sh.moveTo(x0, z0); sh.lineTo(x1, z0); sh.lineTo(x1, z1); sh.lineTo(x0, z1); sh.closePath();
+        for (const [x, z] of holes) { const h = new Path(); h.moveTo(x - 4, z - 4); h.lineTo(x - 4, z + 4); h.lineTo(x + 4, z + 4); h.lineTo(x + 4, z - 4); h.closePath(); sh.holes.push(h); }
+        const geo = new ExtrudeGeometry(sh, { depth: 0.7, bevelEnabled: false });
+        geo.rotateX(Math.PI / 2);                                                   // the shape's (x, y) -> (x, z); extruded downward from y 0
+        const mh = new Mesh(geo, roofM); mh.position.set(0, 23.85, 0); mh.userData.noPick = true; mh.renderOrder = 6; RGH.add(mh);
+        for (const [x, z] of holes) {                                                // the curb: four low boards round the opening
+          for (const [w, d, dx, dz] of [[9, 0.5, 0, -4.25], [9, 0.5, 0, 4.25], [0.5, 8, -4.25, 0], [0.5, 8, 4.25, 0]]) {
+            const c = new Mesh(new BoxGeometry(w, 0.9, d), M2.cedar); c.position.set(x + dx, 24.3, z + dz); c.userData.noPick = true; RGH.add(c);
+          }
+        }
+      };
       const X0 = -127.5, X1 = 333.5, Z0 = -148, Z1 = 286.5;                          // between the side colonnades' own roofs
       // ROOF_CHEL_211 (the review, S3-05; the user, 15.11.2026 18:12: "להאריך"): the roof goes on OVER THE CHEL, to the courts' wall - the
       // Tiferet Yisrael, whom the card follows for the open courts, says so: "דרק הר הבית שמחוץ לחומה הפנימית מקורה היה" (Boaz Middot
@@ -581,9 +666,117 @@
       slab(X0, X1, IZ1, Z1);
       slab(X0, IX0, IZ0, IZ1);
       slab(IX1, X1, IZ0, IZ1);
-      ctx2.labels.push({ text: "״וכולו היה מקורה, סטיו לפנים מסטיו״ (רמב״ם) — כל הר הבית, כלחם שמים", x: 250, y: 30, z: 160, size: 5, layer: "harRoofAll" });
-      ctx2.shared.harRoof = { mode: "sides", count: pos.length, set(m) { this.mode = m === "all" ? "all" : "sides"; RG.visible = this.mode === "all"; return this.mode; } };
+      const LSG = new Group(); LSG.name = "harRoofLS"; ctx2.layers.harRoofLS = LSG;   // (a layer only: the labels of the reading "all")
+      ctx2.labels.push({ text: "״וכולו היה מקורה, סטיו לפנים מסטיו״ (רמב״ם) — כל הר הבית, כלחם שמים", x: 250, y: 30, z: 160, size: 5, layers: ["harRoofAll", "harRoofLS"] });
+      ctx2.labels.push({ text: "ארובות בקירוי — ״כדי להביא אור תחת הקרוי״ (תפארת ישראל)", x: SKY.length ? SKY[0][0] : 0, y: 27, z: SKY.length ? SKY[0][1] : 0, size: 2.4, layers: ["harRoofAll", "harRoofLS"] });
+      // EZN_ROOF_B2 (fix-b2, 22.11.2026 - the user's decision 46): THE ROOFING "IN THE NAME OF RAV CHAIM KANIEVSKY", a third reading of the
+      // row. The booklet "אלחנן וחיים עולים לירושלים" (D66), on the Rambam 5:1 "וכלו היה מקרה סטיו לפנים מסטיו": "ומשמע שהיה כלו מקרה, למעט
+      // ארבעת הלשכות והשטח הסמוך לבית המקדש. וכן הורה לנו הגר"ח קניבסקי שליט"א שכך יש לצייר"; the booklet of Sukkot (B201): "שטח עזרת
+      // הנשים היה מקרה, ולכן יש לומר ששמו את המנורות בלשכות שבפנות עזרת נשים, שלא היה להן גג". Drawn: the whole mount roofed as in "all"
+      // (without the skylights), and the women's court at its walls' top, except its four corner chambers ("ולא היו מקורות", Middot 2:5,
+      // 89:16) - a cross of roof; the courts of Israel and of the priests open. Under it cedar beams, and four columns with two lintels where
+      // the chambers' inner walls would meet. The golden lamps of the water-drawing move into the chambers (57-add208.js, SH.simchaLamps).
+      // MODEL CHOICES: the beams, the columns and their places, and the roof's see-through look (as the mount's roof).
+      const EZ = new Group(); EZ.name = "eznRoofKanievsky"; EZ.visible = false; g.add(EZ); ctx2.layers.eznRoofKanievsky = EZ;
+      const EZC = [[133.5, -9.17], [133.5, 9.17], [188.5, -9.17], [188.5, 9.17]];
+      {
+        const YR = 40, WX0 = 96, WX1 = 226, WZ = 65, CX0 = 133.5, CX1 = 188.5, CZ = 27.5;
+        const ezSlab = (x0, x1, z0, z1) => { const m = new Mesh(new BoxGeometry(x1 - x0, 0.7, z1 - z0), roofM); m.position.set((x0 + x1) / 2, YR + 0.35, (z0 + z1) / 2); m.userData.noPick = true; m.renderOrder = 6; EZ.add(m); };
+        ezSlab(CX0, CX1, -WZ, WZ);                                                    // the middle, from the north wall to the south wall
+        ezSlab(WX0, CX0, -CZ, CZ);                                                    // the west arm (over the fifteen steps)
+        ezSlab(CX1, WX1, -CZ, CZ);                                                    // the east arm (before the gate)
+        const beam = (x, z, w, d) => { const m = new Mesh(new BoxGeometry(w, 1.0, d), M2.cedar); m.position.set(x, YR - 0.5, z); m.castShadow = true; m.userData.noPick = true; EZ.add(m); };
+        for (let z = -WZ + 3; z <= WZ - 2.9; z += 6.2) beam((CX0 + CX1) / 2, z, CX1 - CX0, 0.8);   // the middle: east to west
+        for (let x = WX0 + 3; x < CX0 - 1; x += 6.25) beam(x, 0, 0.8, 2 * CZ);                     // the arms: north to south
+        for (let x = CX1 + 3; x < WX1 - 1; x += 6.25) beam(x, 0, 0.8, 2 * CZ);
+        for (const x of [CX0, CX1]) beam(x, 0, 1.6, 2 * CZ + 1);                                  // the two lintels on the columns
+        const ec = H2.colonnade(EZ, EZC.map(([x, z]) => ({ x, y: LV.EZN, z })), { height: YR - 1 - LV.EZN, rShaft: 0.95, mat: M2.marble, style: "corinthian" });
+        ec.userData.noPick = true;
+      }
+      ctx2.labels.push({ text: "עזרת נשים מקורה, חוץ מארבע הלשכות שבפינותיה — כהוראת הגר״ח קניבסקי (חוברות ״אלחנן וחיים״)", x: 161, y: 46, z: 0, size: 3, layer: "eznRoofKanievsky" });
+      ctx2.shared.eznRoof = { on: false, cols: EZC.map((c) => c.slice()) };
+      ctx2.shared.harRoof = { mode: "sides", count: pos.length, skylights: SKY.length,
+        set(m) {
+          this.mode = m === "all" ? "all" : m === "kanievsky" ? "kanievsky" : "sides";
+          RG.visible = this.mode !== "sides";
+          RGH.visible = this.mode === "all"; RGP.visible = this.mode === "kanievsky"; LSG.visible = this.mode === "all";
+          EZ.visible = this.mode === "kanievsky";
+          ctx2.shared.eznRoof.on = EZ.visible;
+          const L = ctx2.shared.simchaLamps;
+          if (L && typeof L.set === "function") L.set({ at: EZ.visible ? "corner" : "mid" });
+          if (ctx2.requestRender) ctx2.requestRender();
+          return this.mode;
+        } };
     }
+    // CHAMBERS30_B2 (fix-b2, 22.11.2026 - the user's decision 74): THE CHAMBERS OF THE TEMPLE MOUNT - a reading (ctx2.shared.harChambers.set,
+    // off by default). Middot 2:1 (89:12): "רבו מן הדרום, שני לו מן המזרח, שלישי לו מן הצפון, מעוטו מן המערב. מקום שהיה רב מדתו, שם היה רב
+    // תשמישו"; the Tosafot Yom Tov (948:64): "יפה פי' בעל שלטי הגבורים שכתב שהוא על לשכות הרבה ובתים שהיו עשוים באמת ויושר למשמשי הבית
+    // נוסף על הלשכות שנאמרו במשנה... ומנה אותן שלשים ואני אומר לסיוע לו שכן נמצא בבנינא דיחזקאל [מ' י"ז] שלשים לשכות אל הרצפה... ועוד
+    // נסתפק... לשכה לכל אחד מט"ו הממונים"; the Tiferet Yisrael (Yachin Middot 2:1, 819:157): "ובכל הרווח ההוא בנויים לשכות... ובאותן הרווחים
+    // היה דירת כל הט"ו ממונים של הר הבית... והשאר היו בהר הבית רובם בדרום". Thirty chambers in a row before the porticos - thirteen in the
+    // south, nine in the east, five in the north, three in the west (most in the south, then by the Mishnah's order); each 12 by 10, 9
+    // high, its door toward the courts; the ways from the gates left open. Their number on each side, size, form and places - model choices.
+    {
+      const CG = new Group(); CG.name = "harChambers30"; CG.visible = false; g.add(CG); ctx2.layers.harChambers30 = CG;
+      const tmp = new Group(), dark = new MeshBasicMaterial({ color: 0x1d1610 });
+      const CW = 12, CD = 10, CHH = 9;
+      const ch = (x, z, face) => {   // face: the side of the door - "n" / "s" / "e" / "w"
+        const alongX = face === "n" || face === "s";
+        const w = alongX ? CW : CD, d = alongX ? CD : CW;
+        const b = new Mesh(H2.uvWorldBox(new BoxGeometry(w, CHH, d), w, CHH, d), M2.stoneLight); b.position.set(x, CHH / 2, z); tmp.add(b);
+        const r = new Mesh(new BoxGeometry(w + 0.8, 0.6, d + 0.8), M2.stone); r.position.set(x, CHH + 0.3, z); tmp.add(r);
+        const dw = 2.6, dh = 5.2, off = (alongX ? d : w) / 2 + 0.03;
+        const door = new Mesh(new PlaneGeometry(dw, dh), dark);
+        const sx = face === "e" ? 1 : face === "w" ? -1 : 0, sz = face === "s" ? 1 : face === "n" ? -1 : 0;
+        door.position.set(x + sx * off, dh / 2, z + sz * off); door.rotation.y = Math.atan2(sx, sz); tmp.add(door);
+      };
+      const row = (n, from, to, fixed, axis, face, gaps) => {   // n chambers spread between from and to, skipping the gaps [a, b]
+        const L = to - from, step = L / n;
+        let made = 0;
+        for (let i = 0; i < n * 3 && made < n; i++) {
+          const t = from + step * (made + 0.5) + (i - made) * step * 0.25;
+          if (gaps.some(([a, b]) => t > a - 8 && t < b + 8)) continue;
+          if (axis === "x") ch(t, fixed, face); else ch(fixed, t, face);
+          made++;
+        }
+      };
+      row(13, -118, 326, 268, "x", "n", [[-8, 8], [102, 118]]);          // the south, before the royal stoa - the ways from the gates of Chulda left open
+      row(9, -136, 270, 318, "z", "w", [[-12, 12], [250, 280]]);         // the east, before its portico - the Shushan gate's way open
+      row(5, -116, 318, -136, "x", "s", [[45, 65]]);                      // the north - Tadi's way open
+      row(3, -136, 270, -118, "z", "e", [[-12, 12]]);                     // the west - Kiponos' way open
+      tmp.updateMatrixWorld(true);
+      const byMat = new Map();
+      tmp.traverse((o) => { if (o.isMesh) { if (!byMat.has(o.material)) byMat.set(o.material, []); byMat.get(o.material).push(o.geometry.clone().applyMatrix4(o.matrixWorld)); } });
+      for (const [mat, list] of byMat) { const m = new Mesh(mergeGeometries(list), mat); m.castShadow = m.receiveShadow = true; m.userData.noPick = true; CG.add(m); }
+      ctx2.labels.push({ text: "שלושים לשכות בהר הבית — רובן בדרום (שלטי הגבורים; תוספות יום טוב, מידות ב, א)", x: 103, y: 16, z: 262, size: 4, layer: "harChambers30", far: 1600 });
+      ctx2.labels.push({ text: "״ובאותן הרווחים היה דירת כל הט״ו ממונים של הר הבית״ (תפארת ישראל)", x: 318, y: 14, z: 120, size: 2.6, layer: "harChambers30", far: 1600 });
+      ctx2.shared.harChambers = { on: false, set(v) { this.on = !!v; CG.visible = this.on; if (ctx2.requestRender) ctx2.requestRender(); return this.on; } };
+    }
+    // SYNAGOGUE_B2 (fix-b2, 22.11.2026 - the user's decision 52: "מבנה סמלי סמוך לעזרה"): THE SYNAGOGUE ON THE TEMPLE MOUNT - "חזן הכנסת
+    // נוטל ספר תורה ונותנו לראש הכנסת" (Yoma 7:1, 55:55); Rashi (Yoma 68b, 2157:2562): "בית הכנסת - היה סמוך לעזרה בהר הבית". A plain
+    // house south of the women's court, beyond the chel and the soreg, its door toward the court; 24 by 16, 13 high, a row of windows high
+    // in its walls. MIDRASH_B2 (the user's decision 71): THE HOUSE OF STUDY ON THE TEMPLE MOUNT, a plain house as the synagogue - the
+    // Tosefta, Chagigah 2:4 (200:17): "ובשבתות ובימים טובים נכנסין לבית המדרש שבהר הבית"; the Gemara (Sanhedrin 88b, 125:3450) has
+    // "ובשבתות ובימים טובים, יושבין בחיל" (the card brings both). South of the court of Israel, between the ways from the two gates of
+    // Chulda; 20 by 14, 11 high. Their places, sizes and forms - model choices, proposed to the user.
+    const plainHouse = (name, X, Z, W, D, HH, text) => {
+      const SY = new Group(); SY.name = name; g.add(SY); ctx2.layers[name] = SY;
+      H2.wall(SY, { axis: "x", length: W, height: HH, thickness: 1.2, mat: M2.stoneLight, cx: X, cz: Z - D / 2, y: 0, openings: [{ center: 0, width: 3, height: 6 }] });
+      H2.wall(SY, { axis: "x", length: W, height: HH, thickness: 1.2, mat: M2.stoneLight, cx: X, cz: Z + D / 2, y: 0, openings: [] });
+      H2.wall(SY, { axis: "z", length: D - 1.2, height: HH, thickness: 1.2, mat: M2.stoneLight, cx: X - W / 2 + 0.6, cz: Z, y: 0, openings: [] });
+      H2.wall(SY, { axis: "z", length: D - 1.2, height: HH, thickness: 1.2, mat: M2.stoneLight, cx: X + W / 2 - 0.6, cz: Z, y: 0, openings: [] });
+      H2.box(SY, W + 1.2, 0.8, D + 1.2, M2.stone, X, HH, Z);                                   // the roof
+      H2.box(SY, W, 0.2, D, M2.paveFine, X, 0.02, Z);                                          // the floor
+      const dark = new MeshBasicMaterial({ color: 0x1d1610 });
+      const nw = Math.floor((W - 6) / 3);
+      for (let i = 0; i < nw; i++) for (const sd of [-1, 1]) {                                  // windows high in the long walls
+        const w = new Mesh(new PlaneGeometry(1.2, 2.2), dark); w.position.set(X - (nw - 1) * 1.5 + i * 3, HH - 3, Z + sd * (D / 2 + 0.62)); w.rotation.y = sd > 0 ? 0 : Math.PI; w.userData.noPick = true; SY.add(w);
+      }
+      H2.box(SY, 4.4, 0.6, 2, M2.stoneSmooth, X, 0, Z - D / 2 - 1.6);                          // a step before the door
+      ctx2.labels.push({ text, x: X, y: HH + 4, z: Z, size: 2.2, layer: name });
+    };
+    plainHouse("harSynagogue", 161, 112, 24, 16, 13, "בית הכנסת שבהר הבית — ״היה סמוך לעזרה בהר הבית״ (רש״י יומא סח:)");
+    plainHouse("harMidrash", 40, 112, 20, 14, 11, "בית המדרש שבהר הבית (תוספתא חגיגה ב, ד)");
     ctx2.labels.push({ text: "שלוש עשרה פרצות — שפרצום מלכי יון (מידות ב, ג)", x: 70, y: 4.5, z: sz2 + 1, size: 2.2, layer: "soregBreach" });
     ctx2.layers = ctx2.layers || {};
     ctx2.layers.soregBreach = breachG;

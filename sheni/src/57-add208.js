@@ -167,7 +167,7 @@
       const neckCurve = new CatmullRomCurve3([new Vector3(0, 1.36, 0), new Vector3(0, 1.62, 0), new Vector3(0.12, 1.86, 0), new Vector3(0.38, 1.98, 0)]);
       const neck = new TubeGeometry(neckCurve, 16, 0.15, 10, false);
       const lip = new TorusGeometry(0.15, 0.04, 6, 16);
-      const X0 = 84.0, Z0 = -9.5, DZ = -2.1;   // the court of Israel's floor x 83..85 (82.5 - the priests' podium, 85.5 - the duchan's steps)
+      const X0 = 86.5, Z0 = -9.5, DZ = -2.1;   // the court of Israel's floor, east of the duchan (fix-b2, 22.11.2026, at fix-a2's request: the duchan and its steps moved 3 amot west, to touch the priests' court, x 82.5..85 - 84.0 until now stood on them)
       for (let i = 0; i < 13; i++) {
         const z = Z0 + i * DZ, y = groundAt(X0, z, 40, LV.AZ);
         const b = new Group(); b.position.set(X0, y, z); b.rotation.y = Math.PI;   // the curved mouths toward the court (west)
@@ -512,13 +512,31 @@
     // shown. The lamps are not part of the building's everyday state: the feature simchaMenorot (a place's, untimed - they go when
     // another place is chosen), off by default. Their places in the court, the shaft's form, the cups' arms - model choices.
     {
+      // SIMCHA_LAMPS_B2 (fix-b2, 22.11.2026 - the user's decisions 39, 45 and 46): the lamps now have a PLACE and a FORM.
+      // THE PLACE (SH.simchaLamps.at): "mid" - four in the court, as until now; "corner" - one in each of the four chambers in the corners,
+      // which were not roofed ("וארבע לשכות היו בארבע מקצעותיה... ולא היו מקורות", Middot 2:5, 89:16) - set by the roofing row when its
+      // reading "in the name of Rav Chaim Kanievsky" is chosen (20-mount.js, ctx2.shared.harRoof.set): "שטח עזרת הנשים היה מקרה, ולכן יש
+      // לומר ששמו את המנורות בלשכות שבפנות עזרת נשים, שלא היה להן גג" (the booklet of Sukkot, its list of sources, B201). The spots in
+      // the chambers are where a lamp, its four ladders and its young priests stand clear of what each chamber holds (measured on the
+      // model; in the wood chamber the ladders go diagonally, between the piles) - model choices.
+      // THE FORM (SH.simchaLamps.form; the row "מנורות שמחת בית השואבה — צורתן"): "rashi" (the default) - golden shafts fifty amot high,
+      // "לפי שהמנורות גבוהין חמשים אמה... והמנורות עולין למעלה הימנה" (Rashi Sukkah 51a, 2163:2408; Sukkah 52b, 108:1355); "ty" - the
+      // Tiferet Yisrael (Yachin Sukkah 5:2, 772:520): "ונ"ל דלא שהיו המנורות של זהב כל כך גבוהות ועבות... אלא שהיו המנורות עומדות על
+      // בימות גבוהות כל כך, או סביב שפת הגזוזטרא"; and 5:3 (772:532) "שהמנורות עומדות על כן גבוה נ' אמה" - drawn: a lamp of a few amot
+      // on a stand of stone fifty amot high (the stand's form and stone, the lamp's size - model choices; the card names the balcony too).
+      // Each place-and-form is a set of its own, built when first shown (SET), and the demonstration below runs the set shown.
       const MG = grp("simchaMenorot", false);
-      const Y0 = LV.EZN, HH = 50, CUPR = 1.7, RB = 5.6, RT = CUPR + 0.8, TOPY = Y0 + HH - 1.0;
-      const SPOTS = [[141, -20], [181, -20], [141, 20], [181, 20]];
-      const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
-      const shaftG = new LatheGeometry([[0, 0], [2.1, 0], [2.1, 0.7], [1.3, 1.0], [0.8, 1.8], [0.66, 8], [0.55, 28], [0.48, HH - 2.4], [0.9, HH - 1.8], [0.55, HH - 1.4], [0.5, HH - 1.0], [0, HH - 1.0]].map(([r, y]) => new Vector2(r, y)), 20);
+      const Y0 = LV.EZN, RB = 5.6;
+      const SPOT = { mid: [[141, -20], [181, -20], [141, 20], [181, 20]], corner: [[106.5, -54.5], [205, -48], [124.5, 49.5], [201.5, 53.5]] };
+      const SROT = { mid: [0, 0, 0, 0], corner: [0, Math.PI / 4, 0, 0] };
+      const FORM = {
+        rashi: { HH: 50, CUPR: 1.7, TOPY: Y0 + 50 - 1.0, cupS: 1 },
+        ty: { HH: 50, CUPR: 1.25, TOPY: Y0 + 50 + 3.0, cupS: 0.62 }
+      };
+      const shaftG = new LatheGeometry([[0, 0], [2.1, 0], [2.1, 0.7], [1.3, 1.0], [0.8, 1.8], [0.66, 8], [0.55, 28], [0.48, 50 - 2.4], [0.9, 50 - 1.8], [0.55, 50 - 1.4], [0.5, 50 - 1.0], [0, 50 - 1.0]].map(([r, y]) => new Vector2(r, y)), 20);
+      // the Tiferet Yisrael's lamp: a golden lamp of three amot (its base, a shaft, a knop under the arms) - on the stand's top (y 0 here)
+      const tyLampG = new LatheGeometry([[0, 0], [0.62, 0], [0.62, 0.18], [0.38, 0.32], [0.24, 0.6], [0.2, 2.3], [0.42, 2.62], [0.26, 2.84], [0.24, 3.0], [0, 3.0]].map(([r, y]) => new Vector2(r, y)), 18);
       const cupG = new LatheGeometry([[0, 0], [0.3, 0], [0.34, 0.06], [0.62, 0.34], [0.7, 0.55], [0.66, 0.58], [0.58, 0.4], [0.3, 0.14], [0, 0.14]].map(([r, y]) => new Vector2(r, y)), 18);
-      const armG = new BoxGeometry(CUPR, 0.22, 0.26); armG.translate(CUPR / 2, 0, 0);
       const oilM = new MeshStandardMaterial({ color: 0xc9a227, roughness: 0.25, metalness: 0.1 });
       const wickM = new MeshStandardMaterial({ color: 0xf2ecdc, roughness: 0.9, emissive: 0x302b22 });
       // a flame: a soft sprite (additive), drawn once
@@ -536,93 +554,130 @@
         c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64);
       }
       const htx = new CanvasTexture(hcv); htx.colorSpace = SRGBColorSpace;
-      const flames = [], oils = [], halos = [];
-      // the ladders: rails and rungs - two InstancedMesh (16 ladders, 32 rails, a rung every 0.9 amah)
-      const rails = [], rungs = [];
-      const railLen = Math.hypot(RB - RT, TOPY - 0.6 - Y0);
-      const tilt = Math.atan2(RB - RT, TOPY - 0.6 - Y0);
-      for (const [mx, mz] of SPOTS) {
-        const sh = new Mesh(shaftG, M2.gold); sh.position.set(mx, Y0, mz); sh.castShadow = true; sh.receiveShadow = true; MG.add(sh);
-        DIRS.forEach(([dx, dz]) => {
-          const yaw = Math.atan2(dx, dz);
-          const arm = new Mesh(armG, M2.gold); arm.position.set(mx, TOPY - 0.35, mz); arm.rotation.y = yaw - Math.PI / 2; MG.add(arm);
-          const cx = mx + dx * CUPR, cz = mz + dz * CUPR;
-          const cup = new Mesh(cupG, M2.gold); cup.position.set(cx, TOPY - 0.3, cz); cup.castShadow = true; MG.add(cup);
-          const oil = new Mesh(new CylinderGeometry(0.6, 0.6, 0.03, 16), oilM); oil.position.set(cx, TOPY + 0.12, cz); oil.visible = false; MG.add(oil); oils.push(oil);
-          const wick = new Mesh(new CylinderGeometry(0.09, 0.11, 0.5, 8), wickM); wick.position.set(cx, TOPY + 0.2, cz); MG.add(wick);
-          // LIVE_FIRE_304: the cup burns with the altar's live fire (40-altar.js, ctx2.shared.liveFlame) - "הפתילה העבה ביותר והבעירוה"
-          // (the Tiferet Yisrael, 772:518); the soft sprite only where that fire is missing
-          const live = typeof SH.liveFlame === "function" ? SH.liveFlame(MG, cx, TOPY + 0.42, cz, 0.36, 1.3, 1.0) : null;
-          const fl = live || new Sprite(new SpriteMaterial({ map: ftx, transparent: true, depthWrite: false, blending: AdditiveBlending }));
-          if (!live) { fl.position.set(cx, TOPY + 1.25, cz); fl.scale.set(0.9, 1.8, 1); fl.renderOrder = 9; MG.add(fl); }
-          fl.visible = false; fl.userData.noPick = true; fl.userData.ph = flames.length * 1.3; flames.push(fl);
-          // the ladder in the plane of the shaft and this cup, its foot RB from the shaft, its head just under the cup
-          const ux = mx + dx * (RB + RT) / 2, uz = mz + dz * (RB + RT) / 2, uy = (Y0 + TOPY - 0.6) / 2;
-          for (const sd of [-0.5, 0.5]) rails.push([ux + dz * sd, uy, uz - dx * sd, yaw, tilt]);
-          for (let h = 0.9; h < TOPY - 0.6 - Y0; h += 0.9) {
-            const k = h / (TOPY - 0.6 - Y0), r = RB + (RT - RB) * k;
-            rungs.push([mx + dx * r, Y0 + h, mz + dz * r, yaw]);
-          }
-        });
-        const halo = new Sprite(new SpriteMaterial({ map: htx, transparent: true, depthWrite: false, blending: AdditiveBlending }));
-        halo.position.set(mx, TOPY + 1, mz); halo.scale.set(16, 16, 1); halo.visible = false; halo.userData = { noPick: true }; MG.add(halo); halos.push(halo);
-      }
-      {
-        const mm = new Matrix4(), q = new Quaternion(), e = new Euler(), vp = new Vector3(), vs = new Vector3(1, 1, 1);
-        const rI = new InstancedMesh(new BoxGeometry(0.14, railLen, 0.14), M2.cedar, rails.length);
-        rails.forEach(([x, y, z, yaw, t], i) => { e.set(0, 0, 0); q.setFromEuler(e.set(-t, yaw, 0, "YXZ")); mm.compose(vp.set(x, y, z), q, vs); rI.setMatrixAt(i, mm); });
-        const gI = new InstancedMesh(new BoxGeometry(1.0, 0.09, 0.09), M2.cedar, rungs.length);
-        rungs.forEach(([x, y, z, yaw], i) => { q.setFromEuler(e.set(0, yaw, 0, "YXZ")); mm.compose(vp.set(x, y, z), q, vs); gI.setMatrixAt(i, mm); });
-        for (const im of [rI, gI]) { im.instanceMatrix.needsUpdate = true; im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; MG.add(im); }
-      }
-      // the sixteen young priests, each in a group of his own (it climbs); his face to the shaft, a jar in his hands
       const jarG = new LatheGeometry([[0, 0], [0.16, 0], [0.24, 0.12], [0.25, 0.34], [0.14, 0.52], [0.1, 0.6], [0.13, 0.66], [0, 0.66]].map(([r, y]) => new Vector2(r, y)), 12);
       const jarM = new MeshStandardMaterial({ color: 0xb06a3c, roughness: 0.85 });
-      const YS = 1.3, YOUTHS = [];
-      try {
-        const PPy = tm_people(ctx2);
-        SPOTS.forEach(([mx, mz], si) => DIRS.forEach(([dx, dz], di) => {
-          const G = new Group();
-          // SIMCHA_POUR_214 (the user, 16.11.2026 17:23: "השפיכה מאבדת את הכן ושוכפת החוצה"): he climbs ON the ladder, 0.22 out from its
-          // rungs all the way, and stops on its highest rung (TOPY - 1.3; until 2.0.13 he went up 0.6..0.7 out from it, in the air, and
-          // stopped 3 under the cups' arms - his head at the cup's level and the jar under its rim): the cup at his waist, the jar at his chest
-          const foot = [mx + dx * (RB + 0.22), Y0, mz + dz * (RB + 0.22)], top = [mx + dx * (RT + 0.26), TOPY - 1.3, mz + dz * (RT + 0.26)];
-          G.position.set(foot[0], foot[1], foot[2]);
-          G.rotation.y = Math.atan2(-dx, -dz);   // his face to the shaft
-          MG.add(G);
-          PPy.crowd(G, [[0, 0, 0]], { y: 0, s: YS, pose: "stand", kind: "kohen", robe: 0xf1ede2, young: true, exact: true, name: "pirchaKehunah" });   // YOUNG_300: "ארבעה ילדים מפרחי כהנה" - dark hair, a short beard (until 2.0.18 white and grey too)
-          const jar = new Mesh(jarG, jarM); jar.position.set(0, 1.05 * YS, 0.36 * YS); jar.castShadow = true; G.add(jar);
-          // the oil's stream from the jar's mouth into the cup (SIMCHA_POUR_214): a thin rod, set every frame of the pouring
-          const run = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true).translate(0, -0.5, 0), oilM); run.visible = false; run.userData.noPick = true; MG.add(run);
-          YOUTHS.push({ G, jar, foot, top, cup: si * 4 + di, run, cx: mx + dx * CUPR, cz: mz + dz * CUPR });
-        }));
-      } catch (_) {}
-      // NOTE 4 (the understandability review, U-42): the two labels were a few pixels high in the place's view - twice their size; and
-      // the demonstration explains itself, as every other one, with captions in the Mishnah's words (Sukkah 5:2-3, 56:52-53), each shown
-      // while its part runs (the climb; the pouring and the lighting, seen near; the whole court lit, seen from afar)
-      ctx2.labels.push({ text: "״ומנורות של זהב היו שם, וארבעה ספלים של זהב בראשיהן״ (סוכה ה, ב)", x: 161, y: TOPY + 6.5, z: 0, size: 3.2, layer: "simchaMenorot" });
-      ctx2.labels.push({ text: "״גובהה של מנורה חמשים אמה״ (סוכה נב:)", x: 141, y: TOPY + 3.2, z: -20, size: 2.2, layer: "simchaMenorot" });
-      const CAPS = [[0, 8.5, "״וארבעה ילדים מפרחי כהנה, ובידיהם כדים של שמן של מאה ועשרים לג״ (סוכה ה, ב)", 161, TOPY - 6, 0, 3.0],
-                    [8.5, 15.8, "״שהן מטילין לכל ספל וספל״ (סוכה ה, ב)", 141, TOPY + 6.2, -20, 1.2],
-                    [15.8, 23.5, "״ולא היתה חצר בירושלים שאינה מאירה מאור בית השואבה״ (סוכה ה, ג)", 161, TOPY - 6, 0, 3.0]];
-      const capL = CAPS.map((c, i) => {
+      const YS = 1.3;
+      const LAMP = { at: "mid", form: "rashi" };
+      const SET = {};
+      const setKey = (at, form) => "simchaSet_" + at + "_" + form;
+      // the sets' groups (empty until first shown) - each a layer of its own, so that its labels show with it
+      for (const at of ["mid", "corner"]) for (const form of ["rashi", "ty"]) {
+        const G = new Group(); G.name = setKey(at, form); G.visible = at === "mid" && form === "rashi"; MG.add(G);
+        ctx2.layers[G.name] = G;
+        SET[G.name] = { G, at, form, built: false, flames: [], oils: [], halos: [], youths: [] };
+      }
+      const buildSet = (S) => {
+        if (S.built) return S;
+        S.built = true;
+        const F = FORM[S.form], CUPR = F.CUPR, RT = CUPR + 0.8, TOPY = F.TOPY, G = S.G;
+        const armG = new BoxGeometry(CUPR, 0.22 * (S.form === "ty" ? 0.6 : 1), 0.26 * (S.form === "ty" ? 0.6 : 1)); armG.translate(CUPR / 2, 0, 0);
+        const rails = [], rungs = [];
+        const railLen = Math.hypot(RB - RT, TOPY - 0.6 - Y0);
+        const tilt = Math.atan2(RB - RT, TOPY - 0.6 - Y0);
+        SPOT[S.at].forEach(([mx, mz], si) => {
+          if (S.form === "rashi") { const sh = new Mesh(shaftG, M2.gold); sh.position.set(mx, Y0, mz); sh.castShadow = true; sh.receiveShadow = true; G.add(sh); }
+          else {
+            // the stand: a square pillar of stone, its foot and its top wider (model choices), and the golden lamp on it
+            const st = H2.box(G, 2.4, F.HH - 1.4, 2.4, M2.stoneLight, mx, Y0 + 0.7, mz); st.castShadow = true;
+            H2.box(G, 3.8, 0.7, 3.8, M2.stone, mx, Y0, mz);
+            H2.box(G, 3.4, 0.7, 3.4, M2.stone, mx, Y0 + F.HH - 0.7, mz);
+            const lp = new Mesh(tyLampG, M2.gold); lp.position.set(mx, Y0 + F.HH, mz); lp.castShadow = true; G.add(lp);
+          }
+          const r0 = SROT[S.at][si], c0 = Math.cos(r0), s0 = Math.sin(r0);
+          [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([a, b]) => [a * c0 - b * s0, a * s0 + b * c0]).forEach(([dx, dz]) => {
+            const yaw = Math.atan2(dx, dz);
+            const arm = new Mesh(armG, M2.gold); arm.position.set(mx, TOPY - 0.35 * F.cupS, mz); arm.rotation.y = yaw - Math.PI / 2; G.add(arm);
+            const cx = mx + dx * CUPR, cz = mz + dz * CUPR;
+            const cup = new Mesh(cupG, M2.gold); cup.position.set(cx, TOPY - 0.3 * F.cupS, cz); cup.scale.setScalar(F.cupS); cup.castShadow = true; G.add(cup);
+            const oil = new Mesh(new CylinderGeometry(0.6 * F.cupS, 0.6 * F.cupS, 0.03, 16), oilM); oil.position.set(cx, TOPY + 0.12 * F.cupS, cz); oil.visible = false; G.add(oil); S.oils.push(oil);
+            const wick = new Mesh(new CylinderGeometry(0.09 * F.cupS, 0.11 * F.cupS, 0.5 * F.cupS, 8), wickM); wick.position.set(cx, TOPY + 0.2 * F.cupS, cz); G.add(wick);
+            // LIVE_FIRE_304: the cup burns with the altar's live fire (40-altar.js, ctx2.shared.liveFlame) - "הפתילה העבה ביותר והבעירוה"
+            // (the Tiferet Yisrael, 772:518); the soft sprite only where that fire is missing
+            const live = typeof SH.liveFlame === "function" ? SH.liveFlame(G, cx, TOPY + 0.42 * F.cupS, cz, 0.36 * F.cupS, 1.3 * F.cupS, 1.0) : null;
+            const fl = live || new Sprite(new SpriteMaterial({ map: ftx, transparent: true, depthWrite: false, blending: AdditiveBlending }));
+            if (!live) { fl.position.set(cx, TOPY + 1.25 * F.cupS, cz); fl.scale.set(0.9 * F.cupS, 1.8 * F.cupS, 1); fl.renderOrder = 9; G.add(fl); }
+            fl.visible = false; fl.userData.noPick = true; fl.userData.ph = S.flames.length * 1.3; fl.userData.k = F.cupS; S.flames.push(fl);
+            // the ladder in the plane of the shaft and this cup, its foot RB from the shaft, its head just under the cup
+            const ux = mx + dx * (RB + RT) / 2, uz = mz + dz * (RB + RT) / 2, uy = (Y0 + TOPY - 0.6) / 2;
+            for (const sd of [-0.5, 0.5]) rails.push([ux + dz * sd, uy, uz - dx * sd, yaw, tilt]);
+            for (let h = 0.9; h < TOPY - 0.6 - Y0; h += 0.9) {
+              const k = h / (TOPY - 0.6 - Y0), r = RB + (RT - RB) * k;
+              rungs.push([mx + dx * r, Y0 + h, mz + dz * r, yaw]);
+            }
+            S.youthSpots = S.youthSpots || [];
+            S.youthSpots.push([mx, mz, dx, dz, si, cx, cz]);
+          });
+          const halo = new Sprite(new SpriteMaterial({ map: htx, transparent: true, depthWrite: false, blending: AdditiveBlending }));
+          halo.position.set(mx, TOPY + 1, mz); halo.scale.set(16, 16, 1); halo.visible = false; halo.userData = { noPick: true }; G.add(halo); S.halos.push(halo);
+        });
+        {
+          const mm = new Matrix4(), q = new Quaternion(), e = new Euler(), vp = new Vector3(), vs = new Vector3(1, 1, 1);
+          const rI = new InstancedMesh(new BoxGeometry(0.14, railLen, 0.14), M2.cedar, rails.length);
+          rails.forEach(([x, y, z, yaw, t], i) => { e.set(0, 0, 0); q.setFromEuler(e.set(-t, yaw, 0, "YXZ")); mm.compose(vp.set(x, y, z), q, vs); rI.setMatrixAt(i, mm); });
+          const gI = new InstancedMesh(new BoxGeometry(1.0, 0.09, 0.09), M2.cedar, rungs.length);
+          rungs.forEach(([x, y, z, yaw], i) => { q.setFromEuler(e.set(0, yaw, 0, "YXZ")); mm.compose(vp.set(x, y, z), q, vs); gI.setMatrixAt(i, mm); });
+          for (const im of [rI, gI]) { im.instanceMatrix.needsUpdate = true; im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; G.add(im); }
+        }
+        // the sixteen young priests, each in a group of his own (it climbs); his face to the shaft, a jar in his hands
+        try {
+          const PPy = tm_people(ctx2);
+          S.youthSpots.forEach(([mx, mz, dx, dz, si, cx, cz], k) => {
+            const YG = new Group();
+            // SIMCHA_POUR_214 (the user, 16.11.2026 17:23: "השפיכה מאבדת את הכן ושוכפת החוצה"): he climbs ON the ladder, 0.22 out from its
+            // rungs all the way, and stops on its highest rung (TOPY - 1.3): the cup at his waist, the jar at his chest
+            const foot = [mx + dx * (RB + 0.22), Y0, mz + dz * (RB + 0.22)], top = [mx + dx * (RT + 0.26), TOPY - 1.3, mz + dz * (RT + 0.26)];
+            YG.position.set(foot[0], foot[1], foot[2]);
+            YG.rotation.y = Math.atan2(-dx, -dz);   // his face to the shaft
+            G.add(YG);
+            PPy.crowd(YG, [[0, 0, 0]], { y: 0, s: YS, pose: "stand", kind: "kohen", robe: 0xf1ede2, young: true, avnet: false, exact: true, name: "pirchaKehunah" });   // YOUNG_300: "ארבעה ילדים מפרחי כהנה" - dark hair, a short beard (until 2.0.18 white and grey too); fix-b2 (the user's decision 68 (1)): priestly garments without the sash (avnet: false - the kit's, fix-a2)
+            const jar = new Mesh(jarG, jarM); jar.position.set(0, 1.05 * YS, 0.36 * YS); jar.castShadow = true; YG.add(jar);
+            // the oil's stream from the jar's mouth into the cup (SIMCHA_POUR_214): a thin rod, set every frame of the pouring
+            const run = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true).translate(0, -0.5, 0), oilM); run.visible = false; run.userData.noPick = true; G.add(run);
+            S.youths.push({ G: YG, jar, foot, top, cup: k, run, cx, cz });
+          });
+        } catch (_) {}
+        S.TOPY = TOPY;
+        return S;
+      };
+      // NOTE 4 (the understandability review, U-42): the labels twice their size; and the demonstration explains itself with captions in
+      // the Mishnah's words (Sukkah 5:2-3, 56:52-53), each shown while its part runs. SIMCHA_LAMPS_B2: each set has its own (its layer)
+      const CAPT = ["״וארבעה ילדים מפרחי כהנה, ובידיהם כדים של שמן של מאה ועשרים לג״ (סוכה ה, ב)", "״שהן מטילין לכל ספל וספל״ (סוכה ה, ב)", "״ולא היתה חצר בירושלים שאינה מאירה מאור בית השואבה״ (סוכה ה, ג)"];
+      const CAPT_T = [[0, 8.5], [8.5, 15.8], [15.8, 23.5]];
+      const capL = CAPT.map((c, i) => {
         const gr = new Group(); gr.visible = false; MG.add(gr);
-        ctx2.layers = ctx2.layers || {}; ctx2.layers["simchaCap" + i] = gr;
-        ctx2.labels.push({ text: c[2], x: c[3], y: c[4], z: c[5], size: c[6], layers: ["simchaMenorot", "simchaCap" + i] });
+        ctx2.layers["simchaCap" + i] = gr;
         return gr;
       });
-      const caps = (t) => CAPS.forEach((c, i) => { capL[i].visible = t >= c[0] && t < c[1]; });
+      for (const k in SET) {
+        const S = SET[k], F = FORM[S.form], TOPY = F.TOPY, [x0, z0] = SPOT[S.at][0];
+        ctx2.labels.push({ text: "״ומנורות של זהב היו שם, וארבעה ספלים של זהב בראשיהן״ (סוכה ה, ב)", x: 161, y: TOPY + 6.5, z: 0, size: 3.2, layers: ["simchaMenorot", k] });
+        ctx2.labels.push({ text: S.form === "rashi" ? "״גובהה של מנורה חמשים אמה״ (סוכה נב:)" : "״שהמנורות עומדות על כן גבוה נ׳ אמה״ (תפארת ישראל, סוכה ה, ג)", x: x0, y: TOPY + 3.2, z: z0, size: 2.2, layers: ["simchaMenorot", k] });
+        if (S.at === "corner") ctx2.labels.push({ text: "המנורות בלשכות שבפינות — ״שלא היה להן גג״ (בשם הגר״ח קניבסקי)", x: 161, y: TOPY + 11, z: 0, size: 2.4, layers: ["simchaMenorot", k] });
+        CAPT.forEach((c, i) => ctx2.labels.push(i === 1 ? { text: c, x: x0, y: TOPY + 6.2, z: z0, size: 1.2, layers: ["simchaMenorot", "simchaCap" + i, k] }
+                                                      : { text: c, x: 161, y: TOPY - 6, z: 0, size: 3.0, layers: ["simchaMenorot", "simchaCap" + i, k] }));
+      }
+      const caps = (t) => CAPT_T.forEach((c, i) => { capL[i].visible = t >= c[0] && t < c[1]; });
       // the demonstration's clock (seconds from the start): 0-1.5 stand, 1.5-11.5 climb, 11.5-13.5 pour, 13.5-14.5 the wicks catch, 14.5-23 down
       const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
       const D = { t0: -1, lit: false, held: -1, fl: 0 };
-      // SIMCHA_POUR_214: the jar is lifted to his chest before the pouring and tilted toward the cup: its mouth over the cup's middle,
-      // 0.45 above the rim, its lowest edge 0.12 above it; the oil runs from the mouth down into the cup. Until 2.0.13 the jar rose
-      // with him and was tilted beside the cup, under its rim, and no oil was seen.
+      let S = null;   // the set shown
+      const cur = () => {
+        const k = setKey(LAMP.at, LAMP.form);
+        if (!S || S.G.name !== k) {
+          if (S) resetSet(S);
+          S = buildSet(SET[k]);
+          for (const kk in SET) SET[kk].G.visible = kk === k;
+        }
+        return S;
+      };
+      // SIMCHA_POUR_214: the jar is lifted to his chest before the pouring and tilted toward the cup: its mouth over the cup's middle;
+      // the oil runs from the mouth down into the cup
       const _mo = new Vector3();
       const pose = (t) => {
+        const C = cur(), F = FORM[C.form];
         const up = ss(1.5, 11.5, t) * (1 - ss(14.5, 23, t)), pour = Math.sin(Math.PI * Math.max(0, Math.min(1, (t - 11.5) / 2)));
         const lift = ss(10.9, 11.5, t) * (1 - ss(13.5, 14.2, t));
-        for (const Y of YOUTHS) {
+        for (const Y of C.youths) {
           Y.G.position.set(Y.foot[0] + (Y.top[0] - Y.foot[0]) * up, Y.foot[1] + (Y.top[1] - Y.foot[1]) * up, Y.foot[2] + (Y.top[2] - Y.foot[2]) * up);
           Y.jar.rotation.x = 1.3 * pour;
           Y.jar.position.y = (1.05 + 0.36 * lift) * YS;
@@ -630,24 +685,23 @@
           if (Y.run.visible !== on) Y.run.visible = on;
           if (on) {
             Y.G.updateMatrixWorld(true);
-            Y.jar.localToWorld(_mo.set(0, 0.66, 0)); MG.worldToLocal(_mo);
-            const yb = TOPY + 0.12;   // the oil's face in the cup
+            Y.jar.localToWorld(_mo.set(0, 0.66, 0)); C.G.worldToLocal(_mo);
+            const yb = F.TOPY + 0.12 * F.cupS;   // the oil's face in the cup
             Y.run.position.copy(_mo);
             Y.run.scale.y = Math.max(0.05, _mo.y - yb);
           }
         }
-        oils.forEach((o) => { o.visible = t >= 12.3; });
+        C.oils.forEach((o) => { o.visible = t >= 12.3; });
         const lit = (i) => t >= 13.5 + (i % 4) * 0.25;
-        flames.forEach((f, i) => { f.visible = lit(i); });
-        halos.forEach((h, i) => { h.visible = t >= 13.6 + i * 0.15; });
+        C.flames.forEach((f, i) => { f.visible = lit(i); });
+        C.halos.forEach((h, i) => { h.visible = t >= 13.6 + i * 0.15; });
         caps(t);
       };
-      const reset = () => { caps(-1); D.t0 = -1; for (const Y of YOUTHS) { Y.G.position.set(Y.foot[0], Y.foot[1], Y.foot[2]); Y.jar.rotation.x = 0; Y.jar.position.y = 1.05 * YS; Y.run.visible = false; } oils.forEach((o) => { o.visible = false; }); flames.forEach((f) => { f.visible = false; }); halos.forEach((h) => { h.visible = false; }); };
-      // SIMCHA_STOP_211 (the function review, F1-06 / F1-07; U-50): the demonstration was not among the registered ones - no pause bar, a
-      // press on the model did not pause it, "מבט כללי" did not end it, and its two flights (set by the place's click, on timers) took
-      // the eye back to the lamps from wherever the viewer had gone, in the presentation too. Now: stop / pause / resume / restart,
-      // an entry in demoStops, and the two flights fired by the demonstration's own clock (so a stop or a pause holds them too).
-      const FLY = [[8.5, [152, 58, -7], [141, 51, -20]], [15.8, [215, 60, 80], [161, 30, 0]]];
+      const resetSet = (C) => { for (const Y of C.youths) { Y.G.position.set(Y.foot[0], Y.foot[1], Y.foot[2]); Y.jar.rotation.x = 0; Y.jar.position.y = 1.05 * YS; Y.run.visible = false; } C.oils.forEach((o) => { o.visible = false; }); C.flames.forEach((f) => { f.visible = false; }); C.halos.forEach((h) => { h.visible = false; }); };
+      const reset = () => { caps(-1); D.t0 = -1; resetSet(cur()); };
+      // SIMCHA_STOP_211 (the function review, F1-06 / F1-07; U-50): stop / pause / resume / restart, an entry in demoStops, and the two
+      // flights fired by the demonstration's own clock. SIMCHA_LAMPS_B2: the first flight goes to the first lamp of the set shown
+      const FLY = [[8.5, () => { const C = cur(), [x0, z0] = SPOT[C.at][0], T = FORM[C.form].TOPY; return [[x0 + 11, T + 3, z0 + 13], [x0, T - 4, z0]]; }], [15.8, () => [[215, 60, 80], [161, 30, 0]]]];
       SH.simchaDemo = {
         start() { if (!MG.visible) MG.visible = true; reset(); D.held = -1; D.fl = 0; D.t0 = performance.now() / 1000; },
         running() { return D.t0 >= 0; },
@@ -660,19 +714,35 @@
         clear() { D.held = -1; D.fl = 0; reset(); },
         tex: { flame: ftx, halo: htx }
       };
+      // SIMCHA_LAMPS_B2: the place and the form. at(): "mid" | "corner"; spots(): the four lamps' [x, z]; topY(): the cups' height
+      SH.simchaLamps = {
+        get at() { return LAMP.at; }, get form() { return LAMP.form; },
+        spots() { return SPOT[LAMP.at].map((p) => p.slice()); },
+        topY() { return FORM[LAMP.form].TOPY; },
+        set(o) {
+          if (o && (o.at === "mid" || o.at === "corner")) LAMP.at = o.at;
+          if (o && (o.form === "rashi" || o.form === "ty")) LAMP.form = o.form;
+          const run = D.t0 >= 0;
+          cur();
+          if (!run) resetSet(S);
+          if (ctx2.requestRender) ctx2.requestRender();
+          return { at: LAMP.at, form: LAMP.form };
+        }
+      };
       (SH.demoStops || (SH.demoStops = [])).push({ id: "simcha-lamps", running: () => SH.simchaDemo.running(), stop: () => SH.simchaDemo.stop(),
         pause: () => SH.simchaDemo.pause(), resume: () => SH.simchaDemo.resume(), paused: () => SH.simchaDemo.paused(), restart: () => SH.simchaDemo.start() });
       SH.features = SH.features || {};
-      SH.features.simchaMenorot = { key: "simchaMenorot", timed: false, isOn: () => MG.visible, on: () => { MG.visible = true; }, off: () => { MG.visible = false; reset(); } };
+      SH.features.simchaMenorot = { key: "simchaMenorot", timed: false, isOn: () => MG.visible, on: () => { MG.visible = true; cur(); }, off: () => { MG.visible = false; reset(); } };
       if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => {
         if (!MG.visible) return;
+        const C = cur();
         const now = performance.now() / 1000;
         if (D.t0 >= 0 && D.held < 0) {
           const t = now - D.t0; pose(t);
-          while (D.fl < FLY.length && t >= FLY[D.fl][0]) { const f = FLY[D.fl++]; try { if (typeof ctx2.flyTo === "function") ctx2.flyTo(f[1], f[2], 1600); } catch (_) {} }
+          while (D.fl < FLY.length && t >= FLY[D.fl][0]) { const f = FLY[D.fl++][1](); try { if (typeof ctx2.flyTo === "function") ctx2.flyTo(f[0], f[1], 1600); } catch (_) {} }
           if (t > 23.5) { D.t0 = -1; caps(-1); }
         }
-        for (const f of flames) if (f.visible && f.isSprite) { const k = 0.85 + 0.15 * Math.sin(now * 9 + f.userData.ph) + 0.06 * Math.sin(now * 23 + f.userData.ph * 2); f.scale.set(0.9 * k, 1.8 * (0.9 + 0.2 * k), 1); }
+        for (const f of C.flames) if (f.visible && f.isSprite) { const kk = f.userData.k || 1, k = 0.85 + 0.15 * Math.sin(now * 9 + f.userData.ph) + 0.06 * Math.sin(now * 23 + f.userData.ph * 2); f.scale.set(0.9 * k * kk, 1.8 * (0.9 + 0.2 * k) * kk, 1); }
       });
     }
     // ---------- SHILOACH_305 (the user, 20.11.2026 01:21: "אתה יכול להוסיף את מעיין השילוח [איך היו מגיעים לשם"; 01:25: "1. א 2. זו ----------
@@ -1206,7 +1276,10 @@
         if (rid) { if (r <= 0.5) return 13.5; if (r >= 7.5) return Y0; return Y0 + 0.5 * (16 - Math.ceil(r / 0.5)); }
         if (r <= 15) return 13.5; if (r >= 22) return Y0; return Y0 + 0.5 * Math.min(15, Math.floor((22 - r) / 0.5) + 1);
       };
-      const SPOTS = [[141, -20], [181, -20], [141, 20], [181, 20]];   // the golden lamps (above)
+      // the golden lamps (above) - SIMCHA_LAMPS_B2: where they stand now (in the court, or in the corner chambers with the roofing "in the
+      // name of Rav Chaim Kanievsky"); the crowd is laid out round them, and laid out again when they move (B.crowdKey)
+      const lampSpots = () => (SH.simchaLamps && typeof SH.simchaLamps.spots === "function" ? SH.simchaLamps.spots() : [[141, -20], [181, -20], [141, 20], [181, 20]]);
+      const lampKey = () => JSON.stringify(lampSpots()) + "|" + (SH.eznRoof && SH.eznRoof.on ? "r" : "");
       const DR = 8.2, NDANCE = 14;
       // ---- MUSICIANS_305 (the user, 21:08: "צריך גם לעשות את הלוויים מנגנים... אם הם מנגנים, לא יכולים לעמוד כמו פסלים"; 21:10:
       // "ידיים של הכוהנים תופסות את החצוצרה, אי אפשר בלי"): THE MUSICIANS' KIT. A musician is a figure of tm_people without its own
@@ -1225,15 +1298,17 @@
           q.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
           return q;
         };
-        // the lyre (כנור): a sound-box below, two arms out and up, the yoke across them, five strings - in its own plane (x, y)
+        // the lyre (כנור): a sound-box below, two arms out and up, the yoke across them, seven strings - in its own plane (x, y) (fix-b2,
+        // 22.11.2026: seven, "כנור של מקדש של שבעה נימין היה" - Arachin 13b; five until now)
         const G = {
           lyre: [mergeGeometries([new BoxGeometry(0.27, 0.085, 0.06).translate(0, 0.0425, 0), cyl(0.016, 0.013, [0.1, 0.06, 0], [0.155, 0.37, 0]),
             cyl(0.016, 0.013, [-0.1, 0.06, 0], [-0.155, 0.37, 0]), cyl(0.014, 0.014, [-0.18, 0.345, 0], [0.18, 0.345, 0])]),
-            mergeGeometries([-2, -1, 0, 1, 2].map((k) => cyl(0.0025, 0.0025, [k * 0.035, 0.085, 0.012], [k * 0.042, 0.335, 0.012], 3)))],
-          // the harp (נבל): its pillar, the neck over it, the sound-box along its foot, seven strings
+            mergeGeometries([-3, -2, -1, 0, 1, 2, 3].map((k) => cyl(0.0025, 0.0025, [k * 0.03, 0.085, 0.012], [k * 0.036, 0.335, 0.012], 3)))],
+          // the harp (נבל): its pillar, the neck over it, the sound-box along its foot, ten strings (fix-b2, 22.11.2026 - the user's
+          // decision 66: "בנבל עשור" (Psalms 33:2), ten in every place; seven until now)
           harp: [mergeGeometries([new BoxGeometry(0.045, 0.56, 0.055).translate(0, 0.28, 0), new BoxGeometry(0.33, 0.045, 0.05).translate(0.165, 0.545, 0),
             new BoxGeometry(0.36, 0.09, 0.08).translate(0.18, 0.045, 0)]),
-            mergeGeometries([1, 2, 3, 4, 5, 6, 7].map((k) => cyl(0.0022, 0.0022, [k * 0.042, 0.09, 0], [k * 0.042, 0.52, 0], 3)))],
+            mergeGeometries([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((k) => cyl(0.0022, 0.0022, [k * 0.0305, 0.09, 0], [k * 0.0305, 0.52, 0], 3)))],
           cym: [new CylinderGeometry(0.13, 0.13, 0.016, 16).rotateZ(Math.PI / 2)],   // a cymbal: its face across x (the two meet)
           // a trumpet (חצוצרה): from the mouthpiece (the origin) forward along +z, the bell at its end
           tru: [mergeGeometries([cyl(0.017, 0.021, [0, 0, 0], [0, 0, 0.86], 8), new ConeGeometry(0.095, 0.2, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 0.96)])],
@@ -1369,12 +1444,17 @@
         //      the lesser Sanhedrin's chamber and the four chambers. In cells of 13 amot, three crowds each (men; youths; children),
         //      their plainer levels sooner than the kit's (lodK 2.2: PEOPLE_LOD_304)
         const crowdG = new Group(); crowdG.name = "simchaCrowd"; DG.add(crowdG);
+        const fillCrowd = () => {   // SIMCHA_LAMPS_B2: the people's layout, again when the lamps have moved
+        for (let i = crowdG.children.length - 1; i >= 0; i--) crowdG.remove(crowdG.children[i]);
+        const SPOTS = lampSpots(), COLS = SH.eznRoof && SH.eznRoof.on && Array.isArray(SH.eznRoof.cols) ? SH.eznRoof.cols : [];
+        B.crowdKey = lampKey();
         const free = (x, z) => {
           if (x < 97.5 || x > 224.6 || z < -63.6 || z > 63.6) return false;   // the walls
           if ((x < 134.8 || x > 187.2) && Math.abs(z) > 26.3) return false;   // the four chambers in the corners (the default)
           if (x > 115.8 && x < 137.6 && z > -28.6 && z < -13.2) return false;   // the lesser Sanhedrin "על פתח העזרה" (30-courts.js)
           if (Math.hypot(x - 96, z) < 24.6) return false;                      // the steps and the Levites on them
           for (const [mx, mz] of SPOTS) if (Math.hypot(x - mx, z - mz) < 8.4) return false;   // the lamps, their ladders, the young priests
+          for (const [cx, cz] of COLS) if (Math.hypot(x - cx, z - cz) < 1.9) return false;   // the roof's columns (the roofing "in the name of Rav Chaim Kanievsky")
           if (Math.hypot(x - CXc, z) < 14.6) return false;                     // the dancers
           if (Math.abs(z) < 3.4 && x > 112) return false;                      // the way of the two priests to the east gate
           for (const [fx, fz] of [[121.6, -6], [121.6, 6]]) if (Math.hypot(x - fx, z - fz) < 2.6) return false;   // the two flutes (MUSICIANS_305: 2.6, 1.6 until 2.0.13 - one stood before each)
@@ -1407,6 +1487,9 @@
           ci++;
         }
         B.nPeople = nPeople;
+        };
+        B.fillCrowd = fillCrowd;
+        fillCrowd();
         // ---- the dancers: "חסידים ואנשי מעשה" - elders, grey and white; each a figure of his own, with a torch (two of them throw four)
         for (let i = 0; i < NDANCE; i++) {
           const G = new Group(); DG.add(G);
@@ -1671,6 +1754,7 @@
         stop();
         if (fnc(SH.stopDemos)) { try { SH.stopDemos("simcha-shoeva"); } catch (_) {} }
         build();
+        if (B && B.crowdKey !== lampKey() && typeof B.fillCrowd === "function") B.fillCrowd();   // SIMCHA_LAMPS_B2
         const lg = ctx2.scene && ctx2.scene.getObjectByName("labels"), FM = SH.features && SH.features.simchaMenorot;
         D.saved = { labels: lg ? lg.visible : null, lamps: !!(FM && FM.isOn()), night: !!(SH.nightKit && SH.nightKit.begin()) };
         if (lg) lg.visible = false;

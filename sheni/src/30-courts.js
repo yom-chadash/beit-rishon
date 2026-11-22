@@ -124,7 +124,10 @@
     // (CIH: x 76.5..82.5, z -7..25 - the altar's 32 in its default place), closed by a plug in the default reading - see THE DUCHAN'S
     // CHAMBER below
     const CIH = { x: 79.5, z: 9, w: 6, d: 32 };
-    herodFloor.push(...boxHoles(g, 176, 2.65, 135, M2.pave, -5.5, 13.35, 0, [MPIT, KPIT, CIH]));
+    // GAZIT_FLOOR_B2 (fix-b2, 22.11.2026 - the user's decision 75): the Gazit hall's floor is the court of Israel's (13.5) - so the priests'
+    // court's slab is open under the hall's part in the court (x 69..82.5, z -67.5..-56; the hall itself - below)
+    const GZH = { x: 75.75, z: -61.75, w: 13.5, d: 11.5 };
+    herodFloor.push(...boxHoles(g, 176, 2.65, 135, M2.pave, -5.5, 13.35, 0, [MPIT, KPIT, CIH, GZH]));
     const ciPlug = H2.box(g, CIH.w, 2.65, CIH.d, M2.pave, CIH.x, 13.35, CIH.z);
     herodFloor.push(ciPlug);
     for (const m of herodFloor) {
@@ -586,8 +589,15 @@
         if ((spr.userData && spr.userData.label === l) || (Math.abs(spr.position.x - o[0]) < 1e-3 && Math.abs(spr.position.y - o[1]) < 1e-3 && Math.abs(spr.position.z - o[2]) < 1e-3)) { spr.position.set(l.x, l.y, l.z); break; }
       }
     };
+    // OIL_DOORS_B2 (fix-b2, 22.11.2026 - the user's decision 78, after question 78): THE CHAMBER OF THE OILS HAS TWO DOORS, ONE OPPOSITE THE
+    // OTHER - "חוץ מלשכת היין ושמן שיש להם שני פתחים זו כנגד זו. אבא שאול היה קורא אותה לשכת בית שמניא" (the Tosefta, Yoma 1:3; 194:4): a
+    // door in its NORTH wall, to the women's court, and opposite it a door in its SOUTH wall - the court's outer wall - to the chel, with
+    // twelve steps down to the chel's floor. Its door in the east wall (until now) is closed, and its shelves leave an aisle from door to
+    // door (OIL_SHELVES_210, below). The doors' places, size and the steps - model choices. In the Rosh's reading (the chambers outside)
+    // the chamber is open to the court on its north side, and its south door is not drawn.
+    const OILX = 123.25;   // the aisle's middle (x 121..125.5)
     for (const c of chambers) {
-      const cx = c.x0 + 20, cz = c.z0 + 20, zPlain = c.z0 > 0 ? 27.5 : -27.5;
+      const cx = c.x0 + 20, cz = c.z0 + 20, zPlain = c.z0 > 0 ? 27.5 : -27.5, oil = c.prop === "jars";
       H2.wall(eznChIn, {
         axis: "z",
         length: 40,
@@ -597,10 +607,25 @@
         cx: c.xw,
         cz,
         y: 6,
-        openings: [{ center: 0, width: 6, height: 9 }]   // 1.1.0: rectangular (Middot 2:3: every opening had a lintel), was arched
+        openings: oil ? [] : [{ center: 0, width: 6, height: 9 }]   // 1.1.0: rectangular (Middot 2:3: every opening had a lintel), was arched; OIL_DOORS_B2: none in the oil chamber's east wall
       });
-      H2.box(eznChIn, 3.2, 0.9, 8.4, M2.stoneSmooth, c.xw, 15, cz);   // its lintel
-      H2.box(eznChIn, 40, 12, 2.5, M2.stoneLight, cx, 6, zPlain);
+      if (!oil) H2.box(eznChIn, 3.2, 0.9, 8.4, M2.stoneSmooth, c.xw, 15, cz);   // its lintel
+      if (!oil) H2.box(eznChIn, 40, 12, 2.5, M2.stoneLight, cx, 6, zPlain);
+      else {
+        // OIL_DOORS_B2: the north wall with its door (4.5 wide, 9 high), its lintel; the south door through the court's wall (5 thick) -
+        // drawn on its two faces - and the twelve steps outside it, down to the chel
+        H2.wall(eznChIn, { axis: "x", length: 40, height: 12, thickness: 2.5, mat: M2.stoneLight, cx, cz: zPlain, y: 6, openings: [{ center: OILX - cx, width: 4.5, height: 9 }] });
+        H2.box(eznChIn, 6.2, 0.9, 3.2, M2.stoneSmooth, OILX, 15, zPlain);
+        const dk = new MeshBasicMaterial({ color: 0x15100b });
+        for (const [zf, ry] of [[64.98, Math.PI], [70.02, 0]]) {
+          const d = new Mesh(new PlaneGeometry(4.5, 9), dk); d.position.set(OILX, 10.5, zf); d.rotation.y = ry; d.userData.noPick = true; eznChIn.add(d);
+        }
+        for (const zf of [64.9, 70.1]) for (const sd of [-1, 1]) H2.box(eznChIn, 0.5, 9.4, 0.25, M2.stoneSmooth, OILX + sd * 2.5, 6, zf);
+        for (const zf of [64.9, 70.1]) H2.box(eznChIn, 5.5, 0.6, 0.25, M2.stoneSmooth, OILX, 15, zf);
+        stairsR(eznChIn, { width: 4.5, totalRise: 6, steps: 12, dir: "N", x: OILX, y: 0, z: 76, tread: 0.5 });
+        ctx2.layers.eznChIn = eznChIn;
+        ctx2.labels.push({ text: "״שני פתחים זו כנגד זו״ — לשכת בית שמניא (תוספתא יומא א, ג)", x: OILX, y: 17.4, z: 29, size: 1.2, layer: "eznChIn" }, { text: "הפתח השני — אל החיל", x: OILX, y: 17, z: 71.5, size: 1.2, layer: "eznChIn" });
+      }
       const g = new Group();   // 1.9.3: the chamber's own group - everything below is built into it (the court's group is gCourts)
       gCourts.add(g);
       eznProps[c.name] = g;
@@ -857,19 +882,24 @@
           g.add(j);
           H2.cyl(g, 0.2, 0.2, 0.03, wineMat, cx - 7 + i * 1.5, 7.18, cz + 6.5);
         }
-        H2.box(g, 6.4, 1.1, 1.6, M2.stoneSmooth, cx + 5, 6, cz + 5.6);   // the measures' table
+        const TX = cx + 0.5, TZ = cz + 2.6;   // OIL_DOORS_B2: the measures' table out of the aisle (cx + 5, cz + 5.6 until now)
+        H2.box(g, 6.4, 1.1, 1.6, M2.stoneSmooth, TX, 6, TZ);   // the measures' table
         const MEAS = [[1], [1 / 2], [1 / 3], [1 / 4], [1 / 12], [1 / 24], [1 / 48]];
         MEAS.forEach(([v], i) => {
           const k = Math.cbrt(v), r = 0.34 * k, h = 0.7 * k;
-          H2.lathe(g, [[0, 0], [r, 0], [r, h], [r * 0.92, h]], M2.bronze, cx + 2.35 + i * 0.85, 7.1, cz + 5.6, 14);
+          H2.lathe(g, [[0, 0], [r, 0], [r, h], [r * 0.92, h]], M2.bronze, TX - 2.65 + i * 0.85, 7.1, TZ, 14);
         });
         {
           const X0 = c.x0, Z0 = c.z0;   // the chamber's corner (93.5, 27.5); inside: x 96..132.2, z 28.8..65
           // [along "x" | "z", from, to, the other coordinate, depth, sides (1 | 2), the facing (+1 | -1: where the jugs' row stands), tiers]
+          // OIL_DOORS_B2: the aisle now runs from the north door to the south door (x 121..125.5): the racks along the north and the south
+          // walls and the free-standing ones stop short of it, and the east wall's rack runs whole (its door is closed)
+          const A0 = OILX - 2.6 - X0, A1 = OILX + 2.6 - X0;
           const RACKS = [
-            ["z", Z0 + 3, Z0 + 36, X0 + 3.7, 1.4, 1, 1, 5], ["x", X0 + 5.5, X0 + 37, Z0 + 2.4, 1.4, 1, 1, 5], ["x", X0 + 5.5, X0 + 37, Z0 + 36.6, 1.4, 1, -1, 5],
-            ["z", Z0 + 4.5, Z0 + 15.5, X0 + 37.8, 1.4, 1, -1, 5], ["z", Z0 + 24.5, Z0 + 34.5, X0 + 37.8, 1.4, 1, -1, 5],
-            ["x", X0 + 7.5, X0 + 34.5, Z0 + 7.7, 2, 2, 0, 4], ["x", X0 + 7.5, X0 + 34.5, Z0 + 12.7, 2, 2, 0, 4], ["x", X0 + 7.5, X0 + 34.5, Z0 + 32.1, 2, 2, 0, 4]
+            ["z", Z0 + 3, Z0 + 36, X0 + 3.7, 1.4, 1, 1, 5], ["x", X0 + 5.5, X0 + A0, Z0 + 2.4, 1.4, 1, 1, 5], ["x", X0 + A1, X0 + 37, Z0 + 2.4, 1.4, 1, 1, 5],
+            ["x", X0 + 5.5, X0 + A0, Z0 + 36.6, 1.4, 1, -1, 5], ["x", X0 + A1, X0 + 37, Z0 + 36.6, 1.4, 1, -1, 5],
+            ["z", Z0 + 4.5, Z0 + 34.5, X0 + 37.8, 1.4, 1, -1, 5],
+            ["x", X0 + 7.5, X0 + A0 - 0.5, Z0 + 7.7, 2, 2, 0, 4], ["x", X0 + 7.5, X0 + A0 - 0.5, Z0 + 12.7, 2, 2, 0, 4], ["x", X0 + 7.5, X0 + A0 - 0.5, Z0 + 32.1, 2, 2, 0, 4]
           ];
           const TIER = 1.4, BOARD = 0.1, STEP = 0.8;
           const boards = [], jugs = [];
@@ -941,7 +971,7 @@
         lbl("״שם היו נותנין יין ושמן״", cx, 12, cz, 1.4);
         lbl("חביות קטנות של יין — ״ואינו ממלא את החביות עד פיהם״", cx - 3.3, 8.8, cz + 6.5, 1.0);
         lbl("מדפים מלאים כדי שמן", cx, 13.2, cz - 10.2, 1.2);
-        lbl("שבע מדות של לח — הין עד רביעית לג", cx + 5, 8.7, cz + 5.6, 1.0);
+        lbl("שבע מדות של לח — הין עד רביעית לג", cx + 0.5, 8.7, cz + 2.6, 1.0);   // OIL_DOORS_B2: over the table's new place
       }
       eznLbl[c.name] = ctx2.labels.slice(l0);
     }
@@ -1718,12 +1748,19 @@
       // stays by the opening (the strip |z| > |cz| + 2.25 there is taken by the corner chamber's partition); the Levite at the pegs.
       const xW = KDEEP.x0 + 1.2, xE = KDEEP.x1;   // the west wall's inner face; the opening
       const tmp = new Group();   // LOAD_211: the instruments are built here and baked into two meshes (wood, strings)
-      H2.box(g, 0.2, 0.2, 5.6, M2.cedar, xW + 0.1, y + 3.05, cz);                             // the pegs' board along the west wall
+      // MALBEN_B2 (fix-b2, 22.11.2026 - the user's decision 30): instead of the pegs on the wall, "מלבני בני לוי" (Kelim 18:3, 91:162 -
+      // "ומלבני בני לוי טהורין"); the Rambam's commentary there (558:316): "עץ מרובע ארוך מורכב על שני נצבים (על זאת הצורה) יתלו בו הלוים
+      // מיני הכלים אשר יאמר עליהן השיר בכל יום". A square beam on two uprights, standing along the west wall; the lyres hang from it on
+      // short hooks. Its length, height and distance from the wall - model choices.
+      const xM = xW + 0.55;
+      for (const sd of [-1, 1]) H2.box(g, 0.2, 3.2, 0.2, M2.cedar, xM, y, cz + sd * 2.95);         // the two uprights ("שני נצבים")
+      H2.box(g, 0.22, 0.22, 6.3, M2.cedar, xM, y + 2.98, cz);                                    // the long square beam ("עץ מרובע ארוך")
       for (let i = 0; i < 6; i++) {
         const z = cz - 2.125 + i * 0.85;
-        H2.box(g, 0.32, 0.06, 0.06, M2.cedar, xW + 0.3, y + 3.0, z);                           // a peg
-        const k = lyreG(); k.position.set(xW + 0.45, y + 1.75, z); k.rotation.z = -0.08; tmp.add(k);
+        H2.box(g, 0.05, 0.12, 0.05, M2.bronze, xM, y + 2.86, z);                               // a hook
+        const k = lyreG(); k.position.set(xM, y + 1.7, z); k.rotation.z = -0.03; tmp.add(k);
       }
+      lbl("מלבן בני לוי — ״עץ מרובע ארוך מורכב על שני נצבים״ (רמב״ם, פירוש המשניות כלים יח, ג)", xM + 0.6, y + 4.3, cz, 0.75);
       for (const dx of [4.2, 7.0]) { const k = harpG(); k.position.set(xW + dx, y, inZ(2.3)); k.rotation.y = sg > 0 ? 0 : Math.PI; tmp.add(k); }   // two harps by the long wall on the steps' side
       bake211(tmp, g);
       // a table with the cymbals - two pairs - by the opening
@@ -2662,7 +2699,12 @@
     // Sanhedrin 4:3 (half a threshing-floor so that they see each other; two judges' scribes stand before them, one right one left).
     // MODEL CHOICES (no source): hall size 22x16 inside, wall thickness 2, floor at 16, tier heights, 5 rows, door places and sizes, figures.
     {
-      const stone = M2.stoneLight, FY = 16;
+      // GAZIT_FLOOR_B2 (fix-b2, 22.11.2026 - the user's decision 75): the hall's floor at 13.5 - the court of Israel's level - and 27 steps
+      // of half an amah up to it from the chel, as the booklet "אלחנן וחיים עולים לירושלים" draws it (D188); until now 16 (the priests'
+      // court) and 32 steps. Its door to the holy moves east with it, over the court of Israel (x 87..89.5, still in the hall's east half,
+      // the Meiri's), so that it opens on a floor of its own height. (The payis demonstration reads the floor - ctx2.shared.gazitFloor.)
+      const stone = M2.stoneLight, FY = 13.5;
+      ctx2.shared.gazitFloor = FY;
       const wb = (x0, x1, y0, y1, z0, z1, mat = stone) => H2.box(g, x1 - x0, y1 - y0, z1 - z0, mat, (x0 + x1) / 2, y0, (z0 + z1) / 2);
       // 1.9.3: the hall reaches north to the soreg's line (z -80) - the unconsecrated half 10.5 deep, for the one row of 71
       // ===== 1.9.5 (THREE_CHAMBERS_195; the user, 11.11.2026: "אפשרות א" - the three chambers joined under one level roof; "את לשכת
@@ -2696,9 +2738,9 @@
       wb(HX0, HX0 + 2, 13.5, 29.5, -74, HZS - 2);
       wb(HX0, HX0 + 2, 13.5, FY, -77, -74);
       wb(HX0, HX0 + 2, 23.5, 29.5, -77, -74);
-      stairsR(g, { width: 3, totalRise: 16, steps: 32, dir: "E", x: HX0 - 16, y: 0, z: -75.5, tread: 0.5 });   // CHEL_211: 32 steps down westwards along the wall, to the chel's floor (five steps to the podium's ledge until 2.0.1); the Tosafot Yom Tov: "ובפתחה לחול מעלות"
+      stairsR(g, { width: 3, totalRise: FY, steps: Math.round(FY / 0.5), dir: "E", x: HX0 - FY, y: 0, z: -75.5, tread: 0.5 });   // CHEL_211: down westwards along the wall, to the chel's floor - GAZIT_FLOOR_B2: 27 steps (32 until now) (five steps to the podium's ledge until 2.0.1); the Tosafot Yom Tov: "ובפתחה לחול מעלות"
       // south wall with the door to the Azara (between two pillars of the colonnade, in the court of the priests)
-      const KD0 = 79.75, KD1 = 82.25;   // GAZIT_MEIRI_195: in the hall's EAST half (77.75..80.25 before), over the priests' podium (x < 82.5), between two pillars
+      const KD0 = 87.0, KD1 = 89.5;   // GAZIT_MEIRI_195: in the hall's EAST half; GAZIT_FLOOR_B2: over the court of Israel, at the new floor's height (79.75..82.25 - over the priests' podium - until now)
       wb(HX0, KD0, 13.5, 29.5, HZS - 2, HZS);
       wb(KD1, HX1, 13.5, 29.5, HZS - 2, HZS);
       wb(KD0, KD1, 13.5, FY, HZS - 2, HZS);
@@ -3136,6 +3178,123 @@
         ctx2.layers.zoneDuchan = grp;
         ctx2.shared.features.zoneDuchan = { key: "zoneDuchan", isOn: () => grp.visible, on: () => { grp.visible = true; }, off: () => { grp.visible = false; } };
         ctx2.labels.push({ text: "דוכן הלויים — מעלה של אמה ושלוש מעלות של חצי אמה", x: 86.5, y: 19.5, z: 30, size: 2, layer: "zoneDuchan" });
+      }
+    }
+    // ===== FIX-B2 (22.11.2026): THE GATES' PALMS, THE RAMPS FOR THE BEASTS, THE OIL CHAMBER'S SECOND DOOR, THE BLEMISHED PRIESTS =====
+    {
+      const noPickAll = (o) => { o.traverse((m) => { if (m.isMesh) m.userData.noPick = true; }); return o; };
+      const bakeTo = (tmp, parent) => {   // (as bake211: the pieces of one material in one mesh)
+        tmp.updateMatrixWorld(true);
+        const byMat = new Map();
+        tmp.traverse((o) => { if (o.isMesh) { const k = o.material; if (!byMat.has(k)) byMat.set(k, []); byMat.get(k).push(o.geometry.clone().applyMatrix4(o.matrixWorld)); } });
+        for (const [mat, list] of byMat) { const m = new Mesh(mergeGeometries(list), mat); m.castShadow = true; m.receiveShadow = true; m.userData.noPick = true; parent.add(m); }
+      };
+      // ---- PALMS_B2 (the user's decision 33 - an approved exception to the rule that Ezekiel's vision is not a source for the Second
+      // Temple): "וְאֶל־אַיִל תִּמֹרִים" (Ezekiel 40:16, 14:1069), on the posts of the gates of the courts - the user: "ולא נראה שהיה שינוי".
+      // On the outer face of each gate of the court and of the women's court's gate: on either side of the opening, a flat pilaster with
+      // a palm in low relief - its trunk and its crown of fronds, gilded as the gates' leaves ("כל השערים שהיו שם נשתנו להיות של זהב חוץ
+      // משערי נקנור", Middot 2:3). Which gates (not the Mount's five, not Beit HaMoked's door), the palm's form, its size, the gilding -
+      // model choices. A layer of its own (gatePalms), on by default.
+      const palmG = new Group(); palmG.name = "gatePalms"; g.add(palmG); ctx2.layers.gatePalms = palmG;
+      {
+        const tmp = new Group();
+        const palm = (axis, face, out, u, y0, h) => {   // axis: the wall's direction; face: its outer face (z or x); out: +1/-1 outward
+          const P = new Group();
+          const put = (m, uu, vv, ww) => { if (axis === "x") m.position.set(uu, vv, face + out * ww); else m.position.set(face + out * ww, vv, uu); P.add(m); return m; };
+          put(new Mesh(new BoxGeometry(axis === "x" ? 1.1 : 0.3, h, axis === "x" ? 0.3 : 1.1), M2.stoneSmooth), u, y0 + h / 2, 0.15);
+          const trunkTop = y0 + h - 3.6;
+          for (let y = y0 + 0.6, i = 0; y < trunkTop - 0.2; y += 1.3, i++) {
+            const seg = new Mesh(new CylinderGeometry(0.19, 0.24, 1.25, 8, 1, false, 0, Math.PI), M2.gold);
+            seg.rotation.y = axis === "x" ? (out > 0 ? -Math.PI / 2 : Math.PI / 2) : (out > 0 ? 0 : Math.PI);
+            put(seg, u, y + 0.62, 0.3);
+          }
+          for (let k = 0; k < 9; k++) {   // the crown: nine fronds fanning in the wall's plane, drooping at the sides
+            const a = (k - 4) / 4 * 1.25, len = 2.3 - Math.abs(k - 4) * 0.12;
+            const fr = new Mesh(new BoxGeometry(axis === "x" ? 0.16 : 0.06, len, axis === "x" ? 0.06 : 0.16), M2.gold);
+            const cu = Math.sin(a) * len / 2, cv = Math.cos(a) * len / 2;
+            put(fr, u + cu * 1.05, trunkTop + cv - Math.abs(Math.sin(a)) * 0.35, 0.36);
+            if (axis === "x") fr.rotation.z = -a; else fr.rotation.x = a;
+          }
+          tmp.add(P);
+        };
+        const GATES = [];
+        for (const gx of [-78, -48, -18]) GATES.push(["x", 70.0, 1, gx, 13.5, 20, 5.0]);    // the south: the Delek, the Bechorot, the Water
+        for (const gx of [-78, -48]) GATES.push(["x", -70.0, -1, gx, 13.5, 20, 5.0]);       // the north: the Nitzotz, the Korban
+        GATES.push(["z", 97.9, 1, 0, 13.5, 20.7, 5.6]);                                     // Nikanor's (toward the women's court)
+        GATES.push(["z", 231.0, 1, 0, 6, 20, 5.0]);                                         // the women's court's gate (to the chel)
+        for (const [axis, face, out, mid, y0, h, half] of GATES) for (const sd of [-1, 1]) palm(axis, face, out, mid + sd * (half + 0.75), y0, h);
+        bakeTo(tmp, palmG);
+        ctx2.labels.push({ text: "״וְאֶל־אַיִל תִּמֹרִים״ (יחזקאל מ, טז) — תמרים בפתחי השערים", x: -48, y: 36.5, z: 72.5, size: 1.4, layer: "gatePalms" });
+        ctx2.labels.push({ text: "תמרים — ״וְאֶל־אַיִל תִּמֹרִים״ (יחזקאל מ, טז)", x: 233, y: 29.5, z: -9, size: 1.3, layer: "gatePalms" });
+      }
+      // ---- RAMPS_B2 (the user's decision 41: "לכאורה מחויב המציאות"): A RAMP FOR THE BEASTS at the gate of the firstborn (the south) and
+      // at the gate of the offering (the north) - "בשער הבכורות בדרום ובשער הקרבן בצפון היו כבשים, כדי להעלות את הבהמות" (the booklet
+      // "אלחנן וחיים עולים לירושלים", its list of sources, D113 - from Rav Chaim Kanievsky; drawn there as a winding ramp beside the
+      // stairs). Here: beside each gate's flight, on the chel's outer strip, a ramp in two runs with a round turn between them - from the
+      // chel's floor up to the gate's landing (13.5) - on piers, so that one may pass under it to the flight's foot; a low parapet.
+      // Its form, its slope (1 in 4), its width, the piers and where it stands - model choices (to be shown to the user).
+      const rampG = new Group(); rampG.name = "animalRamps"; g.add(rampG); ctx2.layers.animalRamps = rampG;
+      {
+        const tmp = new Group(), RISE = 13.5, RUN = 27, W1 = 2.8;
+        const deck = (x0, y0, x1, y1, z0, z1) => {   // a sloping deck along x, from (x0, y0) to (x1, y1), between z0 and z1
+          const L = Math.hypot(x1 - x0, y1 - y0), m = new Mesh(new BoxGeometry(L, 0.5, Math.abs(z1 - z0)), M2.stoneSmooth);
+          m.position.set((x0 + x1) / 2, (y0 + y1) / 2 - 0.25, (z0 + z1) / 2); m.rotation.z = Math.atan2(y1 - y0, x1 - x0); tmp.add(m);
+          const par = (z) => { const p = new Mesh(new BoxGeometry(L, 0.8, 0.22), M2.stoneLight); p.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.4, z); p.rotation.z = m.rotation.z; tmp.add(p); };
+          return par;
+        };
+        const pier = (x, yTop, z) => { if (yTop < 0.6) return; const p = new Mesh(new BoxGeometry(0.8, yTop, 0.8), M2.stone); p.position.set(x, yTop / 2, z); tmp.add(p); };
+        for (const s of [1, -1]) {   // s: +1 the south (the Bechorot), -1 the north (the Korban); the flight runs dx (the south: east, the north: west)
+          const gx = -48, dx = s > 0 ? 1 : -1, xa = gx + dx * 1, xb = xa + dx * RUN;
+          const z1a = 74.2 * s, z1b = 77.0 * s, z2a = 77.2 * s, z2b = 80.0 * s;
+          const y = (x, top, bot) => top + (bot - top) * Math.abs(x - xa) / RUN;
+          const p1 = deck(xa, RISE, xb, RISE / 2, z1a, z1b);   // the upper run: from the landing, along the flight
+          p1(z1b + 0.11 * s);
+          const p2 = deck(xb, RISE / 2, xa, 0, z2a, z2b);      // the lower run: back to the chel's floor
+          p2(z2b - 0.11 * s);
+          // the turn: a flat landing, half round, at the runs' far end
+          const tz = (z1a + z2b) / 2, tr = Math.abs(z2b - z1a) / 2;
+          const tb = new Mesh(new CylinderGeometry(tr, tr, 0.5, 24, 1, false, dx > 0 ? 0 : Math.PI, Math.PI), M2.stoneSmooth);
+          tb.position.set(xb, RISE / 2 - 0.25, tz); tmp.add(tb);
+          const tw = new Mesh(new CylinderGeometry(tr + 0.05, tr + 0.05, 0.8, 24, 1, true, dx > 0 ? 0 : Math.PI, Math.PI), M2.stoneLight);
+          tw.position.set(xb, RISE / 2 + 0.4, tz); tmp.add(tw);
+          pier(xb + dx * tr * 0.55, RISE / 2 - 0.5, tz);
+          for (let k = 1; k * 4.5 < RUN; k++) {
+            const x = xa + dx * k * 4.5;
+            pier(x, y(x, RISE, RISE / 2) - 0.5, (z1a + z1b) / 2);
+            pier(x, y(x, 0, RISE / 2) - 0.5, (z2a + z2b) / 2);
+          }
+        }
+        bakeTo(tmp, rampG);
+        for (const s of [1, -1]) ctx2.labels.push({ text: "כבש לבהמות — מפי הגר״ח קניבסקי (חוברת הביכורים)", x: -48 + (s > 0 ? 1 : -1) * 22, y: 16, z: 77 * s, size: 1.3, layer: "animalRamps" });
+      }
+      // (OIL_DOORS_B2 - the oil chamber's second door, the user's decision 81: held - question 78 to the user, 22.11.2026 02:3x)
+      // ---- WOODWORMS_B2 (the user's decision 85): "מזרחית צפונית, היא היתה לשכת העצים, ששם הכהנים בעלי מומין מתליעין העצים. וכל עץ שנמצא
+      // בו תולעת, פסול מעל גבי המזבח" (Middot 2:5, 89:16); the Bartenura (643:91): "מסירין העצים שנמצא בהן תולעת"; the Yachin (819:235):
+      // "בודקין העצים, להסיר כל עץ שהתליע". Three priests in the aisle by the door - one seated on a log, one standing, one crouching by a
+      // small heap - each with a log in his hands. Their clothes: no source was found (they do no service) - their own clothes (the user's
+      // decision 68 (2): "בגדי חול"); the kit's kind "levi" - the clothes of the figure's own colour, the kippah set back and, on a weekday,
+      // the tefillin of the head and of the arm, as the Levites' (no priestly garments - the user's decision 67; fix-a2's kit). The heap and
+      // the places - model choices.
+      {
+        const O = eznProps["לשכת העצים"] || g, PW = tm_people(ctx2);
+        const logM = M2.cedar;
+        const log = (x, y, z, yaw, len = 1.5, r = 0.13) => { const m = new Mesh(new CylinderGeometry(r, r * 1.08, len, 8), logM); m.rotation.z = HP; m.rotation.y = yaw; m.position.set(x, y, z); m.castShadow = true; m.userData.noPick = true; O.add(m); return m; };
+        const ahead = (x, z, yaw, d) => [x + Math.sin(yaw) * d, z + Math.cos(yaw) * d];
+        const HX = 193.4, HZ = -47.6;                                                  // the heap being checked
+        for (const [dx, dy, dz, a] of [[0, 0.14, 0, 0.3], [0.1, 0.14, 0.32, 0.2], [-0.1, 0.14, -0.32, 0.45], [0.05, 0.4, 0.15, 0.1], [0, 0.4, -0.18, 0.5]]) log(HX + dx, 6 + dy, HZ + dz, a);
+        const toHeap = (x, z) => Math.atan2(HX - x, HZ - z);
+        const A = [196.2, -45.3], B = [196.4, -49.9], C = [191.2, -49.2];
+        const ya = toHeap(A[0], A[1]), yb = toHeap(B[0], B[1]), yc = toHeap(C[0], C[1]);
+        log(A[0], 6.35, A[1], ya, 1.2, 0.2);                                       // the log he sits on
+        PW.crowd(O, [[A[0], A[1], ya]], { y: 6.7, s: 1.4, pose: "bench", seat: 0.7, kind: "levi", robe: 0x6b5a3e, tone: () => 2, shadow: true, fwd: 0.3, name: "woodworm-seated", exact: true });
+        { const [hx, hz] = ahead(A[0], A[1], ya, 0.55); log(hx, 7.55, hz, ya, 1.3); }
+        PW.crowd(O, [[B[0], B[1], yb]], { y: 6, s: 1.4, pose: "stand", kind: "levi", robe: 0x4a4f5a, tone: () => 1, shadow: true, name: "woodworm-standing", exact: true });
+        { const [hx, hz] = ahead(B[0], B[1], yb, 0.5); log(hx, 8.0, hz, yb, 1.4); }
+        PW.crowd(O, [[C[0], C[1], yc]], { y: 6, s: 1.4, pose: "ground", kind: "levi", robe: 0x5c4a3a, tone: () => 3, shadow: true, name: "woodworm-crouching", exact: true });
+        { const [hx, hz] = ahead(C[0], C[1], yc, 0.6); log(hx, 6.75, hz, yc, 1.2); }
+        const l0 = ctx2.labels.length;
+        lbl("כהנים בעלי מומין מתליעין העצים (מידות ב, ה)", HX + 1.5, 11.2, HZ, 1.3);
+        if (eznLbl["לשכת העצים"]) eznLbl["לשכת העצים"].push(...ctx2.labels.slice(l0));
       }
     }
     ctx2.shared.flyPoints = ctx2.shared.flyPoints || {};

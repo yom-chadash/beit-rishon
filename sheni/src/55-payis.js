@@ -25,7 +25,7 @@
   async function buildPayis(ctx2) {
     const { M: M2, LV } = ctx2;
     const SH = ctx2.shared;
-    const FYG = LV.KOH + 0.02;                       // the Gazit hall's floor (30-courts.js)
+    const FYG = (ctx2.shared.gazitFloor != null ? ctx2.shared.gazitFloor : LV.KOH) + 0.02;   // the Gazit hall's floor (30-courts.js; GAZIT_FLOOR_B2 - 13.5 from 22.11.2026, 16 until then)
     const g = new Group();
     g.name = "payisDemo";
     g.visible = false;
@@ -492,8 +492,8 @@
       cam(3, camGazit[0], camGazit[1]);
       if (reading !== "tamid") cap(0, "רמב״ם (תמידין ו, א): ״ויבואו ויעמדו בלשכת הגזית. ויפיסו פיס ראשון ושני״");
       else cap(0, "״אמר להם הממנה, באו והפיסו״ (תמיד ג, א) — בלשכת הגזית");
-      enterRing(GZ, [81, FYG, -57.6], N, 0.5, 4.4);
-      track(MEM, [[0.5, 81.6, FYG, -57.4], [4.6, GZ.x, GZ.y, GZ.z]]);
+      enterRing(GZ, [88.25, FYG, -57.6], N, 0.5, 4.4);
+      track(MEM, [[0.5, 88.25, FYG, -57.4], [4.6, GZ.x, GZ.y, GZ.z]]);
       ev(0.5, () => { MEM.visible = true; });
       t += 5.6;
       cap(0, "״לשכת הגזית… פייס במזרחה, וזקן יושב במערבה״ (יומא כה.)");
@@ -545,8 +545,8 @@
       sky(4.5, "morning");
       cam(3.2, camGazit[0], camGazit[1]);
       ev(0.2, () => { WATCH.visible = false; MEM.visible = true; ELDER.visible = true; });
-      enterRing(GZ, [81, FYG, -57.6], NEW, 1.2, 3.6);
-      track(MEM, [[1.2, 81.6, FYG, -57.4], [4.6, GZ.x, GZ.y, GZ.z]]);
+      enterRing(GZ, [88.25, FYG, -57.6], NEW, 1.2, 3.6);
+      track(MEM, [[1.2, 88.25, FYG, -57.4], [4.6, GZ.x, GZ.y, GZ.z]]);
       t += 5.4;
       // PAYIS_GARMENTS (the user, 12.11.2026: "תוסיף כרטיס שמדבר על הבגדים ... מביא את המחלוקות ... בצורה ברורה"): the garments from near, by day.
       // PAYIS_AVNET_PASS (the user, 00:31: "מתגים במצגת לא עושים עוד מצגת, אלא עושים משהו בתוך המצגת כזה, בהבלעה"): the avnet as the reading
@@ -576,7 +576,7 @@
       }
       ev(0, () => { for (let i = 0; i < NEW; i++) { K[i].userData.robe = mRobe; K[i].userData.body.material = mRobe; } });
       cam(3, camGazit[0], camGazit[1]);
-      enterRing(GZ, [81, FYG, -57.6], N, 0.2, 3.8);
+      enterRing(GZ, [88.25, FYG, -57.6], N, 0.2, 3.8);
       t += 4.4;
       {
         cam(15.5, camGazit13[0], camGazit13[1]);

@@ -133,6 +133,26 @@
       H2.box(g, 0.15, 37.5, 5, M2.gold, 17.575, F + 2.5, 12.7),
       H2.box(g, 0.15, 3.5, 32, M2.gold, 17.575, 72.5, 0),
       H2.box(g, 6.2, 1.53, 102.4, M2.gold, 15.6, 110.5, 0));   // 1.9.5: the roof's gold band over the facade (until 1.9.4 a band of the facade's own, at 99..102)
+    // ULAM_WINDOWS_B2 (fix-b2, 22.11.2026 - the user's decisions 72 (א) and 74): WINDOWS IN THE ULAM'S WALLS, SEALED - "וחלונים אטמות ותמרים
+    // מפו ומפו אל כתפות האולם" (Ezekiel 41:26, 14:1129); the Metzudat David there (3334:3398): "באולם היו חלונות סתומות במחיצה בהירה וזכה";
+    // the Abarbanel (3569:1112): "שהיו חלונות רחבות מפנים צרות מבחוץ או שהיו אטומות מזכוכית"; and of the Second Temple - Rabbenu Shemaya
+    // (Middot 3:8, 645:120): "...בימי חגי זכריה ומלאכי בחלונות עליות האולם לנוי וליופי". In the ulam's WALL, not on the opening's shoulders -
+    // "שבאולם בית שני לא היו כתפות לפתח לצפון ולדרום" (Rashi, Ezekiel 40:48; 3684:2148). Drawn: on the facade, at the height of the upper
+    // storey, two rows of four on each side of the opening, each shut with a light, clear pane in a frame. Their number, size and places -
+    // model choices. (They go with the facade when "פתח את האולם" opens it.)
+    {
+      const paneM = new MeshStandardMaterial({ color: 0xf3efe2, roughness: 0.22, metalness: 0, transparent: true, opacity: 0.92, emissive: 0x24221b });
+      const UWG = new Group(); UWG.name = "ulamWindows"; g.add(UWG); ctx2.layers.ulamWindows = UWG;
+      const WW = 3.2, WH = 6, X = 17.5;
+      for (const yb of [77, 91]) for (const sd of [-1, 1]) for (const zc of [20, 28, 36, 44]) {
+        const z = sd * zc, yc = yb + WH / 2;
+        const pane = new Mesh(new BoxGeometry(0.12, WH, WW), paneM); pane.position.set(X + 0.08, yc, z); pane.userData.noPick = true; UWG.add(pane); ulamFrontCut.push(pane);
+        for (const [dy, dz, h, w] of [[WH / 2 + 0.2, 0, 0.4, WW + 0.8], [-WH / 2 - 0.2, 0, 0.4, WW + 0.8], [0, WW / 2 + 0.2, WH, 0.4], [0, -WW / 2 - 0.2, WH, 0.4]]) {
+          const f = new Mesh(new BoxGeometry(0.35, h, w), M2.stoneSmooth); f.position.set(X + 0.17, yc + dy, z + dz); f.castShadow = true; f.userData.noPick = true; UWG.add(f); ulamFrontCut.push(f);
+        }
+      }
+      ctx2.labels.push({ text: "חלונות סתומים ״במחיצה בהירה וזכה״ (מצודת דוד, יחזקאל מא, כו) — ״בחלונות עליות האולם״ (רבינו שמעיה, מידות ג, ח)", x: X + 2, y: 101, z: -32, size: 1.8, layer: "ulamWindows" });
+    }
     const beamW = [22, 24, 26, 28, 30];
     for (let i = 0; i < 5; i++) ulamFrontCut.push(H2.box(g, 0.8, 1, beamW[i], M2.cedar, 17.6, 62.5 + i * 2, 0));
     const pilG = H2.uvWorldBox(new BoxGeometry(0.5, 76, 1.6), 0.5, 76, 1.6);
@@ -296,6 +316,46 @@
       cut.push(roofs[0], roofs[1]);
       for (const sg of [-1, 1]) ctx2.labels.push({ text: "בית החליפות — חדר (תפארת ישראל)", x: 7, y: F + 12, z: 40 * sg, size: 1.3, layer: "ulamTiferet" });
       ctx2.labels.push({ text: "חלל האולם — תשעים אמה (רמב״ם)", x: 7, y: F + 30, z: 30, size: 1.5, layer: "ulamRambam" }, { text: "חלל האולם — שבעים אמה", x: 7, y: F + 30, z: 22, size: 1.5, layer: "ulamMishnah" }, { text: "חלל האולם — שבעים אמה", x: 7, y: F + 30, z: 22, size: 1.5, layer: "ulamTiferet" });
+    }
+    // CHALIFOT_WINDOWS_B2 (fix-b2, 22.11.2026 - the user's decision 72 (ב)): THE WINDOWS OF BEIT HACHALIFOT, WHERE THE KNIVES WERE KEPT -
+    // Middot 4:7 (89:34): "והוא היה נקרא בית החליפות, ששם גונזים את הסכינים"; Sukkah 5:8 (56:58): "בלגה לעולם חולקת בדרום, וטבעתה קבועה,
+    // וחלונה סתומה"; Rashi there (2163:2731): "וחלונה סתומה - חלונות היו בבית החליפות בעובי כותלי התאים שבצפונו של היכל ששם גונזין את
+    // סכיניהן כדתנן במסכת מדות (פ"ד משנה ז) וסתמו חלונה של בילגה". So: twenty-four windows - one for each watch (Bilga's is one of them),
+    // in the north, in the wall's thickness, each a niche with knives in it; Bilga's shut with stone. Drawn in each reading of the ulam's
+    // width on the face of the north part toward the ulam (the Mishnah's: the block's face, z -35; the Tiferet Yisrael's: the room's
+    // north wall, z -45 (its partition has the door); the Rambam's: the hall's north end, z -45). Three rows of eight; their size, height and places, and
+    // which window is Bilga's - model choices.
+    {
+      const nDark = new MeshBasicMaterial({ color: 0x17110b });
+      const bladeM = new MeshStandardMaterial({ color: 0xb9bcc0, metalness: 0.85, roughness: 0.3 });
+      const handleM = new MeshStandardMaterial({ color: 0x5a3c22, roughness: 0.8 });
+      const plugM = M2.stoneSmooth;
+      const windows = (parent, zFace, dir) => {   // dir: +1 the niches face +z (their back toward -z)
+        const tmp = new Group();
+        let k = 0;
+        for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++, k++) {
+          const x = 2.6 + c * 1.25, y = F + 2.4 + r * 1.3, z = zFace + dir * 0.02;
+          const bilga = k === 15;   // (which one - a model choice)
+          if (bilga) { const p = new Mesh(new BoxGeometry(0.85, 0.85, 0.12), plugM); p.position.set(x, y, zFace + dir * 0.06); tmp.add(p); continue; }
+          const d = new Mesh(new PlaneGeometry(0.8, 0.8), nDark); d.position.set(x, y, z); d.rotation.y = dir > 0 ? 0 : Math.PI; tmp.add(d);
+          for (const [fx, fy, fw, fh] of [[0, 0.46, 1.0, 0.12], [0, -0.46, 1.0, 0.12], [-0.46, 0, 0.12, 0.8], [0.46, 0, 0.12, 0.8]]) {
+            const f = new Mesh(new BoxGeometry(fw, fh, 0.1), plugM); f.position.set(x + fx, y + fy, zFace + dir * 0.05); tmp.add(f);
+          }
+          for (const sx of [-0.18, 0.12]) {   // two knives lying in the niche
+            const b = new Mesh(new BoxGeometry(0.34, 0.012, 0.07), bladeM); b.position.set(x + sx + 0.08, y - 0.36, zFace + dir * 0.07); tmp.add(b);
+            const h = new Mesh(new BoxGeometry(0.14, 0.03, 0.05), handleM); h.position.set(x + sx - 0.16, y - 0.36, zFace + dir * 0.07); tmp.add(h);
+          }
+        }
+        tmp.updateMatrixWorld(true);
+        const byMat = new Map();
+        tmp.traverse((o) => { if (o.isMesh) { if (!byMat.has(o.material)) byMat.set(o.material, []); byMat.get(o.material).push(o.geometry.clone().applyMatrix4(o.matrixWorld)); } });
+        for (const [mat, list] of byMat) { const m = new Mesh(mergeGeometries(list), mat); m.userData.noPick = true; m.receiveShadow = true; parent.add(m); }
+        ctx2.labels.push({ text: "בית החליפות — ״ששם גונזים את הסכינים״ (מידות ד, ז): כ״ד חלונות, אחד לכל משמר", x: 7, y: F + 7.2, z: zFace + dir * 1.5, size: 0.9, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
+        ctx2.labels.push({ text: "״וחלונה סתומה״ — של משמר בלגה (סוכה ה, ח)", x: 2.6 + 7 * 1.25, y: F + 2.4 + 1.3 + 0.9, z: zFace + dir * 0.9, size: 0.6, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
+      };
+      windows(ulamM, -35, 1);          // the Mishnah's reading: on the north block's face toward the ulam
+      windows(ulamT, -45, 1);          // the Tiferet Yisrael's: in the room, on its north wall (the partition has its door)
+      windows(ulamR, -45, 1);          // the Rambam's: on the hall's north end
     }
     ctx2.shared.ulamWidth = { mode: "mishnah", set(m) { this.mode = m === "rambam" || m === "tiferet" ? m : "mishnah"; ulamM.visible = this.mode === "mishnah"; ulamR.visible = this.mode === "rambam"; ulamT.visible = this.mode === "tiferet"; } };
     // ULAMVIEW_211 (the user, 14.11.2026: "בהצגת השינויים באולם (רמב״ם, תפא״י וכו') צריך להרחיק את המבט כדי שיובן הפער"): the row's
@@ -1043,6 +1103,33 @@
     const herodPairs = (ctx2.herodFloor || []).map((m) => [m, m.material]);
     ctx2.shared.herod = { on: false, get() { return this.on; }, set(on) { this.on = !!on; herodPairs.forEach(([m, b]) => { m.material = this.on ? herodFloorMat : b; }); } };
     ctx2.herodAdd = () => {};   // (1.9.5: the house's outer faces keep their stone - nothing joins the swap any more)
+    // HEROD_RELIEF_B2 (fix-b2, 22.11.2026 - the user's decision 78): "אפיק שפה ועייל שפה, כי היכי דנקביל סידא" (Bava Batra 4a, 124:74;
+    // Sukkah 51b, 108:1318); Rashi (Sukkah 51b, 2163:2425): "אפיק שפה - שורה של אבנים נכנסה ושורה יוצאה". A reading of its own (ctx2.shared.
+    // herodRelief.set, off by default): on the house's outer faces every other course of stones stands out. The courses' height (two
+    // amot), how far a course stands out (0.15), and which faces (the house's four, from the heichal's floor up) - model choices.
+    {
+      const RG = new Group(); RG.name = "herodRelief"; RG.visible = false; g.add(RG); ctx2.layers.herodRelief = RG;
+      const parts = { keep: [], cutS: [], front: [] };
+      const band = (list, x0, x1, z0, z1, y0, y1) => { const geo = new BoxGeometry(Math.max(0.05, x1 - x0), y1 - y0, Math.max(0.05, z1 - z0)); geo.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); list.push(geo); };
+      const CH = 2, OUT = 0.15, TOP = 110.5;   // the house's top: the gold band (110.5; the 100 amot are counted from the court's floor, 16)
+      for (let y = F; y + CH <= TOP + 0.01; y += 2 * CH) {
+        const y1 = y + CH;
+        band(parts.keep, -82.5, 1.5, -35 - OUT, -35, y, y1);              // the house's north face
+        band(parts.cutS, -82.5, 1.5, 35, 35 + OUT, y, y1);                // its south face (into the cutaway)
+        band(parts.keep, -82.5 - OUT, -82.5, -35, 35, y, y1);             // its west face
+        band(parts.keep, 1.5, 17.5, -50 - OUT, -50, y, y1);               // the ulam's north end
+        band(parts.cutS, 1.5, 17.5, 50, 50 + OUT, y, y1);                 // its south end
+        band(parts.front, 17.5, 17.5 + OUT, -50, -10, y, y1);             // the ulam's front, beside its opening (20 wide, 40 high)
+        band(parts.front, 17.5, 17.5 + OUT, 10, 50, y, y1);
+        if (y >= F + 40) band(parts.front, 17.5, 17.5 + OUT, -10, 10, y, y1);
+      }
+      const mk = (list) => { const m = new Mesh(mergeGeometries(list), M2.marble); m.castShadow = true; m.receiveShadow = true; m.userData.noPick = true; RG.add(m); return m; };
+      mk(parts.keep);
+      cut.push(mk(parts.cutS));
+      ulamFrontCut.push(mk(parts.front));
+      ctx2.labels.push({ text: "״אפיק שפה ועייל שפה״ — שורה של אבנים נכנסה ושורה יוצאה (בבא בתרא ד.; רש״י סוכה נא:)", x: 20, y: F + 70, z: -40, size: 2.4, layer: "herodRelief" });
+      ctx2.shared.herodRelief = { on: false, set(v) { this.on = !!v; RG.visible = this.on; if (ctx2.requestRender) ctx2.requestRender(); return this.on; } };
+    }
     // 1.9.5 (a remark sent on to the user, 11.11.2026: "בגג ההיכל המעקות לא חופפים"; the user: "מצוין"): ONE RING. Until 1.9.4 the
     // house's top was pieced together: the facade's wall rose to 115 as its own parapet, five amot thick, with a gold band of its own at
     // 99..102, while the other sides had the gold band at 110.5..112 and a thin parapet on it; the west parapet ended short of the north
@@ -1492,7 +1579,7 @@
           S.add(new Mesh(K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), K.mSkin));   // the neck
           const sash = new Mesh(K.gSash, K.mSashDyed);   // KOH_CARRY_211: white in the reading "של בוץ", and for the High Priest on Yom Kippur (o.white)
           S.add(sash);
-          K.headOn(S, K.HEAD_Y, K.mBeards[1 % K.mBeards.length], 1);
+          const hgA = K.headOn(S, K.HEAD_Y, K.mBeards[1 % K.mBeards.length], 1); if (K.tefOn) K.tefOn(hgA);   // TEFILLIN_A2 (fix-a2's request; the user's decision 67): the head's tefillin - gone by themselves on Yom Kippur (55-payis.js, ykEntry)
           const hat = new Mesh(K.gHat, K.mHat);
           hat.position.y = K.HAT_Y;
           S.add(hat);
@@ -3504,13 +3591,37 @@
       { const tf = T.plain.clone(); tf.repeat.set(PAR_W / TILE, 2.4 / TILE); tf.offset.set(0, 0); tf.needsUpdate = true; parHead.material = mat(tf); }   // 1.9.3: the bent head, in the weave
       for (const r of parRolls) r.material = M.plain;   // PAROCHET_217: the fold's edge, in the weave's own colour (not the dark of the cloth's body)
       const faces = parFaces;   // PAROCHET_217: made with the parochot (mkPar) - of each one's two pieces, two faces each
+      // PAROCHOT_ART_B2 (fix-b2, 22.11.2026 - the user's decisions 27 and 79): THE FIGURES ON ALL THIRTEEN PAROCHOT, each figure on its own
+      // face (not as the booklet set them). The four of the devir and of the upper storey are the parochet's "מעשה חושב" (Exodus 26:31);
+      // the nine of the openings - "מעשה רוקם", as the screen of the tent's opening (Exodus 26:36). Readings (set(k)):
+      //  "rashi" (the default) - Rashi (Yoma 72b, 2157:2760): "חושב מעשה אורג - שיש לה ליריעה שתי קירות ושתי צורות על שתי קירותיה אין
+      //   דומות זו לזו פעמים שמצד זה ארי ומצד זה נשר... אבל רוקם כצורתו מכאן כך צורתו מכאן": the four - eagles toward the heichal, lions
+      //   toward the devir (as before); the nine - a lion on both faces;
+      //  the Jerusalem Talmud (Shekalim 8:2, 154:257): "מעשה רוקם פרצוף אחד, מעשה חושב שני פרצופות. רבי יודה ורבי נחמיה. חד אמר מעשה רוקם
+      //   ארי מיכן וארי מיכן, מעשה חושב ארי מיכן וחלק מיכן. וחורנה אמר מעשה רוקם ארי מיכן וחלק מיכן, מעשה חושב ארי מיכן ונשר מיכן":
+      //  "yer1" - the first view: the four - a lion toward the heichal, plain toward the devir; the nine - lions on both faces;
+      //  "yer2" - the second view: the four - eagles toward the heichal, lions toward the devir; the nine - a lion outside, plain inside;
+      //  "rambam" - the Rambam (Kelei HaMikdash 8:15, 338:137): "מעשה רקם... הצורות... נראות מצד אחד בפני האריג. ומעשה חשב... נראית משני
+      //   צדדין פנים ואחור": the four - one lion seen from both faces; the nine - a lion outside only;
+      //  "keruvim" - cherubim on the four (as before), the nine plain; "plain" - no figures (the Ma'asei LaMelech).
+      // Which face has the eagle, or the lion where the other is plain (outside; toward the heichal) - a model choice.
+      const ART = {
+        rashi: { four: (sd) => (sd > 0 ? M.eagle : M.lionW), out: () => M.lionE, inn: () => M.lionW },
+        yer1: { four: (sd) => (sd > 0 ? M.lionE : M.plain), out: () => M.lionE, inn: () => M.lionW },
+        yer2: { four: (sd) => (sd > 0 ? M.eagle : M.lionW), out: () => M.lionE, inn: () => M.plain },
+        rambam: { four: (sd) => (sd > 0 ? M.lionE : M.lionW), out: () => M.lionE, inn: () => M.plain },
+        keruvim: { four: () => M.cherub, out: () => M.plain, inn: () => M.plain },
+        plain: { four: () => M.plain, out: () => M.plain, inn: () => M.plain }
+      };
+      const artFaces = [];   // [mesh, kind]: kind "out" / "inn" - the faces of the nine (GATE_PAROCHOT_218 below) and "four" with sd - the upper storey's
       ctx2.shared.parochetArt = {
         mode: "rashi",
+        faces: artFaces,
         set(k) {
-          this.mode = ["rashi", "rambam", "keruvim", "plain"].indexOf(k) >= 0 ? k : "rashi";
-          for (const [m, sd] of faces) {
-            m.material = this.mode === "rashi" ? (sd > 0 ? M.eagle : M.lionW) : this.mode === "rambam" ? (sd > 0 ? M.lionE : M.lionW) : this.mode === "keruvim" ? M.cherub : M.plain;
-          }
+          this.mode = ART[k] ? k : "rashi";
+          const A = ART[this.mode];
+          for (const [m, sd] of faces) m.material = A.four(sd);
+          for (const [m, kind, sd] of artFaces) m.material = kind === "four" ? A.four(sd) : kind === "out" ? A.out() : A.inn();
         }
       };
       ctx2.shared.parochetArt.set("rashi");
@@ -3546,6 +3657,14 @@
           for (let i = 0; i < uva.count; i++) uva.setXY(i, uva.getX(i) * w, uva.getY(i) * h);
           const panel = new Mesh(pgeo, weave);
           panel.castShadow = panel.receiveShadow = true;
+          // PAROCHOT_ART_B2: the panel's two faces, each its own figure - the front (local +z) and a back copy turned about y; the front is
+          // the outside when `out` > 0 (axis "x": +z; axis "z", turned: +x)
+          const faceM = M.plain.clone(); faceM.side = FrontSide;
+          panel.material = faceM;
+          const back = new Mesh(pgeo.clone().rotateY(Math.PI), faceM);
+          back.castShadow = false; back.receiveShadow = true;
+          panel.add(back);
+          artFaces.push([panel, out > 0 ? "out" : "inn"], [back, out > 0 ? "inn" : "out"]);
           const rod = new Mesh(new CylinderGeometry(0.07, 0.07, w + 0.5, 10), M2.gold);
           rod.rotation.z = Math.PI / 2;
           rod.position.y = -0.06;
@@ -3582,6 +3701,7 @@
         mkGC("heichal", "z", 1.65, 0, 10.6, 20, F + 20, 1);
         const ulamGC = mkGC("ulam", "z", 17.75, 0, 20.6, 40, F + 40, 1);
         if (Array.isArray(ctx2.shared.__ulamFrontCut)) ctx2.shared.__ulamFrontCut.push(ulamGC.grp);   // "פתח את האולם" takes it with the front
+        ctx2.shared.parochetArt.set(ctx2.shared.parochetArt.mode);   // PAROCHOT_ART_B2: the nine's faces dressed
         const GP = ctx2.shared.gateParochot = { mode: "down", list: GC, set(k) { this.mode = k === "up" ? "up" : "down"; return this.mode; } };
         const SEE = new Vector3();
         const sees = (o) => {
@@ -3634,6 +3754,11 @@
           m.position.set(x, 87, 0);
           m.castShadow = m.receiveShadow = true;
           g.add(m);
+          // PAROCHOT_ART_B2: "מעשה חושב" as the devir's - the front (+x after the turn) toward the heichal, a back copy toward the devir
+          const fm = M.plain.clone(); fm.side = FrontSide; m.material = fm;
+          const back = new Mesh(pgeo.clone().rotateY(Math.PI), fm); back.receiveShadow = true; m.add(back);
+          artFaces.push([m, "four", 1], [back, "four", -1]);
+          if (ctx2.shared.parochetArt) ctx2.shared.parochetArt.set(ctx2.shared.parochetArt.mode);
           return m;
         };
         const AW = [mkA(-44.5, 19.94), mkA(-45.5, 19.94)], AL = [mkA(-44.5, 10), mkA(-45.5, 10)];
