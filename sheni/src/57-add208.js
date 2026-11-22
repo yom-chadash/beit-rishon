@@ -832,10 +832,16 @@
           W1(K.at(K.sph(0.058, 0.058, 0.058, 12, 8), 0, -P.up / FS, 0))]), FS);
         const foP = sc(W1(K.at(new CylinderGeometry(0.056, 0.046, P.fo / FS, 14), 0, -P.fo / FS / 2, 0)), FS);
         const hand = { 1: sc(K.at(K.handRaw(1), 0, -(P.fo / FS + 0.045), 0), FS), "-1": sc(K.at(K.handRaw(-1), 0, -(P.fo / FS + 0.045), 0), FS) };
+        // HAND_SDF_MERGE_B2 (the merge of fix-a, A2's note in FIX-COORD): the kit's hands in the wrist's frame (K.handWr - "rest", and "grip"
+        // for the hand that holds), on a wrist joint; the grip's place - the closed hand's ring (K.handAt(side, "grip")) and its way
+        // ("gripAx", from the little finger to the first); the material K.mHand (the hand's own vertex colours - never merged with others)
+        const HW = K.handWr && K.handAt ? { rest: { 1: K.handWr(1, "rest"), "-1": K.handWr(-1, "rest") }, grip: { 1: K.handWr(1, "grip"), "-1": K.handWr(-1, "grip") },
+          at: { 1: K.handAt(1, "grip"), "-1": K.handAt(-1, "grip") }, ax: { 1: K.handAt(1, "gripAx"), "-1": K.handAt(-1, "gripAx") } } : null;
         const foot = { 1: sc(K.footGeo(1).translate(-0.1, 0, 0), FS), "-1": sc(K.footGeo(-1).translate(0.1, 0, 0), FS) };
         const neck = sc(K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), 1);
-        return { P, upP, foP, hand, foot, neck };
+        return { P, upP, foP, hand, HW, foot, neck };
       })();
+      const mHandB2 = () => K.mHand || K.mSkin;
       const mkPriest = (n) => {
         const FS = K.FS, g = new Group(), lean = new Group(), S = new Group();
         g.add(lean);
@@ -857,11 +863,20 @@
           el.position.y = -FIG.P.up;
           sh.add(el);
           add(el, FIG.foP, K.mRobe);
-          add(el, FIG.hand[side], K.mSkin);
           const grip = new Group();
-          grip.position.set(0, -(FIG.P.fo + 0.08), 0.03);
           el.add(grip);
-          return { sh, el, grip };
+          if (FIG.HW) {   // HAND_SDF_MERGE_B2
+            const wr = new Group();
+            wr.position.y = -FIG.P.fo;
+            el.add(wr);
+            const hand = add(wr, FIG.HW.rest[side], mHandB2());
+            const G = FIG.HW.at[side];
+            grip.position.set(G.x, -FIG.P.fo + G.y, G.z);
+            return { sh, el, grip, wr, hand, side };
+          }
+          add(el, FIG.hand[side], mHandB2());
+          grip.position.set(0, -(FIG.P.fo + 0.08), 0.03);
+          return { sh, el, grip, side };
         };
         const L = arm(1), R = arm(-1);
         const fl = add(g, FIG.foot[1], K.mSkin), fr = add(g, FIG.foot[-1], K.mSkin);
@@ -871,6 +886,20 @@
         return { g, lean, L, R, fl, fr, sash };
       };
       const setArm = (A2, v, side) => { A2.sh.rotation.set(v[0], 0, side * v[1]); A2.el.rotation.set(v[2], 0, 0); };
+      // HAND_SDF_MERGE_B2: the hand that holds - closed round it (the "grip" pose); gripAlign - the wrist turns so the ring's way is the held
+      // thing's axis (its up, by the quaternion qt in the world), and the grip goes with the ring (the flask's neck in the closed hand)
+      const holdB2 = (A2) => { if (A2.hand && FIG.HW) A2.hand.geometry = FIG.HW.grip[A2.side]; };
+      const _gq = new Quaternion(), _gv = new Vector3();
+      const gripAlign = (A2, qt) => {
+        if (!A2.wr || !FIG.HW) return;
+        A2.el.updateWorldMatrix(true, false);
+        A2.el.getWorldQuaternion(_gq).invert();
+        _gv.set(0, 1, 0).applyQuaternion(qt).applyQuaternion(_gq);
+        A2.wr.quaternion.setFromUnitVectors(FIG.HW.ax[A2.side], _gv);
+        A2.grip.position.copy(FIG.HW.at[A2.side]).applyQuaternion(A2.wr.quaternion);
+        A2.grip.position.y -= FIG.P.fo;
+        A2.grip.updateMatrixWorld(true);
+      };
       const ARM = { rest: [0.05, 0.08, -0.15], carry: [-0.25, 0.1, -0.85], fill: [-1.05, 0.12, -0.35], pour: [-1.2, 0.1, -0.55], tR: [-1.42, 0.05, -0.2], tL: [-1.28, -0.06, -0.38] };
       // ---- SHILOACH_CHALAMISH_B2: the rest of the people, as Chalamish draws them (pp. 10-14, 27-28) - no women (the user), boys among
       // the men; the stories (the Sadducees, the frogs) left out. Built once, with the demonstration
@@ -879,7 +908,7 @@
         const ROBES = [0x6b5a3e, 0x4a4f5a, 0x5c4a3a, 0x3e4a5e, 0x7a6a50, 0x5a3e4a, 0x3e5a4a];
         // the priest of the wine: with the water's priest up the ramp, to the eastern bowl ("מערבי של מים ומזרחי של יין")
         const w = mkPriest(8); DG.add(w.g);
-        const wjug = new Mesh(jugGeo(), gold); wjug.castShadow = true; wjug.userData.noPick = true; wjug.position.set(0, -0.2, 0.02); w.R.grip.add(wjug);
+        const wjug = new Mesh(jugGeo(), gold); wjug.castShadow = true; wjug.userData.noPick = true; wjug.position.set(0, -0.2, 0.02); w.R.grip.add(wjug); holdB2(w.R);   // HAND_SDF_MERGE_B2
         const wwine = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true), new MeshStandardMaterial({ color: 0x8a1626, transparent: true, opacity: 0.85, roughness: 0.15 }));
         wwine.visible = false; DG.add(wwine);
         // the deputy on the horn, the sudar in his hand (Tamid 7:3; "וסודרין - הם דגלים", the Rambam's commentary) - the flag of the morning's
@@ -896,6 +925,7 @@
         const sud = fnc(SH.makeSudar) ? SH.makeSudar() : mkSud();
         sud.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
         sg.R.grip.add(sud);
+        holdB2(sg.R);   // HAND_SDF_MERGE_B2: the sudar's corner in the closed hand
         // the streams down the bowls' holes to the shitin (Chalamish p. 27: "היין והמים זורמים... ויורדים דרך נקב אל השיתין"), seen through
         // the corner drawn as glass (sfalimSee) while they pour
         const shit = new Group(); DG.add(shit); shit.visible = false;
@@ -989,6 +1019,7 @@
         flask.userData.noPick = true;
         flask.position.set(0, -0.2, 0.02);
         p.R.grip.add(flask);
+        holdB2(p.R);   // HAND_SDF_MERGE_B2
         const fwater = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true), new MeshStandardMaterial({ color: 0x7fc0f0, transparent: true, opacity: 0.8, roughness: 0.1 }));
         fwater.visible = false;
         DG.add(fwater);
@@ -1043,13 +1074,15 @@
       const T = { walk0: 4.0, out1: 9.6, decl1: 12.4, shu1: 21.0, par1: 23.5, gate1: 21.0, stairs1: 26.0, path1: 38.7, rim1: 39.9, fill0: 40.7, fill1: 43.7, back0: 44.7,
         backR: 49.3, back1: 53.7, wg0: 55.9, wg1: 59.3, blow0: 59.5, blow1: 63.7, in1: 67.7, ramp1: 72.1, top1: 74.9, pour0: 75.5, pour1: 79.1, end: 81.7 };
       // the flask: upright in the world, its neck in his hand; tilted forward to pour. Its mouth - where the streams begin and end
+      // (HAND_SDF_MERGE_B2: held at the neck's narrowest, 0.26 over its foot - the closed hand's ring round it; until now 0.21, by the open hand)
       const FILL_LEAN = 0.1, POUR_LEAN = 0.08, TILT = 1.62;
-      const QG = new Quaternion(), QT = new Quaternion(), AX = new Vector3(), NECK = new Vector3(0, -0.21, 0), MOUTH = new Vector3(0, 0.3, 0), V1 = new Vector3();
+      const QG = new Quaternion(), QT = new Quaternion(), AX = new Vector3(), NECK = new Vector3(0, -0.26, 0), MOUTH = new Vector3(0, 0.3, 0), V1 = new Vector3();
       const setFlask = (D2, tilt, yaw) => {
         const f = D2.flask;
         D2.p.g.updateMatrixWorld(true);
-        D2.p.R.grip.getWorldQuaternion(QG).invert();
         QT.setFromAxisAngle(AX.set(Math.cos(yaw), 0, -Math.sin(yaw)), tilt);
+        gripAlign(D2.p.R, QT);   // HAND_SDF_MERGE_B2
+        D2.p.R.grip.getWorldQuaternion(QG).invert();
         f.quaternion.copy(QG).multiply(QT);
         f.position.copy(NECK).applyQuaternion(QT).applyQuaternion(QG);
         f.updateMatrixWorld(true);
@@ -1279,8 +1312,9 @@
           const pk = smooth(clamp((t - T.pour0) / 0.6, 0, 1)) * (1 - smooth(clamp((t - T.pour1) / 0.6, 0, 1)));
           if (pk > 0) { setArm(w2.R, ARM.carry.map((v, i) => lerp(v, ARM.pour[i], pk)), -1); w2.lean.rotation.x = POUR_LEAN * pk; } else w2.lean.rotation.x = 0;
           w2.g.updateMatrixWorld(true);
-          w2.R.grip.getWorldQuaternion(QG).invert();
           QT.setFromAxisAngle(AX.set(Math.cos(w2.g.rotation.y), 0, -Math.sin(w2.g.rotation.y)), TILT * pk);
+          gripAlign(w2.R, QT);   // HAND_SDF_MERGE_B2
+          w2.R.grip.getWorldQuaternion(QG).invert();
           D2.wjug.quaternion.copy(QG).multiply(QT);
           D2.wjug.position.copy(NECK).applyQuaternion(QT).applyQuaternion(QG);
           D2.wjug.updateMatrixWorld(true);

@@ -201,6 +201,7 @@
     return m;
   }
 
+  //@@include hand
   //@@include strap
   //@@include face
   //@@include people-kit

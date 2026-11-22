@@ -1,4 +1,5 @@
   // plugin/js/courts.js
+  //@@include hand
   //@@include strap
   //@@include face
   //@@include people-kit

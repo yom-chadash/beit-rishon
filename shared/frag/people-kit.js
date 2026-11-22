@@ -180,16 +180,7 @@
     // the near level, black, hidden by night or on a festival: the reasons in ctx.shared.tefOff, the High Priest's Yom Kippur and the
     // night of the water-drawing (tefOK). The Levite's cap is set back for it (kippahBack).
     const mTefP = new MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.92, envMapIntensity: 0.15 });   // TEF_MATTE_A2: black and matte (as priest-kit.js)
-    const tefG = (HY) => {
-      const TY = 0.1, TB = 0.04, zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
-      const tilt = Math.atan2(n.y, n.z), place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; }, parts = [];
-      parts.push(place(new BoxGeometry(TB * 1.25, TB * 1.25, 0.01), 0.007), place(new BoxGeometry(TB, TB, TB), 0.012 + TB / 2));
-      const ring = [];   // TEFILLIN_PLACE_A2: over the ears to the knot at the top of the nape (as priest-kit.js)
-      for (let i = 0; i < 24; i++) { const ph = (i / 24) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = -0.056 + (TY - TB * 0.45 + 0.056) * Math.pow(w, 0.35), r = headR(ph, y) + 0.005; ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r)); }
-      // TEF_STRAP_A2 (the user: "דקות, שחורות ושטוחות (רצועת עור), ולא חוט עגול"): a flat strap (tm_strap), its face on the head; until now a round cord
-      parts.push(tm_strap(ring, (p) => new Vector3(p.x / (HR[0] * HR[0]), p.y / (HR[1] * HR[1]), p.z / (HR[2] * HR[2])), 0.013, 0.0018, true, 40));
-      return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); return q.translate(0, HY, 0); }));
-    };
+    const tefG = (HY) => tm_tefRosh({ HR, headR, TY: 0.1, TB: 0.04, ends: false, low: true }).translate(0, HY, 0);   // TEF_ROSH_A2: shared/frag/strap.js - the strap from behind the box
     const tefOK = () => { const S = ctx.shared || {}; return !(S.tefOff && S.tefOff.size) && !(S.ykEntry && S.ykEntry.on) && !(S.simchaShoeva && S.simchaShoeva.on); };
     // AVNET_305 (the user, 19.11.2026 23:36: "יש בעיה עם האבנט של הכהנים בשמחת בית השואבה הוא לא מה שיצרנו כבר"): the avnet of the
     // lottery's priest (55-payis.js AVNET_211) - one band at the elbows' height ("כנגד אצילי ידיו", Klei HaMikdash 10:1), three turns
@@ -280,9 +271,12 @@
       });
     };
     const arm = (S, E, W) => [shade(at(sph(0.074, 0.074, 0.074, 6, 4), S[0], S[1], S[2]), 1), shade(limb(S, E, 0.072, 0.06, 6), 0.95), shade(at(sph(0.06, 0.06, 0.06, 6, 3), E[0], E[1], E[2]), 0.95), shade(limb(E, W, 0.058, 0.048, 6), 0.9)];
-    // a hand lying flat: the palm, the fingers a little bent, the thumb at the inner side (sd: the arm's side; dir: its way, from +z)
+    // a hand lying flat: the palm, the fingers a little bent, the thumb at the inner side (sd: the arm's side; dir: its way, from +z).
+    // HAND_A2 (the user: "הידיים נראות מזעזע"): the hand of shared/frag/hand.js (tm_hand, in fewer faces) - from the wrist along +z,
+    // the palm down; until now three balls
+    const handFlat = (sd) => { const q = tm_hand({ sd, pose: "rest", low: true }).geo.clone(); q.rotateX(-Math.PI / 2); return q; };
     const hand = (sd, H, dir) => {
-      const q = mergeGeometries([at(sph(0.03, 0.0135, 0.042, 5, 3), 0, 0, 0.04), at(sph(0.027, 0.011, 0.03, 5, 3), 0, -0.006, 0.085), at(sph(0.01, 0.01, 0.024, 4, 2), -sd * 0.03, 0, 0.04)]);
+      const q = handFlat(sd);
       q.rotateY(dir);
       q.translate(H[0], H[1], H[2]);
       return skinPart(q);
@@ -346,7 +340,7 @@
         const W = pose === "bench" ? [sd * 0.15, 0.225, 0.26] : pose === "ground" ? [sd * 0.262, 0.225, 0.15] : (sd > 0 ? [0.11, 1.4, 0.25] : [-0.1, 1.46, 0.27]);
         if (!noArms) mc.push(shade(limb([sd * 0.245, SY - 0.01, 0], E, 0.074, 0.06, 5), 0.95));
         if (!noArms) mc.push(shade(limb(E, W, 0.058, 0.048, 5), 0.9));
-        if (!noArms) ms.push(skinPart(at(sph(0.032, 0.016, 0.05, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.05)));
+        if (!noArms) ms.push(skinPart(at(sph(0.04, 0.017, 0.1, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.1)));   // HAND_A2: as long as the near one
       }
       if (pose === "stand" && kind === "scribe") ms.push(shade(flatUV(at(rot(new BoxGeometry(0.21, 0.016, 0.27), -0.5), 0.01, 1.455, 0.37), 0.92, 0.86), 1));
       mc.push(headT(kind === "kohen" ? hatK(8, 6) : kind === "levi" ? kippahBack(10, 2) : kippah(10, 2)));
@@ -500,8 +494,7 @@
       const tube = (r0, r1) => shade(new CylinderGeometry(r1, r0, 1, 6, 1, true).translate(0, 0.5, 0), 0.93);
       const mC = clothMat(o.robe);
       const uA = mk(tube(0.072, 0.06), mC, 2 * n), fA = mk(tube(0.058, 0.048), mC, 2 * n), jA = mk(shade(new SphereGeometry(1, 7, 5), 0.95), mC, 4 * n);
-      const handG = (sd) => skinPart(mergeGeometries([at(sph(0.03, 0.0135, 0.042, 5, 3), 0, 0, 0.04), at(sph(0.027, 0.011, 0.03, 5, 3), 0, -0.006, 0.085),
-        at(sph(0.01, 0.01, 0.024, 4, 2), -sd * 0.026, 0.004, 0.03)]));
+      const handG = (sd) => skinPart(handFlat(sd));   // HAND_A2: tm_hand (fewer faces), along the forearm
       const hA = { 1: mk(handG(1), mSkin, n), "-1": mk(handG(-1), mSkin, n) };
       const cH = new Color();
       for (let i = 0; i < n; i++) {

@@ -1345,7 +1345,7 @@
     // the backs of both hands - their middle JET_DX east of the tap's mouth (0.24 until now, onto his left hand on his leg)
     const YW82 = Math.PI, JET_DX = 0.9;
     const kidWater = { made: false, drip: [], film: [] };
-    const handW = (w, A2, out) => { const KG = ark_kitArms(); return A2.wr ? A2.wr.localToWorld(out.set(0, -0.05 * ark_kit().FS, 0)) : A2.el.localToWorld(out.set(0, -(KG.P.fo + 0.05 * ark_kit().FS), 0.01)); };
+    const handW = (w, A2, out) => { const KG = ark_kitArms(); return A2.wr ? A2.wr.localToWorld(out.set(0, -0.064 * ark_kit().FS, 0)) : A2.el.localToWorld(out.set(0, -(KG.P.fo + 0.064 * ark_kit().FS), 0.01)); };
     const kiddAt = (lt) => {
       const w = kidd.w;
       if (!w) return;

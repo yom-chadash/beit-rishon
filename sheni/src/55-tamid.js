@@ -694,7 +694,13 @@
           knee: W1(K.sph(0.09 * FS, 0.09 * FS, 0.09 * FS, 12, 8)),
           shin: W1(new CylinderGeometry(0.04 * FS, 0.05 * FS, 1, 10, 1, true).translate(0, 0.5, 0)),
           neck: sc(K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), 1),
-          mLev: K.mat(COL.levite, { vertexColors: true, roughness: 0.9 }), mLevCap: K.mat(COL.levCap, { roughness: 0.9 })
+          mLev: K.mat(COL.levite, { vertexColors: true, roughness: 0.9 }), mLevCap: K.mat(COL.levCap, { roughness: 0.9 }),
+          // HAND_A2 (the user: "הידיים נראות מזעזע"): the kit's hand (shared/frag/hand.js) in its poses - rest, open (the blessing), flat
+          // (kiddush), grip (round a handle), point ("הצביעו") - in the wrist's frame; the grip's place: the middle of the closed hand
+          hands: K.handWr ? Object.fromEntries(["rest", "open", "flat", "grip", "fist", "point", "bless"].map((k) => [k, { 1: K.handWr(1, k), "-1": K.handWr(-1, k) }])) : null,
+          gripAt: K.handAt ? { 1: K.handAt(1, "grip"), "-1": K.handAt(-1, "grip") } : null,
+          // HAND_GRIP_A2: the closed hand's rings - round a handle (grip) and round a thin rod (fist): their middles and their ways
+          ring: K.handAt ? Object.fromEntries(["grip", "fist"].map((k) => [k, { at: { 1: K.handAt(1, k), "-1": K.handAt(-1, k) }, ax: { 1: K.handAt(1, k + "Ax"), "-1": K.handAt(-1, k + "Ax") } }])) : null
         };
       })() : null;
       const makeFigKit = (id, kind) => {
@@ -772,9 +778,11 @@
           const wr = new Group();
           wr.position.y = -A.fo;
           el.add(wr);
-          wr.add(new Mesh(KG.handW[side], K.mSkin));
+          wr.add(wr.userData.hand = new Mesh(KG.handW[side], K.mHand || K.mSkin));
           const grip = new Group();
-          grip.position.set(0, -(A.fo + 0.08), 0.03);
+          // HAND_A2: where a handle lies in the closed hand (until now 0.08 under the wrist and 0.03 before it - by the small hand)
+          if (KG.gripAt) { grip.position.set(KG.gripAt[side].x, -A.fo + KG.gripAt[side].y, KG.gripAt[side].z); grip.userData.fo = A.fo; }
+          else grip.position.set(0, -(A.fo + 0.08), 0.03);
           el.add(grip);
           return { sh, el, grip, wr };
         };
@@ -941,12 +949,13 @@
         const coals = mesh(new BoxGeometry(0.5, 0.06, 0.5), MAT.ember, 0, 0.13, 0.62);
         coals.visible = false;
         g.add(coals);
-        g.add(mesh(new CylinderGeometry(0.035, 0.035, 0.75, 6).rotateX(HP), mat, 0, 0.08, 0.1));
+        g.add(mesh(new CylinderGeometry(0.028, 0.028, 0.75, 8).rotateX(HP), mat, 0, 0.08, 0.1));   // HAND_GRIP_A2: as thick as the closed hand's ring (0.035 until now)
         g.userData.coals = coals;
         return g;
       };
-      prop("machtaS", pan(MAT.silver), { p: [0, -0.1, 0.05], r: [0, 0, 0] });
-      prop("machtaG", pan(MAT.gold), { p: [0, -0.1, 0.05], r: [0, 0, 0] });
+      // HAND_GRIP_A2: held by the handle's end (applyProps - holdHandle)
+      prop("machtaS", pan(MAT.silver), { p: [0, -0.1, 0.05], r: [0, 0, 0] }).handle = { at: [0, 0.08, -0.2], dir: [0, 0, 1] };
+      prop("machtaG", pan(MAT.gold), { p: [0, -0.1, 0.05], r: [0, 0, 0] }).handle = { at: [0, 0.08, -0.2], dir: [0, 0, 1] };
       prop("teni", (() => {   // "הטני דומה לתרקב גדול של זהב" (3:6): a deep golden basket with two handles
         const g = new Group();
         g.add(mesh(new CylinderGeometry(0.32, 0.24, 0.42, 14, 1, true), MAT.gold, 0, 0.21, 0));
@@ -968,17 +977,18 @@
         const g = new Group();
         g.add(mesh(new CylinderGeometry(0.34, 0.26, 0.36, 14, 1, true), MAT.gold, 0, 0.18, 0));
         g.add(mesh(new CircleGeometry(0.26, 14).rotateX(-HP), MAT.gold, 0, 0.01, 0));
+        g.add(mesh(new TorusGeometry(0.34, 0.028, 8, 32).rotateX(HP), MAT.gold, 0, 0.36, 0));   // HAND_GRIP_A2: its lip rolled - where the hand holds it (a model choice)
         const lid = new Group();
-        lid.add(mesh(new SphereGeometry(0.35, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2.4), MAT.gold, 0, 0.32, 0));
-        lid.add(mesh(new SphereGeometry(0.06, 8, 6), MAT.gold, 0, 0.62, 0));
+        lid.add(mesh(new SphereGeometry(0.29, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2.4), MAT.gold, 0, 0.295, 0));   // HAND_GRIP_A2: within the lip, on it (0.35 until now - over it)
+        lid.add(mesh(new SphereGeometry(0.06, 8, 6), MAT.gold, 0, 0.585, 0));
         // KAF_CLOTH_A2 (the user's decision 61): "ומטוטלת היתה עליו מלמעלה" (Tamid 5:4) - as the Aruch in the Bartenura (634:180)
         // "חתיכת בגד... שהיה נתון על כסוי הבזך כמין סודר קטן לנוי", the Yachin (818:546) and the Mefaresh (2105:394) "מפה קטנה מאד כמין
         // חתיכת בגד": a small cloth lying on the cover, round its knob. Its colour and size - model choices.
-        lid.add(mesh(new SphereGeometry(0.358, 18, 4, 0, Math.PI * 2, 0, 0.5), MAT.cloth, 0, 0.32, 0));
+        lid.add(mesh(new SphereGeometry(0.297, 18, 4, 0, Math.PI * 2, 0, 0.5), MAT.cloth, 0, 0.295, 0));
         g.add(lid);
         g.userData.lid = lid;
         return g;
-      })(), { p: [0, -0.3, 0.25], r: [0, 0, 0] });
+      })(), { p: [0, -0.3, 0.25], r: [0, 0, 0] }).handle = { at: [0, 0.36, -0.34], dir: [1, 0, 0], dirL: [-1, 0, 0] };   // HAND_GRIP_A2: by the lip, the vessel hanging outward
       prop("bazach", (() => {   // the dish of incense, "מלא וגדוש"
         const g = new Group();
         g.add(mesh(new CylinderGeometry(0.2, 0.15, 0.1, 12), MAT.gold, 0, 0.05, 0));
@@ -993,9 +1003,10 @@
         g.add(mesh(new BoxGeometry(1.0, 1.0, 0.5), MAT.bronze, 0, 0, 1.2));
         const hm = new MeshStandardMaterial({ color: 0x1a120c, roughness: 1 });
         for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) { const h = new Mesh(new CircleGeometry(0.055, 10), hm); h.position.set(-0.36 + c * 0.18, 0.2 - r * 0.4, 1.2 + 0.252); g.add(h); }
-        g.add(mesh(new CylinderGeometry(0.04, 0.04, 0.95, 6).rotateX(HP), MAT.wood, 0, 0, 0.5));
+        g.add(mesh(new CylinderGeometry(0.028, 0.028, 0.95, 8).rotateX(HP), MAT.wood, 0, 0, 0.5));   // HAND_GRIP_A2: as thick as the hand's ring (0.04 until now)
         return g;
-      })(), { p: [0, 0, 0], r: [1.0, 0, 0] }, false);   // held by its handle, the box forward and down
+      })(), { p: [0, 0, 0], r: [1.0, 0, 0] }, false).handle = { at: [0, 0, 0.1], dir: [0, 0, 1] };   // held by its handle's end, along the hand's ring
+      props.magrefa.upright = true;   // HAND_GRIP_A2: held level, the box before him (not up in the air when the arm is bent); thrown - as it was
       prop("mizrak", (() => {   // the bowl of the blood
         // MIZRAK_SILVER_A2 (the user, on picture 37: black, as a funnel - "כלי שרת — מתכת: כסף או זהב, עם ברק"): silver that shines in the
         // dawn too - less mirror (it reflected the dark sky), its own light a little; inside and out
@@ -1008,6 +1019,10 @@
         bm.opacity = 0.95;
         return tm_mizrak(mzM, { r: 0.17, at: "rod", handleYaw: 1.92, bloodMat: bm });
       })(), { p: [0, 0, 0.02], r: [0, 0, 0] });   // MIZRAK_A2: the rod's end in the hand
+      // HAND_GRIP_A2: the thin rod (0.0085) in the closed fist (its ring 0.006 x 1.4), a little in from its end; the rod's way from its end
+      // to the cone (mizrak.js: up at atan 0.42, turned by handleYaw)
+      { const p = props.mizrak, a = Math.atan2(0.42, 1), hy = 1.92, d = [-Math.cos(a) * Math.cos(hy), -Math.sin(a), Math.cos(a) * Math.sin(hy)];
+        p.hold = "fist"; p.handle = { at: d.map((v) => v * 0.022), dir: d }; }
       // KNIFE_A2 (the user's decision 72 e - a model choice): the slaughterer's knife in his hand - a long blade, straight, without a point,
       // and a wooden handle; along the hand's way (its -y)
       prop("knife", (() => {
@@ -1311,7 +1326,9 @@
         tagCache.set(text, v);
         return v;
       };
-      return { group, altarG, MAT, G, figs, hp: hpGarb, piles, lamb, props, sleepers, L1, L2, modelGez, blood, tagMat, paths: new Map(), routes: new Map(), night: NW };   // NIGHT_WATCH_305
+      return { group, altarG, MAT, G, figs, hp: hpGarb, piles, lamb, props, sleepers, L1, L2, modelGez, blood, tagMat, paths: new Map(), routes: new Map(), night: NW,   // NIGHT_WATCH_305
+        hands: KG ? KG.hands : null, gripAt: KG ? KG.gripAt : null, ring: KG ? KG.ring : null,   // HAND_A2; HAND_GRIP_A2
+        handMid: KG && SH.priestKit && SH.priestKit.handWr ? (() => { const m = {}; return (kind, side) => m[kind + side] || (m[kind + side] = SH.priestKit.handWr(side, kind, true)); })() : null };
     }
     // ---------------------------------------------------------------- the cast
     const FIG_IDS = ["mem", "t", "mc", "cv", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "k", "f", "e", "b1", "b2", "b3", "b4", "sg", "tr1", "tr2"];
@@ -2323,6 +2340,7 @@
         a.hold(k, p, "R", 18.9);
       });
       for (const k of [...others, "s3", "s4", "mc", "f", "k"]) a.pose(k, "raise", 10, 18.5);
+      a.tag("s5", "״וחולקים אצבעותיהם... ה׳ אוירים״, ״תוך כפיהם כנגד הארץ״ (שו״ע או״ח קכח, יב)", 10.6, 18.5);   // BIRKAT_V_A2 (382:1024)
       // HP_TAMID_A2: Tamid 7:1 (88:38) "בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו, אחד בימינו, ואחד בשמאלו, ואחד באבנים טובות... נכנס
       // והשתחוה ויצא" - he goes into the heichal with three priests holding him (b1 at his right, b2 at his left, b3 before him by the
       // stones of the breastplate), bows and comes out; at the blessing he stands in the middle, his hands not above the tzitz - "חוץ מכהן
@@ -2334,7 +2352,7 @@
         a.pose("hp", "prostrate", 5.4, 7.2);
         a.walk("hp", [[-12, 0], [-6.2, 0], [2.6, 0], [8, 0], [15, 0], [21.6, 0]], 7.4, 10, { yaw: HP });
         [["b1", 7.6, 1.6], ["b2", 7.6, -1.6], ["b3", 7.6, 3.2]].forEach(([k, t, z]) => a.walk(k, [[-12, z * 0.6], [2.6, z * 0.6], [15, z], [21.6, z * 6]], t, 10.2, { yaw: HP }));
-        a.pose("hp", "offer", 10.4, 18.5);
+        a.pose("hp", "raiseHP", 10.4, 18.5);   // BIRKAT_V_A2: blessing, his hands not over the tzitz (until now "offer" - held before him)
         a.tag("hp", "״בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו״ (תמיד ז, א)", 0.5, 7.2);
         a.tag("hp", "״חוץ מכהן גדול שאינו מגביה את ידיו למעלה מן הציץ״ (תמיד ז, ב)", 10.4, 18.5);
       }
@@ -2485,7 +2503,7 @@
       fingers: [[-1.25, 0.05, -0.45], [0.05, 0.08, -0.15], 0], knock: [[-1.4, 0.05, -1.3], [0.05, 0.08, -0.15], 0.05], wash: [[-0.95, -0.12, -0.55], [-0.95, -0.12, -0.55], 0.18],
       scoop: [[-0.95, 0.05, -0.35], [-0.95, 0.05, -0.35], 0.42], shovel: [[-0.85, -0.1, -0.5], [-0.75, -0.25, -0.7], 0.3], place: [[-0.9, -0.1, -0.4], [-0.9, -0.1, -0.4], 0.35],
       pour: [[-1.15, 0.05, -0.35], [0.05, 0.08, -0.15], 0.22], offer: [[-1.0, -0.05, -0.6], [-0.6, -0.1, -0.8], 0.15], point: [[-1.7, 0.1, -0.05], [0.05, 0.08, -0.15], 0],
-      reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.5, 0.07, -0.04], [-2.5, 0.07, -0.04], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12],
+      reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.53, -0.17, -0.04], [-2.43, -0.17, -0.04], 0], raiseHP: [[-1.82, -0.15, -0.04], [-1.78, -0.15, -0.04], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12],
       trumpet: [[-1.5, -0.25, -1.45], [-1.45, -0.3, -1.55], 0], cymbal: [[-1.0, 0.5, -1.2], [-1.0, 0.5, -1.2], 0], wave: [[-2.6, 0.35, -0.2], [0.05, 0.08, -0.15], 0],
       play: [[-0.75, -0.15, -1.15], [-0.2, -0.12, -1.35], 0], throw: [[-1.5, 0.05, -0.2], [0.05, 0.08, -0.15], 0.1], prostrate: [[-2.9, 0.4, 0], [-2.9, 0.4, 0], 1.48],
       // KIDDUSH_211 (the user, 14.11.2026 23:36; Zevachim 19b, 130:754): "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו
@@ -2615,6 +2633,7 @@
       for (const side of [1, -1]) out[side] = reach([side * A.sx, A.sy - WY, 0], [side * 0.075, my, 0.27], A.up, A.fo + 0.06 * FS, side);
       return (f.callArms = out);
     };
+    const gripDown = () => (W && W.gripAt ? -W.gripAt[1].y : 0.08);   // HAND_A2: the closed hand's middle under the wrist (0.08 with the small hand)
     // an arm reaching a point: sp the shoulder, tp the point (in its parent's frame, amot); a the upper arm, b the forearm to the palm;
     // side as setArm's. [shoulder x, abduct, elbow] - the elbow bends forward. Out of reach: the arm straight toward the point.
     const reach = (sp, tp, a, b, side) => {
@@ -2632,7 +2651,7 @@
     const trimArm = (f, s) => {
       const q = SH.menorah.lampPos(s.lamp), c = Math.cos(s.yaw), sn = Math.sin(s.yaw), dx = q[0] - s.x, dz = q[2] - s.z;
       const lx = dx * c - dz * sn, lz = dx * sn + dz * c, side = lx > 0.05 ? 1 : -1, A = f.A, WY = f.bend ? f.bend.position.y : 0;
-      return { side, arm: reach([side * A.sx, A.sy - WY, 0], [lx, q[1] - s.y - WY, lz - 0.12], A.up, A.fo + 0.08, side) };
+      return { side, arm: reach([side * A.sx, A.sy - WY, 0], [lx, q[1] - s.y - WY, lz - 0.12], A.up, A.fo + gripDown(), side) };
     };
     const kidReach = (f) => {
       if (f.kidArms) return f.kidArms;
@@ -2742,8 +2761,8 @@
         // KIDDUSH_FLAT_A2: the palms on the feet - the stream onto the backs of both hands between them, off the fingers onto the toes
         // and off the toes to the floor ("המים מהברז נופלים על גב היד, ומשם על הרגל, ושתיהן נשטפות יחד")
         const FSk = SH.priestKit ? SH.priestKit.FS : 1, flat = !!(f.R.wr && f.kidH);
-        const hR = flat ? f.R.wr.localToWorld(_kq[0].set(0, -0.05 * FSk, 0)) : f.R.grip.getWorldPosition(_kq[0]);
-        const hL = flat ? f.L.wr.localToWorld(_kq[1].set(0, -0.05 * FSk, 0)) : f.L.grip.getWorldPosition(_kq[1]);
+        const hR = flat ? f.R.wr.localToWorld(_kq[0].set(0, -0.064 * FSk, 0)) : f.R.grip.getWorldPosition(_kq[0]);   // HAND_A2: the palm's middle (0.05 with the small hand)
+        const hL = flat ? f.L.wr.localToWorld(_kq[1].set(0, -0.064 * FSk, 0)) : f.L.grip.getWorldPosition(_kq[1]);
         const fR = flat ? f.fr.localToWorld(_kq[2].set(0, 0.03 * FSk, 0.2 * FSk)) : f.fr.getWorldPosition(_kq[2]);
         const fL = flat ? f.fl.localToWorld(_kq[3].set(0, 0.03 * FSk, 0.2 * FSk)) : f.fl.getWorldPosition(_kq[3]);
         if (!flat) { const ft = 0.11 * FSk; fR.y += ft; fL.y += ft; }
@@ -2824,13 +2843,14 @@
       vP1.copy(sp).applyMatrix4(mPI.copy(mPA).invert());   // the right shoulder in the instrument's frame: which face of the strings is his
       const side = vP1.z >= 0 ? 1 : -1, ab = PLAY_STR[inst], u = 0.5 + 0.5 * Math.sin(t * 14 + figNo(f));
       vP.set(ab[0][0] + (ab[1][0] - ab[0][0]) * u, ab[0][1] + (ab[1][1] - ab[0][1]) * u, side * 0.06).applyMatrix4(mPA);
-      return reach([sp.x, sp.y, sp.z], [vP.x, vP.y, vP.z], f.A.up, f.A.fo + 0.08, -1);
+      return reach([sp.x, sp.y, sp.z], [vP.x, vP.y, vP.z], f.A.up, f.A.fo + gripDown(), -1);
     };
     const songSway = (f, s) => {
       const t = s.t || 0, k = smooth(clamp(t / 0.6, 0, 1)) * smooth(clamp((s.tl == null ? 9 : s.tl) / 0.5, 0, 1)), ph = figNo(f) * 0.11;
       return [0.055 * k * Math.sin(t * 2.4 + ph), k * (0.04 + 0.035 * Math.sin(t * 4.8 + ph))];
     };
     const _qI = new Quaternion();   // KIDDUSH_FLAT_A2
+    const BLESS_PALM = 1, _qW1 = new Quaternion(), _qW2 = new Quaternion(), _qW3 = new Quaternion(), _vX = new Vector3(1, 0, 0), _vY = new Vector3(0, 1, 0), _vZ = new Vector3(0, 0, 1);   // BIRKAT_V_A2
     const applyFig = (f) => {
       const s = f.st;
       f.g.visible = !!s.vis;
@@ -2908,8 +2928,36 @@
       // about 55 degrees over the level, side by side (POSES.raise); the hands turned so that the palms face forward, to the people, and
       // bent back at the wrist - the fingers up. Elsewhere the hand straight on the arm
       if (f.id === "sg" && W.props.flags && W.props.flags.o.userData.tick) { const fl = W.props.flags.o; if (fl.visible) fl.userData.tick(p === "wave" ? (s.t || 0) : performance.now() / 1000, p === "wave" ? 1 : 0); }   // SUDAR_A2
-      if (f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) { if (p === "raise") A2.wr.rotation.set(-0.64, -sd * Math.PI / 2, 0); else A2.wr.rotation.set(0, 0, 0); }
+      // BIRKAT_V_A2 (the user, via the coordinator: "שגב היד כלפי השמיים, אבל תנוחת היד יותר לכיוון העם"; Shulchan Aruch OC 128:12, 382:1024
+      // "כדי שיהא תוך כפיהם כנגד הארץ ואחורי ידיהם כנגד השמים", "ומגביהים יד ימנית קצת למעלה מהשמאלית"; the Rambam, Tefillah 14:9, 302:238
+      // "ומגביהין ידיהם למעלה על גבי ראשיהן... חוץ מכהן גדול שאין מגביה ידיו למעלה מן הציץ"): the arms forward to the people, some 37
+      // degrees from the upright, the hands over the heads (the high priest's lower - raiseHP: not over the tzitz), drawn in so that the two
+      // hands are side by side, the thumbs near each other (the fifth space), the right a little higher; the palms toward the earth, the
+      // fingers forward. BLESS_PALM: 1 - the palms toward the earth (the Shulchan Aruch); 0 - toward the people, the fingers up (until now).
+      // MODEL CHOICES: the arms 35 (the right) and 41 (the left) degrees from the upright, drawn in 0.17 rad - the hands' tops 3.33 and 3.27
+      // amot over the feet, 0.025 apart (the thumbs); the high priest's 1.82 / 1.78 rad from hanging, 0.15 in - their tops 3.06 / 3.01, the
+      // tzitz's top 3.12; the fingers' spread in the V (hand.js "bless": 0.15 rad each pair)
+      if (f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) {
+        if (p === "raise" || p === "raiseHP") {
+          const th = A2.sh.rotation.x + A2.el.rotation.x, ph = (Math.PI - th) + (-Math.PI / 2 - th - (Math.PI - th)) * BLESS_PALM;
+          _qW1.setFromAxisAngle(_vZ, -A2.sh.rotation.z); _qW2.setFromAxisAngle(_vX, ph); _qW3.setFromAxisAngle(_vY, -sd * 0.95);
+          A2.wr.quaternion.copy(_qW1).multiply(_qW2).multiply(_qW3);   // (the shoulder's turn outward undone, then the wrist's bend and turn)
+        } else A2.wr.rotation.set(0, 0, 0);
+      }
       if (kidH && f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) A2.wr.quaternion.slerpQuaternions(_qI, kidH.wq[sd], kidU);   // KIDDUSH_FLAT_A2: the palms down on the feet
+      // HAND_A2: the hands' pose - open in the blessing and the greeting, flat on the feet in kiddush and on the floor in prostration and
+      // on the fellow's side (support), the first finger out in the lotteries and in pointing, a fist in knocking; else at rest (a little
+      // bent). A held vessel closes its hand round it (applyProps, after this)
+      if (f.R.wr && W.hands) {
+        const hk = { R: "rest", L: "rest" };
+        if (p === "raise" || p === "raiseHP") hk.R = hk.L = "bless";   // BIRKAT_V_A2
+        else if (p === "hail") hk.R = "open";
+        else if ((p === "kiddush" && kidH) || p === "prostrate" || p === "support") hk.R = hk.L = "flat";
+        else if (p === "fingers" || p === "point") hk.R = "point";
+        else if (p === "knock" || p === "strike") hk.R = "grip";
+        f.handK = hk;
+        setHands(f);
+      }
       if (f.bend) { f.bend.rotation.x = bendA; f.bend.rotation.z = bendZ; }
       if (f.legs) { setLeg(f, -1, legR); setLeg(f, 1, legL); }
       f.lean.rotation.x = lean;
@@ -2934,6 +2982,20 @@
         f.tag.visible = true;
       } else if (f.tag) f.tag.visible = false;
     };
+    // HAND_A2: put a figure's hands to their poses (f.handK: { R, L }), each its own geometry (KG.hands) - the Levite's left hand, with the
+    // strap of his tefillin on it, stays at rest
+    // HAND_SDF_A2 (the coordinator: no drop in the frame rate where the near figures are many): a figure more than HAND_FAR amot from the
+    // eye has its hands in fewer faces (hand.js "mid": 3,000 triangles - 7,500 near); made when first wanted
+    const HAND_FAR = 4.5, _hv = new Vector3();
+    const setHands = (f) => {
+      const far = !!(W.handMid && ctx2.camera && f.g && f.g.getWorldPosition(_hv).distanceTo(ctx2.camera.position) > HAND_FAR);
+      for (const [A2, side, k] of [[f.R, -1, "R"], [f.L, 1, "L"]]) {
+        const m = A2.wr && A2.wr.userData.hand;
+        if (!m) continue;
+        const kind = f.levite && side > 0 ? "rest" : f.handK[k], geo = W.hands[kind] && (far ? W.handMid(kind, side) : W.hands[kind][side]);
+        if (geo && m.geometry !== geo) m.geometry = geo;
+      }
+    };
     const applyLamb = () => {
       const L = W.lamb, s = L.st;
       L.g.visible = !!s.vis;
@@ -2954,6 +3016,43 @@
       }
     };
     const QA = new Quaternion(), QB = new Quaternion(), EU = new Euler();
+    // HAND_GRIP_A2 (the coordinator, on 53: "באחיזת כלי, האצבעות עוטפות את הידית, בלי לחדור לתוכה ובלי רווח"): a vessel held by its
+    // handle (p.handle: { at - a point on the handle's axis where the hand holds it, dir - the handle's way from the hand to the vessel, in
+    // the vessel's frame }) lies in the closed hand's ring: the handle's axis through the ring's middle and along its way (the ring as
+    // wide as the handle - hand.js: grip 0.02, fist 0.006 kit units). An upright vessel (a fire pan, the mizrak) stays level: it turns
+    // about the upright so that its handle goes the hand's way, and the wrist bends the hand to the handle; any other (the magrefa) goes
+    // with the hand, its handle along the ring, its top as near up as it can be. MODEL CHOICES: the fire pans' and the magrefa's handles
+    // 0.028 amah in radius (as the ring; 0.035 and 0.04 until now), held at their ends; the kaf's lip rolled (0.028) and held by it, the
+    // vessel hanging outward; the mizrak's thin rod in the fist, 0.022 in from its end
+    const _hA = new Vector3(), _hD = new Vector3(), _hW = new Vector3(), _hQ = new Quaternion(), _hQE = new Quaternion(), _hM = new Matrix4(), _hM2 = new Matrix4();
+    const _hX = new Vector3(), _hY = new Vector3(), _hZ = new Vector3(), _hUp = new Vector3(0, 1, 0);
+    const holdHandle = (f, A2, side, p, hk) => {
+      const gp = A2.grip, o = p.o, H = p.handle, R = W.ring[hk], AX = R.ax[side], G = R.at[side];
+      A2.el.updateWorldMatrix(true, false);
+      A2.el.getWorldQuaternion(_hQE);
+      _hA.copy(AX).applyQuaternion(A2.wr.quaternion).applyQuaternion(_hQE);   // the ring's way in the world, as the arm holds it
+      const hd = side > 0 && H.dirL ? H.dirL : H.dir;
+      _hD.set(hd[0], hd[1], hd[2]).normalize();
+      if (p.upright) {
+        // its level way: the ring's, and where the ring stands nearly upright (the forearm before him) the forearm's
+        _hX.set(0, -1, 0).applyQuaternion(A2.wr.quaternion).applyQuaternion(_hQE);
+        const lh = Math.hypot(_hA.x, _hA.z), wf = clamp(1 - lh / 0.6, 0, 1);
+        _hQ.setFromAxisAngle(_hUp, Math.atan2(_hA.x + _hX.x * wf, _hA.z + _hX.z * wf) - Math.atan2(_hD.x, _hD.z));
+        _hW.copy(_hD).applyQuaternion(_hQ).applyQuaternion(QB.copy(_hQE).invert());   // the handle's way in the elbow's frame
+        A2.wr.quaternion.setFromUnitVectors(AX, _hW);
+      } else {
+        const bx = (v, d, u) => { v.copy(u).addScaledVector(d, -u.dot(d)); if (v.lengthSq() < 1e-6) v.set(1, 0, 0).addScaledVector(d, -d.x); return v.normalize(); };
+        bx(_hY, _hD, _hUp); _hX.crossVectors(_hY, _hD); _hM.makeBasis(_hX, _hY, _hD);           // the vessel's own: (side, up, handle)
+        bx(_hY, _hA, _hUp); _hX.crossVectors(_hY, _hA); _hM2.makeBasis(_hX, _hY, _hZ.copy(_hA));  // the same in the world
+        _hQ.setFromRotationMatrix(_hM2.multiply(_hM.transpose()));
+      }
+      gp.position.set(G.x, G.y, G.z).applyQuaternion(A2.wr.quaternion);   // the ring turns with the wrist, about its joint
+      gp.position.y -= gp.userData.fo;
+      gp.updateWorldMatrix(true, false);
+      gp.getWorldQuaternion(QA);
+      o.quaternion.copy(QA.invert()).multiply(_hQ);
+      o.position.set(-H.at[0], -H.at[1], -H.at[2]).applyQuaternion(o.quaternion);
+    };
     const applyProps = () => {
       for (const id in W.props) {
         const p = W.props[id], s = p.st, o = p.o;
@@ -2961,8 +3060,14 @@
         if (s.fig) {
           const f = W.figs[s.fig];
           if (!f.st.vis) { o.visible = false; continue; }
-          const gp = (s.hand === "L" ? f.L : f.R).grip;
+          const A2 = s.hand === "L" ? f.L : f.R, gp = A2.grip, side = s.hand === "L" ? 1 : -1, hk = /^(lyre|nevel)/.test(id) ? null : p.hold || "grip";
+          if (f.handK && W.hands && hk) { f.handK[s.hand === "L" ? "L" : "R"] = hk; setHands(f); }   // HAND_A2: closed round what it holds (the instruments rest on the hand)
           if (o.parent !== gp) gp.add(o);
+          if (hk && W.ring && gp.userData.fo != null) {   // HAND_GRIP_A2: the grip where this pose's ring is
+            const G = W.ring[hk].at[side];
+            gp.position.set(G.x, -gp.userData.fo + G.y, G.z);
+            if (p.handle && A2.wr) { holdHandle(f, A2, side, p, hk); o.visible = true; continue; }
+          }
           o.position.set(p.grip.p[0], p.grip.p[1], p.grip.p[2]);
           o.rotation.set(p.grip.r[0], p.grip.r[1], p.grip.r[2]);
           if (p.upright) {   // vessels stay upright whatever the arm does
