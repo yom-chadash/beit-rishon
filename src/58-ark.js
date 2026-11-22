@@ -38,7 +38,8 @@
   function ark_setArm(A, v, side) { A.sh.rotation.x = v[0]; A.sh.rotation.z = side * v[1]; A.el.rotation.x = v[2]; }
   // a priest (the lotteries' priest): white kutonet, the avnet of colours, the migba'at; n - which of the beards
   // waist (KIDDUSH_BEND_212): the robe in two at K.WAIST, all above it in `bend` (turned there: the legs stay upright)
-  function ark_priestFig(n, waist) {
+  // TEFILLIN_A2: noTef - no tefillin (the ark is brought in on the festival, I Kings 8:2 "בחג"); every other priest has the head's
+  function ark_priestFig(n, waist, noTef) {
     const K = ark_kit(), KG = ark_kitArms(), FS = K.FS;
     const g = new Group(), lean = new Group();
     g.name = "arkPriest";
@@ -64,6 +65,7 @@
     U.add(new Mesh(K.gSash, K.mSashDyed));
     const hg = K.headOn(U, K.HEAD_Y, K.mBeards[[3, 1, 6, 4][n % 4]], n);
     hg.rotation.set(0, (((n * 0.618) % 1) - 0.5) * 0.3, 0);
+    if (!noTef && K.tefOn) K.tefOn(hg);   // TEFILLIN_A2
     const hat = new Mesh(K.gHat, K.mHat);
     hat.position.y = K.HAT_Y;
     hat.rotation.y = hg.rotation.y + (((n * 0.37) % 1) - 0.5) * 0.9;
@@ -392,6 +394,43 @@
   const ark_kiyorY = (LV) => (LV.HAR || 0) + (typeof MNT_WC_Y === "number" ? MNT_WC_Y : 3);
   async function buildArk(ctx) {
     const M2 = ctx.M, LV = ctx.LV;
+    // SCALE_FIG_A2 (fix-a2, 22.11.2026; the user's decision 23, both houses): A FIGURE FOR SCALE - one priest, 170 cm tall in an amah of
+    // 48 cm = 3.54 amot to the top of his head (the user's numbers - a model choice), in his garments, with the head's tefillin (a
+    // weekday, by day). He stands on the floor a little to the right of what one looks at (a fifth of the view's distance, 1.5 to 12
+    // amot), facing the eye, and goes with the view. Built when first asked. ctx.shared.scaleFigure = { on, set(on) } - the row "דמות
+    // לקנה מידה" (70-ui.js). Where he stands - a model choice.
+    {
+      const SF = { on: false, w: null, at: new Vector3(Infinity, 0, 0), tg: new Vector3(Infinity, 0, 0) };
+      const place = () => {
+        const cam = ctx.camera, oc = ctx.controls;
+        if (!cam || !oc || !SF.w) return;
+        if (SF.at.distanceToSquared(cam.position) < 1e-6 && SF.tg.distanceToSquared(oc.target) < 1e-6) return;
+        SF.at.copy(cam.position); SF.tg.copy(oc.target);
+        const dx = oc.target.x - cam.position.x, dz = oc.target.z - cam.position.z, L = Math.hypot(dx, dz) || 1;
+        const off = Math.max(1.5, Math.min(12, cam.position.distanceTo(oc.target) * 0.2));
+        const x = oc.target.x - (dz / L) * off, z = oc.target.z + (dx / L) * off;
+        const fy = typeof ctx.shared.floorY === "function" ? ctx.shared.floorY(x, oc.target.y + 2.5, z) : -Infinity;
+        SF.w.g.position.set(x, isFinite(fy) ? fy : oc.target.y, z);
+        SF.w.g.rotation.y = Math.atan2(cam.position.x - x, cam.position.z - z);
+      };
+      ctx.shared.scaleFigure = {
+        get on() { return SF.on; },
+        set(on) {
+          SF.on = !!on;
+          if (SF.on && !SF.w) {
+            const K = ark_kit(), w = ark_priestFig(2);
+            w.g.scale.setScalar(3.54 / ((K.HEAD_Y + K.HR[1]) * K.FS));
+            w.g.name = "scaleFigure";
+            w.g.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+            ctx.root.add(w.g);
+            SF.w = w;
+          }
+          if (SF.w) { SF.w.g.visible = SF.on; SF.at.set(Infinity, 0, 0); place(); }
+          return SF.on;
+        }
+      };
+      ctx.animated.push(() => { if (SF.on) place(); });
+    }
     const g = new Group();
     g.name = "arkGates";
     g.visible = false;
@@ -427,7 +466,7 @@
       pv.add(ark);
       let n = 0;
       for (const dx of [-1.6, 1.6]) for (const s of [-1, 1]) {
-        const p = ark_priestFig(n++);
+        const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
         p.g.position.set(X + dx, Y, s * 1.1);
         p.g.rotation.y = -Math.PI / 2;
         ark_setArm(s > 0 ? p.L : p.R, ARK_POSE.staff, s > 0 ? 1 : -1);
@@ -484,7 +523,7 @@
       const P = [];
       let n = 0;
       for (const front of [true, false]) for (const s of [-1, 1]) {
-        const p = ark_priestFig(n++);
+        const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
         p.front = front;
         p.s = s;
         p.staffArm = s > 0 ? p.L : p.R;

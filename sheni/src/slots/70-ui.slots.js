@@ -1610,6 +1610,16 @@
           onPick: (k) => { const M = ctx.shared.mochani; if (M && typeof M.set === "function") M.set(k === "o1" ? "rambam" : "rashi"); },
           fly: (k) => { const c = {"o0": [[30, 42, 44], [22, 18, 57]], "o1": [[30, 42, 44], [22, 18, 57]]}[k]; if (c && c[0] && c[1]) fly(c[0], c[1]); }
         });
+        // SCALE_FIG_A2 (fix-a2; the user's decision 23): a priest for scale, 3.54 amot (ctx.shared.scaleFigure, 55-payis.js)
+        if (ctx.shared.scaleFigure) opRow({
+          id: "sh64", short: "דמות לקנה מידה — כהן בגובה אדם", cardFly: false,
+          cap: "דמות לקנה מידה",
+          refs: [["עירובין מח.", { book: 105, index: 1782 }]],
+          options: [["o0", "בלי", "המודל בלי דמות לקנה מידה."],
+            ["o1", "כהן לקנה מידה — 170 ס״מ", "**דמות לקנה מידה:** כהן אחד בבגדיו, וגובהו 170 ס״מ — גובה אדם ממוצע — באמה של 48 ס״מ: 3.54 אמות (כשלוש אמות ושלושה טפחים ורבע, בטפח של 8 ס״מ). בחירת מודל.\n**היכן הוא עומד:** על הרצפה, מעט מימין למה שמביטים בו, ופניו אל העין; כשהמבט זז — הוא הולך איתו. בחירת מודל.\n**לעניין המקום שאדם תופס** (עירובין מח.): ״וכמה תחתיו? גופו שלש אמות, ואמה כדי לפשוט ידיו ורגליו — דברי רבי מאיר״."]],
+          current: "o0",
+          onPick: (k) => { const F = ctx.shared.scaleFigure; if (F && typeof F.set === "function") F.set(k === "o1"); }
+        });
         opRow({
           id: "sh27", short: "בין האולם ולמזבח — רוחבו", cardFly: true,
           cap: "בין האולם ולמזבח — רוחבו",
@@ -1927,7 +1937,7 @@
           ["בניין ההיכל, התאים והעלייה", ["sh33", "sh34", "sh35", "sh36", "sh37", "sh38", "sh39", "sh40", "sh41"]],
           ["כלי ההיכל", ["sh42", "sh43", "sh44", "sh45", "sh57", "sh46", "sh48"]],
           ["הפרוכות", ["sh47", "sh56", "sh58", "sh59", "sh49"]],
-          ["סדר העבודה ובגדי הכהנים", ["sh12", "sh22", "sh13"]]
+          ["סדר העבודה ובגדי הכהנים", ["sh12", "sh22", "sh13", "sh64"]]
 //@@end buildUI.after-GROUPS
 //@@begin buildUI.after-note-code
         // 1.0.1-L: the pills of this round; what a PLACE switches on goes off by itself (L.27), what a pill switches on stays

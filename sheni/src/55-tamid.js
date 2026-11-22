@@ -1391,7 +1391,9 @@
         const g = new Group();
         g.add(mesh(new TorusGeometry(0.32, 0.03, 6, 14, Math.PI * 1.3).rotateZ(-0.1), MAT.wood, 0, 0.3, 0));
         g.add(mesh(new BoxGeometry(0.62, 0.05, 0.06), MAT.wood, 0, 0.6, 0));
-        for (let s = -2; s <= 2; s++) g.add(mesh(new CylinderGeometry(0.004, 0.004, 0.52, 3), MAT.salt, s * 0.08, 0.35, 0));
+        // KINOR7_A2 (fix-a2; approved by the user's rule - the source is explicit): seven strings - Arachin 13b (134:437): "כנור של מקדש
+        // של שבעת נימין היה" (five until now; in the instruments' chambers already seven)
+        for (let s = -3; s <= 3; s++) g.add(mesh(new CylinderGeometry(0.004, 0.004, 0.52, 3), MAT.salt, s * 0.068, 0.35, 0));
         prop("lyre" + i, g, { p: [0, 0.1, 0.05], r: [0, 0, 0] });   // MUSICIANS_305: upright (false until 2.0.13), on the hand (0.2 above it)
       }
       for (let i = 1; i <= 2; i++) {   // LEVITES_211: two harps (נבלים) - a tall frame with a resonator below and more strings; the form - model choice
@@ -2738,7 +2740,7 @@
     };
     const setArm = (A2, v, side) => { A2.sh.rotation.x = v[0]; A2.sh.rotation.z = side * v[1]; A2.el.rotation.x = v[2]; };
     // MUSICIANS_305 (the user, 19.11.2026 21:08: "צריך גם לעשות את הלוויים מנגנים, אותו דבר בעבודת הבוקר. אם הם מנגנים, לא יכולים
-    // לעמוד כמו פסלים"): THE PLAYER'S RIGHT HAND on the strings of the instrument in his left (the lyre: five strings on its face; the
+    // לעמוד כמו פסלים"): THE PLAYER'S RIGHT HAND on the strings of the instrument in his left (the lyre: seven strings on its face - KINOR7_A2; the
     // harp: seven along it) - across them and back, a stroke in about 0.45 s, from the face of the strings nearer to him; the left arm
     // as POSES.play. And every Levite of the song - the players and the twelve singers - sways a little with it (songSway: the body
     // above the waist, aside and forward). Until 2.0.13 the right arm swung 0.12 in the air, and the singers stood still. The

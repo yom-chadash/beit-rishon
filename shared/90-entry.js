@@ -1254,6 +1254,7 @@
   };
   //@@slot after-root
   if (ctx.shared.walkMode) ctx.shared.walkMode.nudge = ent_walkNudge;   // WALK_FLOOR_A2 (4): 70-ui.js zoomBy, in walk mode
+  if (!ctx.shared.floorY) ctx.shared.floorY = (x, y, z) => cam_floorY({ x, y, z });   // SCALE_FIG_A2: the floor under a point, in both houses (the Second's had it)
   ctx.shared.camUnder = (list) => {
     if (!list || !list.length) return false;
     const p = camera.position;

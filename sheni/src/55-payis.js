@@ -122,6 +122,47 @@
       ELDER.scale.setScalar(FS);
       g.add(ELDER);
     }
+    // SCALE_FIG_A2 (fix-a2, 22.11.2026; the user's decision 23): A FIGURE FOR SCALE - one priest, 170 cm tall in an amah of 48 cm =
+    // 3.54 amot to the top of his head (the user's numbers: "גובה אדם ממוצע... באמה של 48 ס״מ — בחירת מודל"), in his garments, with the
+    // head's tefillin (a weekday, by day). He stands on the floor a little to the right of what one looks at (a fifth of the view's
+    // distance, 1.5 to 12 amot; the floor found under a point 2.5 amot over the target - not a roof over it), facing the eye, and goes with the view. Built when first asked (the lots' figures' sequence untouched).
+    // SH.scaleFigure = { on, set(on) } - the row "דמות לקנה מידה" (70-ui.js). Where he stands - a model choice.
+    {
+      const SCALE_H = 3.54, SF = { on: false, f: null, at: new Vector3(Infinity, 0, 0), tg: new Vector3(Infinity, 0, 0) };
+      const vR = new Vector3();
+      const place = () => {
+        const cam = ctx2.camera, oc = ctx2.controls;
+        if (!cam || !oc || !SF.f) return;
+        if (SF.at.distanceToSquared(cam.position) < 1e-6 && SF.tg.distanceToSquared(oc.target) < 1e-6) return;
+        SF.at.copy(cam.position); SF.tg.copy(oc.target);
+        const dx = oc.target.x - cam.position.x, dz = oc.target.z - cam.position.z, L = Math.hypot(dx, dz) || 1;
+        const off = Math.max(1.5, Math.min(12, cam.position.distanceTo(oc.target) * 0.2));
+        vR.set(-dz / L, 0, dx / L);   // the view's right
+        const x = oc.target.x + vR.x * off, z = oc.target.z + vR.z * off;
+        const fy = typeof SH.floorY === "function" ? SH.floorY(x, oc.target.y + 2.5, z) : -Infinity;
+        SF.f.position.set(x, isFinite(fy) ? fy : oc.target.y, z);
+        SF.f.rotation.y = Math.atan2(cam.position.x - x, cam.position.z - z);
+      };
+      SH.scaleFigure = {
+        get on() { return SF.on; },
+        set(on) {
+          SF.on = !!on;
+          if (SF.on && !SF.f) {
+            const f = figure(mRobe, true, 2);
+            if (f.parent) f.parent.remove(f);
+            f.scale.setScalar(SCALE_H / (HEAD_Y + HR[1]));
+            f.name = "scaleFigure";
+            f.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+            f.userData.hand.visible = false;
+            (ctx2.root || ctx2.scene).add(f);
+            SF.f = f;
+          }
+          if (SF.f) { SF.f.visible = SF.on; SF.at.set(Infinity, 0, 0); place(); }
+          return SF.on;
+        }
+      };
+      ctx2.animated.push(() => { if (SF.on) place(); });
+    }
     const T1 = torch(), T2 = torch(), T3 = torch(), T4 = torch();
     const MARK = new Mesh(new SphereGeometry(0.14, 10, 8), mMark);
     MARK.visible = false;

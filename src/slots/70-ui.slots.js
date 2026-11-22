@@ -2235,6 +2235,17 @@
             });
           }
         }
+        // SCALE_FIG_A2 (fix-a2; the user's decision 23): a priest for scale, 3.54 amot (ctx.shared.scaleFigure, 58-ark.js)
+        if (ctx.shared.scaleFigure) opRow({
+          id: "scaleFigure", short: "דמות לקנה מידה — כהן בגובה אדם", cardFly: false,
+          chips: { off: "בלי", on: "כהן — 170 ס״מ" },
+          cap: "דמות לקנה מידה",
+          refs: [["עירובין מח.", { book: 105, index: 1782 }]],
+          options: [["off", "בלי", "המודל בלי דמות לקנה מידה."],
+            ["on", "כהן לקנה מידה — 170 ס״מ", "**דמות לקנה מידה:** כהן אחד בבגדיו, וגובהו 170 ס״מ — גובה אדם ממוצע — באמה של 48 ס״מ: 3.54 אמות (כשלוש אמות ושלושה טפחים ורבע, בטפח של 8 ס״מ). בחירת מודל.\n**היכן הוא עומד:** על הרצפה, מעט מימין למה שמביטים בו, ופניו אל העין; כשהמבט זז — הוא הולך איתו. בחירת מודל.\n**לעניין המקום שאדם תופס** (עירובין מח.): ״וכמה תחתיו? גופו שלש אמות, ואמה כדי לפשוט ידיו ורגליו — דברי רבי מאיר״."]],
+          current: "off",
+          onPick: (k) => { const F = ctx.shared.scaleFigure; if (F && typeof F.set === "function") F.set(k === "on"); }
+        });
         // 1.3.3 (the user: "להוסיף שיטת ברירת מחדל לפותות כרש״י"): "והפתות... זהב" (7:50) - ctx.shared.potot (55-interior.js)
         {
           const pt = ctx.shared.potot;
@@ -2520,7 +2531,8 @@
           ["המזבח וכלי הנחושת", ["seaPlacement", "altarPlace", "altarRTam", "altarYose", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps"]],
           ["הבית מבחוץ והיציע", ["aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling"]],
           ["הבית מבפנים", ["potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout"]],
-          ["בית שלמה", ["forestHouse", "throneVersion"]]
+          ["בית שלמה", ["forestHouse", "throneVersion"]],
+          ["הכהנים", ["scaleFigure"]]
 //@@end buildUI.after-GROUPS
 //@@begin buildUI.after-note-code
         // 1.0.1-L: the pills of this round; what a PLACE switches on goes off by itself (L.27), what a pill switches on stays
