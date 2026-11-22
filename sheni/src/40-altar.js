@@ -871,8 +871,9 @@
         { text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: 47.5, y: TOP + 1.1, z: 5.4, size: 0.8, layer: "altarBody28" });
       const SHITIN_SEE = "השיתין — ״חלל שתחת המזבח כנגד מקום הנסכים״ (רש״י סוכה מט.)";   // apart from the yesod's "שני הנקבים... והן הנקראין שיתין" (SHITIN_LABEL, below: the Rambam's name for the yesod's two holes)
       // drawn on top (l.onTop): it stands in the hollow, and the stone round the glass would hide most of it
-      ctx2.labels.push({ text: SHITIN_SEE, x: 43.8, y: F - 5.6, z: 9.6, size: 0.62, layers: ["sfalimSee", "altarBody32"], moveWithAltar: true, onTop: true },
-        { text: SHITIN_SEE, x: 47.8, y: F - 5.6, z: 5.6, size: 0.62, layers: ["sfalimSee", "altarBody28"], moveWithAltar: true, onTop: true });
+      const SHI = { info: "השיתין — ״חלל שתחת המזבח כנגד מקום הנסכים״ (רש״י סוכה מט.). הפירוט בכרטיס ספלי הניסוך.", refs: [["רש״י סוכה מט.", { book: 2163, index: 2307 }]] };   // (the label's own source - it had none)
+      ctx2.labels.push(Object.assign({ text: SHITIN_SEE, x: 43.8, y: F - 5.6, z: 9.6, size: 0.62, layers: ["sfalimSee", "altarBody32"], moveWithAltar: true, onTop: true }, SHI),
+        Object.assign({ text: SHITIN_SEE, x: 47.8, y: F - 5.6, z: 5.6, size: 0.62, layers: ["sfalimSee", "altarBody28"], moveWithAltar: true, onTop: true }, SHI));
       // SFALIM_303: SFSEE - THE CORNER AS GLASS (ctx2.shared.features.sfalimSee; the place "ספלי הניסוך", 70-ui.js - on while it shows).
       // A box round the south-west corner, from under the shitin to over the horn (C, in sfG's frame: R. Yose's altar and the Tannaim's
       // places move it with the bowls). Every plain box of the altar and of the court's floor that meets it is drawn with a clone of its
@@ -2137,9 +2138,9 @@
       { text: "בערב: מסירים את המכסה, והזרוע מרימה את הכיור מן הכן ומשקיעה אותו בבור — ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י)", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniEve", info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["יומא ג, י", "Mishnah_Yoma.3.10"]] },
       { text: "בלילה: מי הכיור מחוברים במי הבור", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniNight" },
       { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד) — הכיור עולה וחוזר אל הכן", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniMorning", info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["תמיד א, ד", "Mishnah_Tamid.1.4"]] },
-      { text: "המוכני — גלגל השיניים ולשון העץ", x: PSX, y: F + 4.2, z: PSZ - 1.2, size: 1.1 },
+      { text: "המוכני — גלגל השיניים ולשון העץ", x: PSX, y: F + 4.2, z: PSZ - 1.2, size: 1.1, info: "המוכני — ״גלגל שתלוי בו הכיור בחבל, ועל ידו משקעין הכיור להבאר שתחת הכיור״ (יכין תמיד פרק א, אות נז); ״וכשמעלין או מורידין אותו להבאר, היה קול דפיקת שיני הגלגל נשמע עד יריחו״ (יכין תמיד פרק ג, אות סא). הפירוט בכרטיס הכיור.", refs: [["יכין תמיד פרק א, אות נז", { book: 818, index: 116 }], ["יכין תמיד פרק ג, אות סא", { book: 818, index: 330 }]] },
       { text: "הכן — ״כעין יורה כפוייה על פיה״ (תוספות זבחים כב.)", x: KX + 2.6, y: F + 1.0, z: KZK - 2.4, size: 0.9, info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["תוספות זבחים כב.", { book: 1936, index: 254 }]] },
-      { text: "הבור — ביום מכוסה, בלי גדר", x: PITX + 1.5, y: F + 1.0, z: PITZ + 2.2, size: 0.9 }
+      { text: "הבור — ביום מכוסה, בלי גדר", x: PITX + 1.5, y: F + 1.0, z: PITZ + 2.2, size: 0.9, info: "הבור שתחת הכיור — ״להבאר שתחת הכיור״ (יכין תמיד פרק א, אות נז). המכסה, והיותו בלי גדר — בחירת מודל; הפירוט בכרטיס הכיור.", refs: [["יכין תמיד פרק א, אות נז", { book: 818, index: 116 }]] }
     );
     ctx2.labels.push({ text: "המוכני לרמב״ם — כלי סביב הכיור, ובו המים (בית הבחירה ג, יח)", x: KX - 1, y: F + 6.2, z: KZK, size: 1.0, layer: "mochaniRambam" });
     const T_DOWN = 7000, T_NIGHT = 2500, T_UP = 7000, T_PRE = 1500;

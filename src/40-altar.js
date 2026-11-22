@@ -332,9 +332,10 @@
       WAYS.push(WL);
       ctx.layers = ctx.layers || {};
       ctx.layers.rampWays = WL;
-      ctx.labels.push({ text: "״כהנים עולים במזרחו של כבש״", x: ACX + 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#2f7fe0", layer: "rampWays" },
-        { text: "״ויורדין במערבו״", x: ACX - 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#f08a1c", layer: "rampWays" },
-        { text: "״והיום כהן גדול עולה באמצע ויורד באמצע״ (יומא ד, ה)", x: ACX, y: F + RTOP(35.5) + 3.2, z: 35.5, size: 1.0, box: true, rim: "#e2b13c", layer: "rampWays" });
+      const RWI = { info: "יומא ד, ה: ״בכל יום כהנים עולים במזרחו של כבש ויורדין במערבו, והיום כהן גדול עולה באמצע ויורד באמצע״.", refs: [["יומא ד, ה", { book: 55, index: 35 }]] };   // (the labels' own source - they had none)
+      ctx.labels.push({ text: "״כהנים עולים במזרחו של כבש״", x: ACX + 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#2f7fe0", layer: "rampWays", ...RWI },
+        { text: "״ויורדין במערבו״", x: ACX - 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#f08a1c", layer: "rampWays", ...RWI },
+        { text: "״והיום כהן גדול עולה באמצע ויורד באמצע״ (יומא ד, ה)", x: ACX, y: F + RTOP(35.5) + 3.2, z: 35.5, size: 1.0, box: true, rim: "#e2b13c", layer: "rampWays", ...RWI });
       ctx.shared.features = ctx.shared.features || {};
       ctx.shared.features.rampWays = { key: "rampWays", timed: false, isOn: () => WL.visible, on: () => { for (const w of WAYS) w.visible = true; }, off: () => { for (const w of WAYS) w.visible = false; } };
     }
