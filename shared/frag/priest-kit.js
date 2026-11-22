@@ -484,8 +484,20 @@
     // { th, arm: { 1, -1 }, wq: { 1, -1 } (the wrists' turns), fx, dz } - in amot. How far forward, how close - model choices.
     const KID_FX = 0.064, KID_DZ = 0.06;
     const kidHZ = (0.095 + KID_DZ + 0.05 * Math.cos(0.22)) * FS;   // the hands' middle before him (amot) - where the stream falls (55-tamid.js KID.flatSpot)
-    const kidHands = (f, setArm) => {
-      if (f.kidH) return f.kidH;
+    // KIDDUSH_RYOSE_A2 (the user's decision 82 c, via the coordinator): mode "ryose" - Rabbi Yose b. R. Yehuda, "מניח שתי ידיו זו על גב
+    // זו, ועל גבי שתי רגליו זו על גבי זו, ומקדש" (Zevachim 19b, 130:754-755): he stands on his left foot, his right foot laid on the back
+    // of it (the right leg: kidLegs), his left palm on the back of the right foot and his right palm on the back of the left hand - and
+    // his fellow holds him ("וחבירו מסייעו" - the house's own figure). Which foot is above and which hand - model choices.
+    // Every place in the kit's units in the figure's frame: KF - the feet (x, y, z, pitch, yaw), KP - the palms' middles
+    const KIDM = {
+      tk: { feet: { 1: [KID_FX, 0, KID_DZ, 0, 0], "-1": [-KID_FX, 0, KID_DZ, 0, 0] }, palms: null, leg: 0 },
+      ryose: { feet: { 1: [0.045, 0, KID_DZ, 0, 0], "-1": [0.03, 0.046, KID_DZ + 0.03, 0.12, 0.18] },
+        palms: { 1: [0.045, 0.106, KID_DZ + 0.13], "-1": [0.04, 0.131, KID_DZ + 0.118] }, leg: -1 }
+    };
+    const kidHands = (f, setArm, mode = "tk") => {
+      const key = mode === "ryose" ? "kidHY" : "kidH";
+      if (f[key]) return f[key];
+      const M0 = KIDM[mode === "ryose" ? "ryose" : "tk"];
       const A = f.A, WY = f.bend.position.y, a = A.up, b = A.fo;
       const cl = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
       const reach = (sp, tp, side) => {   // as 55-tamid.js reach: the shoulder's two turns and the elbow's, the wrist at tp
@@ -497,13 +509,13 @@
       };
       const fin = {}, palmN = {}, wrist = {};
       for (const sd of [1, -1]) {
-        const ry = sd * 0.22, cy = Math.cos(ry), sy = Math.sin(ry);   // the foot turned out (footGeo)
+        const ft = M0.feet[sd], ry = M0.palms ? ft[4] * 0.5 : sd * 0.22, cy = Math.cos(ry), sy = Math.sin(ry);   // the foot turned out (footGeo)
         const F = new Vector3(0.95 * sy, -0.3, 0.95 * cy).normalize();
         const N = new Vector3(-0.3 * sy, -1, -0.3 * cy).normalize();
         N.addScaledVector(F, -N.dot(F)).normalize();
         fin[sd] = F; palmN[sd] = N;
-        // the palm's middle on the forefoot (kit units: the foot's middle z 0.095 + DZ, 0.05 before it; its top 0.05 there)
-        const P = new Vector3(sd * (KID_FX + 0.008 + 0.05 * sy), 0.066, 0.095 + KID_DZ + 0.05 * cy);
+        // the palm's middle: on its own foot's forepart (the foot's middle z 0.095 + DZ, 0.05 before it; its top 0.05 there), or as KP
+        const P = M0.palms ? new Vector3(M0.palms[sd][0], M0.palms[sd][1], M0.palms[sd][2]) : new Vector3(sd * (KID_FX + 0.008 + 0.05 * sy), 0.066, 0.095 + KID_DZ + 0.05 * cy);
         wrist[sd] = P.addScaledVector(F, -0.045).multiplyScalar(FS);
       }
       const toBend = (p, th) => { const dy = p.y - WY, c = Math.cos(th), s2 = Math.sin(th); return [p.x, dy * c + p.z * s2, -dy * s2 + p.z * c]; };
@@ -513,8 +525,16 @@
         for (const sd of [1, -1]) { const t = toBend(wrist[sd], th), sp = [sd * A.sx, A.sy - WY, 0]; if (Math.hypot(t[0] - sp[0], t[1] - sp[1], t[2] - sp[2]) > (a + b) * 0.97) ok = false; }
         if (ok) break;
       }
-      const res = { th, arm: {}, wq: {}, fx: KID_FX * FS, dz: KID_DZ * FS };
+      const res = { mode: M0 === KIDM.ryose ? "ryose" : "tk", th, arm: {}, wq: {}, fx: KID_FX * FS, dz: KID_DZ * FS, feet: M0.feet, leg: null };
       for (const sd of [1, -1]) res.arm[sd] = reach([sd * A.sx, A.sy - WY, 0], toBend(wrist[sd], th), sd);
+      if (M0.leg) {   // the leg whose foot is laid on the other: hip, knee (two bones, the knee forward), ankle - amot
+        const ft = M0.feet[M0.leg], c = Math.cos(ft[3]), sn = Math.sin(ft[3]);
+        const H = new Vector3(M0.leg * 0.1, 1.0, 0), Aa = new Vector3(ft[0], ft[1] + 0.15 * c + 0.01 * sn, ft[2] + 0.15 * sn - 0.01 * c);
+        const L1 = 0.45, L2 = 0.401, d = Math.min(L1 + L2 - 1e-4, H.distanceTo(Aa)), u = Aa.clone().sub(H).normalize();
+        const al = (L1 * L1 - L2 * L2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, L1 * L1 - al * al)), n = new Vector3(0, 0, 1).addScaledVector(u, -u.z).normalize();
+        const K = H.clone().addScaledVector(u, al).addScaledVector(n, h);
+        res.leg = { side: M0.leg, H: H.multiplyScalar(FS), K: K.multiplyScalar(FS), A: Aa.multiplyScalar(FS) };
+      }
       // the wrists: the hand's own axes (the fingers down its -y, the palm toward the body - handRaw) to the wanted ones, in the frame of
       // the forearm as it is in this pose
       const lr = f.lean.rotation.x, br = [f.bend.rotation.x, f.bend.rotation.z];
@@ -531,7 +551,28 @@
         res.wq[sd] = qE.invert().multiply(qT);
       }
       f.lean.rotation.x = lr; f.bend.rotation.set(br[0], 0, br[1]);
-      return (f.kidH = res);
+      return (f[key] = res);
+    };
+    // the feet (and in "ryose" the leg laid on the other) for a figure at kiddush, u 0..1 into it: from where they stand (+-0.1, 0) to
+    // their places; the raised leg's thigh, knee, shin and foot (f.legs - the same in both houses) instead of its own foot
+    const _kv = [new Vector3(), new Vector3()], _kup = new Vector3(0, 1, 0);
+    const kidSeg = (m, A0, B0) => { _kv[1].subVectors(B0, A0); const n = _kv[1].length() || 1e-6; m.position.copy(A0); m.quaternion.setFromUnitVectors(_kup, _kv[1].multiplyScalar(1 / n)); m.scale.set(1, n, 1); };
+    const kidLegs = (f, H, u) => {
+      for (const sd of [1, -1]) {
+        const ft = H.feet[sd], m = sd > 0 ? f.fl : f.fr, x0 = sd * 0.1;
+        m.position.set((x0 + (ft[0] - x0) * u) * FS, ft[1] * u * FS, ft[2] * u * FS);
+        m.rotation.set(ft[3] * u, ft[4] * u, 0);
+      }
+      const lg = H.leg && f.legs ? f.legs[H.leg.side] : null;
+      if (f.legs) for (const sd of [1, -1]) if (f.legs[sd] && f.legs[sd] !== lg) f.legs[sd].g.visible = false;
+      if (!lg) { f.fl.visible = f.fr.visible = true; return; }
+      const on = u > 0.02, own = H.leg.side > 0 ? f.fl : f.fr;
+      lg.g.visible = on; own.visible = !on;
+      if (!on) return;
+      const hip = H.leg.H, Kn = _kv[0].copy(hip).lerp(H.leg.K, 1), Aa = H.leg.A;
+      const K2 = new Vector3(hip.x, hip.y - 0.45 * FS, hip.z + 0.02 * FS).lerp(Kn, u), A2 = new Vector3(H.leg.side * 0.1 * FS, 0.15 * FS, -0.01 * FS).lerp(Aa, u);
+      kidSeg(lg.th, hip, K2); lg.kn.position.copy(K2); kidSeg(lg.sn, K2, A2);
+      lg.ft.position.copy(own.position); lg.ft.rotation.copy(own.rotation);
     };
     const gCap = sph(HR[0] * 1.1, HR[1] * 1.1, HR[2] * 1.1, 16, 5, 0, TAU, 0, 1.15);   // the elder's cap
     const gFlame = new ConeGeometry(0.2, 0.7, 8); gFlame.translate(0, 0.35, 0);

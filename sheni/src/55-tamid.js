@@ -998,7 +998,11 @@
       })(), { p: [0, 0, 0], r: [1.0, 0, 0] }, false);   // held by its handle, the box forward and down
       prop("mizrak", (() => {   // the bowl of the blood, pointed below (model choice)
         const g = new Group();
-        g.add(mesh(new LatheGeometry([V2(0.001, -0.14), V2(0.12, 0.02), V2(0.22, 0.12), V2(0.24, 0.16)], 14), MAT.silver));
+        // MIZRAK_SILVER_A2 (the user, on picture 37: black, as a funnel - "כלי שרת — מתכת: כסף או זהב, עם ברק"): silver that shines in the
+        // dawn too - less mirror (it reflected the dark sky), its own light a little; inside and out, a rim
+        const mzM = std(0xe4e8ee, { metalness: 0.5, roughness: 0.22, emissive: 0x5a6068, emissiveIntensity: 0.55, side: DoubleSide });
+        g.add(mesh(new LatheGeometry([V2(0.001, -0.14), V2(0.12, 0.02), V2(0.22, 0.12), V2(0.24, 0.16)], 24), mzM));
+        g.add(mesh(new TorusGeometry(0.24, 0.012, 6, 28).rotateX(HP), mzM, 0, 0.16, 0));
         const b = mesh(new CircleGeometry(0.21, 14).rotateX(-HP), MAT.blood.clone(), 0, 0.13, 0);
         b.material.opacity = 0.95;
         b.visible = false;
@@ -1861,10 +1865,16 @@
       a.set("kidWater", 12, 9.2); a.set("kidWater", 0, 15);
       a.fx("water", 9.2);
       if (TM.kidd === "ryose") {
-        const q = KID.flatSpot(0), side = [q.p[0] - Math.cos(q.yaw) * 0.95, q.p[1] + Math.sin(q.yaw) * 0.95];   // KIDDUSH_FLAT_A2: at his right, his face to him
-        a.go("b1", side, 0, 7.6, { yaw: q.yaw + HP });
-        a.pose("b1", "reach", 8.6, 15.4);
+        // KIDDUSH_RYOSE_A2: "וחבירו מסייעו" (Zevachim 19b, 130:755) - each of the twelve, standing on one foot, is held by a fellow: at his
+        // right (away from the laver), his face to him, his hands on his side and back. Who the fellows are and where they stand - model choices
+        const HELP = ["b1", "b2", "b3", "b4", "t", "mc", "k", "f", "e", "s13", "sg", "cv"];
+        HELP.forEach((h, i) => {
+          const q = KID.flatSpot(i), side = [q.p[0] - Math.cos(q.yaw) * 0.72, q.p[1] + Math.sin(q.yaw) * 0.72];
+          a.go(h, side, 0.4 + i * 0.12, 7.6 + i * 0.12, { yaw: q.yaw + HP });
+          a.pose(h, "support", 8.4 + (i % 3) * 0.1, 15.4);
+        });
         a.tag("b1", "״וחבירו מסייעו״ (זבחים יט:) — לרבי יוסי ברבי יהודה", 8.6, 15.4);
+        a.tag("s4", "״מניח שתי ידיו זו על גב זו, ועל גבי שתי רגליו זו על גבי זו״ (זבחים יט:)", 8.6, 15.4);
       }
       a.tag("s1", "מן הדד העליון — ״שחרית במילואו מקדש ידיו ורגליו מן העליון״ (יומא לז.)", 8.6, 15.4);
       a.tag("s6", "שנים עשר כהנים מקדשים בבת אחת", 8.6, 15.4);
@@ -2485,6 +2495,7 @@
       // reaches (kidReach) - until 2.1.2 the whole figure leaned from the ankles (0.5), as falling. The arms below: only where there is
       // no waist (the high priest's body) - there the old lean, a little less.
       kiddush: [[-0.3, 0.14, 0], [-0.3, 0.14, 0], 0.4],
+      support: [[-0.95, -0.16, -0.5], [-0.95, -0.16, -0.5], 0.2],   // KIDDUSH_RYOSE_A2: the fellow's hands on the side and back of the one who sanctifies
       // NIGHT_WATCH_305: "שלום עליך" - the right hand raised before him; the blow of the staff or the pakia (applyFig); woken; up from
       // the stone; the left hand to the lantern and down to the cloak; the herald's two hands about his mouth (callArms)
       hail: [[-1.25, 0.12, -0.75], [0.05, 0.08, -0.15], 0.04], strike: [[-0.85, 0.05, -0.15], [0.05, 0.08, -0.15], 0.1],
@@ -2881,9 +2892,11 @@
           // KIDDUSH_FLAT_A2 (the user via the coordinator: "כף היד על כף הרגל, וכך שניהם בו זמנית"): the feet together, he bows, each palm
           // flat on the back of its foot (the kit's kidHands - the same in the First Temple); until now each hand on the front of its leg
           // as low as it reached (kidReach, KB)
-          const u = smooth(clamp(t / 0.8, 0, 1)), H = SH.priestKit.kidHands(f, setArm), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
+          // KIDDUSH_RYOSE_A2 (the user's decision 82 c): in Rabbi Yose b. R. Yehuda's reading the twelve stand on the left foot, the right
+          // laid on it, and the hands one on the other above (the kit's kidHands "ryose"); each one's fellow holds him (SC.kiyor12)
+          const md = TM.kidd === "ryose" && /^s\d+$/.test(f.id) ? "ryose" : "tk";
+          const u = smooth(clamp(t / 0.8, 0, 1)), H = SH.priestKit.kidHands(f, setArm, md), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
           R = mix(POSES.stand[0], H.arm[-1]); Lv = mix(POSES.stand[1], H.arm[1]); lean = 0; bendA = H.th * u; kidU = u; kidH = H;
-          fz0 = fz1 = H.dz * u;
         }
         else if (p === "kiddush" && f.bend && SH.priestKit && SH.priestKit.bZ) {   // KIDDUSH_BEND_212: upright legs, bent at the waist, the hands on the legs
           const u = smooth(clamp(t / 0.8, 0, 1)), H = kidReach(f), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
@@ -2904,7 +2917,9 @@
       f.lean.position.y = bob + (lean > 1 ? 0.36 * Math.sin(lean) : 0);
       f.fl.position.z = fz0;
       f.fr.position.z = fz1;
-      if (f.kit) { const fx = 0.1 * SH.priestKit.FS - (kidH ? (0.1 * SH.priestKit.FS - kidH.fx) * kidU : 0); f.fl.position.x = fx; f.fr.position.x = -fx; }   // KIDDUSH_FLAT_A2: the feet together
+      // KIDDUSH_FLAT_A2 / KIDDUSH_RYOSE_A2: the feet at kiddush (and the leg laid on the other) - the kit's kidLegs; else where they stand
+      if (kidH && SH.priestKit.kidLegs) SH.priestKit.kidLegs(f, kidH, kidU);
+      else if (f.kit) { const fx = 0.1 * SH.priestKit.FS; f.fl.position.x = fx; f.fr.position.x = -fx; f.fl.position.y = f.fr.position.y = 0; f.fl.rotation.set(0, 0, 0); f.fr.rotation.set(0, 0, 0); }
       f.fl.visible = f.fr.visible = lean < 1;
       if (f.neck) f.neck.rotation.x = headA;   // NIGHT_SIT_305
       if (f.legs && (sitU > 0 || f.sitP)) setSit(f, sitU);   // NIGHT_SIT_305: on his stone - after the lean and the feet

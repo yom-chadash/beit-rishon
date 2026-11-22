@@ -12,7 +12,7 @@
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
       BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, footGeo, mat, mRobe, mSkin, mHat, mFace, mEye, mSashDyed, mSashWhite,
-      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ });   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
+      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs });   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
   }
   // ARK_FIG_208: the kit's arms in amot (as the Second Temple's 55-tamid.js makeFigKit): the sleeve from the shoulder to the elbow, the
   // forearm, the open hand; the feet; the neck
@@ -187,17 +187,17 @@
   // the feet together, he bows, each palm flat on the back of its foot, at once (the kit's kidHands - the same in the Second Temple's
   // 55-tamid.js); u 0..1 - how far into it. Until now (KIDDUSH_BEND_212) the legs upright, bent at the waist by kb, each hand on the
   // front of its leg as low as it reached.
-  function ark_kiddush(w, u) {
-    const K = ark_kit(), FS = K.FS, P = ark_kitArms().P;
-    const H = K.kidHands(w, ark_setArm), mix = (q, v) => [q[0] + (v[0] - q[0]) * u, q[1] + (v[1] - q[1]) * u, q[2] + (v[2] - q[2]) * u];
+  function ark_kiddush(w, u, mode = "tk") {
+    const K = ark_kit(), FS = K.FS;
+    // KIDDUSH_RYOSE_A2: mode "ryose" - Rabbi Yose b. R. Yehuda: the right foot on the left, the hands one on the other above (the kit's)
+    const H = K.kidHands(w, ark_setArm, mode), mix = (q, v) => [q[0] + (v[0] - q[0]) * u, q[1] + (v[1] - q[1]) * u, q[2] + (v[2] - q[2]) * u];
     w.lean.rotation.x = 0;
     w.bend.rotation.set(H.th * u, 0, 0);
     ark_setArm(w.L, mix(ARK_POSE.stand, H.arm[1]), 1);
     ark_setArm(w.R, mix(ARK_POSE.stand, H.arm[-1]), -1);
     const qI = ark_kiddush.qI || (ark_kiddush.qI = new Quaternion());
     for (const [A2, sd] of [[w.L, 1], [w.R, -1]]) if (A2.wr) A2.wr.quaternion.slerpQuaternions(qI, H.wq[sd], u);
-    const fx = 0.1 * FS + (H.fx - 0.1 * FS) * u;
-    w.fl.position.set(fx, 0, H.dz * u); w.fr.position.set(-fx, 0, H.dz * u);
+    K.kidLegs(w, H, u);   // the feet (and in "ryose" the right leg laid on the left)
     return H;
   }
   // KING_211: the king's cloths - his robe of tekhelet, his mantle of argaman bordered with gold, his dark hair - made once, for the
@@ -453,6 +453,22 @@
       const PGI = { info: "בגדי הכהנים — הפירוט בתפריט, תחת ״הכהנים״: ״בגדי הכהנים — כהן הדיוט וכהן גדול״.", refs: [["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }]] };
       ctx.labels.push(Object.assign({ text: "כהן הדיוט — ארבעה בגדים", x: X, y: Y + 3.9, z: Z - 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI),
         Object.assign({ text: "כהן גדול — שמונה בגדים", x: X, y: Y + 4.35, z: Z + 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI));
+      // AVNET_ONE_A2 (the user's decision, via the coordinator: one switch "אבנט כהן הדיוט: כלאים / בוץ" for all the priests and the pair
+      // together - as the Second Temple's row "אבנטו של כהן הדיוט"): the kit's dyed avnet takes the white weave (every priest of the kit
+      // wears that one material), the pair's priest too, and the crowds' (people-kit, ctx.shared.peopleAvnet). The high priest's - always of
+      // wool and linen (his own material). ctx.shared.priestBelt = { mode, set("kilayim" | "butz") }
+      ctx.shared.priestBelt = {
+        mode: "kilayim",
+        set(m) {
+          this.mode = m === "butz" ? "butz" : "kilayim";
+          const K = ark_kit(), D = K.mSashDyed;
+          if (!D.userData.dyedMap) D.userData.dyedMap = D.map;
+          D.map = this.mode === "butz" ? K.mSashWhite.map : D.userData.dyedMap; D.needsUpdate = true;
+          want.belt = this.mode; if (P) P.set(want);
+          const PA = ctx.shared.peopleAvnet; if (PA && typeof PA.set === "function") PA.set(this.mode === "butz" ? "butz" : "rambam");
+          return this.mode;
+        }
+      };
       ctx.shared.priestGarments = {
         get on() { return PG.visible; },
         get state() { return Object.assign({}, want); },

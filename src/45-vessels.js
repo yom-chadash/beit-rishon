@@ -1365,9 +1365,21 @@
       }
       w.g.position.set(sx + w.off82[0], F, sz + w.off82[1]);
       w.g.rotation.y = YW82;
-      ark_kiddush(w, k);
-      if (w.legs) for (const sd of [1, -1]) if (w.legs[sd]) w.legs[sd].g.visible = false;
-      w.fl.visible = w.fr.visible = true;
+      // KIDDUSH_RYOSE_A2 (the user's decision 82 c): in Rabbi Yose b. R. Yehuda's reading (the row "קידוש ידיים ורגליים") he stands on his
+      // left foot, the right on it and the hands one on the other above, and his fellow holds him - "וחבירו מסייעו" (Zevachim 19b): at his
+      // right (east, away from the base), his face to him, his hands on his side and back (his place and hold - model choices)
+      const md = ctx.shared.kidReading === "ryose" ? "ryose" : "tk";
+      ark_kiddush(w, k, md);
+      if (kidd.h) {
+        const on = md === "ryose" && k > 0.02;
+        kidd.h.g.visible = on;
+        if (on) {
+          kidd.h.g.position.set(w.g.position.x + 0.72, F, w.g.position.z - 0.12);
+          kidd.h.g.rotation.y = -Math.PI / 2;
+          kidd.h.lean.rotation.x = 0.2 * k;
+          ark_setArm(kidd.h.L, [-0.95 * k + 0.05 * (1 - k), -0.16, -0.5 * k - 0.15 * (1 - k)], 1); ark_setArm(kidd.h.R, [-0.95 * k + 0.05 * (1 - k), -0.16, -0.5 * k - 0.15 * (1 - k)], -1);
+        }
+      }
       // the water on him: the stream ends at his hands; from each hand to its foot, and the wet on the hands and the feet
       if (!kidWater.made) {
         kidWater.made = true;
@@ -1404,6 +1416,7 @@
       const w = ark_priestFig(3, true);
       ark_kiddush(w, 0);   // KIDDUSH_82_A2 (ark_kidPose and the raised foot until now); KIDDUSH_FLAT_A2: u 0 - standing
       wash.add(w.g); kidd.w = w;
+      { const h = ark_priestFig(6); h.g.visible = false; wash.add(h.g); kidd.h = h; }   // KIDDUSH_RYOSE_A2: his fellow ("וחבירו מסייעו")
       const q = ark_priestFig(5);
       q.g.position.set(STOP[0] + VSL_TAP_R + 0.48, F, STOP[1] - 0.9); q.g.rotation.y = Math.atan2(-0.48, 0.9);   // north of the stream, his face to it
       q.lean.rotation.x = 0.32;
