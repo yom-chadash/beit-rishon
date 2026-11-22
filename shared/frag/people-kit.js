@@ -458,7 +458,8 @@
       const mk = (g, m) => { const im = new InstancedMesh(g, m, n); im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; if (o.name) im.name = o.name; return im; };   // (PEOPLE_KIT_205: no figure casts a shadow)
       const cloth = mk(G.cloth, mCl0), skin = mk(G.skin, mSkin), hairs = G.hair.map((g) => mk(g, mHair)), cnt = hairs.map(() => 0), fm = mk(G.far, mFar);
       const mCl = mk(G.mid.cloth, mCl0), mSk = mk(G.mid.skin, mSkin), mHr = mk(G.mid.hair, mHair);
-      const avN = G.avnet ? mk(G.avnet, AVN.mat()) : null, avD = G.mid.avnet ? mk(G.mid.avnet, AVN.mat()) : null;   // AVNET_305
+      // (o.avnet === false - priestly garments without the avnet: the young priests on the ladders, the user's decision 68 (1), agent B2)
+      const noAv = o.avnet === false, avN = G.avnet && !noAv ? mk(G.avnet, AVN.mat()) : null, avD = G.mid.avnet && !noAv ? mk(G.mid.avnet, AVN.mat()) : null;   // AVNET_305
       const tef = G.tef ? mk(G.tef, mTefP) : null;   // TEFILLIN_A2
       if (avN) AVN.meshes.push(avN, avD);
       let ax = 0, az = 0;

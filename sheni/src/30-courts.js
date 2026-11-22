@@ -199,8 +199,13 @@
     // (337, lines 96, 99): "ועולה ממנו לעזרת הכהנים במעלה גבוהה אמה ועליה דוכן יש בו שלש מעלות. רום כל מעלה חצי אמה ושלחה חצי אמה";
     // "ועל הדוכן העולה מעזרת ישראל לעזרת הכהנים". So the step and the duchan stand against the priests' court: the step x 84..85, the
     // three steps x 82.5..84 (the court of Israel's floor x 85..93.5).
-    H2.stairs(duchanDef, { width: 135, totalRise: 1, steps: 1, dir: "W", x: 85, y: 13.5, z: 0, tread: 1 });
-    H2.stairs(duchanDef, { width: 135, totalRise: 1.5, steps: 3, dir: "W", x: 84, y: 14.5, z: 0, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
+    // DUCHAN_GAZIT_A2 (agent B2's request, the user's decision 75 - the floor of לשכת הגזית down to 13.5): in the north the step and the
+    // duchan end at the south face of the chamber (z -54) - they do not stand out inside it; in the south - to the court's wall (67.5)
+    const DUCH = { z0: -54, z1: 67.5 };
+    DUCH.w = DUCH.z1 - DUCH.z0; DUCH.z = (DUCH.z0 + DUCH.z1) / 2;
+    ctx2.shared.duchanSpan = DUCH;
+    H2.stairs(duchanDef, { width: DUCH.w, totalRise: 1, steps: 1, dir: "W", x: 85, y: 13.5, z: DUCH.z, tread: 1 });
+    H2.stairs(duchanDef, { width: DUCH.w, totalRise: 1.5, steps: 3, dir: "W", x: 84, y: 14.5, z: DUCH.z, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
     // 1.9.3 (the user, of the kuntres, point 18: "לשכת הדוכן (חזו״א) כשיטה"): THE DUCHAN'S CHAMBER - the Chazon Ish on Middot 2:6 (OC Moed;
     // book 5849, lines 6087-6088): "נראה דהמעלה היתה כעין לשכה כנוסה בזקיפת ההר של עזרת כהנים, שהרי עזרת כהנים גבוהה מעזרת ישראל ב' אמות
     // ומחצה על פני כל המזרח מדרום לצפון, וכנגד המזבח נכנסה לשכה, ארכה כנגד אורך המזבח ורחבה לא אתפרש... ובה בנוי כעין בימה לעלות הלוים
@@ -3135,13 +3140,13 @@
         const pm = new MeshBasicMaterial({ color: 0xffc94a, transparent: true, opacity: 0.38, depthWrite: false });
         const steps = [[84, 85, 13.5, 14.5], [83.5, 84, 13.5, 15], [83, 83.5, 13.5, 15.5], [82.5, 83, 13.5, 16]];   // [x0, x1, y0, y1]
         for (const [x0, x1, y0, y1] of steps) {
-          const m = new Mesh(new BoxGeometry(x1 - x0 + 0.04, y1 - y0 + 0.06, 135), pm);
-          m.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.03, 0);
+          const m = new Mesh(new BoxGeometry(x1 - x0 + 0.04, y1 - y0 + 0.06, DUCH.w), pm);   // DUCHAN_GAZIT_A2
+          m.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.03, DUCH.z);
           m.userData.noPick = true;
           grp.add(m);
         }
         const fm = new MeshBasicMaterial({ color: 0xffa21a });
-        for (const [x, y] of [[85, 14.55], [82.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, 135), fm); b.position.set(x, y, 0); b.userData.noPick = true; grp.add(b); }
+        for (const [x, y] of [[85, 14.55], [82.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, DUCH.w), fm); b.position.set(x, y, DUCH.z); b.userData.noPick = true; grp.add(b); }
         g.add(grp);
         ctx2.layers.zoneDuchan = grp;
         ctx2.shared.features.zoneDuchan = { key: "zoneDuchan", isOn: () => grp.visible, on: () => { grp.visible = true; }, off: () => { grp.visible = false; } };

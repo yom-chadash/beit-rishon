@@ -830,6 +830,21 @@
       };
       for (const id of FIG_IDS) makeFig(id, "K");
       for (const id of LEV_IDS) makeFig(id, "L");
+      // TZOARIM_A2 (the user's decision 69): the Levites' little ones - "אין קטן נכנס לעזרה לעבודה אלא בשעה שהלוים עומדים בשיר... רבי
+      // אליעזר בן יעקב אומר, אין עולין למנין, ואין עומדים על הדוכן, אלא בארץ היו עומדין, וראשיהן מבין רגלי הלוים, וצוערי הלוים היו
+      // נקראין" (Arachin 2:6; 84:12). Three boys, a Levite's figure at 0.72, without beard (their hair a plain cap of hair) and without
+      // tefillin; their age and size - model choices
+      for (const id of LEV_KIDS) {
+        const f = makeFig(id, "L");
+        f.g.scale.setScalar(0.72);
+        f.kid = true;
+        const heads = [];
+        f.g.traverse((o) => { if (o.isMesh && o.name === "tefillin-rosh") heads.push(o); });
+        for (const m of heads) { const hg = m.parent; m.removeFromParent(); const hair = hg.children[2]; if (hair && hair.isMesh) { hair.visible = false; const head = hg.children[0]; head.geometry.computeBoundingBox(); const bb = head.geometry.boundingBox, c = bb.getCenter(new Vector3()), sz = bb.getSize(new Vector3()); const sc = new Mesh(new SphereGeometry(1, 16, 8, 0, Math.PI * 2, 0, 1.5), KID_HAIR); sc.scale.set(sz.x * 0.53, sz.y * 0.53, sz.z * 0.54); sc.rotation.x = -0.42; sc.position.set(c.x, c.y + sz.y * 0.04, c.z - sz.z * 0.03); hg.add(sc); } }   // the hair over the crown and the back, the forehead and the face bare
+        const arm = [];
+        if (KIT && KIT.mTef) f.g.traverse((o) => { if (o.isMesh && o.material === KIT.mTef) arm.push(o.parent && o.parent.isGroup && o.parent.children.every((c) => c.material === KIT.mTef) ? o.parent : o); });
+        for (const o of new Set(arm)) o.removeFromParent();
+      }
       // NIGHT_WATCH_305: the night's watch - Ish Har HaBayit (his tribe is not said: plain clothes in a colour of his own, as the
       // officers' "not said"), four Levite guards, and Ben Bavi and Gevini - priests ("בן בביי, שם כהן", Rabbeinu Elyakim on Yoma 23a;
       // "כהן ששמו גביני", the Bartenura on Tamid 3:8), in the priests' garments without the avnet: "לפיכך לובשם ביום עבודתו ואפילו
@@ -1408,7 +1423,9 @@
         g.add(mesh(new BoxGeometry(0.09, 0.95, 0.11), MAT.wood, 0, 0.47, 0));
         g.add(mesh(new BoxGeometry(0.56, 0.07, 0.09), MAT.wood, 0.27, 0.92, 0));
         g.add(mesh(new BoxGeometry(0.58, 0.14, 0.14), MAT.wood, 0.28, 0.07, 0));
-        for (let s = 1; s <= 7; s++) g.add(mesh(new CylinderGeometry(0.004, 0.004, 0.74, 3), MAT.salt, s * 0.068, 0.51, 0));
+        // NEVEL10_A2 (the user's decision 66): ten strings - "בנבל עשור" (Psalms 33:2, in Arachin 13b 134:440), "של עשר נימין" (Rashi
+        // there, 2190:507); seven until now. (Rashi's other reading - a wind instrument "כמפוח של נפחים", 2190:509 - in the stage's text.)
+        for (let s = 1; s <= 10; s++) g.add(mesh(new CylinderGeometry(0.0035, 0.0035, 0.74, 3), MAT.salt, s * 0.049, 0.51, 0));
         prop("nevel" + i, g, { p: [0, 0.05, -0.05], r: [0, Math.PI, 0] });   // MUSICIANS_305: upright, its strings toward his middle, its foot at the hand
       }
       // the role tags over the figures (sprites, drawn over everything on a dark plate)
@@ -1448,6 +1465,8 @@
     const LEV_SING = ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12"];
     const LEV_IDS = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10", "l11", "ba", ...LEV_SING];
     const LEV_PLAY = LEV_IDS.slice(0, 11);
+    const LEV_KIDS = ["y1", "y2", "y3"];   // TZOARIM_A2
+    const KID_HAIR = new MeshStandardMaterial({ color: 0x3a2a1e, roughness: 0.95, metalness: 0 });
     const R13 = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13"];
     const ROLE = { s1: "השוחט", s2: "הזורק", s3: "מדשן מזבח הפנימי", s4: "מדשן המנורה", s5: "הראש והרגל", s6: "שתי הידים", s7: "העוקץ והרגל", s8: "החזה והגרה",
       s9: "שתי הדפנות", s10: "הקרבים", s11: "הסולת", s12: "החביתין", s13: "היין" };
@@ -2328,7 +2347,10 @@
         else if (i < 11) a.hold(k, "nevel" + (i - 8), "L", 7);
       });
       a.hold("ba", "cymL", "L", 7); a.hold("ba", "cymR", "R", 7);
-      a.tag("b4", "המגרפה", 1, 9);
+      // TZOARIM_A2: the little ones behind them, on the ground of the court of Israel before the duchan's step (x 85.4), their heads at
+      // the height of the Levites' legs, by the singers (their spots - model choices)
+      [[-6.0, -1], [6.0, 1], [10.8, 1]].forEach(([z, sd], i) => a.walk(LEV_KIDS[i], [[98.4, sd * 1.2], [89.4, sd * 1.2], [85.45, z]], 10.2 + i * 0.3, 14.2 + i * 0.3, { yaw: -HP }));
+      a.tag("y2", "צוערי הלויים — ״בארץ היו עומדין, וראשיהן מבין רגלי הלוים״ (ערכין ב, ו)", 14.4, 18);
       a.tag("v6", "שנים עשר לויים — אומרים שירה בפה (רמב״ם כלי המקדש ג, ג)", 10, 14);
       a.tag("l3", "המנגנים בכלי שיר — אינם ממניין השנים עשר", 10.6, 14);
     };
@@ -2528,7 +2550,7 @@
       a.fx("song", 14.6);
       // MUSICIANS_305: the players and the twelve singers, with a pause at each section while the trumpets sound - "הגיעו לפרק - חלק
       // שבשיר. שכל שיר של יום חלקוהו לג' חלקים, שמפסיקין שם בין פרק לפרק" (Yachin, Tamid 7, 818:712); the song again after each
-      for (const [t0, t1] of [[14.6, 21], [23.2, 26], [28.2, 30]]) { LEV_PLAY.forEach((k) => a.pose(k, "play", t0, t1)); LEV_SING.forEach((k) => a.pose(k, "sing", t0, t1)); }
+      for (const [t0, t1] of [[14.6, 21], [23.2, 26], [28.2, 30]]) { LEV_PLAY.forEach((k) => a.pose(k, "play", t0, t1)); LEV_SING.concat(LEV_KIDS).forEach((k) => a.pose(k, "sing", t0, t1)); }   // TZOARIM_A2: and the little ones
       a.fx("song", 23.2); a.fx("song", 28.2);
       for (const t of [21, 26]) { a.pose("tr1", "trumpet", t, t + 2); a.pose("tr2", "trumpet", t, t + 2); a.fx("tekiaShort", t + 0.1); }
       // PROSTRATE_WEST_209 (the user, 13.11.2026 02:57: "בעבודת הבוקר יש כמה פאדיחות עם ההשתחוויות יוצא שכאילו הוא משתחוה על המזבח"):
@@ -2544,7 +2566,7 @@
     };
     SC.shir = (a) => {
       LEV_PLAY.forEach((k) => a.pose(k, "play", 0, 16));
-      LEV_SING.forEach((k) => a.pose(k, "sing", 0, 16));   // MUSICIANS_305
+      LEV_SING.concat(LEV_KIDS).forEach((k) => a.pose(k, "sing", 0, 16));   // MUSICIANS_305; TZOARIM_A2
       a.fx("song", 0.5);
       a.tag("v6", "שיר של יום", 0.5, 16);
     };
@@ -2803,7 +2825,7 @@
     const setArm = (A2, v, side) => { A2.sh.rotation.x = v[0]; A2.sh.rotation.z = side * v[1]; A2.el.rotation.x = v[2]; };
     // MUSICIANS_305 (the user, 19.11.2026 21:08: "צריך גם לעשות את הלוויים מנגנים, אותו דבר בעבודת הבוקר. אם הם מנגנים, לא יכולים
     // לעמוד כמו פסלים"): THE PLAYER'S RIGHT HAND on the strings of the instrument in his left (the lyre: seven strings on its face - KINOR7_A2; the
-    // harp: seven along it) - across them and back, a stroke in about 0.45 s, from the face of the strings nearer to him; the left arm
+    // harp: ten along it - NEVEL10_A2) - across them and back, a stroke in about 0.45 s, from the face of the strings nearer to him; the left arm
     // as POSES.play. And every Levite of the song - the players and the twelve singers - sways a little with it (songSway: the body
     // above the waist, aside and forward). Until 2.0.13 the right arm swung 0.12 in the air, and the singers stood still. The
     // motions - model choices
