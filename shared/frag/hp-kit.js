@@ -202,15 +202,13 @@
         ["נפך", "יהודה", 0xc8711f], ["ספיר", "דן", 0x2c52b4], ["יהלם", "נפתלי", 0xdce6ec],
         ["לשם", "גד", 0x8d5aa6], ["שבו", "אשר", 0x6d7176], ["אחלמה", "יששכר", 0x9a376a],
         ["תרשיש", "זבולן", 0x2a90b8], ["שהם", "יוסף", 0x2a3331], ["ישפה", "בנימין", 0x63a067]];
-      // MITZ_CLOTH_A2 (the user, via the coordinator, 22.11.2026: the mitznefet "נראית כקסדה, ולא מבד"; in both readings "מראה של בד פשתן
-      // לבן כרוך — קפלים ורצועות בד נראות, שוליים רכים ולא מעוגלים בצורה מושלמת, מרקם של אריג, צל בין הקפלים. לא משטח חלק ומבריק"):
-      // the mitznefet of linen wound - bands of cloth on a surface round the head (band), each bulging, its edges soft and tucked under
-      // the next, creased across, its line not a perfect round; a woven texture (a plain weave of fine threads, a few thicker - linen),
-      // rough, not shiny; darker at the bands' edges, in the creases and in the gaps between them (the shadow between the folds; a darker
-      // shell under the bands). Rashi's "כמין כפת כובע" - a low dome of one band wound up from the rim in a spiral, gathered at the top
-      // in folds; the Ramban's "צניף... מגלגל ומחזיר... כפל על כפל" - six turns round the head, each a little aslant the other way, one
-      // over another, and the top gathered. Until now a smooth half ball with a ring (Rashi) and five smooth rings (the Ramban). The
-      // number of the turns, their breadth, the folds and the texture's scale - model choices. Built once for the kit (mzCloth).
+      // MITZ_CLOTH_A2 (the user, via the coordinator, 22.11.2026: the mitznefet "נראית כקסדה, ולא מבד"), and then (15:57): "פשוט תיקח את
+      // המצנפת שעשית לפני התיקון האחרון ותעשה אותה יותר מבד, מבלי לגעת במבנה שלה" - THE SAME FORM AS BEFORE, OF CLOTH: Rashi's half ball
+      // with its ring at the rim, the Ramban's five turns round a band and its low top - their places, sizes and outlines as they were;
+      // only their face: a woven texture (a plain weave of fine threads, a few thicker - linen), soft creases and folds on the surface
+      // (a few thousandths of an amah - not its outline), darker in the folds and where one turn lies on another and on the ring (the
+      // shadow between them), rough and not shiny, linen white. (For a few hours a8eed0f had wound bands in another form - undone.)
+      // The folds' number and depth and the texture's scale - model choices. Built once for the kit (mzCloth).
       let MZC = null;
       const mzCloth = () => {
         if (MZC) return MZC;
@@ -230,95 +228,77 @@
         const tex = texOf(cv), bump = new CanvasTexture(cv);
         bump.wrapS = bump.wrapT = RepeatWrapping;
         bump.anisotropy = 8;
-        const mat = std(0xffffff, { vertexColors: true, map: tex, bumpMap: bump, bumpScale: 1.6, roughness: 0.97, metalness: 0 });   // one-sided: under a band's edge its inside is not seen
-        // a surface round the head (the frame hd): prof(v) -> [r, y], v from its lower edge up; ex, ez - its round drawn to an ellipse
-        const surf = (prof, ex, ez) => (v, th) => { const [r, y] = prof(v); return new Vector3(r * ex * Math.sin(th), y, r * ez * Math.cos(th)); };
-        const nrmOf = (S) => (v, th) => { const e = 1e-3, a = S(v, th + e).sub(S(v, th - e)), b = S(v + e, th).sub(S(v - e, th)); return a.cross(b).normalize(); };
-        // a band of the cloth wound on S, from th0 to th1 (a whole ring - closed): its middle at vc(th), half its breadth hw (in v, a little
-        // uneven), bulging t out of the surface (lift - its foot out, the later bands over the earlier), its edges tucked under, creased
-        // across and aslant (folds to a turn), its line not a perfect round; taper - a spiral's ends thinner. Its colour darker at its edges
-        // and in its creases. Lv, Rm: the surface's height and radius, for the texture's scale
-        const band = (S, o) => {
-          const N = nrmOf(S), th0 = o.th0 || 0, th1 = o.th1 == null ? Math.PI * 2 : o.th1, t = o.t, hw = o.hw, lift = o.lift || 0, folds = o.folds || 11;
-          const nU = o.nU || 96, nS = o.nS || 9, Lv = o.Lv || 0.3, Rm = o.Rm || 0.19, taper = o.taper || 0, sdd = o.seed || 1;
-          const closed = Math.abs(th1 - th0 - Math.PI * 2) < 1e-6, ph = [1.7, 2.9, 4.3, 5.1, 0.7, 3.3].map((q) => q * sdd);
-          const pos = [], col = [], uv = [], idx = [];
-          for (let i = 0; i <= nU; i++) {
-            const u = i / nU, th = th0 + (th1 - th0) * u;
-            const uneven = 0.022 * Math.sin(2 * th + ph[0]) + 0.013 * Math.sin(3 * th + ph[1]) + 0.007 * Math.sin(5 * th + ph[2]);
-            const h = hw * (1 + 0.13 * Math.sin(4 * th + ph[3]) + 0.06 * Math.sin(7 * th + ph[4]));
-            const end = taper ? Math.min(1, u / taper, (1 - u) / taper) : 1;
-            for (let j = 0; j <= nS; j++) {
-              const s = -1 + (2 * j) / nS, v = o.vc(th) + s * h * (0.55 + 0.45 * end), P = S(v, th), n = N(v, th), q = Math.sqrt(Math.max(0, 1 - s * s));
-              const crease = Math.sin(folds * th + 2.6 * s + ph[5]) * (0.55 + 0.45 * Math.sin(3 * th + ph[0] + s));
-              P.addScaledVector(n, lift + t * end * (q - 0.32 + 0.3 * crease * q) + Rm * uneven);
-              pos.push(P.x, P.y, P.z);
-              const ao = (1 - 0.36 * Math.pow(Math.abs(s), 2.4)) * (1 - 0.16 * Math.max(0, -crease)) * (0.84 + 0.16 * end);
-              col.push(ao, ao * 0.995, ao * 0.985);
-              uv.push(((th - th0) * Rm) / TILE, (s * h * Lv) / TILE);
+        const mat = std(0xffffff, { vertexColors: true, map: tex, bumpMap: bump, bumpScale: 1.3, roughness: 0.97, metalness: 0 });
+        // a piece made cloth: its texture's coordinates to the weave's scale (su, sv tiles), each point moved out along its normal by
+        // dz(p) (the creases - small) and coloured lin * ao(p) (the shadow in them and between the pieces)
+        const _n = new Vector3(), _p = new Vector3();
+        const cloth = (geo, su, sv, dz, ao, lin = 1) => {
+          geo.computeVertexNormals();
+          const P = geo.attributes.position, N = geo.attributes.normal, U = geo.attributes.uv, col = new Float32Array(P.count * 3);
+          for (let i = 0; i < P.count; i++) {
+            _p.fromBufferAttribute(P, i); _n.fromBufferAttribute(N, i);
+            const a = ao(_p), k = lin * a;
+            _p.addScaledVector(_n, dz(_p));
+            P.setXYZ(i, _p.x, _p.y, _p.z);
+            col[i * 3] = k; col[i * 3 + 1] = k * 0.993; col[i * 3 + 2] = k * 0.975;
+            U.setXY(i, U.getX(i) * su, U.getY(i) * sv);
+          }
+          geo.setAttribute("color", new BufferAttribute(col, 3));
+          geo.computeVertexNormals();
+          return geo;
+        };
+        const smo = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+        // MITZ_REF_A2 (the user's pictures of the high priest, 22.11.2026 - via the coordinator: "מצנפת רחבה ונמוכה, כמו כרית עגולה
+        // גדולה או כיפה תפוחה — רחבה בהרבה מן הראש... למטה — גליל עבה כרוך סביב הראש, מעל המצח; מעליו כיפה תפוחה ומעוגלת, עם קווי
+        // קפלים אופקיים של כריכות. הראש מכוסה לגמרי"): one outline (the frame hd, its round deeper than broad - EZ): a thick roll round
+        // the head over the forehead, and over it a puffed dome, about one and a half times the head's breadth, over the ears, its top
+        // rounded; its height about half the face's. The two readings the same outline and size - Rashi's ("כמין כפת כובע") its dome
+        // smoother, the Ramban's ("כפל על כפל") its turns plain: grooves round it, deeper. On it soft gathers, a little uneven; darker
+        // in the grooves, under the dome where it overhangs and where it meets the roll. Sizes and the grooves - model choices.
+        const EZ = 1.09;
+        // (measured on the picture: its breadth about 1.5 the head's, its height about two thirds of its breadth - about the face's
+        // height; its foot on the tzitz, the tefillin before it)
+        const KEY = [[0.15, 0.082], [0.172, 0.068], [0.2, 0.069], [0.216, 0.084], [0.221, 0.106], [0.215, 0.125], [0.205, 0.134],   // the roll: in, down, out and up
+          [0.222, 0.142], [0.245, 0.162], [0.258, 0.192], [0.262, 0.227], [0.256, 0.264], [0.237, 0.304], [0.202, 0.34], [0.148, 0.368], [0.08, 0.384], [0.0005, 0.389]];   // the dome: out over it, up and over to the top
+        const PROF = new CatmullRomCurve3(KEY.map(([r, y]) => new Vector3(r, y, 0)), false, "centripetal").getSpacedPoints(90);
+        const DOME0 = (() => { let k = 0; while (k < PROF.length - 1 && !(PROF[k].x > 0.218 && PROF[k].y > 0.137)) k++; return k; })();   // where the dome begins (over the roll)
+        let LEN = 0;
+        const ARC = PROF.map((q, k) => (k ? (LEN += q.distanceTo(PROF[k - 1])) : 0));
+        const puffy = (grooves, depth, seed) => {
+          const nT = 120, pos = [], col = [], uv = [], idx = [], nP = PROF.length;
+          for (let j = 0; j < nP; j++) {
+            const q = PROF[j], sd = j < DOME0 ? -1 : (j - DOME0) / (nP - 1 - DOME0), crease = j >= DOME0 - 2 && j <= DOME0 + 2 ? 1 - Math.abs(j - DOME0) / 3 : 0;
+            let g = 0;
+            for (const c of grooves) g = Math.max(g, Math.exp(-Math.pow((sd - c) / 0.045, 2)));
+            const under = sd >= 0 && sd < 0.22 ? smo(0.22, 0, sd) : 0;
+            for (let k = 0; k <= nT; k++) {
+              const th = (k / nT) * Math.PI * 2, top = sd > 0.85 ? smo(1, 0.85, sd) : 1;
+              const gath = (sd >= 0 ? 0.006 * Math.sin(9 * th + seed + 5 * sd + 0.7 * Math.sin(2 * th)) * Math.sin(Math.PI * Math.min(1, sd * 1.2)) : 0.004 * Math.sin(13 * th + seed * 2));
+              const r = q.x * (1 - depth * g * top) * (1 + gath + 0.008 * Math.sin(2 * th + seed) * top);
+              pos.push(r * Math.sin(th), q.y + 0.002 * Math.sin(5 * th + seed) * (sd >= 0 ? top : 1), r * EZ * Math.cos(th));
+              const fold = sd >= 0 ? Math.sin(9 * th + seed + 5 * sd + 0.7 * Math.sin(2 * th)) : Math.sin(13 * th + seed * 2);
+              const ao = (1 - 0.42 * g * top) * (1 - 0.3 * under) * (1 - 0.35 * crease) * (1 - 0.08 * Math.max(0, -fold)) * (j < DOME0 ? 0.95 : 1);
+              col.push(ao, ao * 0.993, ao * 0.975);
+              uv.push((th * 0.22) / TILE, ARC[j] / TILE);
             }
           }
-          for (let i = 0; i < nU; i++) for (let j = 0; j < nS; j++) { const a = i * (nS + 1) + j, b = a + nS + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+          for (let j = 0; j < nP - 1; j++) for (let k = 0; k < nT; k++) { const a = j * (nT + 1) + k, b = a + nT + 1; idx.push(a, a + 1, b, a + 1, b + 1, b); }
           const g = new BufferGeometry();
           g.setAttribute("position", new Float32BufferAttribute(pos, 3));
           g.setAttribute("color", new Float32BufferAttribute(col, 3));
           g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
           g.setIndex(idx);
           g.computeVertexNormals();
-          if (closed) {   // the ring's seam: one normal
-            const nn = g.attributes.normal, w3 = new Vector3();
-            for (let j = 0; j <= nS; j++) { const a = j, b = nU * (nS + 1) + j; w3.set(nn.getX(a) + nn.getX(b), nn.getY(a) + nn.getY(b), nn.getZ(a) + nn.getZ(b)).normalize(); nn.setXYZ(a, w3.x, w3.y, w3.z); nn.setXYZ(b, w3.x, w3.y, w3.z); }
-          }
+          // the seam (th 0 and 2 pi) one normal
+          const nn = g.attributes.normal, w3 = new Vector3();
+          for (let j = 0; j < nP; j++) { const a = j * (nT + 1), b = a + nT; w3.set(nn.getX(a) + nn.getX(b), nn.getY(a) + nn.getY(b), nn.getZ(a) + nn.getZ(b)).normalize(); nn.setXYZ(a, w3.x, w3.y, w3.z); nn.setXYZ(b, w3.x, w3.y, w3.z); }
           return g;
         };
-        // the top, gathered: a low dome of cloth, its folds running in to the middle (the Ramban's)
-        const crown = (cy, R, ex, ez, dome, folds, sdd) => {
-          const nR = 8, nT = 72, pos = [], col = [], uv = [], idx = [];
-          for (let i = 0; i <= nR; i++) for (let k = 0; k <= nT; k++) {
-            const r0 = i / nR, th = (k / nT) * Math.PI * 2, f = Math.sin(folds * th + 2.4 * r0 + 0.8 * Math.sin(2 * th + sdd) + sdd) * (0.55 + 0.45 * Math.sin(3 * th + sdd * 1.7)) * r0 * (1 - r0) * 4 * 0.0065 + 0.003 * Math.sin(5 * th + sdd * 2) * r0;
-            const r = R * r0 * (1 + 0.03 * Math.sin(3 * th + sdd)), x = r * ex * Math.sin(th), z = r * ez * Math.cos(th);
-            pos.push(x, cy + dome * (1 - r0 * r0) + f, z);
-            const ao = (1 - 0.14 * Math.max(0, -f / 0.0065)) * (1 - 0.12 * Math.pow(r0, 4));
-            col.push(ao, ao * 0.995, ao * 0.985);
-            uv.push(x / TILE, z / TILE);
-          }
-          for (let i = 0; i < nR; i++) for (let k = 0; k < nT; k++) { const a = i * (nT + 1) + k, b = a + nT + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
-          const g = new BufferGeometry();
-          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
-          g.setAttribute("color", new Float32BufferAttribute(col, 3));
-          g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
-          g.setIndex(idx);
-          g.computeVertexNormals();
-          return g;
-        };
-        const SHADE = 0x8f887a;   // the shell under the bands - seen only in the gaps between them, as shadow (not below the lowest)
-        // Rashi: a low dome (its middle 0.125 over the head's, radius 0.19), one band from the rim up round and round to near the top,
-        // and the top gathered over it
-        const profR = (v) => { const a = (1 - Math.min(1, v)) * HP; return [0.19 * Math.sin(a), 0.125 + 0.18 * Math.cos(a)]; };
-        const SR = surf(profR, 1, 1);
-        const TURNS = 2.0, V0 = 0.2, V1 = 0.68;
-        // the cloth's edge turned in under the lowest band, to the hair (seen from below - not the band's inside)
-        const tuck = (r0, y0, r1, y1, ez) => { const pts = [new Vector2(r1, y1), new Vector2((r0 + r1) / 2, (y0 + y1) / 2 - 0.004), new Vector2(r0, y0)]; return [pts, pts.slice().reverse()].map((q) => tint(plain(new LatheGeometry(q, 48).scale(1, 1, ez)), 0x847e72)); };   // both faces
-        const rashiG = mergeGeometries([
-          tint(plain(new SphereGeometry(0.182, 28, 12, 0, Math.PI * 2, 0, HP - 0.05).scale(1, 0.95, 1).translate(0, 0.125, 0)), SHADE),
-          ...tuck(0.176, 0.1, 0.1, 0.135, 1),
-          band(SR, { vc: () => 0.02, hw: 0.15, t: 0.022, folds: 12, nU: 110, seed: 3.7 }),   // the lowest turn level all round (the cap's rim)
-          band(SR, { th0: Math.PI, th1: Math.PI + TURNS * Math.PI * 2, vc: (th) => V0 + (V1 - V0) * ((th - Math.PI) / (TURNS * Math.PI * 2)), hw: 0.15, t: 0.02, lift: 0.003, folds: 11, nU: 220, taper: 0.1, seed: 1 }),   // from behind, so that its ends are not seen
-          band(SR, { vc: () => 0.83, hw: 0.2, t: 0.012, lift: 0.004, folds: 9, nU: 96, seed: 2.3 })
-        ]);
-        // the Ramban: a band of turns round the head (its radius 0.18 .. 0.198, from 0.112 up 0.258), each aslant the other way, the
-        // later over the earlier, and the top gathered
-        const profB = (v) => [0.18 + 0.018 * v, 0.112 + 0.258 * v];
-        const SB = surf(profB, 1, 1.06);
-        const TURN6 = [[0.08, 0.02, 0.3, 10], [0.27, 0.11, 0.9, 12], [0.43, -0.11, -0.7, 9], [0.58, 0.1, 2.5, 13], [0.73, -0.09, -2.4, 11], [0.87, 0.05, 1.2, 10]];
-        const coreB = new LatheGeometry([...Array.from({ length: 12 }, (_, k) => { const [r, y] = profB(0.06 + (0.94 * k) / 11); return new Vector2(r * 0.985, y); }), new Vector2(0.0005, profB(1)[1])], 36).scale(1, 1, 1.06);
-        const rambanG = mergeGeometries([
-          tint(plain(coreB), SHADE),
-          ...tuck(0.172, 0.097, 0.1, 0.13, 1.06),
-          ...TURN6.map(([v, tl, ph, fo], i) => band(SB, { vc: (th) => v + tl * Math.cos(th - ph), hw: 0.135, t: 0.024, lift: 0.004 * i, folds: fo, nU: 120, Lv: 0.258, seed: i + 1 })),
-          crown(profB(1)[1] + 0.003, 0.2, 1, 1.06, 0.026, 8, 1.3)
-        ]);
-        MZC = { mat, rashiG, rambanG, SR, nR: nrmOf(SR) };
+        const rashiG = puffy([0.34, 0.62], 0.008, 1.3);                 // Rashi: smoother - two faint lines
+        const rambanG = puffy([0.16, 0.33, 0.5, 0.66, 0.8], 0.03, 2.1);   // the Ramban: five turns, plain
+        // a point on its face (th 0 before, along +z), out along it by off - for the cords
+        const at = (j, th, off) => { const q = PROF[Math.max(0, Math.min(PROF.length - 1, j))], r = q.x + off; return [r * Math.sin(th), q.y + off * 0.3, r * EZ * Math.cos(th)]; };
+        MZC = { mat, rashiG, rambanG, at, nP: PROF.length, dome0: DOME0 };
         return MZC;
       };
       const buildHP = (f) => {
@@ -511,7 +491,7 @@
         // TEF_ONE_A2 (the coordinator: two boxes in one place): the head's tefillin are the kit's (figure: K.tefOn) - no box of its own here
         // the mitznefet sits back on the head (model choice: its frame hd tilted 0.3 back about the head's centre): its front edge above the
         // hair and the tefillin, its back over the nape; loc() = a point of the figure in that frame
-        const TILT = -0.3, cT = Math.cos(TILT), sT = Math.sin(TILT);
+        const TILT = -0.06, cT = Math.cos(TILT), sT = Math.sin(TILT);   // MITZ_REF_A2: nearly level, as the user's pictures (0.3 back until now)
         const loc = (x, y, z) => { const yy = y - 3.04, zz = z - HZ; return [x, yy * cT + zz * sT, -yy * sT + zz * cT]; };
         const hd = new Group();
         hd.position.set(0, 3.04, HZ);
@@ -524,22 +504,23 @@
         const MZ_CORD = 0.0115, MZ_KNOT = 0.016;
         const tubeIn = (par, pts, r, mat) => { const tm = cord(pts, r * 0.7, mat); par.add(tm); return tm; };
         // Rashi: "כמין כפת כובע", high on the head; his cords: the two at the ends tied behind the nape, the middle one over it.
-        // MITZ_CLOTH_A2: of linen wound (mzCloth), not a smooth half ball
+        // MITZ_REF_A2: as the user's pictures - a roll round the head and a puffed dome over it, of cloth (mzCloth)
         const MZ = mzCloth();
         mk(MZ.rashiG, MZ.mat, 0, 0, 0, rashi);
         const nape = (k) => { const t = k / 12, p = headAt(HP + t * Math.PI, 0.366 - 0.58 * Math.sin(t * Math.PI), 0.027); return [p.x, p.y, p.z]; };
         tubeIn(rashiW, Array.from({ length: 13 }, (_, k) => nape(k)), MZ_CORD, M.techelet);
         const NP = nape(6);
         mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, NP[0], NP[1], NP[2] - 0.004, rashiW);
-        // the middle cord over the cloth, from before to behind (clear of its folds)
-        const over = (v, th) => { const q = MZ.SR(v, th).addScaledVector(MZ.nR(v, th), 0.034); return [q.x, q.y, q.z]; };
-        const mer = [[0.1, 0], [0.32, 0], [0.56, 0], [0.8, 0], [1, 0], [0.8, Math.PI], [0.56, Math.PI], [0.32, Math.PI], [0.1, Math.PI]].map(([v, th]) => over(v, th));
+        // MITZ_REF_A2: the middle cord from the tzitz straight up the front of the mitznefet, over its top and down behind it to the nape
+        // (as the user's pictures); the end cords as before, round the head under it
+        const N0 = MZ.nP - 1, D0 = MZ.dome0, OFF = 0.011;
+        const mer = [...[6, 10, D0, D0 + 8, D0 + 16, D0 + 24, D0 + 32, N0 - 6].map((j) => MZ.at(j, 0, OFF)), MZ.at(N0, 0, OFF), ...[N0 - 6, D0 + 32, D0 + 24, D0 + 16, D0 + 8, D0, 10].map((j) => MZ.at(j, Math.PI, OFF))];
         tubeIn(rashi, [loc(0, 3.122, 0.196 + HZ), ...mer, loc(0, 3.03, HZ - 0.222), loc(NP[0], NP[1], NP[2])], MZ_CORD, M.techelet);
-        // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it. MITZ_CLOTH_A2:
-        // six turns of linen (mzCloth), not five smooth rings
+        // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it, on the roll
+        // (MITZ_REF_A2: the same outline as Rashi's, its turns plain)
         mk(MZ.rambanG, MZ.mat, 0, 0, 0, ramban);
-        tubeIn(ramban, [loc(0.174, 3.085, HZ), [0.222, 0.1, -0.08], [0.18, 0.165, -0.18], [0, 0.175, -0.25], [-0.18, 0.165, -0.18], [-0.222, 0.1, -0.08], loc(-0.174, 3.085, HZ)], MZ_CORD, M.techelet);
-        mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, 0, 0.175, -0.255, ramban);
+        tubeIn(ramban, [loc(0.174, 3.085, HZ), [0.229, 0.088, -0.05], [0.19, 0.1, -0.19], [0, 0.102, -0.253], [-0.19, 0.1, -0.19], [-0.229, 0.088, -0.05], loc(-0.174, 3.085, HZ)], MZ_CORD, M.techelet);   // over the roll behind - "וקושר הציץ למעלה מן המצנפת" (10:3)
+        mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, 0, 0.102, -0.259, ramban);
         out.mitz = { rashi: [rashi, rashiW], ramban: [ramban] };
         return out;
       };
