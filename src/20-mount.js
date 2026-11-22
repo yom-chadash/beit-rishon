@@ -175,6 +175,7 @@
     return leaves;
   }
 
+  //@@include rose-garden
   async function buildMount(ctx) {
     const M2 = ctx.M, H2 = ctx.H, CO2 = ctx.CO, LV2 = ctx.LV;
     const g = new Group();
@@ -246,6 +247,13 @@
     } catch (e) {
       console.warn("[mount] terrain skipped:", e);
     }
+    // ROSES_B2 (fix-b2, 22.11.2026 - the user's decision 77 of 02:27: "שכבה כבויה גם בבית ראשון; מקום — צילום לאישור"): the rose garden
+    // outside the west gate (shared/frag/rose-garden.js), on the place's feature "גנת הוורדים — מחוץ לשער המערב"
+    try {
+      const RG = tm_roseGarden(ctx, { x0: -188, x1: -162, z0: 18, z1: 44, ground: terrainH, open: "e", name: "roseGarden" });
+      ctx.shared.features = ctx.shared.features || {};
+      ctx.shared.features.roseGarden = { key: "roseGarden", timed: false, isOn: () => RG.visible, on: () => { RG.visible = true; }, off: () => { RG.visible = false; } };
+    } catch (e) { console.warn("[mount] rose garden skipped", e && e.message); }
 
     // ---------- the platform: 500 x 500 (Middot 2:1), paved, top at LV.HAR = 0; foundation walls below ground (model choice) ----------
     H2.box(g, CO2.HAR, 1.5, CO2.HAR, M2.pave, CX, LV2.HAR - 1.5, CZ);

@@ -865,6 +865,53 @@
     }
     return { rollers: f.geo(), parchment: new BoxGeometry(0.42, 0.11, 0.3) };
   }
+  // TORAH_B2 (fix-b2, 22.11.2026 - the user, through the coordinator: "ספר תורה אמיתי, בנוסח אשכנז: גלול על שני עצי חיים, שהידיות שלהם
+  // בולטות למעלה ולמטה; מעיל בד... עם רקמת זהב, וחגורה" - "החגורה מתחת למעיל, כורכת את הספר הגלול עצמו"; "גדול מעט יותר"): an upright
+  // scroll, its origin at the bottom handles' tips, its front to +z. Two parchment rolls side by side on two wooden rollers, their
+  // round plates and handles below and above; the belt round the rolls; the mantle over them - an elliptic sleeve with a flat top, dark
+  // argaman embroidered in gold (a crown, bands at the top and the hem). All the measures, the colours and the embroidery - model choices.
+  function pal_torahGroup() {
+    const G = new Group();
+    const wood = new MeshStandardMaterial({ color: 0x5a3a22, roughness: 0.6 });
+    const knob = new MeshStandardMaterial({ color: 0xc9a24a, roughness: 0.35, metalness: 0.6 });
+    const parch = new MeshStandardMaterial({ color: 0xeee2c4, roughness: 0.9 });
+    const beltM = new MeshStandardMaterial({ color: 0xe9e3d3, roughness: 0.85 });
+    const cv = document.createElement("canvas"); cv.width = 512; cv.height = 512;
+    const c = cv.getContext("2d");
+    c.fillStyle = "#4b1450"; c.fillRect(0, 0, 512, 512);
+    c.fillStyle = "#d4a73a";
+    c.fillRect(0, 22, 512, 10); c.fillRect(0, 40, 512, 3);         // the band under the top
+    c.fillRect(0, 462, 512, 12); c.fillRect(0, 452, 512, 3);       // the hem
+    for (let x = 4; x < 512; x += 12) c.fillRect(x, 476, 5, 30);    // the fringe
+    // the crown in front (the canvas' middle is the sleeve's front)
+    c.beginPath(); c.moveTo(196, 230); c.lineTo(316, 230); c.lineTo(326, 150); c.lineTo(296, 190); c.lineTo(256, 135); c.lineTo(216, 190); c.lineTo(186, 150); c.closePath(); c.fill();
+    c.fillRect(192, 236, 128, 14);
+    for (const [x, y] of [[186, 146], [256, 130], [326, 146]]) { c.beginPath(); c.arc(x, y, 8, 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = "#d4a73a"; c.lineWidth = 4; c.strokeRect(176, 110, 160, 160);
+    c.lineWidth = 3; for (const y of [300, 320]) { c.beginPath(); c.moveTo(160, y); c.lineTo(352, y); c.stroke(); }
+    const tex = new CanvasTexture(cv);
+    if ("colorSpace" in tex) tex.colorSpace = "srgb";
+    const mantleM = new MeshStandardMaterial({ map: tex, roughness: 0.75, side: DoubleSide });
+    const topM = new MeshStandardMaterial({ color: 0x4b1450, roughness: 0.75 });
+    const add = (geo, mat, x, y, z) => { const m = new Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.userData.noPick = true; G.add(m); return m; };
+    const RX = 0.12, RR = 0.115, Y0 = 0.15, Y1 = 0.97, H = 1.14;
+    for (const s of [-1, 1]) {
+      add(new CylinderGeometry(0.022, 0.024, H, 10), wood, s * RX, H / 2, 0);                   // the roller (עץ חיים), its handles below and above
+      add(new CylinderGeometry(0.13, 0.13, 0.016, 24), wood, s * RX, Y0 - 0.008, 0);            // the round plate under the roll
+      add(new SphereGeometry(0.03, 10, 8), knob, s * RX, H + 0.012, 0);                          // the knobs
+      add(new SphereGeometry(0.026, 10, 8), knob, s * RX, 0.012, 0);
+      add(new CylinderGeometry(RR, RR, Y1 - Y0 - 0.02, 20), parch, s * RX, (Y0 + Y1) / 2, 0);   // the rolled parchment
+    }
+    const belt = add(new CylinderGeometry(1, 1, 0.07, 32, 1, true), beltM, 0, 0.56, 0);           // the belt, round the rolls, under the mantle
+    belt.scale.set(RX + RR + 0.004, 1, RR + 0.006);
+    const MW = 0.262, MD = 0.142;
+    const sleeve = add(new CylinderGeometry(1, 1, Y1 - Y0 + 0.02, 40, 1, true, Math.PI), mantleM, 0, (Y0 + Y1) / 2 + 0.01, 0);   // the mantle
+    sleeve.scale.set(MW, 1, MD);
+    const lidT = add(new CircleGeometry(1, 40), topM, 0, Y1 + 0.02, 0);
+    lidT.rotation.x = -Math.PI / 2; lidT.scale.set(MW, MD, 1);
+    G.name = "throneTorah";
+    return G;
+  }
   // the crown ("ועטרה של זהב"): a lathed band, open, with eight points on its rim, its bottom at y 0
   // ===== KING_211 (the user, 15.11.2026 00:53, of the one who climbs the throne: royal dress - tekhelet, argaman, gold - on a real
   // figure): THE KING ON HIS THRONE'S STEPS - the king of "דבקו שערים" (58-ark.js ark_kingFig: the priests' body and face, a dark beard,
@@ -955,7 +1002,8 @@
         cuff.rotation.x = Math.PI / 2;
         cuff.position.y = -KG.P.fo + 0.03;
         add(el, KG.handP[side], K.mSkin).name = "palKingHand" + (side > 0 ? "R" : "L");
-        ark_setArm({ sh, el }, seated ? [-0.35, 0.1, -1.25] : PAL_KING_REST, side);
+        if (seated) { sh.rotation.set(-0.097, side * 0.71, side * 0.28); el.rotation.x = -1.493; }   // KING_REST_B2: the hands on the throne's arms (x ±1.05, the palm 0.71 over the seat, 0.45 forward) - solved for the figure's arm, the shoulder relaxed
+        else ark_setArm({ sh, el }, PAL_KING_REST, side);
         ARMS.push({ sh, el, side });
       }
       for (const side of [1, -1]) {   // the feet, under the hem
@@ -963,6 +1011,7 @@
         f.position.set(side * 0.1 * FS, seated ? -legN * FS : 0, seated ? 0.47 * FS : 0);
       }
       if (!seated) g.rotation.y = Math.PI;   // he climbs with his face to the seat (-z); seated, his face is to the hall
+      else g.rotation.x = -0.06;            // KING_REST_B2: seated, he leans back a little, against the round back
       // KING_LEAN_211: lean.set(v), v 0..1 - from standing upright, the hands a little out from his sides, to LEANING on the creatures'
       // limbs: the body bent forward from the feet (rotation about the world x after the turn: forward is -z), the arms out and bent
       if (!seated) g.userData.lean = {
@@ -1704,8 +1753,9 @@
       // below); in the midrashic versions none, so that the sceptre, the dove and the crown over the head are free (Esther Rabbah 1:12 -
       // 264:25 - "שרביט הזהב מאחוריו, ויונה נתונה בראשו ועטרה של זהב בפיה... נוגע ואינו נוגע"; Bamidbar Rabbah 12:17 - 259:222 - "ויושב
       // תחתיה בשבת"; the eagles "ומסככים למעלה מראשו" - Abba Gorion, 274:6). The disc's radius (1.42), thickness (0.2), its rim, the dome's
-      // depth and height - model choices.
-      const BR = 1.42, BTH = 0.2, BYC = sTop - 0.1 + BR, BZC = zD + 0.1 - 0.65 - BTH / 2 - 0.01;   // the disc: radius, thickness, centre (its front face against the seat's back)
+      // depth and height - model choices. (90, the same day: the disc thinner - 0.08 - with a fine rim, its radius 1.36 (1.42 before), the dome
+      // narrower and lower; the Esther Rabbah sceptre raised over the disc, the crown's chain longer.)
+      const BR = 1.36, BTH = 0.08, BYC = sTop - 0.1 + BR, BZC = zD + 0.1 - 0.65 - BTH / 2 - 0.01;   // the disc: radius, thickness, centre (its front face against the seat's back)
       let pesukimDome = null;
       {
         const back = new Mesh(new CylinderGeometry(BR, BR, BTH, 72).rotateX(HP), gold);
@@ -1713,14 +1763,14 @@
         back.castShadow = back.receiveShadow = true;
         back.name = "throneBack";
         g.add(back);
-        const rim = new Mesh(new TorusGeometry(BR - 0.02, 0.07, 10, 72), gold);   // a rounded rim on its front edge
+        const rim = new Mesh(new TorusGeometry(BR - 0.012, 0.03, 8, 96), gold);   // a fine rounded rim on its front edge (90: "קצת להצר את הדיסקה, היא גסה מדי")
         rim.position.set(X, BYC, BZC + BTH / 2);
         rim.castShadow = true;
         rim.name = "throneBackRim";
         g.add(rim);
         const gold2 = gold.clone(); gold2.side = DoubleSide;
         const dome = new Mesh(new SphereGeometry(1, 40, 10, 0, Math.PI, 0, Math.PI / 2), gold2);   // the front half of a hemisphere (+z)
-        dome.scale.set(BR - 0.12, 0.42, 1.12);
+        dome.scale.set(0.62, 0.26, 1.0);                 // (90) as wide as the disc where it meets it, low and thin
         dome.position.set(X, sTop + 2.47, BZC + BTH / 2);   // over the head (its top sTop + ~2.4)
         dome.castShadow = true;
         dome.name = "throneBackDome";
@@ -1981,6 +2031,10 @@
       };
       const backZ = BZC;                              // THRONE_ROUND_B2: the middle of the disc's thickness (the flat back's, z 614.04, until 22.11.2026)
       const zHead = zD + 0.1;                         // over the seat: the place of a seated head, z 614.8
+      // KING_REST_B2 (fix-b2, 22.11.2026 - the user: "יושב כאילו הוא בלחץ... נשען לאחור על גב הכסא, הכתפיים רפויות, וידיו מונחות על הידיות"):
+      // the seated king sits back (his hips 0.25 behind the seat's middle), leaning back a little (KING_LEAN_BACK) - his back against the
+      // round back; his head, and the crown over it, are so much further back (zCrown)
+      const zKing = zHead - 0.25, zCrown = zKing - 0.12;
       // 1.0.1-L (A27 "the eagles' wings meet over the seat"): twelve eagles in three rows of four, spread, each wing's tip on its neighbour's (half-span EW at scale 0.85; two tips meet at the very middle)
       const EW = 0.806, canopy = (rows, y) => { const o = []; for (const dz of rows) for (const n of [-3, -1, 1, 3]) o.push([X + n * EW, y, zHead + dz]); return o; };
       const slot = (a, rx, rz, y) => [X + rx * Math.cos(a), y, zHead + rz * Math.sin(a)];   // a place on a ring over the head (a from the east toward the hall)
@@ -2000,7 +2054,7 @@
       // the ark with the Torah scroll, open box and hinged lid, on the round seat-place at the seat's right hand (west), beside the seat as the
       // brief (L.78) asks, so it is in the frame of both throne views (Targum Sheni "ופתחא ארונא ונסבא סיפרא דאורייתא"; Panim Acherim "ופותחת
       // הארון ולוקחת ס"ת"; Beit HaMidrash "ופותחת לו הארון ונוטלת ספר תורה"; its size and place: model choice)
-      const ARK = { x: X - 1.4, y: top + DH, z: zD, w: 0.66, h: 0.4, d: 0.44 };
+      const ARK = { x: X - 1.4, y: top + DH, z: zD, w: 0.62, h: 1.25, d: 0.44 };   // TORAH_B2: tall, the scroll stands in it (0.4 high until 22.11.2026, the scroll lay)
       {
         const a = pal_fig(), W2 = ARK.w / 2, D2 = ARK.d / 2;
         a.box(ARK.w, 0.04, ARK.d, 0, 0.02, 0).box(ARK.w, ARK.h, 0.04, 0, ARK.h / 2, -D2 + 0.02).box(ARK.w, ARK.h, 0.04, 0, ARK.h / 2, D2 - 0.02).box(0.04, ARK.h, ARK.d, -W2 + 0.02, ARK.h / 2, 0).box(0.04, ARK.h, ARK.d, W2 - 0.02, ARK.h / 2, 0);
@@ -2015,14 +2069,11 @@
       lid.add(lidMesh);
       midr.add(lid);
       const scroll = new Group();
-      {
-        const sg = pal_scrollGeos();
-        scroll.add(new Mesh(sg.rollers, vesselGold), new Mesh(sg.parchment, linen));
-        scroll.scale.setScalar(1.05);
-      }
+      try { scroll.add(pal_torahGroup()); }   // TORAH_B2: the upright scroll in its mantle
+      catch (_) { const sg = pal_scrollGeos(); scroll.add(new Mesh(sg.rollers, vesselGold), new Mesh(sg.parchment, linen)); }
       scroll.name = "throneScroll";
       midr.add(scroll);
-      const SCR_HOME = [ARK.x, ARK.y + 0.13, ARK.z], SCR_LAP = [X, sTop + 0.075, zD + 0.35];   // in the ark; on the seat, the king's lap ("לתוך חיקו"; "על ברכיו"; "בידוי")
+      const SCR_HOME = [ARK.x, ARK.y + 0.045, ARK.z], SCR_LAP = [X, sTop + 0.37, zKing + 0.4], SCR_TILT = -0.12, SCR_UP = 1.24;   // TORAH_B2: standing on his thighs, its back against his belly (SCR_TILT), in every version; SCR_UP - the dove over its top   // in the ark; on the seat, the king's lap ("לתוך חיקו"; "על ברכיו"; "בידוי")
       scroll.position.set(SCR_HOME[0], SCR_HOME[1], SCR_HOME[2]);
       // the silver dragon in the mechanism ("ותנינא דכספא חד במכונוי"; "תנין של כסף היה טוען גלגל של כסא"), on the body's top at its east end,
       // with its wheel before it (model choice)
@@ -2070,9 +2121,9 @@
       sil.visible = false;
       midr.add(sil);
       const FOOT_Z = 0.2, HAND_Y = PAL_KING.HAND_Y, HAND_X = PAL_KING.HAND_X, silAt = (k) => [X, stepY(k), stepZ(k) + FOOT_Z], HAND_Z = PAL_KING.HAND_Z, handAt = (k) => [X, stepY(k) + HAND_Y, stepZ(k) + FOOT_Z + HAND_Z];   // the hand: the very middle of the step, where he stands
-      const silStart = [X, YT + 0.25, zF + 1.2], silFront = [X, top + DH, zD + 1.25], silSeated = [X, sTop, zHead];
+      const silStart = [X, YT + 0.25, zF + 1.2], silFront = [X, top + DH, zD + 1.25], silSeated = [X, sTop, zKing];   // KING_REST_B2: zHead until 22.11.2026
       // the scroll's end per version: on the knees or in the hands
-      const SCR_KNEES = [X, sTop + 0.46, zHead + 0.66], SCR_HANDS = [X, sTop + 0.8, zHead + 0.88];   // KING_211: the king's own knees and hands
+      const SCR_KNEES = SCR_LAP, SCR_HANDS = SCR_LAP;   // TORAH_B2 (the user: in every version the scroll stands on his thighs and leans on him, his hands on the arms); until 22.11.2026 on his knees / in his hands
       const mkSpray = (grp, n, x, y, z, dx, dz) => {
         const geo = new BufferGeometry();
         const pos = new Float32Array(n * 3);
@@ -2154,14 +2205,15 @@
       // the dove brings the scroll: from its place to over the ark, the lid opens, it comes down, carries the scroll to the seat and flies back;
       // at the script's end the scroll returns to the ark and the lid closes (the times: t0 start, the whole about 10 s; tEnd the closing)
       const doveScroll = (tr, dove, home, t0, tEnd, arc, P = SCR_LAP) => {
-        const over = [ARK.x, ARK.y + 1.05, ARK.z], low = [SCR_HOME[0], SCR_HOME[1] + 0.32, SCR_HOME[2]], lap = [P[0], P[1] + 0.32, P[2]];
+        const over = [ARK.x, ARK.y + ARK.h + 0.75, ARK.z], low = [SCR_HOME[0], SCR_HOME[1] + SCR_UP, SCR_HOME[2]], lap = [P[0], P[1] + SCR_UP, P[2]];
         const carry = { a: t0 + 4, b: t0 + 6.5, f: (u) => {
           const x = SCR_HOME[0] + (P[0] - SCR_HOME[0]) * u, y = SCR_HOME[1] + (P[1] - SCR_HOME[1]) * u + 0.9 * 4 * u * (1 - u), z = SCR_HOME[2] + (P[2] - SCR_HOME[2]) * u;
-          dove.position.set(x, y + 0.32, z);
+          dove.position.set(x, y + SCR_UP, z);
           scroll.position.set(x, y, z);
+          scroll.rotation.x = SCR_TILT * u;   // TORAH_B2: upright out of the ark, leaning on him on the lap
         } };
         tr.push(T.move(dove, home, over, t0, t0 + 2.5, arc), T.lid(t0 + 2.5, t0 + 3.5, true), T.move(dove, over, low, t0 + 3.5, t0 + 4), carry, T.move(dove, lap, home, t0 + 7.5, t0 + 10, arc * 0.6));
-        tr.push(T.move(scroll, P, SCR_HOME, tEnd - 1.6, tEnd - 0.5, 0.6), T.lid(tEnd - 0.5, tEnd, false));
+        tr.push(T.move(scroll, P, SCR_HOME, tEnd - 1.6, tEnd - 0.5, 0.6), { a: tEnd - 1.6, b: tEnd - 0.5, f: (u) => { scroll.rotation.x = SCR_TILT * (1 - u); } }, T.lid(tEnd - 0.5, tEnd, false));
       };
       // a figure flies to a place and spreads its wings (an eagle), turning to face the hall; back to its own place and pose
       const flyOut = (tr, fig, p0, p1, a, b, arc = 0.8) => {
@@ -2306,7 +2358,7 @@
         { const held = new Mesh(beastGeo("eagle"), gold); held.position.set(0.3, -0.02, 0); held.scale.setScalar(0.35); held.castShadow = true; held.name = "throneHeldEagle"; d.dove.add(held); }
         put(grp, pal_vineVaultGeo(24, 3.3, 613.1, 616.7, 5.4), gold, X, top, 0, 0, 1, "throneVines");
         d.greatEagle = eagleAt(grp, X + 1.9, top, 613.1, -HP, 1.2, "throneGreatEagle");
-        d.crownHome = [X + 1.9, top, 613.75]; d.crownHead = [X, sTop + PAL_KING.HEAD - 0.1, zHead];   // KING_211: on the king's head (the silhouette's: sTop + 2.4)   // 1.0.1-L: at the great eagle's feet, no stand (the midrash has none); on the head's very place (throne.head)
+        d.crownHome = [X + 1.9, top, 613.75]; d.crownHead = [X, sTop + PAL_KING.HEAD - 0.1, zCrown];   // KING_211: on the king's head (the silhouette's: sTop + 2.4)   // 1.0.1-L: at the great eagle's feet, no stand (the midrash has none); on the head's very place (throne.head)
         d.crown = put(grp, pal_crownGeo(), vesselGold, d.crownHome[0], d.crownHome[1], d.crownHome[2], 0, 1, "throneCrown");
         const sprW = mkSpray(grp, 50, X - 2.75, top + 0.63, 615.75, 0.35, 1), sprE = mkSpray(grp, 50, X + 2.75, top + 0.63, 615.75, -0.35, 1);
 
@@ -2420,7 +2472,7 @@
         // שרביט הזהב מאחוריו, ויונה נתונה בראשו ועטרה של זהב בפיה, כדי שיהא המלך יושב בשבת ועטרה של זהב נוגע ואינו נוגע" - they stay there
         // 1.0.1-L: the crown stays at the height of the head, on a short link under the beak, and the sceptre's end with the dove stands above it (level with it, the crown hid the dove from the hall)
         // 1.0.1-L (A27): the crown on the very place of the head (throne.head, y sTop + 2.4, z zHead)
-        const crY = sTop + PAL_KING.HEAD - 0.07, scY = crY + 0.2, scZ = zD - 0.95, dvZ = zD - 0.32;   // KING_211: "נוגע ואינו נוגע" - at the king's head
+        const crY = sTop + PAL_KING.HEAD - 0.07, scY = Math.max(crY + 0.2, backTop + 0.15), scZ = zD - 0.95, dvZ = zCrown - 0.42;   // KING_211: "נוגע ואינו נוגע" - at the king's head; THRONE_ROUND_B2 (90): the sceptre's arm over the round back, the chain longer
         const sc = pal_fig();
         sc.rod(0.07, 0.07, X, top + DH, scZ, X, scY, scZ, 10).rod(0.06, 0.06, X, scY, scZ, X, scY, dvZ + 0.06, 10).ell(0.09, 0.09, 0.09, X, scY, scZ, 0, 0, 0, 8, 6);
         sc.rod(0.014, 0.014, X, scY + 0.3, dvZ + 0.232, X, crY + 0.16, dvZ + 0.232, 5);   // the link from the beak's tip (the dove's scale 1: y 0.245, x 0.232) to the crown's rim
@@ -2534,7 +2586,7 @@
         const armL = lionAt(grp, X + 2.75, top, zD + 0.5, -HP, 0.72, -1);
         d.armLions = [lionAt(grp, X - 2.75, top, zD + 0.5, -HP, 0.72), armL];
         pillarsAt(grp, 2.75, zD + 0.5, top + 1.17 * 0.72, 2.9);
-        d.crownHome = [X + 3.45, top + 0.75, 615.6]; d.crownHead = [X, sTop + PAL_KING.HEAD - 0.1, zHead];   // KING_211   // on a low stand within reach of the east arm lion's left paw (model choice)
+        d.crownHome = [X + 3.45, top + 0.75, 615.6]; d.crownHead = [X, sTop + PAL_KING.HEAD - 0.1, zCrown];   // KING_211   // on a low stand within reach of the east arm lion's left paw (model choice)
         d.crown = put(grp, pal_crownGeo(), vesselGold, d.crownHome[0], d.crownHome[1], d.crownHome[2], 0, 1, "throneCrown");
         H.box(grp, 0.5, 0.75, 0.5, gold, X + 3.45, top, 615.6).name = "throneCrownStand";
         d.beasts = pairsAt(grp, [["ox", "lion"], ["wolf", "lamb"], ["leopard", "kid"], ["bear", "deer"], ["eagle", "bird"]]);
@@ -2714,7 +2766,7 @@
       const script = {}, witnessScript = {};
       for (const k of VKEYS) { script[k] = CAP[k] || []; witnessScript[k] = WCAP[k] || []; }
       thrAPI = { throneVersion, ascent, witnesses, script, witnessScript, VNAMES,
-        shared: { body: [X - BW / 2 + THDX, X + BW / 2 + THDX, bZ0 + THDZ, bZ1 + THDZ], steps: [X - SW / 2 + THDX, X + SW / 2 + THDX, bZ1 + THDZ, zF + THDZ], ramp: [X - RW / 2 + THDX, X + RW / 2 + THDX, zF + THDZ, zF + RL + THDZ], ark: [ARK.x + THDX, ARK.y, ARK.z + THDZ], top, seatTop: sTop, head: [X + THDX, sTop + 2.4, zHead + THDZ], elders: 70,
+        shared: { body: [X - BW / 2 + THDX, X + BW / 2 + THDX, bZ0 + THDZ, bZ1 + THDZ], steps: [X - SW / 2 + THDX, X + SW / 2 + THDX, bZ1 + THDZ, zF + THDZ], ramp: [X - RW / 2 + THDX, X + RW / 2 + THDX, zF + THDZ, zF + RL + THDZ], ark: [ARK.x + THDX, ARK.y, ARK.z + THDZ], top, seatTop: sTop, head: [X + THDX, sTop + 2.4, zCrown + THDZ], elders: 70,
           pairs: { targumSheni: [["ox", "lion"], ["wolf", "lamb"], ["leopard", "kid"], ["eagle", "peacock"], ["cat", "rooster"], ["eagle", "bird"]], beitHamidrash: [["ox", "lion"], ["wolf", "lamb"], ["leopard", "kid"], ["bear", "deer"], ["eagle", "bird"]] } },
         anchors: { ascent: [X - 6 + THDX, top + 2.2, 614 + THDZ], witnesses: [X + 6 + THDX, top + 2.2, 614 + THDZ] } };
     } catch (e) {
