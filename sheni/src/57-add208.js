@@ -816,7 +816,11 @@
         SG.add(pm);
         SG.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
       };
-      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (!built && fnc(SH.floorY)) { try { buildPool(); } catch (e) { console.warn("[shiloach]", e && e.message); built = true; } } });
+      // LAZY_SPRING_B2 (release, 22.11.2026 - check.sh: the Second Temple's loading slower): the spring, its pool and path, and the demonstration's
+      // figures (measured for the arm's reach; 104 in the procession now) are built when the eye comes within 300 amot of the spring, or when
+      // the demonstration starts - not on the first frame
+      const nearSpring = () => { const c = ctx2.camera; if (!c) return false; const dx = c.position.x - SHL.SP.x, dz = c.position.z - SHL.SP.z; return dx * dx + dz * dz < 300 * 300; };
+      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (!built && fnc(SH.floorY) && nearSpring()) { try { buildPool(); } catch (e) { console.warn("[shiloach]", e && e.message); built = true; } } });
       (ctx2.labels = ctx2.labels || []).push({ text: "מעיין השילוח", x: SHL.POOL[0], y: -45, z: SHL.POOL[1], size: 4 });
       // ---- the demonstration's people: the priest of the water and two with trumpets (the kit's priest; his arms and feet move)
       const FIG = (() => {
