@@ -282,11 +282,8 @@
   var UI_SRC_TAL = { "מנחות": 131, "יומא": 107, "עירובין": 105, "סוטה": 119, "בבא בתרא": 124, "סנהדרין": 125, "זבחים": 130, "חגיגה": 114, "סוכה": 108, "מגילה": 112 };
   var UI_SRC_PRE = ['רש"י', 'רד"ק', "מצודת דוד", "מצודת ציון", "מצודות", 'מלבי"ם', 'רלב"ג', "תרגום יונתן", "תרגום"];
   var UI_SRC_TN_IDS = [10, 11, 38, 39, 13, 2, 3, 4, 31, 32];
+  var UI_SRC_BARE = "";   // UI_UNIFY_A2: a bare "(ב, ג)" with no citation named before it - not linked (no default book here)
 //@@end ui_sefToOtz.mm
-//@@begin ui_srcParse
-//@@end ui_srcParse
-//@@begin ui_srcParse-2
-//@@end ui_srcParse-2
 //@@begin UI_BOOK_ITEM
   // ===== 1.0.2 (item 2): opening the plugin from the books (the reader's button "open-beit-rishon", openPlugin: true, shown in I Kings
   // and II Chronicles only). Otzaria opens the page and delivers reader.toolbar_item_clicked with the reading position (api.md: itemId,
@@ -726,13 +723,6 @@
 //@@begin placeLeave
         if (leaveFeat && !keepF) { try { if (leaveFeat.isOn()) leaveFeat.off(); if (typeof leaveFeat.leave === "function") leaveFeat.leave(); } catch (_) {} }   // THRONE_BACK_211: + the feature's own leave()
 //@@end placeLeave
-//@@begin resolve
-//@@end resolve
-//@@begin srcLinker.lastName
-//@@end srcLinker.lastName
-//@@begin srcLinker.hit
-            const hit = body ? resolve(body, bare) : null;
-//@@end srcLinker.hit
 //@@begin buildUI.palaceBasis
       // 1.0.1 (FIXES E.2 / F.3): the basis of the palace's placement, written by 60-palace.js (ctx.shared.palaceBasis, a Hebrew string)
       // or the UI's copy; appended once to the "בית שלמה" view text and used by the "מקום בית שלמה" entry of the EXTRAS
