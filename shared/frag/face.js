@@ -407,38 +407,30 @@
       c.fillStyle = "#0b0605"; c.beginPath(); c.ellipse(cx, cy, rx * 0.36, ry * 0.36, 0, 0, TAU); c.fill();
       return texOf(cv);
     })();
-    // the hairs (FACE_HAIR_E - the user: "השער יותר תקין, תנסה לעשות אותו יותר אמיתי"): LOCKS of strands - each a few hairs that
-    // run together, a little curving, narrowing to their ends; their tones uneven (one lock lighter, another darker - in a white
-    // beard white and grey); at the top (where it begins) and at the bottom (its ends) single hairs and the locks' points, between them
-    // the hair's body, a little transparent between the strands (alpha: with the vertices' own alpha and alphaTest, where the hair thins
-    // out to its edge only the strands are left). Light grey: the material's colour gives it its own
+    // the hairs (FACE_HAIR_E - the user: "השער יותר תקין, תנסה לעשות אותו יותר אמיתי"): strands in LOCKS - each lock a few strands
+    // waving together; their tones uneven (one lock lighter, another darker - in a white beard white and grey); each strand begins and
+    // ends at its own place, and has an alpha of its own: where the hair thins out to its edge (the vertices' alpha falls), the strands
+    // drop out one by one (alphaTest) - the edge is of single hairs, not a line. Light grey: the material's colour gives it its own
     const texHairA = (() => {
-      const W = 128, Hh = 512, cv = canvas(W, Hh), c = cv.getContext("2d");
-      let q = 4321;
-      const rr = () => ((q = (q * 16807) % 2147483647) / 2147483647);
-      c.fillStyle = "rgba(186,186,186,0.72)"; c.fillRect(0, 0.1 * Hh, W, 0.76 * Hh);
-      c.lineCap = "round";
-      const strand = (x0, y0, y1, xt, ph, amp, gg, al, lw) => {   // from (x0, y0) to its end, drawn toward the lock's point xt
-        c.strokeStyle = "rgba(" + gg + "," + gg + "," + gg + "," + al.toFixed(2) + ")";
-        c.lineWidth = lw;
-        for (const dx of [-W, 0, W]) {
-          c.beginPath();
-          for (let y = y0; y <= y1 + 0.1; y += 6) { const u = (y - y0) / Math.max(1, y1 - y0), x = lerp(x0, xt, u * u) + dx + Math.sin(y * 0.018 + ph) * amp; if (y === y0) c.moveTo(x, y); else c.lineTo(x, y); }
-          c.stroke();
-        }
-      };
-      for (let k = 0; k < 64; k++) {   // the locks
-        const xc = rr() * W, wd = 5 + rr() * 9, tone = 120 + rr() * 110, ph = rr() * 6, amp = 1.5 + rr() * 3, end = (0.8 + rr() * 0.2) * Hh, xt = xc + (rr() - 0.5) * 6;
-        const n = 6 + ((rr() * 8) | 0);
-        for (let s = 0; s < n; s++) {
-          const x0 = xc + (rr() - 0.5) * wd, y0 = (rr() < 0.55 ? rr() * 0.12 : rr() * 0.05) * Hh, y1 = end - rr() * 0.07 * Hh;
-          strand(x0, y0, y1, xt + (x0 - xc) * 0.25, ph + rr() * 0.4, amp, Math.min(255, (tone + (rr() - 0.5) * 60) | 0), 0.55 + rr() * 0.45, 0.7 + rr() * 1.3);
+      const W = 128, Hh = 512, cv = canvas(W, Hh), c = cv.getContext("2d"), img = c.createImageData(W, Hh), d = img.data;
+      const hsh = (n) => { const h = Math.sin(n * 127.1 + 311.7) * 43758.5453; return h - Math.floor(h); };
+      // a strand: its column, a little waving down its way (each lock of ~6 strands its own wave); its alpha (where the hair thins only
+      // the strands of high alpha are left), its tone (its lock's and its own), where it begins and where it ends
+      for (let y = 0; y < Hh; y++) {
+        const v = y / Hh;
+        for (let x = 0; x < W; x++) {
+          const lockW = Math.sin(y * 0.017 + Math.floor(x / 9) * 1.9) * 2.6 + Math.sin(y * 0.041 + x * 0.05) * 0.8, xs = (x + lockW + W) % W, id = Math.floor(xs * 0.85), lock = Math.floor(xs / 9);
+          const fr = xs * 0.85 - id, core = 1 - Math.pow(Math.abs(fr - 0.5) * 2, 3);   // the strand's middle a little stronger
+          const start = hsh(id * 3.1) * 0.11, end = 0.84 + hsh(id * 7.7) * 0.16;
+          let al = (0.52 + 0.48 * hsh(id * 1.37)) * (0.92 + 0.08 * core);   // (at the full alpha of the vertices every strand is seen: no holes)
+          if (v < start || v > end) al = 0;
+          else al *= sm(start, start + 0.025, v) * sm(end, end - 0.03, v);
+          const tone = (150 + 70 * hsh(lock * 5.3) + 35 * hsh(id * 9.1)) * (0.88 + 0.12 * core) * (0.9 + 0.1 * Math.sin(y * 0.09 + id));
+          const o = (y * W + x) * 4;
+          d[o] = d[o + 1] = d[o + 2] = clamp(tone, 0, 255); d[o + 3] = Math.round(clamp(al, 0, 1) * 255);
         }
       }
-      for (let k = 0; k < 500; k++) {   // single hairs between the locks
-        const x0 = rr() * W, y0 = (rr() < 0.6 ? rr() * 0.12 : rr() * 0.06) * Hh, y1 = (0.82 + rr() * 0.18) * Hh;
-        strand(x0, y0, y1, x0 + (rr() - 0.5) * 4, rr() * 6, 1 + rr() * 2.5, (110 + rr() * 145) | 0, 0.5 + rr() * 0.5, 0.6 + rr() * 0.9);
-      }
+      c.putImageData(img, 0, 0);
       return texOf(cv, true);
     })();
     // ---------- the hair: the head's, the brows, the beard, the moustache
@@ -470,6 +462,7 @@
     // the hair's outer face at (th, y) at its fullest (its outer layer included), without the thin way it leaves for the strap: what lies
     // on the hair (the tefillin's strap) may be laid at hairR + its own half thickness. For priest-kit.js / strap.js (agent A2)
     const hairR = (th, y) => (y < hairEdge(th) - 0.006 ? skinR(th, y, "face", true) : skinR(th, y, "face", true) + 0.0014 + hairBulk(th, y) * 1.2 + 0.0042);
+    const nz = (a, b) => Math.sin(a * 1.7 + Math.sin(b * 2.3 + a * 0.5) * 2.1) * Math.cos(b * 1.3 - a * 0.4);   // a smooth noise, -1..1
     const hairCache = {};
     // a lock's ridge by the way round (u, in locks) and down (v): the locks flow down, a little waving, each with a tone of its own
     const lockAt = (u, v, w2, wave) => { const L = u + wave * Math.sin(v * 5.3 + u * 0.7 + w2), f = L - Math.floor(L), k = Math.floor(L), h = Math.sin(k * 91.7 + w2 * 13.1) * 43758.5453;
@@ -496,8 +489,9 @@
         const [lk, tone] = lockAt(th * 3.6, sv, w2 + sh, 0.35), fade = sm(0.6, 1, sv), low = sm(yS - 0.006, yS - 0.022, y);   // low: below the strap (the outer layer only there - under the hats nothing stands out)
         const th2 = under ? 0.0024 : (0.0014 + hairBulk(th, y) * (0.7 + 0.5 * lk) + sh * (0.0022 + 0.0024 * lk) * low) * (1 - 0.88 * fade);   // thinning out to its edge
         const R = j === 0 ? 0 : skinR(th, y, "face", true) + th2, p = pt(th, R, y);
-        return [p[0], p[1], p[2], th * 2.1 + sh * 0.37, 0.04 + 0.9 * sv, (0.7 + 0.3 * lk) * (0.86 + 0.28 * tone) - 0.05 * sv, (1 - 0.55 * fade) * (sh ? 0.82 * low + 0.18 * low * low : 1)];
-      }, { closed: true, pole: true, alpha: true }));
+        const fz = clamp(fade + 0.3 * nz(th * 11 + w2, sv * 5 + sh) * sm(0.45, 0.8, sv), 0, 1);   // the edge's thinning, uneven
+        return [p[0], p[1], p[2], th * 2.1 + sh * 0.37, 0.04 + 0.9 * sv, (0.7 + 0.3 * lk) * (0.86 + 0.28 * tone) - 0.05 * sv, (1 - 0.62 * fz) * (sh ? 0.82 * low + 0.18 * low * low : 1)];
+      }, { closed: true, pole: true, alpha: true, flip: true }));
       // the brows: thick, from over the eye's inner corner rising and thinning outward past its outer corner; their hairs along them, their
       // edges feathered
       for (const s of [-1, 1]) {
@@ -522,35 +516,45 @@
         const lockF = (q, v) => 0.5 + 0.5 * Math.cos(TAU * (q * NL * 0.5 + 0.3 * Math.sin(v * 6.0 + w2 + q * 1.3) + 0.3 * v * q + 0.25));
         const BTr = (t) => BT + 0.3 * sm(0.45, 1, t);   // its side edge by the way down the face
         for (let sh = 0; sh < SH; sh++) {
-          const J = [];
+          const J = [], J1 = [];
           parts.push(grid(nu, na + nh, (i, j) => {
             const q = lerp(-1, 1, i / nu), aq = Math.abs(q), vv = j / (na + nh), lf = lockF(q, vv), edge = sm(0.8, 1, aq), [lk, tone] = lockAt(q * NL * 0.9 + 0.5, vv, w2 + 3 * sh, 0.4);
             const out = sh * (0.0026 + 0.0026 * lk);   // the outer layer, out from the body
             let p, v;
             if (j <= na) {
-              const t = j / na, th = q * BTr(t), a = Math.abs(th), y = lerp(spl(YTOP, a) + 0.0022 * Math.sin(a * 19 + w2) * (1 - t), spl(YJAW, a), Math.pow(t, 0.9));
-              const th2 = (0.0011 + (short ? 0.0042 : 0.0105) * Math.pow(sm(0, 0.85, t), 0.8) + (short ? 0.0012 : 0.0028) * (lf - 0.45) * sm(0, 0.35, t) + out * sm(0.45, 0.8, t)) * (1 - 0.8 * edge) + 0.0005;
+              // on the face: from its top edge down to the jaw's edge (not under it), lifting off the skin more and more from the middle of
+              // the cheek - so that below the jaw it falls, full, rather than lying on the jaw's under side and folding there
+              const t = j / na, th = q * BTr(t), a = Math.abs(th), yEnd = lerp(-0.141, spl(YJAW, a) + 0.01, sm(0.0, 1.0, a / 1.2));
+              const y = lerp(spl(YTOP, a) + 0.0022 * Math.sin(a * 19 + w2) * (1 - t), yEnd, Math.pow(t, 0.9));
+              const lift = (short ? 0.0045 : lerp(0.019, 0.012, sm(0.3, 1.3, a))) * Math.pow(sm(0.15, 1, t), 1.3);
+              const th2 = (0.0011 + lift + (short ? 0.0012 : 0.0028) * (lf - 0.45) * sm(0, 0.35, t) + out * sm(0.45, 0.8, t)) * (1 - 0.8 * edge) + 0.0005;
               p = skinPoint(th, y, th2);
+              if (j === na - 1) J1[i] = p;
               if (j === na) J[i] = p;
-              v = 0.085 + t * (short ? 0.535 : 0.265);
+              v = 0.09 + t * (short ? 0.53 : 0.26);
             } else {
-              const k = (j - na) / nh, P0 = J[i], ps = q * 1.75, cs = Math.cos(ps), sn = Math.sin(ps);
+              // hanging: on from where the face's part ends, in the same direction there (no corner), bending gradually down to its end - a
+              // round of the beard below: its middle before the chest, lowest, its sides higher and back by the neck (no tail behind it)
+              const k = (j - na) / nh, P0 = J[i], ps = q * HP, cs = Math.cos(ps), sn = Math.sin(ps);
               const tip = (short ? 0.006 : 0.024) * Math.pow(lockF(q, 1), 3) * (1 - 0.5 * q * q);
-              // where it comes to below: a round of the beard (its middle before the chest, its sides drawn back)
-              const Bx = (short ? 0.07 : 0.036) * sn, By = (short ? P0[1] : -0.153) - L * (1 - 0.42 * q * q) - tip * sm(0.7, 1, k), Bz = short ? P0[2] - 0.004 : 0.128 + 0.032 * cs;
-              const ey = Math.pow(k, 0.9), ex = Math.pow(k, 1.3);   // it goes down first, and comes round toward the middle below
-              const belly = Math.sin(Math.PI * Math.pow(k, 0.8));
-              let x = lerp(P0[0], Bx, ex) + (short ? 0.003 : 0.016) * belly * sn + (short ? 0 : 0.0035) * Math.sin(k * 9 + q * 7 + w2) * k;
-              let z = lerp(P0[2], Bz, ex) + (short ? 0.004 : 0.024) * belly * Math.max(0, cs);
-              const y = lerp(P0[1], By, ey), thick = (short ? 0.0014 : 0.009) * (lf - 0.45) * (1 - 0.6 * edge) + out * (1 - 0.6 * edge) * (1 - 0.7 * k);
+              const B = short ? [P0[0] * 0.96, P0[1] - L * (1 - 0.3 * q * q), P0[2] * 0.97] : [0.09 * sn, -0.153 - L * (1 - 0.55 * q * q) - tip, 0.03 + 0.125 * cs];
+              const T = [P0[0] - J1[i][0], P0[1] - J1[i][1], P0[2] - J1[i][2]], tl = Math.hypot(T[0], T[1], T[2]) || 1;
+              const D = Math.hypot(B[0] - P0[0], B[1] - P0[1], B[2] - P0[2]), a1 = 0.38 * D, a2 = 0.3 * D;
+              const C1 = [P0[0] + T[0] / tl * a1, P0[1] + T[1] / tl * a1, P0[2] + T[2] / tl * a1];
+              const C2 = [B[0], B[1] + a2, B[2] + (short ? 0 : 0.02 * cs)];   // into its end from above (and the middle a little full)
+              const u = k, w0 = (1 - u) * (1 - u) * (1 - u), w1 = 3 * u * (1 - u) * (1 - u), w2b = 3 * u * u * (1 - u), w3 = u * u * u;
+              let x = w0 * P0[0] + w1 * C1[0] + w2b * C2[0] + w3 * B[0], y = w0 * P0[1] + w1 * C1[1] + w2b * C2[1] + w3 * B[1], z = w0 * P0[2] + w1 * C1[2] + w2b * C2[2] + w3 * B[2];
+              x += (short ? 0 : 0.003) * Math.sin(k * 9 + q * 7 + w2) * k;
+              const thick = (short ? 0.0014 : 0.008) * (lf - 0.45) * (1 - 0.6 * edge) * sm(0, 0.3, k) + out * (1 - 0.6 * edge) * (1 - 0.7 * k);
               x += thick * sn; z += thick * cs;
               z = Math.max(z, bodyZ(x, y) + 0.012);
               p = [x, y, z];
               v = (short ? 0.62 : 0.35) + k * (short ? 0.34 : 0.61);
             }
-            const al = (1 - 0.55 * sm(0.78, 1, aq)) * (j <= na ? 1 - 0.35 * sm(0.25, 0, j / na) : 1) * (sh ? 0.8 * (j <= na ? sm(0.45, 0.8, j / na) : 1) : 1);   // its side edges and its top thin out
+            const sideF = sm(0.84, 1, aq + 0.05 * nz(vv * 9 + w2, q * 3)), topF = j <= na ? sm(0.2, 0, j / na + 0.06 * nz(q * 14 + w2, sh)) : 0;
+            const al = (1 - 0.6 * sideF) * (1 - 0.6 * topF) * (sh ? 0.8 * (j <= na ? sm(0.45, 0.8, j / na) : 1) : 1);   // its side edges and its top thin out into single hairs, unevenly
             return [p[0], p[1], p[2], q * 2.6 + 0.5 + sh * 0.41, v, (0.56 + 0.44 * Math.pow(lf, 0.7)) * (0.84 + 0.3 * tone) * (1 - 0.12 * edge), al];
-          }, { alpha: true }));
+          }, { alpha: true, flip: true }));
         }
         // the moustache: from under the nose over the upper lip, a little over its edge; parted in the middle, its sides down past the
         // mouth's corners into the beard; its hairs going down and out; near, two layers
@@ -564,7 +568,7 @@
           const th = Math.asin(clamp(x / skinR(0, y, "face", true), -1, 1)), p = skinPoint(th, y, th2);
           p[2] += 0.003 * v * v; p[1] -= 0.0016 * v * v;
           return [p[0], p[1], p[2], xq * 1.3 + Math.sign(xq) * v * 0.35 + sh * 0.29, 0.1 + 0.86 * v, 0.72 + 0.28 * lf, (1 - 0.4 * sm(0.75, 1, Math.abs(xq)) - 0.25 * sm(0.25, 0, v)) * (sh ? 0.8 : 1)];
-        }, { alpha: true }));
+        }, { alpha: true, flip: true }));
       }
       return (hairCache[key] = mergeGeometries(parts));
     };
@@ -578,7 +582,10 @@
       const lo = m.clone();
       Object.assign(lo, { map: texHairA, alphaTest: 0.42, bumpMap: texHairA, bumpScale: 0.6, side: DoubleSide });
       const hi = new MeshPhysicalMaterial({ color: m.color.clone(), vertexColors: m.vertexColors, map: texHairA, alphaTest: 0.42, bumpMap: texHairA, bumpScale: 0.8,
-        side: DoubleSide, roughness: 0.72, metalness: 0, specularIntensity: 0.32, specularColor: m.color.clone().lerp(new Color(0xffffff), 0.2), anisotropy: 0.6, anisotropyRotation: Math.PI / 2 });   // (the sheen of the hair's own colour: on dark hair, dim)
+        side: DoubleSide, roughness: 0.72, metalness: 0, specularIntensity: 0.24, specularColor: m.color.clone().lerp(new Color(0xffffff), 0.2), anisotropy: 0.6, anisotropyRotation: Math.PI / 2 });   // (the sheen of the hair's own colour: on dark hair, dim)
+      // every layer's outer side is its front: the inner side (seen where the beard turns back to the neck) darker, as in its shade
+      const inner = (sh) => { sh.fragmentShader = sh.fragmentShader.replace("#include <opaque_fragment>", "#include <opaque_fragment>\n\tif (!gl_FrontFacing) gl_FragColor.rgb *= 0.45;"); };
+      lo.onBeforeCompile = hi.onBeforeCompile = inner;
       r = { lo, hi };
       HM.set(m, r);
       return r;
