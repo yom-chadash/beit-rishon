@@ -2242,6 +2242,17 @@
           current: "off",
           onPick: (k) => { const F = ctx.shared.scaleFigure; if (F && typeof F.set === "function") F.set(k === "on"); }
         });
+        // HP_RISHON_A2 (fix-a2; the user's decision 70 b): a priest in his four garments and the high priest in his eight (58-ark.js)
+        if (ctx.shared.priestGarments) opRow({
+          id: "priestGarments", short: "בגדי הכהנים — כהן הדיוט וכהן גדול", cardFly: false,
+          chips: { off: "בלי", on: "להציג" },
+          cap: "בגדי הכהנים",
+          refs: [["שמות כח, ד", { book: 2, index: 790 }], ["שמות כח, לא", { book: 2, index: 817 }], ["שמות כח, לו", { book: 2, index: 822 }], ["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }], ["רמב״ם כלי המקדש ט, א", { book: 338, index: 143 }], ["רמב״ם כלי המקדש ט, ג", { book: 338, index: 145 }], ["רמב״ם כלי המקדש ט, ד", { book: 338, index: 146 }], ["רמב״ם כלי המקדש ט, ו", { book: 338, index: 148 }], ["רמב״ם כלי המקדש ט, ט", { book: 338, index: 151 }]],
+          options: [["off", "בלי", "בלי הדמויות."],
+            ["on", "כהן הדיוט וכהן גדול", "הפסוק (שמות כח, ד): ״ואלה הבגדים אשר יעשו חשן ואפוד ומעיל וכתנת תשבץ מצנפת ואבנט״.\n**הרמב״ם** (כלי המקדש ח, א–ב): ״בגדי כהנה שלשה מינים. בגדי כהן הדיוט. ובגדי זהב. ובגדי לבן. בגדי כהן הדיוט הם ארבעה כלים״; ״בגדי זהב הן בגדי כהן גדול והם שמנה כלים. הארבעה של כל כהן. ומעיל ואפוד וחשן וציץ״.\n**המעיל** (ט, ג–ד): ״המעיל כלו תכלת... ואין לו בית יד, אלא נחלק לשתי כנפים מסוף הגרון עד למטה״; ובשוליו רמונים של תכלת וארגמן ותולעת שני, ״ומביא שנים ושבעים זוגים ובהם שנים ושבעים ענבולים, הכל זהב״.\n**האפוד** (ט, ט): ״רחבו כרחב גבו של אדם מכתף לכתף. וארכו מכנגד אצילי הידים מאחוריו עד הרגלים״, וחשב האפוד חוגר אותו; ובכתפותיו שתי אבני השהם.\n**החשן** (ט, ו): ״ארכו אמה ורחבו זרת וכופלו לשנים, נמצא זרת על זרת מרבע. וקובע בו ארבעה טורים של אבן״.\n**הציץ** (ט, א): ״טס של זהב רחב שתי אצבעות ומקיף מאזן לאזן״ — על המצח, ומעליו, בין הציץ למצנפת, התפילין (זבחים יט.).\nבמודל: בין האולם למזבח — מימין כהן הדיוט (כתונת, מכנסים, אבנט, מגבעת), ומשמאל כהן גדול בשמונה בגדים. הצבעים, המידות וצבעי האבנים — בחירת מודל."]],
+          current: "off",
+          onPick: (k) => { const P = ctx.shared.priestGarments; if (P && typeof P.set === "function") P.set(k === "on"); if (k === "on") fly([44.5, 9.5, 20.5], [37, 8.2, 14]); }
+        });
         // 1.3.3 (the user: "להוסיף שיטת ברירת מחדל לפותות כרש״י"): "והפתות... זהב" (7:50) - ctx.shared.potot (55-interior.js)
         {
           const pt = ctx.shared.potot;
@@ -2528,7 +2539,7 @@
           ["הבית מבחוץ והיציע", ["aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling"]],
           ["הבית מבפנים", ["potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout"]],
           ["בית שלמה", ["forestHouse", "throneVersion"]],
-          ["הכהנים", ["scaleFigure"]]
+          ["הכהנים", ["scaleFigure", "priestGarments"]]
 //@@end buildUI.after-GROUPS
 //@@begin buildUI.after-note-code
         // 1.0.1-L: the pills of this round; what a PLACE switches on goes off by itself (L.27), what a pill switches on stays
