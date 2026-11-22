@@ -3265,7 +3265,7 @@
           }
         }
         bakeTo(tmp, rampG);
-        for (const s of [1, -1]) ctx2.labels.push({ text: "כבש לבהמות — מפי הגר״ח קניבסקי (חוברת הביכורים)", x: -48 + (s > 0 ? 1 : -1) * 22, y: 16, z: 77 * s, size: 1.3, layer: "animalRamps" });
+        for (const s of [1, -1]) ctx2.labels.push({ text: "כבש לבהמות — מפי הגר״ח קניבסקי, כפי שהובא בחלמיש", x: -48 + (s > 0 ? 1 : -1) * 22, y: 16, z: 77 * s, size: 1.3, layer: "animalRamps" });
       }
       // (OIL_DOORS_B2 - the oil chamber's second door, the user's decision 81: held - question 78 to the user, 22.11.2026 02:3x)
       // ---- WOODWORMS_B2 (the user's decision 85): "מזרחית צפונית, היא היתה לשכת העצים, ששם הכהנים בעלי מומין מתליעין העצים. וכל עץ שנמצא

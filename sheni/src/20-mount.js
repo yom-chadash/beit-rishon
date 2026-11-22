@@ -693,7 +693,7 @@
         const ec = H2.colonnade(EZ, EZC.map(([x, z]) => ({ x, y: LV.EZN, z })), { height: YR - 1 - LV.EZN, rShaft: 0.95, mat: M2.marble, style: "corinthian" });
         ec.userData.noPick = true;
       }
-      ctx2.labels.push({ text: "עזרת נשים מקורה, חוץ מארבע הלשכות שבפינותיה — כהוראת הגר״ח קניבסקי (חוברות ״אלחנן וחיים״)", x: 161, y: 46, z: 0, size: 3, layer: "eznRoofKanievsky" });
+      ctx2.labels.push({ text: "עזרת נשים מקורה, חוץ מארבע הלשכות שבפינותיה — כהוראת הגר״ח קניבסקי, כפי שהובא בחלמיש", x: 161, y: 46, z: 0, size: 3, layer: "eznRoofKanievsky" });
       ctx2.shared.eznRoof = { on: false, cols: EZC.map((c) => c.slice()) };
       ctx2.shared.harRoof = { mode: "sides", count: pos.length, skylights: SKY.length,
         set(m) {
