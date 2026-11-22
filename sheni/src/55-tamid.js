@@ -1974,7 +1974,7 @@
     // הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש"; the Rambam, Biat HaMikdash 5:16 (340:93) "ושוחה ומקדש"; and the
     // water goes down to the floor. Until now (KIDDUSH_FOOT_213) the right foot raised under the stream, then the left.
     const KIY = () => (fnc(SH.kiyorInfo) ? SH.kiyorInfo() : { R: 2, x: 22, z: 54.7, foot: F + 1.3, spouts: [] });
-    KID.spotAt = (i, out = 0.95) => { const I = KIY(), o = I.spouts[i] || { a: -HP }, r = I.R + out; return { p: [I.x + Math.sin(o.a) * r, I.z + Math.cos(o.a) * r], yaw: o.a + Math.PI }; };
+    KID.spotAt = (i, out = 1.75) => { const I = KIY(), o = I.spouts[i] || { a: -HP }, r = I.R + out; return { p: [I.x + Math.sin(o.a) * r, I.z + Math.cos(o.a) * r], yaw: o.a + Math.PI }; };
     const WHEEL_SPOT = [15.15, 57.15];   // west of the drum's handles (40-altar.js: the post x 17.4, z 58.05; the handles at x 16.05)
     SC.kiyor = (a) => {
       a.putA("machtaS", 46.4, 14.1, 0, Math.PI);   // "והרי המחתה נתונה במקצוע בין הכבש למזבח, במערבו של כבש"
@@ -1994,14 +1994,14 @@
     // b. R. Yehuda's reading his fellow (b1) stands by s1 and helps him ("וחבירו מסייעו", 130:755). Who stands where - model choices.
     SC.kiyor12 = (a) => {
       for (let i = 0; i < 12; i++) {
-        const k = "s" + (i + 1), q = KID.spotAt(i, i === 0 ? 0.75 : 0.95);
+        const k = "s" + (i + 1), q = KID.spotAt(i, i === 0 ? 1.55 : 1.75);   // (KIYOR_CHALAMISH_A2: 0.75 / 0.95 until the laver was straight-sided)
         a.go(k, q.p, 0.2 + i * 0.15, 7 + i * 0.15, { yaw: q.yaw });
         a.pose(k, "kiddush", 8.6 + (i % 3) * 0.1, 15.4);
       }
       a.set("kidWater", 12, 9.2); a.set("kidWater", 0, 15);
       a.fx("water", 9.2);
       if (TM.kidd === "ryose") {
-        const q = KID.spotAt(0, 0.75), side = [q.p[0] + Math.cos(q.yaw) * 0.9, q.p[1] - Math.sin(q.yaw) * 0.9];
+        const q = KID.spotAt(0, 1.55), side = [q.p[0] + Math.cos(q.yaw) * 0.9, q.p[1] - Math.sin(q.yaw) * 0.9];
         a.go("b1", side, 0, 7.6, { yaw: q.yaw - HP });
         a.pose("b1", "reach", 8.6, 15.4);
         a.tag("b1", "״וחבירו מסייעו״ (זבחים יט:) — לרבי יוסי ברבי יהודה", 8.6, 15.4);
@@ -2810,26 +2810,59 @@
     // hand on the raised foot (KID.P), and off the foot to the floor; built on first use
     // KIYOR_A2 / KIDDUSH_A2: the water from a spout's tap onto the hands on the feet, and off them to the floor (decision 38: "המים היו
     // נשפכים על הרצפה ולא לתוך קערה") - for the spouts in `list` (40-altar.js kiyorInfo: their mouths); built on first use
+    // KIDDUSH_WATER_A2 (the user: "גם היד נשטפת, ולא רק נשענת על הרגל"): the stream from the tap falls ON THE HANDS that lie on the feet,
+    // and runs off them onto the feet and down to the floor; water seen on the hands and on the feet - at each spout, for the priest
+    // who sanctifies there ("t" at the west spout; "s1".."s12" at the twelve). The stream follows his hands as he bends (KID.waterAt,
+    // every frame while it runs). Until now the stream fell to a point at the laver's foot.
     KID.water = (list) => {
       const g = new Group();
       g.name = "kiddushWater";
-      const M = new MeshStandardMaterial({ color: 0x7db8ec, emissive: 0x15406a, emissiveIntensity: 0.5, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.85, depthWrite: false });
-      const I = KIY();
-      for (const i of list) {
-        const o = I.spouts[i];
-        if (!o) continue;
-        const sx = Math.sin(o.a), sz = Math.cos(o.a), r1 = I.R + (o.upper ? 0.55 : 0.72), hy = F + 0.3;
-        const P0 = new Vector3(o.p[0], o.p[1], o.p[2]), C = new Vector3(o.p[0] + sx * 0.25, o.p[1] - 0.1, o.p[2] + sz * 0.25), P1 = new Vector3(I.x + sx * r1, hy, I.z + sz * r1);
-        g.add(new Mesh(new TubeGeometry(new QuadraticBezierCurve3(P0, C, P1), 16, 0.03, 6, false), M));
-        const run = new Mesh(new CylinderGeometry(0.025, 0.034, hy - F, 6, 1, true), M);
-        run.position.set(P1.x, (hy + F) / 2, P1.z);
-        g.add(run);
-        const pool = new Mesh(new CircleGeometry(0.24, 16).rotateX(-Math.PI / 2), M);
-        pool.position.set(P1.x, F + 0.012, P1.z);
-        g.add(pool);
-      }
+      const M = new MeshStandardMaterial({ color: 0x7db8ec, emissive: 0x15406a, emissiveIntensity: 0.5, roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.8, depthWrite: false });
+      const cyl = (r0, r1) => { const q = new CylinderGeometry(r1, r0, 1, 7, 1, true); q.translate(0, 0.5, 0); const m = new Mesh(q, M); m.renderOrder = 5; g.add(m); return m; };
+      const blob = (sx, sy, sz) => { const m = new Mesh(new SphereGeometry(1, 10, 6), M); m.scale.set(sx, sy, sz); m.renderOrder = 5; g.add(m); return m; };
+      g.userData.items = list.map((i) => ({
+        i, fig: list.length > 1 ? "s" + (i + 1) : "t",
+        stream: [cyl(0.03, 0.028), cyl(0.028, 0.026), cyl(0.026, 0.03), cyl(0.03, 0.034)],
+        drip: [cyl(0.02, 0.016), cyl(0.02, 0.016), cyl(0.014, 0.012), cyl(0.014, 0.012)],
+        film: [blob(0.07, 0.022, 0.085), blob(0.07, 0.022, 0.085), blob(0.075, 0.02, 0.12), blob(0.075, 0.02, 0.12)],
+        pool: (() => { const m = new Mesh(new CircleGeometry(0.34, 18).rotateX(-Math.PI / 2), M); g.add(m); return m; })()
+      }));
       W.group.add(g);
       return g;
+    };
+    const _kq = [new Vector3(), new Vector3(), new Vector3(), new Vector3(), new Vector3(), new Vector3()], _kb = new Vector3(), _kc = new Vector3();
+    const v3a = (v) => [v.x, v.y, v.z];
+    KID.waterAt = (g) => {
+      const I = KIY();
+      for (const it of g.userData.items || []) {
+        const o = I.spouts[it.i], f = W.figs[it.fig];
+        const show = !!(o && f && f.g.visible && f.st && f.st.pose === "kiddush");
+        for (const m of [...it.stream, ...it.drip, ...it.film, it.pool]) m.visible = show;
+        if (!show) continue;
+        const hR = f.R.grip.getWorldPosition(_kq[0]), hL = f.L.grip.getWorldPosition(_kq[1]);
+        const fR = f.fr.getWorldPosition(_kq[2]), fL = f.fl.getWorldPosition(_kq[3]);
+        const ft = 0.11 * (SH.priestKit ? SH.priestKit.FS : 1);
+        fR.y += ft; fL.y += ft;
+        const H = _kq[4].copy(hR).add(hL).multiplyScalar(0.5); H.y += 0.03;
+        // the stream: out of the tap and down onto the hands (a quadratic curve in four pieces)
+        const P0 = _kq[5].set(o.p[0], o.p[1], o.p[2]), sx = Math.sin(o.a), sz = Math.cos(o.a);
+        const C = _kc.set(o.p[0] + sx * 0.3, o.p[1] - 0.05, o.p[2] + sz * 0.3);
+        let prev = v3a(P0);
+        for (let k = 1; k <= 4; k++) {
+          const t = k / 4, u = 1 - t;
+          const q = [u * u * P0.x + 2 * u * t * C.x + t * t * H.x, u * u * P0.y + 2 * u * t * C.y + t * t * H.y, u * u * P0.z + 2 * u * t * C.z + t * t * H.z];
+          seg(it.stream[k - 1], prev, q);
+          prev = q;
+        }
+        // off the hands onto the feet, and off the feet to the floor
+        seg(it.drip[0], v3a(hR), v3a(fR)); seg(it.drip[1], v3a(hL), v3a(fL));
+        seg(it.drip[2], v3a(fR), [fR.x, F + 0.01, fR.z]); seg(it.drip[3], v3a(fL), [fL.x, F + 0.01, fL.z]);
+        // the water on the hands and on the feet
+        it.film[0].position.copy(hR); it.film[1].position.copy(hL);
+        it.film[2].position.copy(fR); it.film[3].position.copy(fL);
+        it.film[0].rotation.y = it.film[1].rotation.y = it.film[2].rotation.y = it.film[3].rotation.y = f.g.rotation.y;
+        it.pool.position.set((fR.x + fL.x) / 2, F + 0.012, (fR.z + fL.z) / 2);
+      }
     };
     const setArm = (A2, v, side) => { A2.sh.rotation.x = v[0]; A2.sh.rotation.z = side * v[1]; A2.el.rotation.x = v[2]; };
     // MUSICIANS_305 (the user, 19.11.2026 21:08: "צריך גם לעשות את הלוויים מנגנים, אותו דבר בעבודת הבוקר. אם הם מנגנים, לא יכולים
@@ -3043,7 +3076,7 @@
           if (W.kidWater) W.group.remove(W.kidWater);
           try { W.kidWater = KID.water(want === "all" ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : [6]); W.kidWater.userData.k = want + sz; } catch (_) { W.kidWater = null; }
         }
-        if (W.kidWater) W.kidWater.visible = !!want;
+        if (W.kidWater) { W.kidWater.visible = !!want; if (want) KID.waterAt(W.kidWater); }   // KIDDUSH_WATER_A2
       }
       const now = performance.now();
       if (N.roofs && fnc(SH.openFor) && now - roofAt > 2500) { roofAt = now; try { SH.openFor("crt-lishkot-roofs", 6000); } catch (_) {} }

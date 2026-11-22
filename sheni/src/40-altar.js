@@ -52,16 +52,18 @@
     // [[x0, z0, x1, z1, nx, nz] ...] (nx, nz - the face's outward normal), at the height yc, skipping the x ranges in `skip` on faces
     // whose normal is +z (the ramp's place); a molding above and below (y0, y1). Their size and spacing - model choices.
     const karkovBand = (parent, faces, y0, y1, mat, skip) => {
-      const yc = (y0 + y1) / 2, sc = Math.min(1, (y1 - y0) / 0.6);
-      const petal = (k) => { const q = new SphereGeometry(1, 6, 4); q.scale(0.065 * sc, 0.11 * sc, 0.035 * sc); q.translate(0, 0.1 * sc, 0.02 * sc); q.rotateZ(k * Math.PI * 2 / 5); return q; };
-      const ctr = new SphereGeometry(1, 8, 5); ctr.scale(0.06 * sc, 0.06 * sc, 0.05 * sc); ctr.translate(0, 0, 0.035 * sc);
+      // KARKOV_BIG_A2 (the user: "יותר בולט וגדול"): the flowers and buds 1.4 times as large, standing out 2.6 times as far, a little
+      // farther apart (0.62); the moldings above and below thicker - model choices
+      const yc = (y0 + y1) / 2, sc = Math.min(1, (y1 - y0) / 0.6) * 1.4, D = 2.6 / 1.4;
+      const petal = (k) => { const q = new SphereGeometry(1, 7, 5); q.scale(0.065 * sc, 0.11 * sc, 0.035 * sc * D); q.translate(0, 0.1 * sc, 0.02 * sc * D); q.rotateZ(k * Math.PI * 2 / 5); return q; };
+      const ctr = new SphereGeometry(1, 9, 6); ctr.scale(0.06 * sc, 0.06 * sc, 0.05 * sc * D); ctr.translate(0, 0, 0.035 * sc * D);
       const gFlower = mergeGeometries([ctr, petal(0), petal(1), petal(2), petal(3), petal(4)].map((q) => { q.deleteAttribute("uv"); return q; }));
-      const bud = new SphereGeometry(1, 7, 5); bud.scale(0.05 * sc, 0.12 * sc, 0.045 * sc); bud.translate(0, 0.02 * sc, 0.03 * sc);
-      const leaf = (s) => { const q = new SphereGeometry(1, 5, 3); q.scale(0.03 * sc, 0.08 * sc, 0.02 * sc); q.rotateZ(s * 0.8); q.translate(s * 0.05 * sc, -0.07 * sc, 0.015 * sc); return q; };
+      const bud = new SphereGeometry(1, 8, 6); bud.scale(0.05 * sc, 0.12 * sc, 0.045 * sc * D); bud.translate(0, 0.02 * sc, 0.03 * sc * D);
+      const leaf = (s) => { const q = new SphereGeometry(1, 6, 4); q.scale(0.03 * sc, 0.08 * sc, 0.02 * sc * D); q.rotateZ(s * 0.8); q.translate(s * 0.05 * sc, -0.07 * sc, 0.015 * sc * D); return q; };
       const gBud = mergeGeometries([bud, leaf(-1), leaf(1)].map((q) => { q.deleteAttribute("uv"); return q; }));
       const pts = [];
       for (const [x0, z0, x1, z1, nx, nz] of faces) {
-        const L = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(L / 0.5);
+        const L = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(L / 0.62);
         for (let i = 0; i < n; i++) {
           const u = (i + 0.5) / n, x = x0 + (x1 - x0) * u, z = z0 + (z1 - z0) * u;
           if (nz > 0.5 && skip && skip.some(([a, b]) => x > a && x < b)) continue;
@@ -77,8 +79,8 @@
         parent.add(im);
       }
       for (const [x0, z0, x1, z1, nx, nz] of faces) for (const y of [y0, y1 - 0.04]) {   // the moldings
-        const L = Math.hypot(x1 - x0, z1 - z0), b = new Mesh(new BoxGeometry(Math.abs(nx) > 0.5 ? 0.05 : L, 0.04, Math.abs(nx) > 0.5 ? L : 0.05), mat);
-        b.position.set((x0 + x1) / 2 + nx * 0.02, y + 0.02, (z0 + z1) / 2 + nz * 0.02);
+        const L = Math.hypot(x1 - x0, z1 - z0), b = new Mesh(new BoxGeometry(Math.abs(nx) > 0.5 ? 0.12 : L + 0.24, 0.06, Math.abs(nx) > 0.5 ? L + 0.24 : 0.12), mat);
+        b.position.set((x0 + x1) / 2 + nx * 0.06, y + 0.03, (z0 + z1) / 2 + nz * 0.06);
         b.userData.noPick = true;
         parent.add(b);
       }
@@ -211,7 +213,9 @@
     const karkovL = new Group();
     mv.add(karkovL);
     ctx2.layers.karkovL = karkovL;
-    ctx2.labels.push({ text: "כרכוב — פרחים וציצים (רבי: ״זה כיור״, זבחים סב.)", x: 73.4, y: F + 5.4, z: -2, size: 1.1, layers: ["altarBody32", "karkovL"], moveWithAltar: true });
+    ctx2.labels.push({ text: "כרכוב — פרחים וציצים (רבי: ״זה כיור״, זבחים סב.)", x: 73.4, y: F + 5.4, z: -2, size: 1.1, layers: ["altarBody32", "karkovL"], moveWithAltar: true,
+      info: "**הכרכוב** (זבחים סב.): ״איזהו כרכוב? רבי אומר: זה כיור, רבי יוסי ברבי יהודה אומר: זה הסובב״. רש״י: ״זה כיור — ציורים סביב למעלה מאמצעו״. במודל — כרבי: פרחים וציצים בולטים, לבנים, באמה העליונה שמעל חוט הסיקרא; ובתפריט, תחת ״שיטות ומחלוקות״ — ״הכרכוב — פרחים וציצים במזבח״. גודלם והמרווח ביניהם — בחירת מודל.",
+      refs: [["זבחים סב.", { book: 130, index: 2109 }], ["רש״י זבחים סב.", { book: 2191, index: 2970 }]] });
     ctx2.shared.karkov = { mode: "rabbi", set(m) { this.mode = m === "none" ? "none" : "rabbi"; const on = this.mode === "rabbi"; for (const g of buildBody.karkov || []) g.visible = on; karkovL.visible = on; return this.mode; } };
     ctx2.shared.yesodLevi = { on: false, set(v) { this.on = !!v; for (const g of buildBody.levi || []) g.visible = this.on; for (const g of buildBody.rav || []) g.visible = !this.on; yRavL.visible = !this.on; yLevL.visible = this.on; return this.on; } };   // 1.9.3; YESOD_211
     // ===== 1.0.21: ramps rebuilt as solid wedges (the old small ramps were thin slabs standing on posts).
