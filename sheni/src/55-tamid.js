@@ -1195,6 +1195,10 @@
         const lid = new Group();
         lid.add(mesh(new SphereGeometry(0.35, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2.4), MAT.gold, 0, 0.32, 0));
         lid.add(mesh(new SphereGeometry(0.06, 8, 6), MAT.gold, 0, 0.62, 0));
+        // KAF_CLOTH_A2 (the user's decision 61): "ומטוטלת היתה עליו מלמעלה" (Tamid 5:4) - as the Aruch in the Bartenura (634:180)
+        // "חתיכת בגד... שהיה נתון על כסוי הבזך כמין סודר קטן לנוי", the Yachin (818:546) and the Mefaresh (2105:394) "מפה קטנה מאד כמין
+        // חתיכת בגד": a small cloth lying on the cover, round its knob. Its colour and size - model choices.
+        lid.add(mesh(new SphereGeometry(0.358, 18, 4, 0, Math.PI * 2, 0, 0.5), MAT.cloth, 0, 0.32, 0));
         g.add(lid);
         g.userData.lid = lid;
         return g;
@@ -1205,12 +1209,17 @@
         g.add(mesh(new SphereGeometry(0.17, 12, 6, 0, Math.PI * 2, 0, HP).scale(1, 0.5, 1), MAT.incense, 0, 0.1, 0));
         return g;
       })(), { p: [0, -0.06, 0.12], r: [0, 0, 0] });
-      prop("magrefa", (() => {   // the shovel (Tamid 5:6) - model choice: a broad blade on a handle
+      // MAGREFA_ERCHIN_A2 (the user's decision 62): the magrefa that is thrown (Tamid 5:6) as the Gemara, Arachin 11a (134:342) "היא אמה
+      // וגבוהה אמה, וקתא יוצא הימנה, ועשרה נקבים היו בה" - a box of an amah, an amah high, a handle out of it, ten holes. Its breadth
+      // (half an amah), its metal and the holes' places - model choices. Until now a broad blade on a handle.
+      prop("magrefa", (() => {
         const g = new Group();
-        g.add(mesh(new BoxGeometry(0.5, 0.05, 0.45), MAT.bronze, 0, 0, 0.9));
-        g.add(mesh(new CylinderGeometry(0.035, 0.035, 1.3, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1));
+        g.add(mesh(new BoxGeometry(1.0, 1.0, 0.5), MAT.bronze, 0, 0, 1.2));
+        const hm = new MeshStandardMaterial({ color: 0x1a120c, roughness: 1 });
+        for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) { const h = new Mesh(new CircleGeometry(0.055, 10), hm); h.position.set(-0.36 + c * 0.18, 0.2 - r * 0.4, 1.2 + 0.252); g.add(h); }
+        g.add(mesh(new CylinderGeometry(0.04, 0.04, 0.95, 6).rotateX(HP), MAT.wood, 0, 0, 0.5));
         return g;
-      })(), { p: [0, 0, 0], r: [0, 0, 0] }, false);
+      })(), { p: [0, 0, 0], r: [1.0, 0, 0] }, false);   // held by its handle, the box forward and down
       prop("mizrak", (() => {   // the bowl of the blood, pointed below (model choice)
         const g = new Group();
         g.add(mesh(new LatheGeometry([V2(0.001, -0.14), V2(0.12, 0.02), V2(0.22, 0.12), V2(0.24, 0.16)], 14), MAT.silver));
@@ -1355,8 +1364,21 @@
           }
         };
       })();
-      const toolS = () => { const g = new Group(); g.add(mesh(new BoxGeometry(0.4, 0.04, 0.35), MAT.bronze, 0, 0, 0.75)); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1)); return g; };
-      const toolF = () => { const g = new Group(); for (const x of [-0.1, 0, 0.1]) g.add(mesh(new CylinderGeometry(0.015, 0.015, 0.35, 5).rotateX(HP), MAT.bronze, x, 0, 0.8)); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1)); return g; };
+      // TOOLS_RASHI_A2 (the user's decision 63): "נטלו את המגרפות ואת הצנורות ועלו לראש המזבח" (Tamid 2:1) - as Rashi on the vessels of
+      // the Mishkan's altar (Shemot 27:3, 3692:1904, 1906): the shovel (toolS) "מגרפות שנוטלים בהם הדשן, והן כמין כסוי הקדרה של מתכת דק ולו
+      // בית יד" - a thin round metal dish, like a pot's lid, on a handle; the fork (toolF) "כמין אונקליות כפופים" - bent hooks. Until now a
+      // square blade and three straight prongs. Their sizes - model choices.
+      const toolS = () => { const g = new Group(); g.add(mesh(new SphereGeometry(0.27, 16, 6, 0, Math.PI * 2, 0, 0.62).scale(1, 0.45, 1).rotateX(Math.PI), MAT.bronze, 0, 0.06, 0.82)); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1)); return g; };
+      const toolF = () => {
+        const g = new Group();
+        for (const x of [-0.07, 0.07]) {
+          const hook = new CatmullRomCurve3([new Vector3(x, 0, 0.6), new Vector3(x, 0.0, 0.82), new Vector3(x * 1.3, -0.04, 0.95), new Vector3(x * 1.3, -0.14, 0.98), new Vector3(x * 1.2, -0.2, 0.9)]);
+          g.add(mesh(new TubeGeometry(hook, 14, 0.016, 5, false), MAT.bronze));
+        }
+        g.add(mesh(new BoxGeometry(0.2, 0.03, 0.04), MAT.bronze, 0, 0, 0.6));
+        g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.1, 6).rotateX(HP), MAT.wood, 0, 0.02, 0.1));
+        return g;
+      };
       prop("tool1", toolS(), null, false); prop("tool2", toolF(), null, false); prop("tool3", toolS(), null, false); prop("tool4", toolF(), null, false);
       const logGeo = new CylinderGeometry(0.22, 0.22, 3.2, 8).rotateZ(HP);
       for (let i = 1; i <= 4; i++) prop("carry" + i, mesh(logGeo, MAT.woodNew), { p: [0, -0.15, 0.25], r: [0, HP, 0] }, false);
@@ -2163,6 +2185,13 @@
       a.tag("b2", "הרואה — עולה למקום גבוה", 2, 7.8);
       a.tag("b2", "״ברקאי!״ — הגיע זמן השחיטה", 7.8, 15.4);
       a.hide("b2", 15.4);
+      // GATES_TEKIOT_A2 (the user's decision 64): "שלש לפתיחת שערים" (Sukkah 5:5, 56:55) - "כשפותחים שערי העזרה היו תוקעים תקיעה תרועה
+      // תקיעה" (the Bartenura there, 588:258; the Rambam, Klei HaMikdash 7:5, 338:106) - with the light, two priests with silver trumpets
+      // at Nikanor's gate, inside it, facing east: a tekia, a terua and a tekia. Who blows and where - model choices.
+      a.at("tr1", 91.4, -2.2, HP, 8.6); a.at("tr2", 91.4, 2.2, HP, 8.6);
+      a.hold("tr1", "tru1", "R", 8.6); a.hold("tr2", "tru2", "R", 8.6);
+      for (const [t0, t1, fx] of [[9.6, 11.0, "tekia"], [11.3, 12.5, "tekiaShort"], [12.8, 14.2, "tekia"]]) { a.pose("tr1", "trumpet", t0, t1); a.pose("tr2", "trumpet", t0, t1); a.fx(fx, t0 + 0.1); }
+      a.tag("tr1", "שלש לפתיחת שערים — ״כשפותחים שערי העזרה היו תוקעים תקיעה תרועה תקיעה״ (ברטנורא סוכה ה, ה)", 9.4, 15.6);
     };
     SC.lamb = (a) => {
       // the lamb from its chamber - the south-west room of Beit HaMoked (30-courts.js, MOKED_WIDE_211: its doorway to the hall at x -25,
@@ -2337,7 +2366,7 @@
       a.hold("b4", "magrefa", "R", 0);
       a.go("b4", [38.2, -6], 0, 5, { hold: true, yaw: -HP });
       a.pose("b4", "throw", 5.2, 6.2);
-      a.fly("magrefa", [28, floorAt(28, -2) + 0.05, -2], 5.7, 6.6, 1.6);
+      a.fly("magrefa", [28, floorAt(28, -2) + 0.52, -2], 5.7, 6.6, 1.6);
       a.fx("magrefa", 6.6);
       REST.forEach((k, i) => a.go(k, stepsSpot(i, REST.length), 7 + i * 0.1, 12 + i * 0.1, { yaw: -HP }));
       [["k", [27, 3.4]], ["mc", [27, 5.4]], ["f", [27, 7.4]], ["s3", [27, -3.4]], ["s4", [27, -5.4]], ["e", [33, 14]], ["s11", [33, 16]], ["s12", [33, 18]], ["s13", [33, 20]]]
@@ -2365,7 +2394,7 @@
     };
     SC.teni = (a) => {
       const g = GA(), sp = [g.x + 1.8, g.z - 0.4];
-      a.put("magrefa", 28, floorAt(28, -2) + 0.05, -2, 0);
+      a.put("magrefa", 28, floorAt(28, -2) + 0.52, -2, 0);
       a.walk("s3", [a.from("s3", [27, -3.4]), [15, -1.4], [-6, -1.4], [-24, -1.6], sp], 0, 5, { yaw: -HP });
       a.hold("s3", "teni", "R", 5.2);
       // BOW_SPOT_209 (the user, 13.11.2026 02:57: "...כאילו הוא משתחוה על המזבח"): he bowed where he stood, by the golden altar, and lay
