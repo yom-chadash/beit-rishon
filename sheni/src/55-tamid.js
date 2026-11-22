@@ -2224,14 +2224,14 @@
       // and only west of the wicket frames (x 89.7) each turns to his place
       LEV_IDS.forEach((k, i) => {
         const s = LZ[i] < 0 ? -1.2 : 1.2;
-        a.walk(k, [[98.4, s], [89.4, s], [83.3, LZ[i]]], 7 + i * 0.12, 12.4 + i * 0.12, { yaw: -HP });   // DUCHAN_GAP_A2: on the duchan's second step (x 83..83.5; until then 86.3)
+        a.walk(k, [[98.4, s], [89.4, s], [83.3, LZ[i]]], 7 + i * 0.12, 12.4 + i * 0.12, { yaw: HP });   // DUCHAN_GAP_A2: on the duchan's second step (x 83..83.5; until then 86.3); LEVITES_EAST_A2: their faces to the people, east (the user's decision 99; west until now)
         if (i < 9) a.hold(k, "lyre" + (i + 1), "L", 7);
         else if (i < 11) a.hold(k, "nevel" + (i - 8), "L", 7);
       });
       a.hold("ba", "cymL", "L", 7); a.hold("ba", "cymR", "R", 7);
       // TZOARIM_A2: the little ones behind them, on the ground of the court of Israel before the duchan's step (x 85.4), their heads at
       // the height of the Levites' legs, by the singers (their spots - model choices)
-      [[-6.0, -1], [6.0, 1], [10.8, 1]].forEach(([z, sd], i) => a.walk(LEV_KIDS[i], [[98.4, sd * 1.2], [89.4, sd * 1.2], [85.45, z]], 10.2 + i * 0.3, 14.2 + i * 0.3, { yaw: -HP }));
+      [[-6.0, -1], [6.0, 1], [10.8, 1]].forEach(([z, sd], i) => a.walk(LEV_KIDS[i], [[98.4, sd * 1.2], [89.4, sd * 1.2], [85.45, z]], 10.2 + i * 0.3, 14.2 + i * 0.3, { yaw: HP }));   // LEVITES_EAST_A2
       a.tag("y2", "צוערי הלויים — ״בארץ היו עומדין, וראשיהן מבין רגלי הלוים״ (ערכין ב, ו)", 14.4, 18);
       a.tag("v6", "שנים עשר לויים — אומרים שירה בפה (רמב״ם כלי המקדש ג, ג)", 10, 14);
       a.tag("l3", "המנגנים בכלי שיר — אינם ממניין השנים עשר", 10.6, 14);
@@ -2306,6 +2306,13 @@
       });
       const others = [...REST, "b4", "e", "s11", "s12", "s13"];
       others.forEach((k, i) => a.go(k, [21.6, 7.6 - i * 1.6], 0.3 + i * 0.08, 6.5 + i * 0.08, { yaw: HP }));
+      // BIRKAT_VESSELS_A2 (the user's decision 98: "הכלים לידם על המעלות, כבחלמיש; הידיים מורמות ופנויות"): the five set their vessels
+      // down on the step beside them (at their left, between them and the next), raise their hands empty, and take them up again after
+      [["s3", "teni"], ["s4", "kuz"], ["mc", "machtaG"], ["f", "bazach"], ["k", "kaf"]].forEach(([k, p], i) => {
+        a.pose(k, "place", 8.7, 9.6);
+        a.put(p, 21.95, null, 9.4 + i * 1.6 + 0.62, 9.3, HP);
+        a.hold(k, p, "R", 18.9);
+      });
       for (const k of [...others, "s3", "s4", "mc", "f", "k"]) a.pose(k, "raise", 10, 18.5);
       // HP_TAMID_A2: Tamid 7:1 (88:38) "בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו, אחד בימינו, ואחד בשמאלו, ואחד באבנים טובות... נכנס
       // והשתחוה ויצא" - he goes into the heichal with three priests holding him (b1 at his right, b2 at his left, b3 before him by the
@@ -2422,15 +2429,18 @@
       const sw1 = [tb[0] - 1.3, tb[1] - 0.4], sw2 = [tb[0] - 1.3, tb[1] + 0.4];
       a.go("tr1", sw1, 0, 5.2, { hold: true, yaw: HP });
       a.go("tr2", sw2, 0, 5.2, { hold: true, yaw: HP });
-      a.at("tr1", tb[0] - 0.1, tb[1] - 0.4, HP, 5.4, { y: TTOP });
-      a.at("tr2", tb[0] + 0.1, tb[1] + 0.4, HP, 5.4, { y: TTOP });
+      // TABLE_TRUMPETS_A2 (the user's decision 102; as the water's libation, 57-add208.js): both on the marble table, 0.38 apart from its
+      // middle along z, their faces to the bowls of the libations (40-altar.js: x 43.95, z 9.4) - until now facing east
+      const sfB = A(43.95, 9.4), ywB = (q) => Math.atan2(sfB[0] - q[0], sfB[1] - q[1]);
+      a.at("tr1", tb[0], tb[1] - 0.38, ywB([tb[0], tb[1] - 0.38]), 5.4, { y: TTOP });
+      a.at("tr2", tb[0], tb[1] + 0.38, ywB([tb[0], tb[1] + 0.38]), 5.4, { y: TTOP });
       a.hold("tr1", "tru1", "R", 0); a.hold("tr2", "tru2", "R", 0);
       a.pose("tr1", "trumpet", 6, 10); a.pose("tr2", "trumpet", 6, 10);
       a.fx("tekia", 6.2);
       const ba = [83.6, 0.6];   // DUCHAN_GAP_A2 (86.6 until then)
-      a.at("ba", ba[0], ba[1], -HP, 0);
-      a.walk("tr1", [[tb[0] - 0.1, tb[1] - 0.4], ...route(sw1, [ba[0] - 0.2, ba[1] - 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });   // PACE_215: to 13.8 until 2.0.14 (they blow there at 21)
-      a.walk("tr2", [[tb[0] + 0.1, tb[1] + 0.4], ...route(sw2, [ba[0] - 0.2, ba[1] + 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });
+      a.at("ba", ba[0], ba[1], HP, 0);   // LEVITES_EAST_A2: Ben Arza, a Levite - his face to the people too
+      a.walk("tr1", [[tb[0], tb[1] - 0.38], ...route(sw1, [ba[0] - 0.2, ba[1] - 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });   // PACE_215: to 13.8 until 2.0.14 (they blow there at 21)
+      a.walk("tr2", [[tb[0], tb[1] + 0.38], ...route(sw2, [ba[0] - 0.2, ba[1] + 1.8])], 10.4, 20.4, { hold: true, yaw: -HP });
       a.pose("s13", "pour", 13, 17);
       a.fx("pour", 13.3);   // SOUND_211: the wine
       a.pose("sg", "wave", 13.4, 17);
