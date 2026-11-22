@@ -137,7 +137,13 @@
   // jambs, slightly ajar. The opening is cut by the wall itself (mnt_bandWall openings) - here only the frame and the doors are built,
   // so the portal may rise above a lower wall. `inward` = +1 swings the leaves toward +z (axis "x") / toward -x (axis "z"), -1 the other way.
   // Every piece is registered with H.occ and fades with `fadeWith` (the wall's stone mesh). Returns the two leaf Groups.
-  function mnt_gatePortal(parent, { axis = "x", gx = 0, gz = 0, y = 0, T = 5, openW = 10, openH = 20, doorH = 20, doorMat, inward = 1, fadeWith = null, M: M2, H: H2 }) {
+  // TADI_C (fix-c, 22.11.2026 - the user's decision 116 ב: "שער טדי בבית ראשון — שתי אבנים מוטות זו על גב זו, כבבית שני"): `tadi` (axis "x")
+  // - no flat lintel: Middot 2:3 "חוץ משל טדי, ששם שתי אבנים מוטות זו על גב זו" - two stones leaning on each other over the opening, an
+  // inverted V 4 high, each lying on its edge from the jamb's top (+-openW/2, openH) up to the apex (as the Second Temple's 20-mount.js,
+  // 1.0.19), the triangle between them open; the jambs reach the opening's top; the two leaves end aslant under the stones, as there
+  // (1.9.5; no source - a model choice). In the First Temple the names and the forms of the Mount's gates are the Mishnah's, said of
+  // the Second Temple's Mount - a model choice (the card says so).
+  function mnt_gatePortal(parent, { axis = "x", gx = 0, gz = 0, y = 0, T = 5, openW = 10, openH = 20, doorH = 20, doorMat, inward = 1, fadeWith = null, tadi = false, M: M2, H: H2 }) {
     const tr = (m) => {
       if (fadeWith) H2.occ(m).userData.fadeWith = fadeWith;
       return m;
@@ -146,7 +152,17 @@
     const jw = 1.8, jh = openH + 1.8 - eps, jd = T + 1.6; // 1.0.19 values: jambs 1.8 wide, 0.8 proud of each wall face, reaching (eps under) the top of the 1.8-high stone lintel
     const jOff = openW / 2 + jw / 2 - eps, lw = openW + 2 * jw; // the jamb face stands eps proud of the wall's reveal; the lintel (openW + 3.6) overhangs the jambs by eps
     const ld = T + 1.2, td = T + 1.4; // 1.0.19 values (model choice): the lintel 0.6 proud of each wall face, the threshold 0.7
-    if (axis === "x") {
+    const GH = 4, TH = 1.0;   // TADI_C: the leaning stones (the Second Temple's values)
+    if (axis === "x" && tadi) {
+      for (const s of [-1, 1]) tr(H2.box(parent, jw, openH, jd, M2.stoneLight, gx + s * jOff, y, gz));   // the jambs to the opening's top
+      const ang = Math.atan2(GH, openW / 2), edgeL = Math.hypot(openW / 2, GH);
+      for (const s of [-1, 1]) {
+        const st = tr(H2.box(parent, edgeL + 0.6, TH, ld, M2.stoneLight, 0, 0, 0));
+        st.position.set(gx + s * (openW / 4 + Math.sin(ang) * TH / 2), y + openH + GH / 2 + Math.cos(ang) * TH / 2, gz);
+        st.rotation.z = -s * ang;
+      }
+      tr(H2.box(parent, openW + jw, 0.18, td, M2.stoneSmooth, gx, y, gz));
+    } else if (axis === "x") {
       for (const s of [-1, 1]) tr(H2.box(parent, jw, jh, jd, M2.stoneLight, gx + s * jOff, y, gz));
       tr(H2.box(parent, lw, 1.8, ld, M2.stoneLight, gx, y + openH, gz));      // flat stone lintel 1.8 high (1.0.19 value) directly on the opening
       tr(H2.box(parent, openW + jw, 0.18, td, M2.stoneSmooth, gx, y, gz));    // threshold 0.18 high (1.0.19 value), its ends inside the jambs
@@ -161,7 +177,17 @@
     for (const s of [-1, 1]) {
       const leaf = new Group();
       const ajar = s === 1 ? 0.38 : 0.2; // 1.0.19 values (model choice): the two leaves stand ajar at different angles, as if just pushed open
-      if (axis === "x") {
+      if (axis === "x" && tadi) {   // TADI_C: the leaf's head aslant, from the jamb (doorH) up toward the apex, under the stones
+        leaf.position.set(gx + s * openW / 2, y, gz);
+        const h0 = doorH - 0.15, h1 = doorH - 0.15 + GH * ((pw + 0.05) / (openW / 2)), sh = new Shape();
+        sh.moveTo(-s * 0.05, 0); sh.lineTo(-s * (pw + 0.05), 0); sh.lineTo(-s * (pw + 0.05), h1); sh.lineTo(-s * 0.05, h0); sh.closePath();
+        const geo = new ExtrudeGeometry(sh, { depth: lt, bevelEnabled: false });
+        geo.translate(0, 0, -lt / 2);
+        const m = new Mesh(geo, doorMat);
+        m.castShadow = m.receiveShadow = true;
+        leaf.add(m);
+        tr(m);
+      } else if (axis === "x") {
         leaf.position.set(gx + s * openW / 2, y, gz);
         tr(H2.box(leaf, pw, doorH, lt, doorMat, -s * (pw / 2 + 0.05), 0, 0));
       } else {
@@ -222,6 +248,7 @@
       const rim = sm(1500, 2500, Math.hypot(x - CX, z - CZ)) * 260;
       return GROUND_Y + ramp * Math.max(h * 0.2, -5) + rim * 0.15 * ramp - sm(35, 100, d) * valley(x, z);
     };
+    ctx.shared.terrainH = terrainH;   // CITY_C (fix-c, 22.11.2026): the ground's height, for the City of David's ridge (59-parallels.js)
     try {
       const SIZE = 5200, SEG = 220;
       const geo = new PlaneGeometry(SIZE, SIZE, SEG, SEG);
@@ -274,7 +301,11 @@
     // side (x 103), east / west on the house axis (z 0) so the three east gates line up (SPEC 3).
     const gE = { x: CO2.harE, z: MNT_EW_GATE_Z }, gW = { x: CO2.harW, z: MNT_EW_GATE_Z };
     const gN = { x: MNT_NS_GATE_X, z: CO2.harN }, gS = { x: MNT_NS_GATE_X, z: CO2.harS };
-    const bandOpts = { height: WH, thickness: T, y: LV2.HAR, stoneH: MNT_STONE_BAND, cedarH: MNT_CEDAR_BAND, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
+    // WALL_PLAIN_C (fix-c, 22.11.2026 - the user, 12:33: "לשנות לחומה רגילה"): the great court's wall is a plain wall of hewn stone, its
+    // height and place as before. "שלשה טורים גזית וטור כרתת ארזים" is said of the king's court (I Kings 7:12; Metzudat David 3345:562 "אשר
+    // היה מסבב כל בתי המלך"; Ralbag 3645:236 "שהחצר הגדולה אשר בה בית המלך") and of the inner court (6:36) - not of this wall. (Until now
+    // it was banded "as the king's court", a model choice.) One course band the wall's whole height = no cedar course.
+    const bandOpts = { height: WH, thickness: T, y: LV2.HAR, stoneH: WH, cedarH: 0, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
     const wallN = mnt_bandWall(g, Object.assign({ axis: "x", length: CO2.HAR + T, cx: CX, cz: CO2.harN, openings: [{ center: gN.x - CX, width: MNT_GATE_W }] }, bandOpts));
     const wallS = mnt_bandWall(g, Object.assign({ axis: "x", length: CO2.HAR + T, cx: CX, cz: CO2.harS, openings: [{ center: gS.x - CX, width: MNT_GATE_W }] }, bandOpts));
     const wallE = mnt_bandWall(g, Object.assign({ axis: "z", length: CO2.HAR - T, cx: CO2.harE, cz: CZ, openings: [{ center: gE.z - CZ, width: MNT_GATE_W }] }, bandOpts));
@@ -294,7 +325,7 @@
     // (3522:96); Rashi on I Kings 6:36 (3673:307) "החצר הפנימית. היא עזרת הכהנים ועזרת ישראל". (Until now bronze here too, by analogy.)
     const portal = { T, openW: MNT_GATE_W, openH: MNT_GATE_H, doorH: MNT_GATE_H, doorMat: M2.cedar, M: M2, H: H2, y: LV2.HAR };
     mnt_gatePortal(g, Object.assign({ axis: "z", gx: gE.x, gz: gE.z, inward: 1, fadeWith: wallE.stone }, portal));
-    mnt_gatePortal(g, Object.assign({ axis: "x", gx: gN.x, gz: gN.z, inward: 1, fadeWith: wallN.stone }, portal));
+    mnt_gatePortal(g, Object.assign({ axis: "x", gx: gN.x, gz: gN.z, inward: 1, fadeWith: wallN.stone, tadi: true }, portal));   // TADI_C (116 ב): Tadi - two leaning stones
     mnt_gatePortal(g, Object.assign({ axis: "x", gx: gS.x, gz: gS.z, inward: -1, fadeWith: wallS.stone }, portal));
     mnt_gatePortal(g, Object.assign({ axis: "z", gx: gW.x, gz: gW.z, inward: -1, fadeWith: wallW.stone }, portal));
 
@@ -315,7 +346,7 @@
     // שחידשו והוסיפו על קדושתו"; Zevachim 32b "נכח החצר החדשה - הר הבית שחידשו בה בהלכותיה"), and Rashi has no comment on II Chr 20:5
     // (Metzudat David there: "אולי תקנו אותה וחדשו הבנין"). The earlier identification outer court = new court was a model choice, now dropped.
     // No measure in the sources (all model choice): 135 x 135 east of the inner court (x 93.5..228.5, z +-67.5), floor 3 above the
-    // platform (6 steps), paved, enclosed by a low wall 4 high (3 stone courses of 1 + 1 cedar course, the I Kings 6:36 pattern) 2 thick,
+    // platform (6 steps), paved, enclosed by a low wall 4 high (a plain stone wall - OUTER_PLAIN_C below; until 22.11.2026 banded as 6:36) 2 thick,
     // with an open gate 10 wide in the middle of its east side (named "השער המזרחי של החצר החיצונה", 1.0.1). The chambers, the king's עמוד and
     // the donation chest (1.0.1) are built after the gate; no gallery. Its west side is the inner court's podium
     // (3 above this floor) and wall; the 6 steps from here up to the inner court's east gate are built in 30-courts.js.
@@ -325,7 +356,10 @@
     const wcDepth = MNT_WC_SIZE + WC.t; // z -68.5..68.5: the podium reaches under the low north / south walls
     H2.box(g, wcPodE - WC.x0, WC.y - 0.15, wcDepth, M2.stone, (WC.x0 + wcPodE) / 2, LV2.HAR, 0);     // podium y 0..2.85 (overlaps into the inner podium, hidden)
     H2.box(g, wcPodE - WC.x0, 0.15, wcDepth, M2.paveFine, (WC.x0 + wcPodE) / 2, WC.y - 0.15, 0);     // paving, top at 3
-    const wcOpts = { height: WC.h, thickness: WC.t, y: WC.y, stoneH: MNT_STONE_BAND, cedarH: MNT_CEDAR_BAND, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
+    // OUTER_PLAIN_C (fix-c, 22.11.2026 - the user's 172 b): the outer court's low wall is a plain wall of hewn stone, as the great court's
+    // (WALL_PLAIN_C) - no source was found for a cedar course in this court; "שלשה טורי גזית וטור כרתת ארזים" is said of the inner court
+    // (I Kings 6:36, 10:221 - 30-courts.js keeps it) and of the king's court (7:12). One course band the wall's whole height = no cedar course.
+    const wcOpts = { height: WC.h, thickness: WC.t, y: WC.y, stoneH: WC.h, cedarH: 0, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
     const wcPierD = 1.5; // model choice: the gate piers are 1.5 deep along the wall (1.5 x 5 x 2.6)
     mnt_bandWall(g, Object.assign({ axis: "x", length: wcPodE - wcPodW, cx: (wcPodW + wcPodE) / 2, cz: WC.z0 }, wcOpts)); // north low wall, x 98.5..229.5 (covers the corner)
     mnt_bandWall(g, Object.assign({ axis: "x", length: wcPodE - wcPodW, cx: (wcPodW + wcPodE) / 2, cz: WC.z1 }, wcOpts)); // south low wall
@@ -535,9 +569,9 @@
     lbl("החצר החיצונה", (WC.x0 + WC.x1) / 2, 13, 22, 4); // 1.0.1 (the user): "החצר החיצונה"; Rashi on I Kings 6:36 calls it עזרת נשים; not "החצר החדשה" (Rashi Pesachim 92a: that is הר הבית)
     lbl("השער המזרחי של החצר החיצונה", WC.x1 + 6, WC.y + 9, 0, 3.5); // the court's gate (1.0.1, D.2.d); "שער בית ה' העליון" of II Kings 15:35 (Yotam) is a name only, not modeled separately
     lbl("השער המזרחי", CO2.harE + 9, 28, gE.z, 5);
-    lbl("השער הצפוני", gN.x, 28, CO2.harN - 9, 5);
-    lbl("השער הדרומי", gS.x, 28, CO2.harS + 9, 5);
-    lbl("השער המערבי", CO2.harW - 9, 28, gW.z, 5);
+    lbl("השער הצפוני — שער טדי", gN.x, 28, CO2.harN - 9, 5);   // NAMES_C (fix-c, 22.11.2026; the user: "לבצע"): the names of Middot 1:3 - a model choice in this house
+    lbl("השער הדרומי — שער חולדה", gS.x, 28, CO2.harS + 9, 5);
+    lbl("השער המערבי — שער קיפונוס", CO2.harW - 9, 28, gW.z, 5);
 
     // ---------- fly points and shared data ----------
     ctx.shared.flyPoints = ctx.shared.flyPoints || {};

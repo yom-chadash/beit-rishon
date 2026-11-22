@@ -342,15 +342,10 @@
   // and not as dull brown in the shade (the user; K.3 "polished, not dull brown"): metalness 0.75 lets the hemisphere light count, a
   // faint warm emissive keeps the shaded faces from sinking to brown (the idea of GOLD_OPTS in 10-core.js). Chosen from four variants
   // rendered side by side in headless Chrome (1.0.1 M.bronze 0xA26F2E / metalness 0.95 read dark brown on every shaded face).
+  // COPPER_C (fix-c, 22.11.2026 - the user: the book's copper): every vessel's tone through tm_copper (shared/frag/copper.js) - the tone
+  // given keeps its lightness (the parts' differences stay) in the copper's orange-red hue; white (a map's carrier) stays white
   function vsl_bronze(M2, color, rough, glow) {
-    const m = M2.bronze.clone();
-    m.color.set(color);
-    m.metalness = 0.75;
-    m.roughness = rough;
-    m.envMapIntensity = 1.4;
-    m.emissive.set(0x351a08);
-    m.emissiveIntensity = glow == null ? 0.4 : glow;
-    return m;
+    return tm_copper(color, rough, { glow: glow == null ? 0.4 : glow, raw: color === 0xffffff });
   }
 
   // The Sea (ים של שלמה). Built in a Group whose origin is on the court floor under the Sea's centre; moved by seaPlacement.set().
@@ -621,7 +616,7 @@
     cv.height = H;
     const c = cv.getContext("2d");
     c.scale(W / 100, H / 100);
-    const FILL = VSL_RELIEF_PLATE, LINE = VSL_RELIEF_LINE;
+    const FILL = tm_copperCss(VSL_RELIEF_PLATE), LINE = tm_copperCss(VSL_RELIEF_LINE);   // COPPER_C: in the book's copper
     c.lineJoin = "round";
     c.lineCap = "round";
     const E = (x, y, rx, ry, rot) => {
@@ -719,7 +714,7 @@
       const key = kind + ":" + w + "x" + h;
       return stamps[key] || (stamps[key] = vsl_motif(kind, w, h));
     };
-    const GROUND = "#a8733a", BAND = "#a37038", EDGE = "#cf9a5a", LINE = VSL_RELIEF_LINE;
+    const GROUND = tm_copperCss("#a8733a"), BAND = tm_copperCss("#a37038"), EDGE = tm_copperCss("#cf9a5a"), LINE = tm_copperCss(VSL_RELIEF_LINE);   // COPPER_C: the book's copper (the bases were beige)
     // two bands twined round each other ("ליות... מחברין זה בזה"; "מקלעות" on the mouth): along x from x0 to x1 at the row yc
     const twine = (c, x0, x1, yc, amp, period, lw) => {   // yc: the row, or a function of x (the arch between the cherubim)
       for (const ph of [0, Math.PI]) {
@@ -729,7 +724,7 @@
           if (x > x0) c.lineTo(x, y); else c.moveTo(x, y);
         }
         c.lineWidth = lw;
-        c.strokeStyle = VSL_RELIEF_PLATE;
+        c.strokeStyle = tm_copperCss(VSL_RELIEF_PLATE);
         c.stroke();
         c.lineWidth = 0.9;
         c.strokeStyle = LINE;
@@ -1083,7 +1078,7 @@
     // bronze (vsl_bronze, 1.0.1-K: polished, not dull brown); the decorations: the atlas colour with the same recipe
     const BR = vsl_bronze(M2, 0xc08040, 0.3);
     BR.roughness = 0.45;                            // 1.0.1-L: at 0.3 the sun burnt the roofs' slopes out to white in the block's views (pictures)
-    const BRS = vsl_bronze(M2, 0xc4844a, 0.22);     // the lavers: the most polished (and their taps, L.9)
+    const BRS = vsl_bronze(M2, 0xc4844a, 0.45);     // the lavers (and their taps, L.9); COPPER_C: 0.45 (until now 0.22 - as a mirror they read dark red-brown; the book draws them bright orange)
     // 1.0.1-L (L.8): the wheels and the small lying wheels in a darker bronze than the body, so that they read against it and against
     // the light marble floor (model choice; the book draws the wheels darker than the body, pp. 17-19)
     const BRW = vsl_bronze(M2, 0x7a4520, 0.38, 0.25);
@@ -1091,7 +1086,7 @@
     try {
       const at = vsl_reliefAtlas();
       REL = vsl_bronze(M2, 0xffffff, 0.34);
-      REL.color.setRGB(1.12, 1.12, 1.12);           // the atlas holds the bronze colour; brightened like the plain parts
+      REL.color.setRGB(1.0, 1.0, 1.0);              // the atlas holds the copper colour (COPPER_C: until now brightened 1.12 - the bases read beige)
       REL.map = at.map;                             // 1.0.1-L (L.63): no bump map - the drawings are flat ("לא בולט/שקוע")
       // ... so they live on the colour alone: a little of the atlas as emissive, that they read on the shaded sides too
       REL.emissive.set(0xffffff);

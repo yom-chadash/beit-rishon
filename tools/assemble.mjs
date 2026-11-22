@@ -5,7 +5,7 @@ import path from 'node:path';
 import { houseText, verifyHouse } from './house-slots.mjs';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
 const src = path.join(root, 'src');
-const order = ['00-lib.js', '10-core.js', '20-mount.js', '30-courts.js', '40-altar.js', '45-vessels.js', '50-heichal.js', '55-interior.js', '57-kelim.js', '58-ark.js', '60-palace.js', '70-ui.js', '72-words.js', '75-tour.js', '85-hq.js', '90-entry.js'];
+const order = ['00-lib.js', '10-core.js', '20-mount.js', '30-courts.js', '40-altar.js', '45-vessels.js', '50-heichal.js', '55-interior.js', '57-kelim.js', '58-ark.js', '59-parallels.js', '60-palace.js', '70-ui.js', '72-words.js', '75-tour.js', '85-hq.js', '90-entry.js'];
 // 21.11.2026 (stage 2 of the split): a module is read through tools/house-slots.mjs - from src/, or from shared/ with this house's
 // slots (src/slots/) and the figures' kits (shared/frag/) put in; the text that comes out is the same as before, byte for byte
 const header = houseText('rishon', 'header.txt');
