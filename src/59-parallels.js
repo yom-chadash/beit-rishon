@@ -354,5 +354,224 @@
       // from the east and above, over the ulam's front and roof (the place opens them for 20 s, as the pill "פתח את האולם")
       ctx.shared.flyPoints.chalifotWindows = { pos: [27, F + 17, -26.25], target: [XF, F + 3.4, -26.25] };
     }
+
+    // ---------- 7. THE PILGRIM'S WALK AT A MAN'S EYE (PILGRIM_B2 of the Second Temple's 57-add208.js) ----------
+    // Middot 2:2 (89:13): "כל הנכנסין להר הבית נכנסין דרך ימין ומקיפין ויוצאין דרך שמאל, חוץ ממי שארעו דבר, שהוא מקיף לשמאל"; the
+    // Bartenura there (643:64): "כגון הנכנסים דרך שערי חלדה שהן מן הימין, מקיפין דרך שער הטדי". IN THIS HOUSE (the user's decision 111:
+    // the way by the First Temple's own building, which has one gate on each side and no women's court): in by the southern gate - named
+    // here "שער חולדה" - from the landing of the king's ascent before it, to the right (east) along the south of the great court, north
+    // along its east (by the outer court and the eastern gate), west along its north, and out by the northern gate - "שער טדי". The walk
+    // engine of 50-heichal.js (ctx.shared.walk); the eye 3.2 over the floor. The way and the pace - model choices; the order is the
+    // Mishnah's, said in the Second Temple's days (the card says so).
+    {
+      const EY = 3.2, Y = LV2.HAR + EY;
+      const KEYS = [
+        [0, [103, Y, 349], [103, Y, 320]], [4, [103, Y, 336], [103, Y, 300]], [7, [103, Y, 320], [126, Y, 314]],
+        [10, [128, Y, 313], [200, Y, 311]], [18, [252, Y, 311], [318, Y, 292]], [24, [314, Y, 272], [318, Y, 200]],
+        [31, [318, Y, 140], [318, Y, 60]], [37, [318, Y, 22], [348, Y, 0]], [41, [318, Y, -18], [318, Y, -100]],
+        [47, [314, Y, -128], [250, Y, -140]], [55, [190, Y, -141], [120, Y, -145]], [61, [116, Y, -148], [103, Y + 2, -170]],
+        [65, [103, Y, -158], [103, Y + 3, -190]], [68, [103, Y, -171], [103, Y - 8, -215]]
+      ];
+      const CAPS = [
+        [0, "״כל הנכנסין להר הבית נכנסין דרך ימין ומקיפין ויוצאין דרך שמאל״ (מידות ב, ב)"],
+        [4, "״כגון הנכנסים דרך שערי חלדה שהן מן הימין, מקיפין דרך שער הטדי״ (ברטנורא שם)"],
+        [8, "נכנסים בשער הדרומי — שער חולדה — ופונים לימין, מזרחה"],
+        [25, "צפונה, לאורך המזרח — מול החצר החיצונה והשער המזרחי"],
+        [40, "״חוץ ממי שארעו דבר, שהוא מקיף לשמאל. מה לך מקיף לשמאל — שאני אבל, השוכן בבית הזה ינחמך״ (מידות ב, ב)"],
+        [48, "מערבה, לאורך הצפון"],
+        [60, "ויוצאים בשער הצפוני — שער טדי — דרך שמאל. המשנה נאמרה בימי הבית השני; המסלול בבית ראשון — בחירת מודל"]
+      ];
+      const PW = { run: false, saved: null };
+      const finish = () => {
+        PW.run = false;
+        const sv = PW.saved;
+        if (sv && sv.lg) sv.lg.visible = sv.labels;
+        if (sv && sv.view && ctx.shared.viewLimits) ctx.shared.viewLimits.set(sv.view);
+        if (sv && sv.fade != null && ctx.shared.fadeState) ctx.shared.fadeState.on = sv.fade;
+        PW.saved = null;
+      };
+      const start = () => {
+        const Wk = ctx.shared.walk;
+        if (!Wk) return false;
+        if (typeof ctx.shared.stopDemos === "function") ctx.shared.stopDemos("pilgrimWalk");
+        let lg = null; try { lg = ctx.root.getObjectByName("labels"); } catch (_) {}
+        PW.saved = { lg, labels: lg ? lg.visible : true, view: ctx.shared.viewLimits ? ctx.shared.viewLimits.get() : null, fade: ctx.shared.fadeState ? ctx.shared.fadeState.on : null };
+        if (lg) lg.visible = false;
+        if (ctx.shared.fadeState) ctx.shared.fadeState.on = false;   // at a man's eye nothing is see-through: the gates he walks through stay whole
+        if (ctx.shared.viewLimits) for (const k of KEYS) { ctx.shared.viewLimits.include(k[1]); ctx.shared.viewLimits.include(k[2]); }
+        PW.run = true;
+        Wk.run(KEYS, CAPS, finish);
+        return true;
+      };
+      const stop = () => { if (!PW.run) return; const Wk = ctx.shared.walk; if (Wk && Wk.on) Wk.stop(); else finish(); };
+      const walkStop = () => (ctx.shared.demoStops || []).find((q) => q.id === "walk");
+      (ctx.shared.demoStops || (ctx.shared.demoStops = [])).push({ id: "pilgrimWalk", running: () => PW.run, stop,
+        pause: () => { const w = walkStop(); if (w && w.pause) w.pause(); },
+        resume: () => { const w = walkStop(); if (w && w.resume) w.resume(); },
+        paused: () => { const w = walkStop(); return !!(w && w.paused && w.paused()); }, restart: () => { stop(); start(); } });
+      ctx.shared.pilgrimWalk = { start, stop, get on() { return PW.run; } };
+    }
+
+    // ---------- 8. THE WILLOW'S COMMANDMENT AND THE CIRCUIT OF THE ALTAR (ARAVAH_B2 of the Second Temple's 57-add208.js) ----------
+    // Mishnah Sukkah 4:5 (56:44) "ובאין וזוקפין אותן בצדי המזבח, וראשיהן כפופין על גבי המזבח... בכל יום מקיפין את המזבח פעם אחת"; Sukkah
+    // 45a (108:1165-1166) eleven amot, "כדי שיהו גוחות על גבי המזבח אמה"; "על היסוד מנח להו". From Rav Chaim Kanievsky, as brought in
+    // Chalamish: many willows, thick at the foot, only where there is a yesod; perhaps not in the east and the south. IN THIS HOUSE: on the
+    // yesod of the bronze altar (40-altar.js) along its north and west, as in the Second Temple (in Tosafot's reading of the First Temple's
+    // yesod it ran along the south too, under the ramp - not drawn there: a model choice); eleven amot from the yesod's top (7) to 18, the
+    // heads bent over the top (16). The circuit by the row "הקפת המזבח בערבה" (c1): priests alone (the default; Rashi Sukkah 43b), or
+    // Israelites too (the Or Zarua in the name of the Yerushalmi). The way round the altar and its ramp keeps off the ten bases (45-vessels.js,
+    // their block x 19..41) and the two tables. No tefillin - Chol HaMoed (ctx.shared.tefOff). The willows' number and form, the way, the
+    // walkers' number and pace - model choices. In the altar's group: it goes with the row "מקום המזבח".
+    {
+      const AG = new Group();
+      AG.name = "aravahDemo";
+      AG.visible = false;
+      const agp = altarG();
+      (agp || g).add(AG);
+      ctx.layers.aravahDemo = AG;
+      const YT = AZ + 1;   // the yesod's top
+      const AR = { circuit: "priests", built: false, walkers: { priests: [], all: [] }, t0: 0 };
+      const trunkM = new MeshStandardMaterial({ color: 0x6d6a3e, roughness: 0.85 });
+      const leafM = new MeshStandardMaterial({ color: 0x6f9a52, roughness: 0.8, side: DoubleSide });
+      const leafIM = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.75, side: DoubleSide });
+      const WG = {};
+      const willows = (key) => {
+        if (WG[key]) return WG[key];
+        const b = base();
+        const WGr = WG[key] = new Group(); WGr.name = "aravahWillows_" + key; AG.add(WGr);
+        const x0 = b.yw, x1 = b.x1 + 1, zN = -b.ys, zS = b.ys;   // the yesod's outline: west x0, north zN
+        const trunks = [], leaves = [];
+        let q = 22112026;
+        const rr = () => (q = (q * 1664525 + 1013904223) >>> 0) / 4294967296;
+        const tubeOf = (pts, r0, r1, segs) => {
+          const curve = new CatmullRomCurve3(pts), tube = new TubeGeometry(curve, segs, 1, 6, false), pos = tube.attributes.position;
+          for (let i = 0; i < pos.count; i++) {
+            const ring = Math.floor(i / 7), u = ring / segs, c = curve.getPointAt(u), r = r0 + (r1 - r0) * Math.pow(u, 0.6);
+            pos.setXYZ(i, c.x + (pos.getX(i) - c.x) * r, c.y + (pos.getY(i) - c.y) * r, c.z + (pos.getZ(i) - c.z) * r);
+          }
+          trunks.push(tube);
+          return curve;
+        };
+        const leafAlong = (curve, u0, n, spread) => {
+          for (let k = 0; k < n; k++) {
+            const u = u0 + (1 - u0) * Math.sqrt(rr()), p = curve.getPoint(Math.min(1, u)), a = rr() * Math.PI * 2, sp = 0.04 + rr() * spread;
+            leaves.push([p.x + Math.cos(a) * sp, p.y + (rr() - 0.3) * 0.2, p.z + Math.sin(a) * sp, rr() * Math.PI * 2, 0.25 + rr() * 0.75, rr()]);
+          }
+        };
+        const willow = (fx, fz, ix, iz) => {
+          const H = 10.6 + rr() * 0.8, reach = 2.5 + rr() * 0.6, px = -iz, pz = ix, sw = (rr() - 0.5) * 0.5, pts = [];
+          for (let i = 0; i <= 10; i++) {
+            const u = i / 10, y = YT + H * (u < 0.8 ? u : 0.8 + (u - 0.8) * 0.55);
+            const bend = u < 0.72 ? 0.1 * u : 0.072 + Math.pow((u - 0.72) / 0.28, 1.5) * reach;   // the head bends over the altar
+            pts.push(new Vector3(fx + ix * bend + px * sw * u, y, fz + iz * bend + pz * sw * u));
+          }
+          const main = tubeOf(pts, 0.17 + rr() * 0.05, 0.035, 16);
+          leafAlong(main, 0.38, 60, 0.3);
+          const nb = 3 + Math.floor(rr() * 3);
+          for (let k = 0; k < nb; k++) {
+            const u0 = 0.3 + rr() * 0.4, p0 = main.getPoint(u0), side = (k % 2 ? 1 : -1) * (0.5 + rr() * 0.6), len = 1.8 + rr() * 1.8, inw = 0.3 + rr() * 0.6;
+            const P = (t, up) => new Vector3(p0.x + px * side * t + ix * inw * t * t, p0.y + up, p0.z + pz * side * t + iz * inw * t * t);
+            const bc = tubeOf([P(0, 0), P(0.45, len * 0.5), P(0.85, len * 0.85), P(1.2, len * 0.9 - 0.5)], 0.05, 0.015, 8);
+            leafAlong(bc, 0.25, 32, 0.22);
+          }
+        };
+        for (let x = x0 + 0.5, k = 0; x < x1 - 0.3; x += 0.95 + (rr() - 0.5) * 0.35, k++) willow(x, k % 2 ? zN + 0.65 : zN + 0.3, 0, 1);   // along the north, on the yesod
+        for (let z = zN + 1.3, k = 0; z < zS - 0.5; z += 0.95 + (rr() - 0.5) * 0.35, k++) willow(k % 2 ? x0 + 0.65 : x0 + 0.3, z, 1, 0);   // along the west
+        const tm = new Mesh(mergeGeometries(trunks), trunkM); tm.castShadow = true; tm.userData.noPick = true; WGr.add(tm);
+        const lgeo = new PlaneGeometry(0.075, 0.46).translate(0, -0.23, 0);
+        const im = new InstancedMesh(lgeo, leafIM, leaves.length);
+        const mm = new Matrix4(), qq = new Quaternion(), e = new Euler(), vp = new Vector3(), vs = new Vector3(1, 1, 1), col = new Color();
+        leaves.forEach(([x, y, z, a, t, c], i) => {
+          qq.setFromEuler(e.set(t, a, 0, "YXZ")); mm.compose(vp.set(x, y, z), qq, vs); im.setMatrixAt(i, mm);
+          im.setColorAt(i, col.setHSL(0.23 + c * 0.06, 0.34 + c * 0.16, 0.24 + c * 0.12));
+        });
+        if (im.instanceColor) im.instanceColor.needsUpdate = true;
+        im.castShadow = true;
+        im.instanceMatrix.needsUpdate = true; im.userData.noPick = true; WGr.add(im);
+        return WGr;
+      };
+      const build = () => {
+        if (AR.built) return;
+        AR.built = true;
+        try {
+          const PP = tm_people(ctx), branchG = new CylinderGeometry(0.02, 0.03, 1.6, 5).translate(0, 0.8, 0);
+          const lulavG = new CylinderGeometry(0.018, 0.026, 1.9, 5).translate(0, 0.95, 0), etrogG = new SphereGeometry(0.1, 10, 8).scale(1, 1.35, 1);
+          const lulavM = new MeshStandardMaterial({ color: 0x5f7a3a, roughness: 0.8 }), etrogM = new MeshStandardMaterial({ color: 0xd9c23a, roughness: 0.6 });
+          const twig = new BoxGeometry(0.04, 0.3, 0.006);
+          const mk = (kind, robe, list, n, name, israel) => {
+            for (let i = 0; i < n; i++) {
+              const G = new Group(); G.visible = false; AG.add(G);
+              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: Array.isArray(robe) ? robe[i % robe.length] : robe, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name });
+              if (israel) {
+                const l = new Mesh(lulavG, lulavM); l.position.set(-0.36, 1.15, 0.3); l.rotation.x = 0.12; G.add(l);
+                const et = new Mesh(etrogG, etrogM); et.position.set(0.36, 1.3, 0.32); G.add(et);
+              } else {
+                const br = new Mesh(branchG, leafM); br.position.set(-0.36, 1.15, 0.3); br.rotation.z = 0.25; G.add(br);
+                for (let j = 0; j < 7; j++) { const t = new Mesh(twig, leafM); t.position.set(-0.36 + 0.25 * (0.4 + j * 0.09) + (j % 2 ? 0.06 : -0.06), 1.15 + 1.6 * (0.4 + j * 0.09), 0.3); t.rotation.z = j % 2 ? -0.6 : 0.6; G.add(t); }
+              }
+              list.push(G);
+            }
+          };
+          mk("kohen", 0xf1ede2, AR.walkers.priests, 14, "aravahPriest", false);
+          mk("worker", [0x6b5a3e, 0x4a4f5a, 0x5c4a3a, 0x3e4a5e, 0x7a6a50], AR.walkers.all, 18, "aravahIsraelite", true);
+        } catch (e) { console.warn("[parallels] aravah walkers", e && e.message); }
+      };
+      // the labels follow the altar's place (pushed now: the labels are made once)
+      const LB = [];
+      for (const [text, x, y, z, size] of [
+        ["״ובאין וזוקפין אותן בצדי המזבח, וראשיהן כפופין על גבי המזבח״ (סוכה ד, ה)", ACX, AZ + 15, -14.5, 1.6],
+        ["הערבות על היסוד בלבד — מפי הגר״ח קניבסקי, כפי שהובא בחלמיש", ACX - 17, AZ + 13.2, 3.5, 1.2],
+        ["״בכל יום מקיפין את המזבח פעם אחת, ואומרים, אנא ה׳ הושיעה נא״ (סוכה ד, ה)", ACX, AZ + 17.2, 13, 1.5]]) {
+        const l = { text, x, y, z: z + 10, size, layer: "aravahDemo" };
+        ctx.labels.push(l); LB.push([l, z]);
+      }
+      // the way round, in the altar's frame: round the altar and its ramp; west of the yesod by 1.6, and south of the yesod no further
+      // west than x 41.9 (the bases' block reaches x 41, and it stays where it is when the altar moves)
+      const pathOf = () => {
+        const b = base(), foot = yose() ? 44 : 42, R = 2.5, P = [];
+        const XW = b.yw - 1.6, XWS = Math.max(XW, 41.9), XE = b.x1 + 4, ZN = -b.ys - 2.5, ZS = foot + 3;
+        const arc = (cx, cz, a0) => { for (let i = 0; i <= 6; i++) { const a = a0 + (Math.PI / 2) * i / 6; P.push([cx + R * Math.cos(a), cz + R * Math.sin(a)]); } };
+        arc(XE - R, ZN + R, -Math.PI / 2); arc(XE - R, ZS - R, 0); arc(XWS + R, ZS - R, Math.PI / 2);
+        if (XWS > XW + 0.01) { P.push([XWS, b.ys + 2.6]); P.push([XW, b.ys + 1.2]); }   // the jog round the yesod's south-west corner (R. Yose's)
+        arc(XW + R, ZN + R, Math.PI);
+        const L = [0]; for (let i = 1; i <= P.length; i++) { const a = P[i - 1], c = P[i % P.length]; L.push(L[i - 1] + Math.hypot(c[0] - a[0], c[1] - a[1])); }
+        return { P, L, len: L[P.length] };
+      };
+      let PATH = null, pathKey = "";
+      const at = (s) => {
+        const { P, L, len } = PATH; s = ((s % len) + len) % len;
+        let i = 1; while (i < L.length && L[i] < s) i++;
+        const a = P[(i - 1) % P.length], c = P[i % P.length], u = (s - L[i - 1]) / Math.max(1e-6, L[i] - L[i - 1]);
+        return [a[0] + (c[0] - a[0]) * u, a[1] + (c[1] - a[1]) * u, Math.atan2(a[0] - c[0], a[1] - c[1])];   // walking toward smaller s
+      };
+      const pose = () => {
+        const t = (performance.now() - AR.t0) / 1000, sp = 2.4;
+        const list = AR.circuit === "all" ? AR.walkers.priests.concat(AR.walkers.all) : AR.walkers.priests;
+        for (const G of AR.walkers.priests.concat(AR.walkers.all)) if (!list.includes(G)) G.visible = false;
+        if (!list.length || !PATH) return;
+        const gap = PATH.len / list.length;
+        list.forEach((G, i) => {
+          const [x, z, yaw] = at(-t * sp + i * gap);
+          G.position.set(x, AZ + Math.abs(Math.sin(t * 4.2 + i * 1.3)) * 0.05, z); G.rotation.y = yaw; G.visible = true;
+        });
+      };
+      const sync = () => {
+        const key = yose() ? "yose" : "chronicles", dz = agp ? altarDz() : 0;
+        if (key !== pathKey) { PATH = pathOf(); pathKey = key; }
+        const W = willows(key);
+        for (const k in WG) WG[k].visible = WG[k] === W;
+        for (const [l, z] of LB) if (Math.abs(l.z - (z + dz)) > 1e-6) par_moveLabel(ctx, l, l.x, l.y, z + dz);
+      };
+      const tefOn = (on) => { const TO = ctx.shared.tefOff || (ctx.shared.tefOff = new Set()); if (on) TO.add("aravah"); else TO.delete("aravah"); };
+      ctx.shared.aravah = {
+        get circuit() { return AR.circuit; },
+        setCircuit(m) { AR.circuit = m === "all" ? "all" : "priests"; if (AG.visible) pose(); return AR.circuit; },
+        show() { const F2 = ctx.shared.features.aravah; if (F2 && !F2.isOn()) F2.on(); }
+      };
+      ctx.shared.features.aravah = { key: "aravah", timed: false, isOn: () => AG.visible,
+        on: () => { build(); sync(); AR.t0 = performance.now(); AG.visible = true; tefOn(true); pose(); },
+        off: () => { AG.visible = false; tefOn(false); } };
+      ctx.animated.push(() => { if (!AG.visible) return; sync(); pose(); });
+    }
     ctx.shared.parallels = { watchers };
   }

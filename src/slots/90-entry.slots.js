@@ -136,6 +136,9 @@
       section: { on: false, axis: "z", v: 0, set: (on, axis, v) => ent_sectionSet(on, axis, v) },   // 1.2.9
 //@@end set
 //@@begin after-root
+  // PARALLELS_C (fix-c, 22.11.2026; as the Second Temple's SHILOACH_305): the limits of the view, for a demonstration that walks beyond
+  // them (59-parallels.js: the pilgrim's walk, the Shiloach) - widened while it runs and given back after
+  ctx.shared.viewLimits = { get: () => ({ R: ent_view.R, yMin: ent_view.yMin, yMax: ent_view.yMax }), set: (o) => { if (o) Object.assign(ent_view, o); }, include: (q) => ent_viewInclude(q) };
   // 1.9.2 / 1.3.4 (the user's recording: a chamber's roof came back while the eye was inside it, and all one saw was the stone):
   // ctx.shared.camUnder(list) - is the eye under one of these pieces (inside its plan, below its top)? Their boxes are taken once.
   // ctx.shared.openFor(id, ms) - a place or a row opens a pill for a while (another call within it starts the count again; a pill the user
@@ -189,7 +192,7 @@
 //@@begin guardCamera.lo
         // CAM_219 (4): not in walk mode - there the eye keeps its height over the floor under ITSELF (cam_walkFloor); the target's floor
         // held it up when one walked backward down a stair (the target still on the top step)
-        const lo = Math.max(-27.5, !ent_wm.on && isFinite(cam.floorY) ? cam.floorY + 0.35 : -Infinity);
+        const lo = Math.max(typeof ctx.shared.camLow === "number" ? ctx.shared.camLow : -27.5, !ent_wm.on && isFinite(cam.floorY) ? cam.floorY + 0.35 : -Infinity);   // PARALLELS_C: ctx.shared.camLow - a walk in the valley (as the Second Temple's SHILOACH_305)
 //@@end guardCamera.lo
 //@@begin after-guardCamera
     if (ent_sec.on) ent_sectionApply();   // 1.3.4: the materials swapped in since (the wall fade's copies) are cut too
