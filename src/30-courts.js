@@ -202,6 +202,7 @@
   }
 
   //@@include strap
+  //@@include face
   //@@include people-kit
   async function buildCourts(ctx) {
     const M2 = ctx.M, H2 = ctx.H, CO2 = ctx.CO, LV2 = ctx.LV;

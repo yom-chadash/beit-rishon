@@ -83,107 +83,31 @@
       q.translate((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2);
       return q;
     };
-    // ---------- the face's skin (the face's front is at a quarter of the width): the eyes with their lids, the shade about them
-    // and by the nose, colour in the cheeks, the mouth; a patch of parchment (the scribes' tablets)
-    const texFace = (() => {
-      const cv = document.createElement("canvas");
-      cv.width = 512;
-      cv.height = 256;
-      const c = cv.getContext("2d");
-      // FACE_A2 (fix-a2; the user: "הפרצוף עצמו קצת נראה כבובה"): the skin as the lotteries' priest's now (priest-kit.js) - less
-      // orange, mottled, the sockets, the temples and the hollows under the cheekbones darker, the nose a little redder, the folds
-      // from it to the mouth. Model choices.
-      c.fillStyle = "#c39a7c";
-      c.fillRect(0, 0, 512, 256);
-      { const img = c.getImageData(0, 0, 512, 256), d = img.data;
-        for (let y = 0; y < 256; y++) for (let x = 0; x < 512; x++) {
-          const k = (y * 512 + x) * 4, h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453, n = (h - Math.floor(h) - 0.5) * 9 + 5 * Math.sin(x * 0.11 + Math.sin(y * 0.09) * 2) * Math.sin(y * 0.13 + x * 0.02);   // (its own noise: the figures' fixed sequence untouched)
-          d[k] = Math.max(0, Math.min(255, d[k] + n)); d[k + 1] = Math.max(0, Math.min(255, d[k + 1] + n * 0.85)); d[k + 2] = Math.max(0, Math.min(255, d[k + 2] + n * 0.7));
-        }
-        c.putImageData(img, 0, 0); }
-      const cx = 128, ey = 121;
-      const blob = (x, y, rx, ry, col) => {
-        const gr = c.createRadialGradient(0, 0, 0, 0, 0, 1);
-        gr.addColorStop(0, col);
-        gr.addColorStop(1, col.replace(/[\d.]+\)$/, "0)"));
-        c.save(); c.translate(x, y); c.scale(rx, ry); c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 1, 0, TAU); c.fill(); c.restore();
-      };
-      blob(cx, 100, 56, 22, "rgba(222,186,152,0.42)");
-      for (const sd of [-1, 1]) {
-        const ex = cx + sd * 30.4;
-        blob(ex, ey, 24, 15, "rgba(92,52,34,0.28)");                // FACE_A2
-        blob(cx + sd * 60, 112, 16, 26, "rgba(96,58,40,0.18)");
-        blob(cx + sd * 44, 162, 22, 18, "rgba(96,58,40,0.16)");
-        blob(cx + sd * 38, 146, 24, 16, "rgba(196,104,84,0.2)");
-        c.strokeStyle = "rgba(110,62,38,0.22)";
-        c.lineWidth = 5;
-        c.beginPath(); c.moveTo(cx + sd * 10, ey + 2); c.lineTo(cx + sd * 12, 152); c.stroke();
-        c.fillStyle = "#e6ddcf";
-        c.beginPath(); c.ellipse(ex, ey + 0.5, 8.4, 3.8, 0, 0, TAU); c.fill();
-        c.save();
-        c.beginPath(); c.ellipse(ex, ey + 0.5, 8.4, 3.8, 0, 0, TAU); c.clip();
-        c.fillStyle = "#33210f"; c.beginPath(); c.arc(ex, ey, 4.7, 0, TAU); c.fill();
-        c.fillStyle = "#5b4027"; c.beginPath(); c.arc(ex, ey, 3.7, 0, TAU); c.fill();
-        c.fillStyle = "#0c0806"; c.beginPath(); c.arc(ex, ey, 2.2, 0, TAU); c.fill();
-        c.fillStyle = "#ffffff"; c.beginPath(); c.arc(ex - 1.6, ey - 1.7, 1.1, 0, TAU); c.fill();
-        c.restore();
-        c.strokeStyle = "rgba(52,30,20,0.95)";
-        c.lineWidth = 1.8;
-        c.beginPath(); c.ellipse(ex, ey + 0.5, 8.4, 3.8, 0, Math.PI, TAU); c.stroke();
-        c.strokeStyle = "rgba(120,78,58,0.6)";
-        c.lineWidth = 1;
-        c.beginPath(); c.ellipse(ex, ey + 0.5, 8.4, 3.8, 0, 0, Math.PI); c.stroke();
-        c.strokeStyle = "rgba(110,70,48,0.35)";
-        c.lineWidth = 1.2;
-        c.beginPath(); c.ellipse(ex, ey - 2, 9.6, 5, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
-      }
-      blob(cx, 150, 9, 10, "rgba(186,96,80,0.22)");                // FACE_A2: the nose, and the folds down to the mouth
-      c.strokeStyle = "rgba(92,54,38,0.22)";
-      c.lineWidth = 3;
-      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(cx + sd * 13, 156); c.quadraticCurveTo(cx + sd * 22, 168, cx + sd * 19, 182); c.stroke(); }
-      c.fillStyle = "rgba(143,90,78,0.9)";
-      c.beginPath(); c.ellipse(cx, 175, 13, 3.1, 0, 0, TAU); c.fill();
-      c.strokeStyle = "rgba(84,40,34,0.85)";
-      c.lineWidth = 1.2;
-      c.beginPath(); c.moveTo(cx - 13, 174.6); c.quadraticCurveTo(cx, 176.6, cx + 13, 174.6); c.stroke();
-      c.fillStyle = "#eadfc4";
-      c.fillRect(436, 8, 68, 56);
-      const t = new CanvasTexture(cv);
-      t.colorSpace = SRGBColorSpace;
-      return t;
-    })();
+    // ---------- FACE_E (fix-e, 22.11.2026; the user's decision 169 b): the face of the near figures is the one construction of
+    // shared/frag/face.js (tm_face - the same as the priests' kit): its skin's texture (the face drawn, the patches - plain skin for the
+    // hands, parchment for the scribes' tablets), its head, eyes and hair. Until now here a texture of its own, a ball of a head with a
+    // nose of two small balls, and the eyes drawn round
+    const FACE = tm_face(), texFace = FACE.tex.skin;
     const mCloth = new MeshStandardMaterial({ color: 0x2f2f36, vertexColors: true, roughness: 0.9 });      // the black robe, the kippah, the shoes
     const mSkin = new MeshStandardMaterial({ color: 0xffffff, map: texFace, roughness: 0.8 });
     const mHair = new MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.95, side: DoubleSide });
+    // FACE_E: the near figures' hair - face.js's materials for it (the strands' texture, their ends single hairs - alphaTest); the balls
+    // of the eyes (near)
+    const mHairA = FACE.hairMats(mHair).lo, mHairHi = FACE.hairMats(mHair).hi;   // (the near ones' full face: a soft sheen along the strands)
+    const mEyeP = new MeshStandardMaterial({ color: 0xffffff, map: FACE.tex.eye, roughness: 0.14 });
     const mFar = new MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9 });
     const TONES = [[0xf4f2ec, 0xe9e6de, 0xfbfaf6, 0xe2dfd6], [0xa8a49b, 0x8e8a82, 0xbab6ad, 0x9a9388], [0x3d2c1f, 0x2e231b, 0x4c3727, 0x36281d], [0x2a1f17, 0x3b2a1c, 0x1f1813, 0x4b3320, 0x5d4129]];
     const SKINS = [0xffffff, 0xf3e7dc, 0xfff3e6, 0xeedccd];
     // ---------- the head (its middle at the origin, the face to +z): an egg, narrower at the chin; the nose and the ears
-    const HR = [0.128, 0.16, 0.14], EYE = [0.047, 0.014, 0.1095], HS = 1.045, YJ = -0.118, OFF = 0.96, HEAD_Y = 2.075;
+    const HR = [0.128, 0.16, 0.14], HS = 1.045, YJ = -0.118, OFF = 0.96, HEAD_Y = 2.075;
     const headR = (ph, y) => {
       const yn = Math.max(-0.999, Math.min(0.999, y / HR[1])), j = yn < 0 ? yn * yn : 0;
       return Math.sqrt(1 - yn * yn) / Math.hypot(Math.sin(ph) / (HR[0] * (1 - 0.2 * j)), Math.cos(ph) / (HR[2] * (1 - 0.1 * j)));
     };
-    const skinPart = (q) => shade(flatUV(q, 0.75, 0.3), 1);
-    const headParts = () => {
-      const WS = 14, HG = 10, k = new SphereGeometry(1, WS, HG), p = k.attributes.position;
-      for (let i = 0; i < p.count; i++) {
-        const x = p.getX(i), y = p.getY(i), z = p.getZ(i), j = y < 0 ? y * y : 0;
-        p.setXYZ(i, x * HR[0] * (1 - 0.2 * j), y * HR[1], z * HR[2] * (1 - 0.1 * j));
-      }
-      k.computeVertexNormals();
-      const nr = k.attributes.normal;
-      for (let j = 0; j <= HG; j++) {
-        const a = j * (WS + 1), b = a + WS, x = nr.getX(a) + nr.getX(b), y = nr.getY(a) + nr.getY(b), z = nr.getZ(a) + nr.getZ(b), l = Math.hypot(x, y, z) || 1;
-        nr.setXYZ(a, x / l, y / l, z / l);
-        nr.setXYZ(b, x / l, y / l, z / l);
-      }
-      const parts = [shade(k, 1)];
-      parts.push(skinPart(at(sph(0.0105, 0.032, 0.017, 5, 3), 0, -0.014, 0.131)));   // FACE_REAL_A2: the nose of a natural size (as priest-kit.js)
-      parts.push(skinPart(at(sph(0.0135, 0.0125, 0.016, 6, 4), 0, -0.04, 0.1405)));
-      for (const sd of [-1, 1]) parts.push(skinPart(at(sph(0.012, 0.03, 0.02, 4, 3), sd * 0.126, 0, -0.004)));
-      return parts;
-    };
+    const skinPart = (q) => shade(flatUV(q, FACE.UV_SKIN[0], FACE.UV_SKIN[1]), 1);   // FACE_E: the plain skin's patch of face.js
+    // FACE_E: the head itself - face.js's ("lo" for the near figures; "hi", with the balls of the eyes, for the few nearest the eye -
+    // crowd's `close`); a ball's texture coordinates laid as face.js's (the face before), for the plain figure's head (PEOPLE_KIT_205)
+    const faceUV = (q) => { const P = q.attributes.position, U = q.attributes.uv; for (let i = 0; i < P.count; i++) { const t = FACE.uvOf(Math.atan2(P.getX(i), P.getZ(i)), P.getY(i)); U.setXY(i, t[0], t[1]); } return q; };
     // ---------- the hair. The beard is one body: from the cheeks before the ears and from the jaw, lying on the face, and under
     // the chin it hangs and comes forward to the chest, narrowing; its lower edge uneven
     const beard = (len, w2, nu, nv) => surf(nu || 14, nv || 6, (u, v, o) => {
@@ -203,8 +127,6 @@
       o.y = y;
       o.c = 0.86 + 0.14 * (0.5 + 0.5 * strand) - 0.06 * sd;
     }, true);
-    const brows = () => [-1, 1].map((sd) => shade(at(rot(sph(0.027, 0.0058, 0.009, 6, 3), 0, 0, -sd * 0.05), sd * EYE[0], 0.051, 0.1262), 0.72));
-    const stache = () => [-1, 1].map((sd) => shade(at(rot(sph(0.037, 0.0125, 0.016, 5, 3), 0, 0, -sd * 0.4), sd * 0.027, -0.066, 0.127), 1));
     // PEOPLE_KIT_211C (the user, 15.11.2026 03:15: "יש בעיה עם שער שלהם הוא לא מקיף את כל הראש"): until now the hair was a crown
     // under the kippah and a band on the BACK half of the head only - the temples and the top of the forehead were bare. Now it
     // goes ROUND the whole head: a fringe under the kippah's front edge, down before the ears to the beard's upper edge (a young
@@ -230,7 +152,6 @@
       o.z = Math.cos(ph) * r;
       o.c = 0.9 + 0.05 * Math.sin(13 * ph + 2 * v);
     });
-    const hairCap = (young) => [shade(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 10, 2, 0, TAU, 0, 0.8), 0.92), hairRing(young, 28, 7, 2)];
     const peyot = () => [-1, 1].flatMap((sd) => [shade(at(sph(0.013, 0.062, 0.016, 5, 4), sd * 0.122, -0.04, 0.05), 0.95), shade(at(sph(0.016, 0.016, 0.016, 5, 3), sd * 0.124, -0.102, 0.054), 1)]);
     // PEOPLE_KIT_211 (the user, 15.11.2026: "כל הפועלים הם כהנים בכל הלשכות"): kind "kohen" - the white robe (o.robe), the hat instead of
     // the kippah, and the sash in its three colours, its two ends hanging in front (the lottery's priest in fewer faces)
@@ -403,12 +324,15 @@
       }
       cloth.push(headT(kind === "kohen" ? hatK() : kind === "levi" ? kippahBack(14, 3) : kippah(14, 3)));
       const avG = kind === "kohen" ? avnet(seated ? -OFF : 0, 40, 12) : null;   // AVNET_305
-      for (const q of headParts()) skin.push(headT(q));
-      skin.push(skinPart(at(new CylinderGeometry(0.066, 0.072, 0.1, 8, 1, true), 0, HY - 0.15, 0)));
-      const base = () => brows().concat(hairCap(kind === "student")).map(headT);
-      const hair = kind === "student"
-        ? [mergeGeometries(base().concat(peyot().map(headT)))]
-        : (young ? [[0.05, 2.0]] : [[0.25, 1.1], [0.19, 3.3], [0.14, 5.2]]).map(([len, w2]) => mergeGeometries(base().concat(stache().map(headT), [headT(beard(len, w2))])));
+      // FACE_E: the head with its neck, and its hair - face.js's: "lo" for every near figure; "hi" (and the balls of the eyes) for the few
+      // nearest the eye (crowd: `close`). The beards as until now: the young a short one; the students none, their peyot; the others
+      // three lengths (their ends where they were: face.js's length is from the chin)
+      const F2 = (g) => headT(g.clone());
+      const beards = kind === "student" ? [["none", 0, 0]] : young ? [["short", 0, 2.0]] : [["full", 0.167, 1.1], ["full", 0.107, 3.3], ["full", 0.057, 5.2]];
+      const rgba = (q) => { const c = q.attributes.color, a = new Float32Array(c.count * 4); for (let i = 0; i < c.count; i++) { a[i * 4] = c.getX(i); a[i * 4 + 1] = c.getY(i); a[i * 4 + 2] = c.getZ(i); a[i * 4 + 3] = 1; } q.setAttribute("color", new Float32BufferAttribute(a, 4)); return q; };   // (face.js's hair has an alpha)
+      const hairOf = (d) => beards.map(([b, len, w2]) => mergeGeometries([F2(FACE.hair({ d, len, w2, beard: b }))].concat(kind === "student" ? peyot().map((q) => rgba(headT(q))) : [])));
+      let closeG = null;   // (the full face is made only when one of the crowd first comes near the eye)
+      const head = F2(FACE.head("lo")), hair = hairOf("lo"), close = { HY, geo: () => closeG || (closeG = { head: F2(FACE.head("hi")), eyes: F2(FACE.eyes()), hair: hairOf("hi") }) };
       // PEOPLE_KIT_205 - the plain figure (from ~22 amot): the same body in a few faces - the robe, the lap, the arms, the kippah; the
       // head with its painted face; the beard (or a young man's hair and peyot) in its own colour
       const mc = [], ms = [], mh = [];
@@ -431,7 +355,7 @@
         const k = new SphereGeometry(1, 10, 6), p = k.attributes.position;
         for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), j = y < 0 ? y * y : 0; p.setXYZ(i, x * HR[0] * (1 - 0.2 * j), y * HR[1], z * HR[2] * (1 - 0.1 * j)); }
         k.computeVertexNormals();
-        ms.push(headT(shade(k, 1)));
+        ms.push(headT(shade(faceUV(k), 1)));   // FACE_E: the face drawn before
       }
       mh.push(headT(hairRing(kind === "student", 10, 3, 0)));   // PEOPLE_KIT_211C: the hair round the head, in a few faces
       if (kind === "student") {
@@ -451,14 +375,14 @@
       }
       far.push(tint(at(sph(HR[0], HR[1], HR[2], 6, 4), 0, HY, 0), cS));
       far.push(tint(at(sph(HR[0] * 1.09, HR[1] * 1.09, HR[2] * 1.09, 6, 2, 0, TAU, 0, 0.92), 0, HY, -0.004), cK));
-      return (cache[key] = { cloth: mergeGeometries(cloth), skin: mergeGeometries(skin), hair, mid, far: mergeGeometries(far), avnet: avG, tef: kind === "kohen" || kind === "levi" ? tefG(HY) : null });   // TEFILLIN_A2
+      return (cache[key] = { cloth: mergeGeometries(cloth), skin: skin.length ? mergeGeometries(skin) : null, head, hair, close, mid, far: mergeGeometries(far), avnet: avG, tef: kind === "kohen" || kind === "levi" ? tefG(HY) : null });   // TEFILLIN_A2; FACE_E: head, close
     };
     const LOD = [], m4 = new Matrix4(), qt = new Quaternion(), sc = new Vector3(), ps = new Vector3(), up = new Vector3(0, 1, 0), c3 = new Color(), wp = new Vector3();
     const crowd = (parent, pts, o) => {
       const n = pts.length, L = o.pose === "bench" ? o.seat / o.s : 0, G = build(o.pose, L, o.kind, o.robe, !!o.young, o.arms === false), mCl0 = clothMat(o.robe);
       const near = new Group(), mid = new Group(), far = new Group(), anchor = new Group();
-      const mk = (g, m) => { const im = new InstancedMesh(g, m, n); im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; if (o.name) im.name = o.name; return im; };   // (PEOPLE_KIT_205: no figure casts a shadow)
-      const cloth = mk(G.cloth, mCl0), skin = mk(G.skin, mSkin), hairs = G.hair.map((g) => mk(g, mHair)), cnt = hairs.map(() => 0), fm = mk(G.far, mFar);
+      const mk = (g, m, c) => { const im = new InstancedMesh(g, m, c || n); im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; if (o.name) im.name = o.name; return im; };   // (PEOPLE_KIT_205: no figure casts a shadow)
+      const cloth = mk(G.cloth, mCl0), skin = G.skin ? mk(G.skin, mSkin) : null, head = mk(G.head, mSkin), hairs = G.hair.map((g) => mk(g, mHairA)), cnt = hairs.map(() => 0), fm = mk(G.far, mFar);   // FACE_E: head (and the hair's texture)
       const mCl = mk(G.mid.cloth, mCl0), mSk = mk(G.mid.skin, mSkin), mHr = mk(G.mid.hair, mHair);
       // (o.avnet === false - priestly garments without the avnet: the young priests on the ladders, the user's decision 68 (1), agent B2)
       const noAv = o.avnet === false, avN = G.avnet && !noAv ? mk(G.avnet, AVN.mat()) : null, avD = G.mid.avnet && !noAv ? mk(G.mid.avnet, AVN.mat()) : null;   // AVNET_305
@@ -468,28 +392,33 @@
       for (const p of pts) { ax += p[0] / n; az += p[1] / n; }
       let R = 0;
       const slots = [];   // MUSICIANS_305: each figure's hair - its mesh and place there
+      const M = [], SC = [], CS = [], CH = [];   // FACE_E: each figure's matrix, scale, skin's and hair's colours
       pts.forEach(([x, z, yaw, py], i) => {   // (ROUTE_CROWD_B2: an optional 4th - the figure's own height, for a crowd on sloping ground)
         const big = o.big === i, j0 = big ? 0 : rnd(), s = o.s * (big ? 1.08 : o.exact ? 1 : 0.97 + j0 * 0.06), fw = o.fwd || 0;   // NAZIR_LOCKS_211: o.exact - the size and the turn as given
         const jy = (rnd() - 0.5) * (o.pose === "bench" ? 0.16 : 0.3);
         qt.setFromAxisAngle(up, yaw + (o.exact ? 0 : jy));
         m4.compose(ps.set(x + Math.sin(yaw) * fw, py != null ? py : o.y, z + Math.cos(yaw) * fw), qt, sc.set(s, s, s));
-        for (const im of [cloth, skin, fm, mCl, mSk, mHr]) im.setMatrixAt(i, m4);
+        for (const im of [cloth, skin, head, fm, mCl, mSk, mHr]) if (im) im.setMatrixAt(i, m4);
+        M[i] = m4.clone(); SC[i] = s;   // FACE_E: each figure's place, for `close`
         if (avN) { avN.setMatrixAt(i, m4); avD.setMatrixAt(i, m4); }   // AVNET_305
         if (tef) tef.setMatrixAt(i, m4);   // TEFILLIN_A2
         c3.setHex(SKINS[(i * 5 + 1) % SKINS.length]);
-        skin.setColorAt(i, c3);
+        if (skin) skin.setColorAt(i, c3);
+        head.setColorAt(i, c3);
         mSk.setColorAt(i, c3);
+        CS[i] = c3.clone();
         const pal = TONES[o.kind === "student" || o.young ? 3 : (o.tone ? o.tone(i) : 1)], k = big ? 0 : (i * 7 + 3) % hairs.length;
         c3.setHex(big ? TONES[0][2] : pal[Math.floor(rnd() * pal.length)]);
         hairs[k].setMatrixAt(cnt[k], m4);
         hairs[k].setColorAt(cnt[k], c3);
         mHr.setColorAt(i, c3);
+        CH[i] = c3.clone();
         slots[i] = [k, cnt[k]];
         cnt[k]++;
         R = Math.max(R, Math.hypot(x - ax, z - az));
       });
       hairs.forEach((h, k) => { h.count = cnt[k]; });
-      for (const im of [cloth, skin, fm, mCl, mSk, mHr].concat(hairs, avN ? [avN, avD] : [], tef ? [tef] : [])) {   // AVNET_305, TEFILLIN_A2
+      for (const im of [cloth, skin, head, fm, mCl, mSk, mHr].concat(hairs, avN ? [avN, avD] : [], tef ? [tef] : []).filter(Boolean)) {   // AVNET_305, TEFILLIN_A2; FACE_E: head
         im.instanceMatrix.needsUpdate = true;
         if (im.instanceColor) im.instanceColor.needsUpdate = true;
         if (im.count > 0) (im === fm ? far : im === mCl || im === mSk || im === mHr || im === avD ? mid : near).add(im);
@@ -498,13 +427,61 @@
       far.visible = false;
       anchor.position.set(ax, o.y, az);
       for (const q of [near, mid, far, anchor]) parent.add(q);
-      LOD.push({ near, mid, far, anchor, R: R * 1.0, lv: 1, k: o.lodK > 0 ? o.lodK : 1, min: o.minLv | 0, tef });   // PEOPLE_LOD_304: lodK, minLv (this house's copy); TEFILLIN_A2
+      // FACE_E: THE NEAREST FIGURES' FULL FACE - of a crowd seen near (its near level), the figures nearest the eye (up to CLOSE_N; nearer
+      // than CLOSE_K amot for each amah of the figure's scale - as the priests' kit's LOD_FAR, 9 amot for its 1.4) have face.js's "hi"
+      // head, eyes and hair; their own "lo" ones are folded away meanwhile. Chosen again as the eye moves (only when the set changes)
+      const CLOSE_N = Math.min(n, 6), CLOSE_K = 6.4, Z0 = new Matrix4().makeScale(0, 0, 0);
+      let CL = null, clAll = [];
+      const makeCL = () => {
+        const C = G.close.geo();
+        CL = { head: mk(C.head, mSkin, CLOSE_N), eyes: mk(C.eyes, mEyeP, CLOSE_N), hair: C.hair.map((g) => mk(g, mHairHi, CLOSE_N)) };
+        clAll = [CL.head, CL.eyes].concat(CL.hair);
+        for (const im of clAll) { im.count = 0; im.visible = false; im.frustumCulled = false; near.add(im); im.updateMatrixWorld(true); }   // (made during a frame: placed at once)
+      };
+      const sel = new Map(), wInv = new Matrix4(), cL = new Vector3(), hp = new Vector3();
+      let selKey = "";
+      const putClose = (i, j) => {   // figure i as the j-th of the near ones
+        const sl = slots[i], hk = CL.hair[sl[0]], hj = hk.count++;
+        CL.head.setMatrixAt(j, M[i]); CL.head.setColorAt(j, CS[i]); CL.eyes.setMatrixAt(j, M[i]);
+        hk.setMatrixAt(hj, M[i]); hk.setColorAt(hj, CH[i]);
+        sel.set(i, [j, sl[0], hj]);
+        head.setMatrixAt(i, Z0); hairs[sl[0]].setMatrixAt(sl[1], Z0);
+      };
+      const flagAll = () => { for (const im of clAll.concat([head], hairs)) { im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; } };
+      const close = {
+        update(cam, f) {
+          wInv.copy(parent.matrixWorld).invert();
+          cL.copy(cam.position).applyMatrix4(wInv);
+          const cand = [];
+          for (let i = 0; i < n; i++) { hp.set(0, G.close.HY, 0).applyMatrix4(M[i]); const d = hp.distanceTo(cL) * f; if (d < CLOSE_K * SC[i]) cand.push([d, i]); }
+          cand.sort((a, b) => a[0] - b[0]);
+          if (cand.length > CLOSE_N) cand.length = CLOSE_N;
+          const key = cand.map((c) => c[1]).sort((a, b) => a - b).join(",");
+          if (key === selKey) return;
+          selKey = key;
+          if (!CL) makeCL();
+          for (const i of sel.keys()) { head.setMatrixAt(i, M[i]); const sl = slots[i]; hairs[sl[0]].setMatrixAt(sl[1], M[i]); }
+          sel.clear();
+          for (const im of CL.hair) im.count = 0;
+          cand.forEach(([, i], j) => putClose(i, j));
+          CL.head.count = CL.eyes.count = cand.length;
+          for (const im of clAll) im.visible = im.count > 0;
+          flagAll();
+        }
+      };
+      LOD.push({ near, mid, far, anchor, R: R * 1.0, lv: 1, k: o.lodK > 0 ? o.lodK : 1, min: o.minLv | 0, tef, close });   // PEOPLE_LOD_304: lodK, minLv (this house's copy); TEFILLIN_A2; FACE_E: close
       // MUSICIANS_305: the crowd's handle - its level of detail, and a figure moved (its matrix: place, turn, scale)
-      const lodE = LOD[LOD.length - 1], allIm = [cloth, skin, fm, mCl, mSk, mHr].concat(avN ? [avN, avD] : [], tef ? [tef] : []);   // AVNET_305, TEFILLIN_A2
+      const lodE = LOD[LOD.length - 1], allIm = [cloth, skin, fm, mCl, mSk, mHr].concat(avN ? [avN, avD] : [], tef ? [tef] : []).filter(Boolean);   // AVNET_305, TEFILLIN_A2
       near.userData.crowd = {
         lod: lodE,
-        pose(i, m) { for (const im of allIm) im.setMatrixAt(i, m); const sl = slots[i]; if (sl) hairs[sl[0]].setMatrixAt(sl[1], m); },
-        done() { for (const im of allIm.concat(hairs)) im.instanceMatrix.needsUpdate = true; }
+        pose(i, m) {
+          for (const im of allIm) im.setMatrixAt(i, m);
+          M[i].copy(m);
+          const c = sel.get(i), sl = slots[i];
+          if (c) { CL.head.setMatrixAt(c[0], m); CL.eyes.setMatrixAt(c[0], m); CL.hair[c[1]].setMatrixAt(c[2], m); }   // FACE_E: a near one - its full face moves
+          else { head.setMatrixAt(i, m); if (sl) hairs[sl[0]].setMatrixAt(sl[1], m); }
+        },
+        done() { for (const im of allIm.concat([head], hairs, clAll)) im.instanceMatrix.needsUpdate = true; }
       };
       return near;
     };
@@ -577,6 +554,7 @@
         if (lv < e.min) lv = e.min;   // PEOPLE_LOD_304: a crowd that never takes the full figure (minLv 1)
         if (lv !== e.lv || e.near.visible !== (lv === 0) || e.mid.visible !== (lv === 1)) { e.lv = lv; e.near.visible = lv === 0; e.mid.visible = lv === 1; e.far.visible = lv === 2; }
         if (e.tef && lv === 0) e.tef.visible = tefOK();   // TEFILLIN_A2
+        if (e.close && lv === 0) e.close.update(cam, f);   // FACE_E: the nearest figures' full face
       }
     });
     // pts [[x, z] ...] along a row round the centre c: every one's face to the row's inner side (`away`: to its outer side)
