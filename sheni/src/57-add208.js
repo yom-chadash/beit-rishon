@@ -2478,6 +2478,43 @@
         paused: () => { const w = (SH.demoStops || []).find((q) => q.id === "walk"); return !!(w && w.paused()); }, restart: () => { stop(); start(); } });
       SH.pilgrimWalk = { start, stop, get on() { return PW.run; } };
     }
+    // ---------- AZARA_SEAT_B2 (fix-b2, 22.11.2026 - the user's decision 106: "תראה אותם יושבים ממש סביב שולחן. לא משנה המקום, רק שיהיה
+    // בעזרת כהנים"): THE DISPLAY OF "ישיבה בעזרה". Yoma 25a (107:582): "אין ישיבה בעזרה אלא למלכי בית דוד בלבד"; the Tosafot there (1908:199),
+    // the second answer, in the name of R. Yitzchak bar Avraham: "דאף על גב דאין ישיבה בעזרה אלא למלכי בית דוד, הנ"מ לדברים דלאו צורך
+    // עבודה, אבל אכילה צורך עבודה היא" - so: eight priests sitting on benches round a table in the priests' court, east of the ramp (clear
+    // of the ways), eating the most holy things - meat in dishes and matzot (the rest of the meal offerings, the shewbread). In their garments,
+    // the kit's priests (tefillin by its rules: a weekday). The place, the table, the benches, the dishes - model choices. A hidden layer, the
+    // place's feature (the place "ישיבה בעזרה").
+    {
+      const SG2 = grp("azaraSeating", false);
+      const CX = 77.2, CZ = 45, F = groundAt(CX, CZ, 30, LV.KOH);
+      const stoneT = M2.marble || M2.stoneLight, benchM = M2.cedar || M2.stoneLight;
+      const silverM = new MeshStandardMaterial({ color: 0xd7d7dc, metalness: 0.85, roughness: 0.3 });
+      const meatM = new MeshStandardMaterial({ color: 0x8a3b2a, roughness: 0.7 }), matzaM = new MeshStandardMaterial({ color: 0xe8d3a2, roughness: 0.85 });
+      const TL = 4.4, TW = 1.6, TH = 1.55;
+      mesh(SG2, new BoxGeometry(TW, 0.16, TL), stoneT, CX, F + TH - 0.08, CZ);   // the table
+      for (const lx of [-1, 1]) for (const lz of [-1, 1]) mesh(SG2, new BoxGeometry(0.16, TH - 0.16, 0.16), stoneT, CX + lx * (TW / 2 - 0.15), F + (TH - 0.16) / 2, CZ + lz * (TL / 2 - 0.2));
+      for (const sd of [-1, 1]) mesh(SG2, new BoxGeometry(0.6, 0.9, TL), benchM, CX + sd * (TW / 2 + 0.75), F + 0.45, CZ);   // the benches
+      for (const sz of [-1, 1]) mesh(SG2, new BoxGeometry(0.7, 0.9, 0.6), benchM, CX, F + 0.45, CZ + sz * (TL / 2 + 0.75));   // a stool at each end
+      // the dishes: meat in silver dishes, stacks of matzot, before each one
+      const TY = F + TH;
+      const seats = [];
+      for (const sd of [-1, 1]) for (const k of [-1, 0, 1]) seats.push([CX + sd * (TW / 2 + 0.75), CZ + k * 1.35, sd < 0 ? Math.PI / 2 : -Math.PI / 2]);
+      for (const sz of [-1, 1]) seats.push([CX, CZ + sz * (TL / 2 + 0.75), sz < 0 ? 0 : Math.PI]);
+      for (const [sx, sz2] of seats) {
+        const dx = CX - sx, dz = CZ - sz2, L = Math.hypot(dx, dz) || 1, px = sx + dx / L * (Math.abs(dx) > 0.1 ? 1.15 : 1.05), pz = sz2 + dz / L * (Math.abs(dz) > 0.1 ? 1.15 : 1.05);
+        mesh(SG2, new CylinderGeometry(0.24, 0.2, 0.05, 16), silverM, px, TY + 0.025, pz);
+        mesh(SG2, new BoxGeometry(0.2, 0.08, 0.14), meatM, px, TY + 0.09, pz).rotation.y = Math.atan2(dx, dz);
+      }
+      for (const [mx, mz] of [[CX, CZ - 0.6], [CX, CZ + 0.6]]) for (let i = 0; i < 5; i++) mesh(SG2, new CylinderGeometry(0.22, 0.22, 0.025, 18), matzaM, mx, TY + 0.015 + i * 0.03, mz);
+      mesh(SG2, new BoxGeometry(0.5, 0.12, 0.9), matzaM, CX, TY + 0.06, CZ);   // a loaf of the shewbread (a model choice)
+      try {
+        tm_people(ctx2).crowd(SG2, seats, { y: F, s: 1.4, pose: "bench", seat: 0.9, kind: "kohen", robe: 0xf1ede2, tone: (i) => i % 3, fwd: 0.3, shadow: true, name: "azaraSeated" });
+      } catch (e) { console.warn("[azara seating]", e && e.message); }
+      ctx2.labels.push({ text: "כהנים יושבים ואוכלים קדשים בעזרה — ״אכילה צורך עבודה היא״ (תוספות יומא כה.)", x: CX, y: F + 5.2, z: CZ, size: 1.3, layer: "azaraSeating" });
+      SH.features = SH.features || {};
+      SH.features.azaraSeating = { key: "azaraSeating", timed: false, isOn: () => SG2.visible, on: () => { SG2.visible = true; }, off: () => { SG2.visible = false; } };
+    }
     // ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 16 and 24: "בסדר היום" in the Second Temple's cards): a place -> the stage of the
     // morning service done in it (55-tamid.js, its stages' ids); the card's link starts the presentation "סדר עבודת הבוקר" at that stage
     // (70-ui.js renderLinks). The choice of the stage for each place - a model choice.
