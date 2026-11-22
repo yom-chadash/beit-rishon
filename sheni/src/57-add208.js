@@ -2581,6 +2581,158 @@
       SH.features = SH.features || {};
       SH.features.azaraSeating = { key: "azaraSeating", timed: false, isOn: () => SG2.visible, on: () => { SG2.visible = true; }, off: () => { SG2.visible = false; } };
     }
+    // ---------- BIKKURIM_B2 (fix-b2, 22.11.2026 - the user's decision 70: "הבאת ביכורים — הדגמה מהר הבית עד הקרן הדרומית מערבית... דמויות
+    // גברים בלבד"): THE BRINGING OF THE FIRST FRUITS. Mishnah Bikkurim 3:4 (50:29): "החליל מכה לפניהם עד שמגיעין להר הבית. הגיעו להר
+    // הבית, אפילו אגריפס המלך נוטל הסל על כתפו ונכנס, עד שמגיע לעזרה. הגיע לעזרה ודברו הלוים בשיר, ארוממך ה' כי דליתני"; 3:5 (50:30)
+    // "הגוזלות שעל גבי הסלים, היו עולות"; 3:6 (50:31) "עודהו הסל על כתפו, קורא מהגדתי היום... הגיע לארמי אובד אבי, מוריד הסל מעל כתפו
+    // ואוחזו בשפתותיו, וכהן מניח ידו תחתיו ומניפו... ומניחו בצד המזבח, והשתחוה ויצא"; the Rambam, Bikkurim 3:12 (336:53): "יש לו רשות
+    // לתתם לעבדו וקרובו בכל הדרך עד שמגיע להר הבית. הגיע להר הבית נוטל הסל על כתפו הוא בעצמו... ומניחו בצד המזבח בקרן דרומית מערבית
+    // בדרומה של קרן וישתחוה ויצא". The demonstration (the walk engine; daytime): up the ramp before the western gate of Chulda, the flute
+    // before them (it stops at the gate); his companion carries his basket up to the mount, and in the gate he takes it on his own shoulder;
+    // (unseen) across the mount; through the women's court, up the fifteen steps, by the Nikanor gate into the court - the Levites on the
+    // duchan sing; he reads, the basket on his shoulder; round the ramp's foot and up its west side (west of the two tables) to the altar's south-west corner; he lowers it and holds
+    // it by its rims, the priest's hand under it, and they wave it; he sets it down south of the corner, bows and goes out. Men only. The
+    // way, the pace, the basket and its fruits, the companions - model choices; the ox of 3:3 is not drawn.
+    {
+      const BK = { run: false, built: false };
+      const BG = grp("bikkurimDemo", false);
+      const RPb = SH.chuldaRamp || { zf: 364.5, yf: -28, yAt: (z) => -28 * Math.min(1, Math.max(0, (z - 335) / 29.5)) };
+      const altDzB = () => { const AP = SH.altarPlace; return AP && AP.dz && typeof AP.dz[AP.current] === "number" ? AP.dz[AP.current] : 12.5; };
+      const T = { gate: 6.4, take: 7.6, ezn0: 9.6, ezn1: 14.2, steps1: 15.8, nik: 17.0, read0: 17.6, walk0: 21.6, corner: 28.0, wave0: 28.6, wave1: 33.4, put: 34.6, bow0: 35.2, bow1: 36.6, end: 39.0 };
+      const lerp2 = (a, b, u) => a + (b - a) * u, clamp2 = (v, a, b) => Math.max(a, Math.min(b, v)), sm2 = (u) => u * u * (3 - 2 * u);
+      const plen2 = (P) => { let L = 0; for (let i = 1; i < P.length; i++) L += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); return L; };
+      const at2 = (P, u) => { const L = plen2(P) * clamp2(u, 0, 1); let acc = 0; for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (acc + l >= L || i === P.length - 1) { const f = l > 0 ? clamp2((L - acc) / l, 0, 1) : 0; return [lerp2(a[0], b[0], f), lerp2(a[1], b[1], f), Math.atan2(b[0] - a[0], b[1] - a[1])]; } acc += l; } return [P[0][0], P[0][1], 0]; };
+      // the bringer's ways [pts, t0, t1, kind] (kind "ramp" - on the ramp's slope; else the floor, sampled before the walk with the figures hidden)
+      const SW = () => { const dz = altDzB(), A = (x, z) => [x, z + dz];
+        return [
+          [[[0, RPb.zf + 5], [0, 336]], 0.4, T.gate, "ramp"],
+          [[[0, 336], [0, 333.5]], T.gate, T.take, "floor", 0],
+          [[[0, 333.5], [240, 2]], T.take + 0.2, T.ezn0, "hide"],
+          [[[240, 2], [229, 1], [200, 1], [106, 1]], T.ezn0, T.ezn1, "floor", -Math.PI / 2],
+          [[[106, 1], [97.5, 1]], T.ezn1, T.steps1, "floor"],
+          [[[97.5, 1], [89.5, 4]], T.steps1, T.nik, "floor", -Math.PI / 2],
+          [[[89.5, 4], [88, 18], [80, 42], A(68, 43.8), A(44.2, 43.8), A(38, 40), A(38, 16.2), A(38.3, 15.0)], T.walk0, T.corner, "floor", 2.62],
+          [[A(38.3, 15.0), A(37.8, 17), A(38, 40), A(44, 46)], T.bow1 + 0.2, T.end, "floor"]
+        ]; };
+      const hCache = new Map();
+      const hAt = (x, z, near) => { const k = Math.round(x * 2) + "," + Math.round(z * 2); let y = hCache.get(k); if (y === undefined) { y = groundAt(x, z, near, LV.KOH); hCache.set(k, y); } return y; };
+      const prime = () => { const was = BG.visible; BG.visible = false; for (const [P, , , kind] of SW()) if (kind === "floor") { const L = plen2(P); for (let d = 0; d <= L; d += 0.5) { const q = at2(P, d / Math.max(L, 1e-3)); hAt(q[0], q[1], 30); } } BG.visible = was; };
+      let D = null;
+      const build = () => {
+        if (D) return D;
+        const PP = tm_people(ctx2);
+        const fig = (kind, robe, s2, name, tone) => { const G = new Group(), L = new Group(); G.add(L); BG.add(G); PP.crowd(L, [[0, 0, 0]], { y: 0, s: s2 || 1.4, pose: "stand", kind, robe, tone: () => tone || 1, exact: true, avnet: kind === "kohen" ? undefined : false, name }); G.visible = false; return { G, L }; };
+        const wick = new MeshStandardMaterial({ color: 0x9c7440, roughness: 0.9 });
+        const basketG = new LatheGeometry([[0.001, 0], [0.22, 0], [0.3, 0.12], [0.34, 0.3], [0.36, 0.34], [0.33, 0.34], [0.3, 0.13], [0.2, 0.03], [0.001, 0.03]].map(([r, y]) => new Vector2(r, y)), 18);
+        const fruitM = [0x5a2a6a, 0xa8202c, 0x6b8a2a, 0xc98a2a, 0x3a1a4a].map((c) => new MeshStandardMaterial({ color: c, roughness: 0.55 }));
+        const doveM = new MeshStandardMaterial({ color: 0xf2f0ea, roughness: 0.7 });
+        let q = 3333; const rr = () => (q = (q * 1664525 + 1013904223) >>> 0) / 4294967296;
+        const basket = (doves) => {
+          const B = new Group(); const bm = new Mesh(basketG, wick); bm.castShadow = true; B.add(bm);
+          for (let i = 0; i < 16; i++) { const a = rr() * 6.28, r = rr() * 0.24, f = new Mesh(new SphereGeometry(0.05 + rr() * 0.04, 8, 6), fruitM[i % fruitM.length]); f.position.set(Math.cos(a) * r, 0.33 + rr() * 0.07, Math.sin(a) * r); B.add(f); }
+          if (doves) for (const sx of [-0.1, 0.12]) { const d = new Mesh(new SphereGeometry(0.07, 10, 8), doveM); d.scale.set(1.5, 0.9, 0.9); d.position.set(sx, 0.47, 0.02); B.add(d); const h = new Mesh(new SphereGeometry(0.035, 8, 6), doveM); h.position.set(sx + 0.1, 0.52, 0.02); B.add(h); }
+          B.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+          return B;
+        };
+        const bringer = fig("worker", 0x7a5a2e, 1.4, "bikkurimBringer", 1);
+        const myBasket = basket(true); BG.add(myBasket);
+        const comps = [0x3e5a7a, 0x6a3e3e, 0x4a6a3e, 0x5a4a6a].map((c, i) => { const f = fig("worker", c, i === 3 ? 1.05 : 1.4, "bikkurimCompanion", i % 3); const b2 = basket(false); b2.position.set(-0.3, i === 3 ? 1.85 : 2.45, -0.05); b2.scale.setScalar(i === 3 ? 0.75 : 1); f.L.add(b2); return f; });
+        const flute = fig("worker", 0x2e4a5a, 1.4, "bikkurimFlute", 2);
+        { const pm = new Mesh(new CylinderGeometry(0.02, 0.028, 0.5, 8), new MeshStandardMaterial({ color: 0xc8b07a, roughness: 0.6 })); pm.rotation.x = 1.15; pm.position.set(0, 2.05, 0.32); flute.L.add(pm); }
+        const priest = fig("kohen", 0xf1ede2, 1.4, "bikkurimPriest", 1);
+        // the Levites on the duchan (Arachin 2:3 and the Mishnah's "ודברו הלוים בשיר"), their faces to the people (east)
+        const lev = new Group(); BG.add(lev); lev.visible = false;
+        { const yD = groundAt(86.3, 6, 20, 15.5), LZ = [-10.8, -8.4, -6, -3.6, 3.6, 6, 8.4, 10.8];
+          PP.crowd(lev, LZ.map((z) => [86.3, z, Math.PI / 2]), { y: yD, s: 1.4, pose: "stand", kind: "levi", robe: 0xe9e3d3, tone: (i) => i % 4, name: "bikkurimLevites" }); }
+        D = { bringer, myBasket, comps, flute, priest, lev };
+        return D;
+      };
+      const wayNow = (t) => { const W = SW(); let cur = null; for (const w of W) if (t >= w[1] - 0.01) cur = w; return cur; };
+      const placeF = (F, P, t0, t1, kind, t, endYaw, dx, dzz) => {
+        const u = clamp2((t - t0) / Math.max(1e-3, t1 - t0), 0, 1), q2 = at2(P, u);
+        const yaw = u >= 1 && endYaw != null ? endYaw : q2[2], ox = Math.cos(yaw) * (dx || 0) + Math.sin(yaw) * (dzz || 0), oz = -Math.sin(yaw) * (dx || 0) + Math.cos(yaw) * (dzz || 0);
+        const x = q2[0] + ox, z = q2[1] + oz, y = kind === "ramp" ? RPb.yAt(z) : hAt(x, z, 30);
+        F.G.position.set(x, y + (u > 0 && u < 1 ? Math.abs(Math.sin(t * 9)) * 0.035 : 0), z); F.G.rotation.y = yaw; F.G.visible = kind !== "hide";
+        return { x, y, z, yaw };
+      };
+      const apply = (t) => {
+        const d = build(), W = SW(), cur = wayNow(t) || W[0];
+        const b = placeF(d.bringer, cur[0], cur[1], cur[2], cur[3], Math.min(t, cur[2]), cur[4], 0, 0);
+        d.bringer.L.rotation.x = 0;
+        // the companions: behind him on the ramp and through the women's court; in Israel's court they stand
+        d.comps.forEach((F, i) => {
+          const lag = 0.7 + i * 0.55, tt = t - lag, w = wayNow(tt) || W[0];
+          if (t >= T.nik + 0.6) { const sx = 90.5 + (i % 2) * 1.6, sz = -2 - i * 1.4; F.G.visible = true; F.G.position.set(sx, hAt(sx, sz, 30), sz); F.G.rotation.y = -Math.PI / 2; return; }
+          if (w === W[W.length - 1] || w === W[W.length - 2]) { F.G.visible = false; return; }
+          placeF(F, w[0], w[1], w[2], w[3], Math.min(tt, w[2]), w[4], (i % 2 ? 1 : -1) * 1.1, 0);
+        });
+        // the flute before them up to the mount ("עד שמגיעין להר הבית")
+        { const tt = t + 0.9, w = W[0]; if (t < T.take + 0.6) placeF(d.flute, w[0], w[1], w[2], "ramp", Math.min(tt, w[2]), Math.PI, 0.8, 0); else d.flute.G.visible = false; }
+        // his basket: with the first companion up the ramp; on his own shoulder from the gate; lowered and waved; set down
+        const MB = d.myBasket; MB.visible = !!d.bringer.G.visible || t >= T.put; MB.rotation.set(0, 0, 0);
+        const c0 = d.comps[0].G;
+        if (t < T.take) { c0.updateMatrixWorld(true); MB.position.set(0, 0, 0); MB.visible = c0.visible; const v = new Vector3(0.0, 1.55, 0.42).applyMatrix4(c0.matrixWorld); MB.position.copy(v); MB.rotation.y = c0.rotation.y; }
+        else if (t < T.wave0) { const sh = new Vector3(-0.3, 2.45, -0.05); d.bringer.G.updateMatrixWorld(true); MB.position.copy(sh.applyMatrix4(d.bringer.G.matrixWorld)); MB.rotation.y = b.yaw; MB.visible = d.bringer.G.visible; }
+        else if (t < T.put) {   // held by its rims before him, and waved - forward and back, up and down (the priest's hand under it)
+          const k = clamp2((t - T.wave0) / (T.wave1 - T.wave0), 0, 1), w8 = t < T.wave1 ? Math.sin(k * Math.PI * 8) : 0, w4 = t < T.wave1 ? Math.sin(k * Math.PI * 4) : 0;
+          const hv = new Vector3(0, 1.62 + 0.12 * w4, 0.55 + 0.18 * w8); d.bringer.G.updateMatrixWorld(true); MB.position.copy(hv.applyMatrix4(d.bringer.G.matrixWorld)); MB.rotation.y = b.yaw; MB.visible = true;
+        } else { const [px, pz] = [40.0, 13.15 + altDzB()]; MB.position.set(px, hAt(px, pz, 30), pz); MB.visible = t < T.end + 5; }
+        // he bows
+        if (t >= T.bow0 && t < T.bow1) d.bringer.L.rotation.x = 0.55 * Math.sin(Math.PI * clamp2((t - T.bow0) / (T.bow1 - T.bow0), 0, 1));
+        // the priest: waiting at the corner, then before him for the waving
+        { const dz = altDzB(), on = t >= T.walk0 && t < T.end; d.priest.G.visible = on;
+          if (on) { const wv = t >= T.wave0 - 0.4 && t < T.put, px = wv ? b.x + Math.sin(b.yaw) * 1.05 : 38.2, pz = wv ? b.z + Math.cos(b.yaw) * 1.05 : 11.2 + dz;
+            d.priest.G.position.set(px, hAt(px, pz, 30), pz); d.priest.G.rotation.y = wv ? b.yaw + Math.PI : 0.35; } }
+        d.lev.visible = t >= T.nik - 0.8 && t < T.corner + 1;
+      };
+      const keys = () => { const dz = altDzB(), C = [39.4, 13.8 + dz];
+        return [
+          [0, [22, RPb.yf + 5, RPb.zf + 18], [0, RPb.yf + 1.5, RPb.zf + 2]], [2.2, [20, RPb.yAt(RPb.zf - 12) + 5, RPb.zf - 4], [0, RPb.yAt(RPb.zf - 18) + 1.5, RPb.zf - 18]], [3.4, [20, RPb.yAt(RPb.zf - 28) + 5, RPb.zf - 22], [0, RPb.yAt(RPb.zf - 34) + 1.5, RPb.zf - 36]], [T.gate - 0.4, [12, 6, 352], [0, 2, 338]],
+          [T.take + 0.2, [10, 4, 344], [0, 3, 333]], [T.take + 1.0, [120, 80, 230], [200, 0, 40]],
+          [T.ezn0, [252, 14, 14], [238, 7, 1]], [T.ezn0 + 1.5, [214, 14, 13], [197, 7, 1]], [T.ezn0 + 3, [170, 14, 13], [153, 7, 1]], [T.ezn1, [122, 16, 13], [104, 9, 1]], [T.steps1, [110, 21, 14], [95, 15, 2]],
+          [T.nik + 0.4, [74, 22, 20], [90, 16, 3]], [T.read0 + 1.6, [74, 21, 18], [88, 16.5, 5]], [T.walk0, [74, 21, 20], [88, 16.5, 10]],
+          [T.walk0 + 2, [70, 23, 50], [80, 17, 38]], [T.walk0 + 3.5, [66, 28, 40], [56, 16.5, 56]], [T.walk0 + 5.6, [31, 23, 53], [38, 17.5, 40]],
+          [T.corner - 0.5, [31.5, 21.5, C[1] + 7], [C[0], 17.2, C[1]]],
+          [T.wave0 + 0.6, [32, 20.5, C[1] + 2.2], [C[0] - 0.7, 17.8, C[1] + 0.7]], [T.put, [32, 20.5, C[1] + 2.2], [C[0] - 0.4, 17.4, C[1] + 0.4]],
+          [T.bow1, [32.5, 21, C[1] + 3.5], [C[0], 17.4, C[1]]], [T.end, [30, 24, C[1] + 12], [39, 17, C[1] + 10]]
+        ]; };
+      const caps = [
+        [0, "״החליל מכה לפניהם עד שמגיעין להר הבית״ (ביכורים ג, ד) — עולים בכבש שלפני שער חולדה"],
+        [3.6, "״יש לו רשות לתתם לעבדו וקרובו בכל הדרך עד שמגיע להר הבית״ (רמב״ם ביכורים ג, יב)"],
+        [T.gate, "״הגיעו להר הבית, אפילו אגריפס המלך נוטל הסל על כתפו ונכנס, עד שמגיע לעזרה״ (ביכורים ג, ד)"],
+        [T.ezn0, "דרך עזרת נשים וחמש עשרה המעלות, ושער ניקנור; ״הגוזלות שעל גבי הסלים, היו עולות״ (ביכורים ג, ה)"],
+        [T.nik, "״הגיע לעזרה ודברו הלוים בשיר, ארוממך ה׳ כי דליתני ולא שמחת איבי לי״ (ביכורים ג, ד)"],
+        [T.read0 + 1.2, "״עודהו הסל על כתפו, קורא מהגדתי היום לה׳ אלהיך, עד שגומר כל הפרשה; רבי יהודה אומר עד ארמי אבד אבי״ (ביכורים ג, ו)"],
+        [T.wave0 - 0.4, "״הגיע לארמי אבד אבי, מוריד הסל מעל כתפו ואוחזו בשפתותיו, וכהן מניח ידו תחתיו ומניפו״ (ביכורים ג, ו)"],
+        [T.put - 0.2, "״ומניחו בצד המזבח בקרן דרומית מערבית בדרומה של קרן, וישתחוה ויצא״ (רמב״ם ביכורים ג, יב)"],
+        [T.bow1 + 0.4, "הדרך, הקצב, הסל ופירותיו והמלווים — בחירת מודל; ״והשור הולך לפניהם, וקרניו מצופות זהב״ (ג, ג) — לא צויר"]
+      ];
+      const finish = () => { BK.run = false; BG.visible = false; const sv = BK.saved; if (sv && sv.lg) sv.lg.visible = sv.labels; if (sv && sv.view && SH.viewLimits) SH.viewLimits.set(sv.view); if (BK.camLow0 === undefined) delete SH.camLow; else SH.camLow = BK.camLow0; BK.saved = null; };
+      const start = () => {
+        const Wk = SH.walk; if (!Wk) return false;
+        if (typeof SH.stopDemos === "function") SH.stopDemos("bikkurimDemo");
+        build(); prime();
+        let lg = null; try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {}
+        BK.saved = { lg, labels: lg ? lg.visible : true, view: SH.viewLimits ? SH.viewLimits.get() : null };
+        if (lg) lg.visible = false;
+        if (SH.viewLimits) SH.viewLimits.include([0, RPb.yf - 2, RPb.zf + 30]);
+        BK.camLow0 = SH.camLow; SH.camLow = RPb.yf - 3;
+        BG.visible = true; BK.run = true; apply(0);
+        Wk.run(keys(), caps, finish);
+        return true;
+      };
+      const stop = () => { if (!BK.run) return; const Wk = SH.walk; if (Wk && Wk.on) Wk.stop(); else finish(); };
+      let sndB = -1;
+      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => {
+        if (!BK.run) { sndB = -1; return; }
+        const Wk = SH.walk, t = Wk && typeof Wk.now === "function" ? Math.max(0, Wk.now()) : 0;
+        try { apply(t); } catch (e) { if (!BK.warned) { BK.warned = true; console.warn("[bikkurim]", e && e.message); } }
+        sndB = t;
+      });
+      const wk = () => (SH.demoStops || []).find((q2) => q2.id === "walk");
+      (SH.demoStops || (SH.demoStops = [])).push({ id: "bikkurimDemo", running: () => BK.run, stop, pause: () => { const w = wk(); if (w) w.pause(); }, resume: () => { const w = wk(); if (w) w.resume(); }, paused: () => { const w = wk(); return !!(w && w.paused()); }, restart: () => { stop(); start(); } });
+      SH.bikkurim = { start, stop, at: (t) => { build(); prime(); BG.visible = true; apply(t); }, keys, get on() { return BK.run; } };
+    }
     // ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 16 and 24: "בסדר היום" in the Second Temple's cards): a place -> the stage of the
     // morning service done in it (55-tamid.js, its stages' ids); the card's link starts the presentation "סדר עבודת הבוקר" at that stage
     // (70-ui.js renderLinks). The choice of the stage for each place - a model choice.
