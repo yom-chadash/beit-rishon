@@ -966,16 +966,28 @@
         const torchM = new MeshStandardMaterial({ color: 0x5b3a1e, roughness: 0.8 });
         const flameM = new MeshStandardMaterial({ color: 0xffb13a, emissive: 0xff7a10, emissiveIntensity: 2.2, transparent: true, opacity: 0.92 });
         const stickG = new CylinderGeometry(0.025, 0.035, 1.1, 6).translate(0, 0.55, 0), flameG = new ConeGeometry(0.11, 0.36, 8).translate(0, 0.18, 0);
-        const fol = [];
-        for (let i = 0; i < 14; i++) {
+        // (the coordinator, after the pictures: "תהלוכה גדולה וצפופה... בבגדים צבעוניים, הרבה לפידים דולקים, והכהן עם כד הזהב באמצע") -
+        // 36: a third ahead of him and the rest after him, in four files beside him; boys and two small children; a torch for every one
+        // but the children, a glow round each flame and a light in six of them (more lights would slow the drawing). Colours - model choices
+        const COL = [0x2f6b3a, 0x5b3a8a, 0x2e5d9a, 0xc9a227, 0x9a3030, 0x2a8a80, 0xb86a2a, 0x6b7a2e, 0x8a3a6a, 0x3a4a8a, 0xa8552e, 0x40706a];
+        const glowTex = (() => { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const c2 = cv.getContext("2d"); const gr = c2.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, "rgba(255,190,90,0.85)"); gr.addColorStop(0.4, "rgba(255,140,40,0.35)"); gr.addColorStop(1, "rgba(255,120,20,0)"); c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64); return new CanvasTexture(cv); })();
+        const glowM = new SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: AdditiveBlending });
+        const fol = [], LANES = [-2.0, -0.9, 0.9, 2.0];
+        for (let i = 0; i < 36; i++) {
           const G = new Group(); G.visible = false; DG.add(G);
-          const boy = i % 4 === 3;
-          PP.crowd(G, [[0, 0, 0]], { y: 0, s: boy ? 1.0 : 1.4, pose: "stand", kind: "worker", robe: ROBES[i % ROBES.length], tone: () => i % 4, exact: true, name: "shiloachProcession" });
-          const T0 = new Group(); T0.position.set(boy ? -0.26 : -0.36, boy ? 0.95 : 1.3, 0.3); T0.rotation.x = 0.15; G.add(T0);
-          T0.add(new Mesh(stickG, torchM));
-          const fl = new Mesh(flameG, flameM); fl.position.y = 1.1; T0.add(fl);
-          if (i === 2 || i === 9) { const lt = new PointLight(0xffa040, 26, 24, 1.6); lt.position.y = 0.2; fl.add(lt); }   // two of the torches light the way
-          fol.push({ G, fl, lag: 0.9 + i * 0.42, side: i % 2 ? 1.35 : -1.35, rank: Math.floor(i / 2) });
+          const kid = i === 17 || i === 29, boy = !kid && i % 5 === 3;
+          PP.crowd(G, [[0, 0, 0]], { y: 0, s: kid ? 0.8 : boy ? 1.05 : 1.4, pose: "stand", kind: kid || boy ? "student" : "worker", robe: COL[(i * 5) % COL.length], tone: () => i % 4, exact: true, name: "shiloachProcession" });
+          let fl = null;
+          if (!kid) {
+            const T0 = new Group(); T0.position.set(boy ? -0.27 : -0.36, boy ? 0.98 : 1.3, 0.3); T0.rotation.x = 0.15; G.add(T0);
+            T0.add(new Mesh(stickG, torchM));
+            fl = new Mesh(flameG, flameM); fl.position.y = 1.1; T0.add(fl);
+            const gl = new Sprite(glowM); gl.scale.set(1.7, 1.7, 1); gl.position.y = 0.2; gl.userData.noPick = true; fl.add(gl);
+            if (i % 6 === 2) { const lt = new PointLight(0xffa040, 22, 20, 1.6); lt.position.y = 0.25; fl.add(lt); }
+          }
+          const lead = i < 12, k = lead ? i : i - 12;
+          // (dense: each keeps a distance in amot from him along the way - the walk is hurried, so a lag in seconds would spread them)
+          fol.push({ G, fl, lag: i * 0.37, d: lead ? -(1.2 + k * 0.5) : 1.0 + k * 0.55, side: LANES[i % 4] + (((i * 7) % 5) - 2) * 0.08, rank: lead ? k * 0.5 : 0 });
         }
         // a Levite with a lyre at the spring (p. 12: "ושרים כהללים כל מעיני בך")
         const lev = new Group(); DG.add(lev); lev.visible = false;
@@ -1226,17 +1238,22 @@
         D2.watch.visible = t < T.decl1 + 0.5;
         // the procession: each a little behind him on his way, on its two sides (a lane each side, so that he goes between them)
         const fl = 0.85 + 0.15 * Math.sin(t * 17);
+        const wp = wayAt(WS, t), wi = wp ? WS.indexOf(wp) : -1;
+        const outside = !!wp && !wp.hide && t >= T.gate1 && t < T.back1 + 0.3 && (wp.stairs || wp.terrain);
+        const Sp = wp ? clamp((t - wp.t[0]) / Math.max(1e-3, wp.t[1] - wp.t[0]), 0, 1) * plen(wp.pts) : 0;
         for (const F of D2.fol) {
-          const tf = t - F.lag, w = wayAt(WS, tf);
-          const on = !!w && !w.hide && tf >= T.gate1 && tf < T.back1 && !w.ramp && w.near !== 16 && w.near !== 25;
-          F.G.visible = on;
-          if (!on) continue;
-          const L = plen(w.pts), u = clamp((tf - w.t[0]) / Math.max(1e-3, w.t[1] - w.t[0]), 0, Math.max(0, 1 - (F.rank * 1.6 + 1.2) / Math.max(L, 1e-3)));
+          let w = wp, S = Sp - F.d, L = wp ? plen(wp.pts) : 0;
+          if (outside && S < 0 && wi > 0 && !WS[wi - 1].hide && (WS[wi - 1].stairs || WS[wi - 1].terrain)) { w = WS[wi - 1]; L = plen(w.pts); S = Math.max(0, L + S); }
+          S = clamp(S, 0, Math.max(0, L - 1.6 - F.rank));
+          F.G.visible = outside;
+          if (!outside) continue;
+          const u = L > 0 ? S / L : 0;
           const qq = along(w.pts, u), yaw = qq[2], x = qq[0] + Math.cos(yaw) * F.side, z = qq[1] - Math.sin(yaw) * F.side;
           const y = w.stairs ? lerp(w.stairs[0], w.stairs[1], u) : yAt(D2, x, z, 20);
+          const tf = t;
           F.G.position.set(x, y + (u > 0 && u < 0.999 ? Math.abs(Math.sin(t * 8 + F.lag)) * 0.04 : 0), z);
-          F.G.rotation.y = tf >= w.t[1] && w.endYaw != null ? w.endYaw : yaw;
-          F.fl.scale.set(fl, 0.9 + 0.2 * Math.sin(t * 23 + F.lag * 3), fl);
+          F.G.rotation.y = tf >= w.t[1] && w.endYaw != null && w === wp ? w.endYaw : yaw;
+          if (F.fl) F.fl.scale.set(fl, 0.9 + 0.2 * Math.sin(t * 23 + F.lag * 3), fl);
         }
         // the Levite with the lyre, by the spring while they are there
         const SP = SHL.SP, lvOn = t >= T.path1 - 1 && t < T.back0 + 1.6 && SP.gy != null;
@@ -1298,7 +1315,8 @@
           [T.out1 + 0.8, [234, 19, 12], [212, 10, 0]], [T.decl1, [232, 21, 14], [212, 10, 0]],
           // over the mount (above the roof of the royal stoa, 37.5) to the outside of the gate of Chulda
           [T.decl1 + 1.6, [10, 95, 200], [6, 0, 360]], [T.gate1 - 1.0, [24, 40, 384], [2, -4, 338]],
-          [T.gate1, [22, 10, 352], [0, -6, 340]], [T.stairs1, [24, -6, 380], [0, -24, 360]],
+          [T.gate1, [22, 10, 352], [0, -6, 340]], [T.gate1 + 1.4, [11, -4, 357], [0, -12, 347]], [T.stairs1 - 0.4, [12, -16, 371], [0, -23, 359]],   // (closer, with him: the people on the stairs)
+          [T.stairs1 + 1.6, [19, -13, 432], [3, -26, 412]],
           [T.path1 - 2.2, [44, wy + 22, 470], [20, wy + 4, 515]],
           [T.rim1, [sf[0] - 5.2, sy + 2.9, sf[1] - 2.0], [sf[0] + 0.3, sy + 1.3, sf[1] + 0.8]], [T.fill1, [sf[0] - 4.8, sy + 2.7, sf[1] - 1.6], [sf[0] + 0.3, sy + 1.25, sf[1] + 0.85]],
           [T.back0 + 1.0, [sf[0] - 6, sy + 10, sf[1] - 6], [sf[0] + 4, sy - 2, sf[1] - 30]], [T.back0 + 2.6, [40, wy + 34, 600], [12, -24, 420]],
