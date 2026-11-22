@@ -137,7 +137,13 @@
   // jambs, slightly ajar. The opening is cut by the wall itself (mnt_bandWall openings) - here only the frame and the doors are built,
   // so the portal may rise above a lower wall. `inward` = +1 swings the leaves toward +z (axis "x") / toward -x (axis "z"), -1 the other way.
   // Every piece is registered with H.occ and fades with `fadeWith` (the wall's stone mesh). Returns the two leaf Groups.
-  function mnt_gatePortal(parent, { axis = "x", gx = 0, gz = 0, y = 0, T = 5, openW = 10, openH = 20, doorH = 20, doorMat, inward = 1, fadeWith = null, M: M2, H: H2 }) {
+  // TADI_C (fix-c, 22.11.2026 - the user's decision 116 ב: "שער טדי בבית ראשון — שתי אבנים מוטות זו על גב זו, כבבית שני"): `tadi` (axis "x")
+  // - no flat lintel: Middot 2:3 "חוץ משל טדי, ששם שתי אבנים מוטות זו על גב זו" - two stones leaning on each other over the opening, an
+  // inverted V 4 high, each lying on its edge from the jamb's top (+-openW/2, openH) up to the apex (as the Second Temple's 20-mount.js,
+  // 1.0.19), the triangle between them open; the jambs reach the opening's top; the two leaves end aslant under the stones, as there
+  // (1.9.5; no source - a model choice). In the First Temple the names and the forms of the Mount's gates are the Mishnah's, said of
+  // the Second Temple's Mount - a model choice (the card says so).
+  function mnt_gatePortal(parent, { axis = "x", gx = 0, gz = 0, y = 0, T = 5, openW = 10, openH = 20, doorH = 20, doorMat, inward = 1, fadeWith = null, tadi = false, M: M2, H: H2 }) {
     const tr = (m) => {
       if (fadeWith) H2.occ(m).userData.fadeWith = fadeWith;
       return m;
@@ -146,7 +152,17 @@
     const jw = 1.8, jh = openH + 1.8 - eps, jd = T + 1.6; // 1.0.19 values: jambs 1.8 wide, 0.8 proud of each wall face, reaching (eps under) the top of the 1.8-high stone lintel
     const jOff = openW / 2 + jw / 2 - eps, lw = openW + 2 * jw; // the jamb face stands eps proud of the wall's reveal; the lintel (openW + 3.6) overhangs the jambs by eps
     const ld = T + 1.2, td = T + 1.4; // 1.0.19 values (model choice): the lintel 0.6 proud of each wall face, the threshold 0.7
-    if (axis === "x") {
+    const GH = 4, TH = 1.0;   // TADI_C: the leaning stones (the Second Temple's values)
+    if (axis === "x" && tadi) {
+      for (const s of [-1, 1]) tr(H2.box(parent, jw, openH, jd, M2.stoneLight, gx + s * jOff, y, gz));   // the jambs to the opening's top
+      const ang = Math.atan2(GH, openW / 2), edgeL = Math.hypot(openW / 2, GH);
+      for (const s of [-1, 1]) {
+        const st = tr(H2.box(parent, edgeL + 0.6, TH, ld, M2.stoneLight, 0, 0, 0));
+        st.position.set(gx + s * (openW / 4 + Math.sin(ang) * TH / 2), y + openH + GH / 2 + Math.cos(ang) * TH / 2, gz);
+        st.rotation.z = -s * ang;
+      }
+      tr(H2.box(parent, openW + jw, 0.18, td, M2.stoneSmooth, gx, y, gz));
+    } else if (axis === "x") {
       for (const s of [-1, 1]) tr(H2.box(parent, jw, jh, jd, M2.stoneLight, gx + s * jOff, y, gz));
       tr(H2.box(parent, lw, 1.8, ld, M2.stoneLight, gx, y + openH, gz));      // flat stone lintel 1.8 high (1.0.19 value) directly on the opening
       tr(H2.box(parent, openW + jw, 0.18, td, M2.stoneSmooth, gx, y, gz));    // threshold 0.18 high (1.0.19 value), its ends inside the jambs
@@ -161,7 +177,17 @@
     for (const s of [-1, 1]) {
       const leaf = new Group();
       const ajar = s === 1 ? 0.38 : 0.2; // 1.0.19 values (model choice): the two leaves stand ajar at different angles, as if just pushed open
-      if (axis === "x") {
+      if (axis === "x" && tadi) {   // TADI_C: the leaf's head aslant, from the jamb (doorH) up toward the apex, under the stones
+        leaf.position.set(gx + s * openW / 2, y, gz);
+        const h0 = doorH - 0.15, h1 = doorH - 0.15 + GH * ((pw + 0.05) / (openW / 2)), sh = new Shape();
+        sh.moveTo(-s * 0.05, 0); sh.lineTo(-s * (pw + 0.05), 0); sh.lineTo(-s * (pw + 0.05), h1); sh.lineTo(-s * 0.05, h0); sh.closePath();
+        const geo = new ExtrudeGeometry(sh, { depth: lt, bevelEnabled: false });
+        geo.translate(0, 0, -lt / 2);
+        const m = new Mesh(geo, doorMat);
+        m.castShadow = m.receiveShadow = true;
+        leaf.add(m);
+        tr(m);
+      } else if (axis === "x") {
         leaf.position.set(gx + s * openW / 2, y, gz);
         tr(H2.box(leaf, pw, doorH, lt, doorMat, -s * (pw / 2 + 0.05), 0, 0));
       } else {
@@ -293,7 +319,7 @@
     // so the verse speaks of the inner court's doors (30-courts.js); here the same doors by analogy (model choice); door height = the opening (model choice)
     const portal = { T, openW: MNT_GATE_W, openH: MNT_GATE_H, doorH: MNT_GATE_H, doorMat: bronzeDoor, M: M2, H: H2, y: LV2.HAR };
     mnt_gatePortal(g, Object.assign({ axis: "z", gx: gE.x, gz: gE.z, inward: 1, fadeWith: wallE.stone }, portal));
-    mnt_gatePortal(g, Object.assign({ axis: "x", gx: gN.x, gz: gN.z, inward: 1, fadeWith: wallN.stone }, portal));
+    mnt_gatePortal(g, Object.assign({ axis: "x", gx: gN.x, gz: gN.z, inward: 1, fadeWith: wallN.stone, tadi: true }, portal));   // TADI_C (116 ב): Tadi - two leaning stones
     mnt_gatePortal(g, Object.assign({ axis: "x", gx: gS.x, gz: gS.z, inward: -1, fadeWith: wallS.stone }, portal));
     mnt_gatePortal(g, Object.assign({ axis: "z", gx: gW.x, gz: gW.z, inward: -1, fadeWith: wallW.stone }, portal));
 
