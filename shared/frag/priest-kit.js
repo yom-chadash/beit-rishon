@@ -136,148 +136,64 @@
       }
       c.globalAlpha = 1;
     });
-    // the face's skin: shade about the eyes and by the nose, colour in the cheeks, the lines at the eyes' corners (the face's
-    // front is at a quarter of the width); a patch of the lips' colour (the lips' own piece takes it)
-    // FACE_A2 (fix-a2; the user, 22.11.2026: "הפרצוף עצמו קצת נראה כבובה" - more real, within this kit, no AI): a skin of a man who
-    // works in the sun - less orange, its tone uneven (a fine mottling, the forehead lighter, the temples, the sockets of the eyes and
-    // the hollows under the cheekbones darker, the nose and the cheeks a little redder, the folds from the nose to the mouth); the eye
-    // brown, its white not white but warm, its glint small, the eye a little smaller and set in (HEAD_Y's line). Model choices.
-    const SKIN = "#c39a7c";
-    const texFace = cnv(512, 256, 1, 1, (c) => {
-      c.fillStyle = SKIN;
-      c.fillRect(0, 0, 512, 256);
-      { const img = c.getImageData(0, 0, 512, 256), d = img.data;   // FACE_A2: the mottling, two sizes
-        for (let y = 0; y < 256; y++) for (let x = 0; x < 512; x++) {
-          const k = (y * 512 + x) * 4, h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453, n = (h - Math.floor(h) - 0.5) * 9 + 5 * Math.sin(x * 0.11 + Math.sin(y * 0.09) * 2) * Math.sin(y * 0.13 + x * 0.02);   // (its own noise: the figures' fixed sequence untouched)
-          d[k] = Math.max(0, Math.min(255, d[k] + n)); d[k + 1] = Math.max(0, Math.min(255, d[k + 1] + n * 0.85)); d[k + 2] = Math.max(0, Math.min(255, d[k + 2] + n * 0.7));
-        }
-        c.putImageData(img, 0, 0); }
-      const cx = 128, ey = 121;
-      const blob = (x, y, rx, ry, col) => {
-        const gr = c.createRadialGradient(0, 0, 0, 0, 0, 1);
-        gr.addColorStop(0, col);
-        gr.addColorStop(1, col.replace(/[\d.]+\)$/, "0)"));
-        c.save(); c.translate(x, y); c.scale(rx, ry); c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 1, 0, TAU); c.fill(); c.restore();
-      };
-      blob(cx, 100, 58, 22, "rgba(222,186,152,0.45)");
-      // FACE_REAL_A2: fine lines - three across the forehead, and a soft line under each eye
-      c.strokeStyle = "rgba(104,64,44,0.28)"; c.lineWidth = 1.4;
-      for (const [y, w] of [[88, 34], [96, 40], [104, 36]]) { c.beginPath(); c.moveTo(cx - w, y + 2); c.quadraticCurveTo(cx, y - 3, cx + w, y + 2); c.stroke(); }
-      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(cx + sd * 18, ey + 9); c.quadraticCurveTo(cx + sd * 29, ey + 13, cx + sd * 40, ey + 9); c.stroke(); }
-      for (const sd of [-1, 1]) {
-        blob(cx + sd * 29, ey, 25, 15, "rgba(92,52,34,0.26)");     // FACE_A2: the sockets deeper
-        blob(cx + sd * 60, 112, 16, 26, "rgba(96,58,40,0.18)");    // the temples
-        blob(cx + sd * 44, 162, 22, 18, "rgba(96,58,40,0.16)");    // under the cheekbones
-        blob(cx + sd * 38, 146, 24, 16, "rgba(196,104,84,0.22)");  // the cheeks' colour, softer
-        c.strokeStyle = "rgba(110,70,48,0.4)";
-        c.lineWidth = 1.3;
-        for (const k of [-1, 0, 1]) { c.beginPath(); c.moveTo(cx + sd * 45, ey + k * 2.5); c.lineTo(cx + sd * 54, ey + k * 6 - 1); c.stroke(); }
-        c.strokeStyle = "rgba(110,62,38,0.22)";
-        c.lineWidth = 5;
-        c.beginPath(); c.moveTo(cx + sd * 10, ey + 2); c.lineTo(cx + sd * 12, 152); c.stroke();
-      }
-      blob(cx, 150, 9, 10, "rgba(186,96,80,0.22)");                // FACE_A2: the nose a little redder
-      c.strokeStyle = "rgba(92,54,38,0.22)";                         // and the folds from its wings down to the mouth
-      c.lineWidth = 3;
-      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(cx + sd * 13, 156); c.quadraticCurveTo(cx + sd * 22, 170, cx + sd * 20, 186); c.stroke(); }
-      c.fillStyle = "#8f5a4e";
-      c.fillRect(372, 190, 40, 30);
-    });
-    // the eye: the white, the iris, the pupil and a glint (its front is at a quarter of the width)
-    const texEye = cnv(128, 64, 1, 1, (c) => {
-      // FACE_A2: the white warm and shaded toward its corners, the iris brown (a darker ring, lighter flecks), the glint small
-      c.fillStyle = "#e3d8c8";
-      c.fillRect(0, 0, 128, 64);
-      const sh = c.createRadialGradient(32, 33, 8, 32, 33, 34);
-      sh.addColorStop(0, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(88,60,44,0.45)");
-      c.fillStyle = sh; c.fillRect(0, 0, 128, 64);
-      c.fillStyle = "#2a1a10"; c.beginPath(); c.arc(32, 32, 11.6, 0, TAU); c.fill();
-      c.fillStyle = "#5a3a22"; c.beginPath(); c.arc(32, 32, 10, 0, TAU); c.fill();
-      for (let k = 0; k < 18; k++) { const q = (j) => { const h = Math.sin((k * 3 + j) * 91.17 + 7.3) * 43758.5453; return h - Math.floor(h); }, a = q(0) * TAU, r = 5 + q(1) * 4.5; c.fillStyle = "rgba(150,108,62,0.5)"; c.beginPath(); c.arc(32 + Math.cos(a) * r, 32 + Math.sin(a) * r, 0.9 + q(2), 0, TAU); c.fill(); }
-      c.fillStyle = "#0e0907"; c.beginPath(); c.arc(32, 32, 4.2, 0, TAU); c.fill();
-      c.fillStyle = "rgba(255,250,240,0.85)"; c.beginPath(); c.arc(29.4, 29.2, 1.25, 0, TAU); c.fill();
-    });
+    // FACE_E (fix-e, 22.11.2026; the user's decision 169 b: "מבנה הפרצוף יותר אמיתי" - the faces of all the near figures after the picture
+    // he sent): the skin, the eyes, the brows, the nose, the mouth, the ears, the beard, the moustache and the hair are the one
+    // construction of shared/frag/face.js (tm_face - built once in a house, for this kit and for the crowds' near figures alike). Until
+    // now here: a ball of a head with a nose, lids and lips of small balls on it, round eyes, and a beard of one smooth sheet (FACE_A2,
+    // FACE_REAL_A2 - the user: "הפרצוף עצמו קצת נראה כבובה")
+    const FACE = tm_face();
     const mRobe = mat(0xffffff, { map: texRobe, vertexColors: true, roughness: 0.92 });   // PAYIS_WHITE: one white for every priest
     const mHat = mat(0xffffff, { vertexColors: true, roughness: 0.93 });
-    const mFace = mat(0xffffff, { map: texFace, roughness: 0.78 });
-    const mEye = mat(0xffffff, { map: texEye, roughness: 0.18 });
+    const mFace = mat(0xffffff, { map: FACE.tex.skin, roughness: 0.74 });
+    const mEye = mat(0xffffff, { map: FACE.tex.eye, roughness: 0.14 });
     // tekhelet, argaman ("הצבוע אדום"), tola'at shani, and the white of the linen
     const mSashDyed = mat(0xffffff, { map: weave([["#3d62ab", 4.2], ["#8e1f34", 3.1], ["#c5432b", 1.3], ["#e6e1d3", 1]]), vertexColors: true, roughness: 0.88 });
     const mSashWhite = mat(0xffffff, { map: weave([["#f7f5ee", 4], ["#e0dbcc", 3], ["#ffffff", 2], ["#cfc9b7", 1]]), vertexColors: true, roughness: 0.88 });
     const mBeards = [0xf4f2ec, 0xbdbab2, 0xeae7df, 0x54402f, 0xa29e96, 0xf0eee8, 0x6d5a48].map((c) => mat(c, { map: texHair, vertexColors: true, roughness: 0.95, side: DoubleSide })), mBeardOld = mBeards[0];
     const SASHES = [];   // every avnet's mesh: dyed in the Rambam's reading, white in "של בוץ"
-    // ---------- the head (its middle at HEAD_Y): an egg, narrower at the chin; the nose with its wings, the lids, the lips and the
-    // ears are pieces of its skin
-    const HEAD_Y = 2.075, HR = [0.128, 0.16, 0.14], EYE = [0.044, 0.014, 0.1155], ER = 0.0158, HS = 1.045;   // FACE_REAL_A2 (the user: "פרצופים אמיתיים יותר" - not a doll's): the eyes smaller (0.0206 until now), a little closer, set in to the skin   // FACE_A2: the eyes 0.0206 (0.0222), set in 0.002
+    // ---------- the head (its middle at HEAD_Y): FACE_E - the skull as before (headR: the hats, the mitznefet, the kippot and the
+    // tefillin's strap sit on it), the face, the jaw, the ears, the eyes and the hair of shared/frag/face.js
+    const HEAD_Y = 2.075, HR = FACE.HR, EYE = [FACE.EX, FACE.EY, FACE.EZ + FACE.ER], ER = FACE.ER, HS = 1.045;
     // (the skull's distance from its axis at the angle ph - 0 is the front - and the height y)
     const headR = (ph, y) => {
       const yn = Math.max(-0.999, Math.min(0.999, y / HR[1])), j = yn < 0 ? yn * yn : 0;
       return Math.sqrt(1 - yn * yn) / Math.hypot(Math.sin(ph) / (HR[0] * (1 - 0.2 * j)), Math.cos(ph) / (HR[2] * (1 - 0.1 * j)));
     };
-    const gHeadAll = (() => {
-      const k = new SphereGeometry(1, 28, 20), p = k.attributes.position;
-      for (let i = 0; i < p.count; i++) {
-        const x = p.getX(i), y = p.getY(i), z = p.getZ(i), j = y < 0 ? y * y : 0;
-        p.setXYZ(i, x * HR[0] * (1 - 0.2 * j), y * HR[1], z * HR[2] * (1 - 0.1 * j));
-      }
-      k.computeVertexNormals();
-      const skin = (q) => flatUV(q, 0.75, 0.3), parts = [k];
-      parts.push(skin(at(sph(0.0105, 0.032, 0.017, 8, 6), 0, -0.014, 0.131)));                // the nose (FACE_REAL_A2: of a natural size): its bridge,
-      parts.push(skin(at(sph(0.0135, 0.0125, 0.016, 10, 8), 0, -0.04, 0.1405)));             // its tip,
-      for (const sd of [-1, 1]) {
-        parts.push(skin(at(sph(0.0085, 0.008, 0.009, 6, 5), sd * 0.0135, -0.045, 0.1325)));  // its wings
-        parts.push(skin(at(sph(0.012, 0.03, 0.02, 6, 6), sd * 0.126, 0, -0.004)));           // the ear
-        // the lids: the upper one over the top of the iris, the lower one under it
-        parts.push(skin(at(rot(sph(ER * 1.08, ER * 1.08, ER * 1.08, 12, 6, 0, TAU, 0, 0.74), 0.5), sd * EYE[0], EYE[1], EYE[2])));
-        parts.push(skin(at(rot(sph(ER * 1.07, ER * 1.07, ER * 1.07, 12, 5, 0, TAU, 0, 0.6), Math.PI - 0.42), sd * EYE[0], EYE[1], EYE[2])));
-      }
-      parts.push(flatUV(at(sph(0.021, 0.0052, 0.01, 10, 6), 0, -0.0865, 0.1215), 0.766, 0.2));   // the lips
-      return mergeGeometries(parts);
-    })();
-    const gEyes = mergeGeometries([-1, 1].map((sd) => at(sph(ER, ER, ER, 14, 10), sd * EYE[0], EYE[1], EYE[2])));
-    // ---------- the hair, one piece. THE BEARD IS ONE BODY (the user: "הזקן גוש כזה", then "כמו 6 מלפפונים" - "תסתכל תמונות של
-    // אנשים"): it grows from the cheeks before the ears and from the jaw, lies on the face, and under the chin it hangs and comes
-    // forward to the chest, narrowing; its lower edge is uneven and its face is of strands. With it: the brows, the moustache (two
-    // parts), the hair of the head's top (seen when the migba'at is lifted) and of its back
-    const YJ = -0.118;
-    const hairGeo = () => {
-      const PM = 1.4, w2 = rnd() * 6, len = 0.165 + rnd() * 0.07, parts = [];   // PAYIS_FIGURE4B: full and rounded below
-      parts.push(surf(32, 14, (u, v, o) => {
-        const a = u * 2 - 1, ph = a * PM, ya = Math.abs(a), sd = 1 - v;                      // sd: 0 at the upper edge, 1 at the lower
-        const yTop = -0.094 + 0.124 * Math.pow(ya, 1.3), yBot = -0.07 - len * (1 - Math.pow(ya, 5)) + 0.01 * Math.sin(15 * ph + w2) * (1 - ya);   // PAYIS_FIGURE4C
-        const y = yTop + sd * (yBot - yTop);
-        const strand = Math.sin(24 * ph + 5 * sd + w2), th = (0.004 + 0.03 * Math.pow(Math.sin(Math.PI * Math.min(1, sd * 1.22)), 0.9) + 0.003 * strand + 0.002 * Math.sin(39 * ph - 3 * sd)) * (1 - Math.pow(ya, 5));
-        if (y >= YJ) {
-          const r = headR(ph, y) + th;
-          o.x = Math.sin(ph) * r;
-          o.z = Math.cos(ph) * r;
-        } else {
-          const k = Math.min(1, (YJ - y) / 0.2), r = headR(ph, YJ) + th + 0.028 * Math.sin(Math.PI * Math.min(1, k * 1.3)) * Math.abs(Math.sin(ph));
-          o.x = Math.sin(ph) * r * (1 - 0.08 * k * k);
-          o.z = Math.cos(ph) * r * (1 - 0.1 * k) + 0.05 * k * Math.max(0, Math.cos(ph));
-        }
-        o.y = y;
-        o.c = 0.87 + 0.13 * (0.5 + 0.5 * strand) - 0.05 * sd;
-        o.tu = u * 1.4;
-        o.tv = v;
-      }, true));
-      for (const sd of [-1, 1]) {
-        parts.push(white(at(rot(sph(0.026, 0.0062, 0.01, 8, 5), 0, 0, -sd * 0.04), sd * EYE[0], 0.05, 0.1262)));   // the brow (FACE_REAL_A2: finer)
-        parts.push(white(at(rot(sph(0.037, 0.0125, 0.016, 10, 6), 0, 0, -sd * 0.4), sd * 0.027, -0.066, 0.127)));     // the moustache
-      }
-      parts.push(white(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 20, 6, 0, TAU, 0, 1.08)));
-      parts.push(white(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 14, 8, Math.PI + 0.3, Math.PI - 0.6, 1.08, 1.4)));
-      return mergeGeometries(parts);
-    };
-    const gHairs = [hairGeo(), hairGeo(), hairGeo(), hairGeo()];   // four beards, a little different
-    const headOn = (f, y, mHair, k) => {
+    // FACE_E: TWO LEVELS - the full face near (the opening of the eyes in the skin and their balls, every fold, the beard's locks) and
+    // the same face in fewer faces from LOD_FAR amot of the eye (the eyes drawn on the skin); one geometry of each for every figure
+    // The near level is made only when a figure first comes near the eye (the load time: nothing of it is built before)
+    const LOD_FAR = 9, gHeadLo = FACE.head("lo"), _lv = new Vector3();
+    // four beards, a little different: their length below the chin and their waves (the same fixed sequence as until now)
+    const HAIRV = [0, 1, 2, 3].map(() => { const w2 = rnd() * 6, len = 0.165 + rnd() * 0.07; return { w2, len }; });
+    // (face.js's length is from the chin's foot, -0.153; until now from -0.07 - so that the beards end where they did: less 0.083)
+    const hairGeo = (d, k, beard) => { const v = HAIRV[(k || 0) % HAIRV.length]; return FACE.hair({ d, len: v.len - 0.083, w2: v.w2, beard: beard || "full" }); };
+    // the head's hair takes the figure's own hair material (its colour) with the hairs' texture of face.js - its edges thinning out to
+    // single hairs (alphaTest); near, with a soft sheen along the strands (face.js hairMats)
+    const headOn = (f, y, mHair, k, o) => {
       const hg = new Group();
       hg.position.y = y;
-      hg.add(new Mesh(gHeadAll, mFace));
-      hg.add(new Mesh(gEyes, mEye));
-      hg.add(new Mesh(gHairs[(k || 0) % gHairs.length], mHair));
+      const F = { k: k || 0, beard: (o && o.beard) || "full", mH: FACE.hairMats(mHair), hair: {} }, lod = new LOD(), hi = new Group(), lo = new Group();
+      F.hair.lo = new Mesh(hairGeo("lo", F.k, F.beard), F.mH.lo);
+      lo.add(new Mesh(gHeadLo, mFace), F.hair.lo);
+      lod.addLevel(hi, 0, 0.1);
+      lod.addLevel(lo, LOD_FAR, 0.1);
+      const fill = () => { F.hair.hi = new Mesh(hairGeo("hi", F.k, F.beard), F.mH.hi); hi.add(new Mesh(FACE.head("hi"), mFace), new Mesh(FACE.eyes(), mEye), F.hair.hi); hi.updateMatrixWorld(true); };   // (made during a frame: placed at once)
+      lod.update = function (cam) {
+        if (!F.hair.hi && this.getWorldPosition(_lv).distanceTo(cam.position) / (cam.zoom || 1) < LOD_FAR * 1.4) fill();
+        return LOD.prototype.update.call(this, cam);
+      };
+      hg.add(lod);
+      hg.userData.face = F;
       f.add(hg);
       return hg;
+    };
+    // a head without a beard (the Levites' little ones, 55-tamid.js): the brows and the hair only, of the material m (the hair's colour)
+    const headBare = (hg, m) => {
+      const F = hg.userData.face;
+      if (!F) return;
+      F.beard = "none";
+      if (m) F.mH = FACE.hairMats(m);
+      for (const d of ["hi", "lo"]) if (F.hair[d]) { F.hair[d].geometry = hairGeo(d, F.k, "none"); F.hair[d].material = F.mH[d]; }
     };
     // ---------- the kutonet (the site's drawing 200 - the user: "הכתונת טובה"): straight, falling from the shoulders - the body's
     // breadth and depth at each height; soft folds of the cloth below the avnet
