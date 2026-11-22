@@ -712,9 +712,11 @@
       const standF = () => {
         const S = SP1(), o = SHL.offF || { x: 0, z: 0.9 };
         if (!S) return [0, 0];
+        if (S.kit && S.kit.lake && S.kit.standFor) { const q = S.kit.standFor(o); return [q.x, q.z]; }   // NATURAL_POOL (decision 122 b): on the bank, beside the fall
         const y = S.yaw || 0, c = Math.cos(y), n = Math.sin(y);
         return [S.spout[0] - (o.x * c + o.z * n), S.spout[2] - (-o.x * n + o.z * c)];
       };
+      const standYaw = () => { const S = SP1(); if (!S) return 0; if (S.kit && S.kit.lake && S.kit.standFor) return S.kit.standFor(SHL.offF || { x: 0, z: 0.9 }).yaw; return S.yaw || 0; };
       const buildDemo = () => {
         if (SHL.D) return SHL.D;
         const DG = new Group();
@@ -785,9 +787,9 @@
           const glowTex = (() => { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const c2 = cv.getContext("2d"); const gr = c2.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, "rgba(255,190,90,0.85)"); gr.addColorStop(0.4, "rgba(255,140,40,0.35)"); gr.addColorStop(1, "rgba(255,120,20,0)"); c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64); return new CanvasTexture(cv); })();
           const glowM = new SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: AdditiveBlending });
           const fol = [], LANES = [-2.0, -0.9, 0.9, 2.0];
-          for (let i = 0; i < 36; i++) {
+          for (let i = 0; i < 72; i++) {   // "מלא אנשים" (the user, 12:09, on the Second Temple's procession; as there: a great crowd)
             const G = new Group(); G.visible = false; DG.add(G);
-            const kid = i === 17 || i === 29, boy = !kid && i % 5 === 3;
+            const kid = i === 17 || i === 29 || i === 47 || i === 61, boy = !kid && i % 5 === 3;
             PP.crowd(G, [[0, 0, 0]], { y: 0, s: kid ? 0.8 : boy ? 1.05 : 1.4, pose: "stand", kind: kid || boy ? "student" : "worker", robe: COL[(i * 5) % COL.length], tone: () => i % 4, exact: true, name: "shiloachProcession1" });
             let fl = null;
             if (!kid) {
@@ -795,9 +797,9 @@
               T0.add(new Mesh(stickG, torchM));
               fl = new Mesh(flameG, flameM); fl.position.y = 1.1; T0.add(fl);
               const gl = new Sprite(glowM); gl.scale.set(1.7, 1.7, 1); gl.position.y = 0.2; gl.userData.noPick = true; fl.add(gl);
-              if (i % 6 === 2) { const lt = new PointLight(0xffa040, 22, 20, 1.6); lt.position.y = 0.25; fl.add(lt); }
+              if (i % 12 === 2) { const lt = new PointLight(0xffa040, 22, 20, 1.6); lt.position.y = 0.25; fl.add(lt); }   // six lights in all (each light costs every material)
             }
-            const lead = i < 12, k = lead ? i : i - 12;
+            const lead = i < 24, k = lead ? i : i - 24;
             fol.push({ G, fl, lag: i * 0.37, d: lead ? -(1.2 + k * 0.5) : 1.0 + k * 0.55, side: LANES[i % 4] + (((i * 7) % 5) - 2) * 0.08, rank: lead ? k * 0.5 : 0 });
           }
           // a Levite with a lyre at the spring
@@ -836,7 +838,7 @@
       // The cliff in the slope (west), the water out to the east, toward the valley's floor; the great pool south of it, before its face;
       // the way comes down the valley from the north, to its east side. The mouth's height is measured on the priest's own figure, as there.
       // SPRING_C = null builds nothing (and hides the demonstration and its places).
-      const SPRING_C = { x: 470, z: 556, yaw: -Math.PI / 2, approach: [478, 538], pool: { dx: 12, dz: -6, w: 15, d: 8 } };   // { x, z, yaw, approach: [x, z] (the way's end before it), pool: { dx, dz, w, d } (the kit's frame) }
+      const SPRING_C = { x: 470, z: 556, yaw: -Math.PI / 2, approach: [478, 538] };   // { x, z, yaw, approach: [x, z] (the way's end before it), lake (the kit's own: the natural pool, decision 122 b) }
       let springLabel = null;
       if (SPRING_C) {
         ctx.shared.shiloach1 = { place: SPRING_C };
@@ -870,7 +872,7 @@
           const g0 = Wl(0, -0.9), gy = groundY(g0[0], g0[1], 60);
           const mouthY = gy + Math.max(1.15, SHL.offF.y + 0.34), basinY = gy + 0.36;
           const kit = tm_shiloach(ctx, { x: C.x, z: C.z, mouthY, yaw, ground: (x, z) => groundY(x, z, 60), parent: ctx.root, seed: 4706, name: "shiloachSpring1",
-            basinY, basinDz: 0.55, fallZ: 0.5, pool: C.pool || null, lights: { torch: 85, moon: 34 },
+            basinY, basinDz: 0.55, fallZ: 0.5, pool: null, lake: C.lake, lights: { torch: 85, moon: 34 },   // NATURAL_POOL (122 b): the fall into a natural pool, no walled pool
             sfx: (nm, op) => { if (fnc(ctx.shared.sfx)) ctx.shared.sfx(nm, op); }, roar: { name: "water", dur: 4.5, gain: 3.2 } });
           mergeStatic(kit.G);
           kit.setBottom(basinY);
@@ -890,7 +892,9 @@
         return SHL.spring;
       };
       // built at the first frame (the floor's ray needs the whole scene), as the Second Temple's
-      if (SPRING_C) ctx.animated.push(() => { if (SHL.spring === undefined && fnc(ctx.shared.floorY)) buildSpring(); });
+      // built when the eye comes within 300 amot of it, or when the demonstration starts (as the Second Temple's, d6d17d1: not at the first
+      // frame - the load time)
+      if (SPRING_C) { const VS = new Vector3(SPRING_C.x, -50, SPRING_C.z); ctx.animated.push(() => { if (SHL.spring === undefined && fnc(ctx.shared.floorY) && ctx.camera && ctx.camera.position.distanceTo(VS) < 300) buildSpring(); }); }
       // ---- the ways (each [x, z] in the world). Out: the inner court's east gate (x 93.5, its round steps to the outer court's floor),
       // the outer court's east gate (x 228.5) and its steps, the great court to its east gate (x 353) and down its 56 stairs (to x 383.5,
       // y -28); then to the spring. Back: up the stairs, across the great court south of the outer court, to the inner court's south-eastern
@@ -908,7 +912,7 @@
           { pts: [[226.5, 0], [229.5, 0], [233, 0], [300, 0], [355.5, 0]], t: [T.decl1 + 0.2, T.east1], near: 4, proc: true },
           { pts: [[355.5, 0], [383.5, 0]], t: [T.east1, T.steps1], stairs: [0, -28], proc: true },
           { pts: V, t: [T.steps1, T.path1], terrain: true, proc: true },
-          { pts: [V[V.length - 1], standF()], t: [T.path1, T.rim1], terrain: true, endYaw: SP1() ? SP1().yaw || 0 : 0 },   // his face to the spout
+          { pts: [V[V.length - 1], standF()], t: [T.path1, T.rim1], terrain: true, endYaw: standYaw() },   // his face to the fall
           { pts: [standF()].concat(Vr.slice(1)), t: [T.back0, T.backS], terrain: true, proc: true },
           { pts: [[383.5, 0], [355.5, 0]], t: [T.backS, T.back1], stairs: [-28, 0], proc: true },
           { pts: [[355.5, 0], [336, 6], [300, 74], [250, 86], [150, 90], [60, 90], [44, 86], [40, 80.5]], t: [T.back1 + 0.1, T.wg0], near: 4, proc: true },   // the procession with him, south of the outer court
@@ -1036,7 +1040,7 @@
           let x = qq[0] + Math.cos(yaw) * F.side, z = qq[1] - Math.sin(yaw) * F.side;
           let ry = t >= w.t[1] && w.endYaw != null && w === wp ? w.endYaw : yaw, near = w.stairs ? lerp(w.stairs[0], w.stairs[1], u) + 1 : w.terrain ? 60 : 4;
           if (atK > 0) {
-            const row = i % 4, k = Math.floor(i / 4), ph = (-30 + 55 * (k + 0.5 * (row % 2)) / 9.5) * Math.PI / 180, r = 5.5 + row * 1.3;
+            const row = i % 6, k = Math.floor(i / 6), ph = (-45 + 50 * (k + 0.5 * (row % 2)) / 12.5) * Math.PI / 180, r = 5.5 + row * 1.2;   // six rows, before the cliff, clear of the pool and of the eye across it
             const lx = Math.sin(ph) * r, lz = -Math.cos(ph) * r, ax = sf[0] + lx * sc + lz * sn, az = sf[1] - lx * sn + lz * sc;
             x = lerp(x, ax, atK); z = lerp(z, az, atK); near = 60;
             if (atK > 0.5) ry = Math.atan2(sf[0] - x, sf[1] - z);
@@ -1049,7 +1053,7 @@
         // the Levite with the lyre at the spring: on its east, by the pool's corner, his face to the priest (seen behind him from the eye)
         const lvOn = !!S && t >= T.path1 - 1 && t < T.back0 + 1.6;
         D2.lev.visible = lvOn;
-        if (lvOn) { const lp = S.Wl ? S.Wl(2.8, -4.6) : [sf[0] + 2.8, sf[1] - 3.2]; D2.lev.position.set(lp[0], yAt(D2, lp[0], lp[1], 60), lp[1]); D2.lev.rotation.y = Math.atan2(sf[0] - lp[0], sf[1] - lp[1]); }
+        if (lvOn) { const lp = S.Wl ? S.Wl(-3.0, -2.6) : [sf[0] - 2.1, sf[1] - 2.1]; D2.lev.position.set(lp[0], yAt(D2, lp[0], lp[1], 60), lp[1]); D2.lev.rotation.y = Math.atan2(sf[0] - lp[0], sf[1] - lp[1]); }
         // the libation: the wine's priest with him up the ramp, to the eastern bowl; the deputy on the south-west horn
         const w2 = D2.w, wOn = t >= T.in1 - 1.2 && t < T.end;
         w2.g.visible = wOn;
@@ -1103,7 +1107,7 @@
           // the spring (as the Second Temple's: the cliff, the opening and the pool at a man's height; the filling closer, from the side)
           [T.path1 - 2.2, kp(10.5, sy + 9, -35.4), kp(2.5, sy + 4, -1.4)],
           (() => { const p = pAt(T.path1 - 0.4), sp = S.spout; return [T.path1 - 0.4, kp(10, sy + 4.5, -16), [lerp(p[0], sp[0], 0.35), sy + 1.6, lerp(p[2], sp[2], 0.35)]]; })(),   // he comes in, the cliff beside
-          [T.rim1, kp(-3.8, sy + 1.8, -1.9), kp(0.6, M - 0.1, -0.5)], [T.fill1, kp(-3.4, sy + 1.7, -1.7), kp(0.6, M - 0.1, -0.5)],
+          [T.rim1, kp(3.4, sy + 2.0, -5.6), kp(-0.4, M - 0.3, -0.4)], [T.fill1, kp(3.0, sy + 1.8, -5.0), kp(-0.4, M - 0.3, -0.4)],   // across the pool (as the Second Temple's)
           off(T.back0 + 1.0, [9, 8, 13]),   // he turns back with the full flask
           off(T.back0 + 3.2, [-10, 20, -40]), off(T.back0 + 6.2, [-10, 20, -40]),   // up the valley: before them, looking back at them
           [T.backS - 0.6, [404, -12, 24], [384, -27, 2]], [T.back1 - 0.4, [372, 8, 22], [354, 2, 0]],
@@ -1186,7 +1190,7 @@
       (ctx.shared.demoStops || (ctx.shared.demoStops = [])).push({ id: "shiloachDemo1", running: () => SHL.run, stop,
         pause: () => { const w = walkEntry(); if (w && w.pause) w.pause(); }, resume: () => { const w = walkEntry(); if (w && w.resume) w.resume(); },
         paused: () => { const w = walkEntry(); return !!(w && w.paused && w.paused()); }, restart: () => { stop(); start(); } });
-      ctx.shared.shiloachDemo1 = { start, stop, T, get on() { return SHL.run; }, at: (t) => { buildSpring(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); }, ways: () => WAYS(), spring: () => buildSpring() };
+      ctx.shared.shiloachDemo1 = { start, stop, T, get on() { return SHL.run; }, at: (t) => { buildSpring(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); }, ways: () => WAYS(), spring: () => buildSpring(), keys: () => keys() };
     }
 
     // ---------- 11. THE THIRTEEN SHOFAROT (item 22; the user's decision 112 ג, 22.11.2026 12:09: a switch of its own, off) ----------

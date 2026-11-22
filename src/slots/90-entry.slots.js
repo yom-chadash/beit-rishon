@@ -138,7 +138,7 @@
 //@@begin after-root
   // PARALLELS_C (fix-c, 22.11.2026; as the Second Temple's SHILOACH_305): the limits of the view, for a demonstration that walks beyond
   // them (59-parallels.js: the pilgrim's walk, the Shiloach) - widened while it runs and given back after
-  ctx.shared.viewLimits = { get: () => ({ R: ent_view.R, yMin: ent_view.yMin, yMax: ent_view.yMax }), set: (o) => { if (o) Object.assign(ent_view, o); }, include: (q) => ent_viewInclude(q) };
+  ctx.shared.viewLimits = { get: () => ({ R: ent_view.R, yMin: ent_view.yMin, yMax: ent_view.yMax }), set: (o) => { if (o) Object.assign(ent_view, o); }, include: (q) => { const R = ent_view.R; ent_viewInclude(q); ent_view.R = Math.max(R, ent_view.R); } };   // (include widens, never narrows: a walk includes all its keys)
   ctx.shared.floorY = ctx.shared.floorY || ((x, y, z) => cam_floorY({ x, y, z }));   // the floor under a point (the walking mode's solids), as the Second Temple's
   // 1.9.2 / 1.3.4 (the user's recording: a chamber's roof came back while the eye was inside it, and all one saw was the stone):
   // ctx.shared.camUnder(list) - is the eye under one of these pieces (inside its plan, below its top)? Their boxes are taken once.
