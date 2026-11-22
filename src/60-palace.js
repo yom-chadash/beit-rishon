@@ -2069,11 +2069,11 @@
       lid.add(lidMesh);
       midr.add(lid);
       const scroll = new Group();
-      try { scroll.add(pal_torahGroup()); }   // TORAH_B2: the upright scroll in its mantle
+      try { const tg = pal_torahGroup(); tg.scale.setScalar(1.0 / 1.14); scroll.add(tg); }   // TORAH_B2: the upright scroll in its mantle - an amah high (the user: "בערך 1.0 אמה")
       catch (_) { const sg = pal_scrollGeos(); scroll.add(new Mesh(sg.rollers, vesselGold), new Mesh(sg.parchment, linen)); }
       scroll.name = "throneScroll";
       midr.add(scroll);
-      const SCR_HOME = [ARK.x, ARK.y + 0.045, ARK.z], SCR_LAP = [X, sTop + 0.37, zKing + 0.4], SCR_TILT = -0.12, SCR_UP = 1.24;   // TORAH_B2: standing on his thighs, its back against his belly (SCR_TILT), in every version; SCR_UP - the dove over its top   // in the ark; on the seat, the king's lap ("לתוך חיקו"; "על ברכיו"; "בידוי")
+      const SCR_HOME = [ARK.x, ARK.y + 0.045, ARK.z], SCR_LAP = [X, sTop + 0.37, zKing + 0.36], SCR_TILT = 0.2, SCR_ROLL = -0.07, SCR_UP = 1.1;   // TORAH_B2: its foot on his thighs, its head leaning forward and a little out, away from his beard (the user: "ראשו נוטה קדימה, הרחק מהזקן"), in every version; SCR_UP - the dove over its top   // in the ark; on the seat, the king's lap ("לתוך חיקו"; "על ברכיו"; "בידוי")
       scroll.position.set(SCR_HOME[0], SCR_HOME[1], SCR_HOME[2]);
       // the silver dragon in the mechanism ("ותנינא דכספא חד במכונוי"; "תנין של כסף היה טוען גלגל של כסא"), on the body's top at its east end,
       // with its wheel before it (model choice)
@@ -2210,10 +2210,10 @@
           const x = SCR_HOME[0] + (P[0] - SCR_HOME[0]) * u, y = SCR_HOME[1] + (P[1] - SCR_HOME[1]) * u + 0.9 * 4 * u * (1 - u), z = SCR_HOME[2] + (P[2] - SCR_HOME[2]) * u;
           dove.position.set(x, y + SCR_UP, z);
           scroll.position.set(x, y, z);
-          scroll.rotation.x = SCR_TILT * u;   // TORAH_B2: upright out of the ark, leaning on him on the lap
+          scroll.rotation.x = SCR_TILT * u; scroll.rotation.z = SCR_ROLL * u;   // TORAH_B2: upright out of the ark, leaning on the lap
         } };
         tr.push(T.move(dove, home, over, t0, t0 + 2.5, arc), T.lid(t0 + 2.5, t0 + 3.5, true), T.move(dove, over, low, t0 + 3.5, t0 + 4), carry, T.move(dove, lap, home, t0 + 7.5, t0 + 10, arc * 0.6));
-        tr.push(T.move(scroll, P, SCR_HOME, tEnd - 1.6, tEnd - 0.5, 0.6), { a: tEnd - 1.6, b: tEnd - 0.5, f: (u) => { scroll.rotation.x = SCR_TILT * (1 - u); } }, T.lid(tEnd - 0.5, tEnd, false));
+        tr.push(T.move(scroll, P, SCR_HOME, tEnd - 1.6, tEnd - 0.5, 0.6), { a: tEnd - 1.6, b: tEnd - 0.5, f: (u) => { scroll.rotation.x = SCR_TILT * (1 - u); scroll.rotation.z = SCR_ROLL * (1 - u); } }, T.lid(tEnd - 0.5, tEnd, false));
       };
       // a figure flies to a place and spreads its wings (an eagle), turning to face the hall; back to its own place and pose
       const flyOut = (tr, fig, p0, p1, a, b, arc = 0.8) => {

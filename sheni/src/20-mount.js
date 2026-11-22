@@ -423,7 +423,7 @@
     // ROSES_B2 (fix-b2, 22.11.2026 - the user's decisions 76, 77): the rose garden - a hidden layer outside the Kiponos gate (shared/frag/
     // rose-garden.js), on the place's feature "גנת הוורדים — מחוץ לשער קיפונוס"
     try {
-      const RG = tm_roseGarden(ctx2, { x0: -188, x1: -162, z0: 18, z1: 44, ground: terrainH, open: "e", name: "roseGarden" });
+      const RG = tm_roseGarden(ctx2, { x0: -177, x1: -149.6, z0: 12, z1: 38, ground: terrainH, open: "n", wall: "e", name: "roseGarden" });
       ctx2.shared.features = ctx2.shared.features || {};
       ctx2.shared.features.roseGarden = { key: "roseGarden", timed: false, isOn: () => RG.visible, on: () => { RG.visible = true; }, off: () => { RG.visible = false; } };
     } catch (e) { console.warn("[mount] rose garden skipped", e && e.message); }

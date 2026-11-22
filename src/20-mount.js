@@ -250,7 +250,7 @@
     // ROSES_B2 (fix-b2, 22.11.2026 - the user's decision 77 of 02:27: "שכבה כבויה גם בבית ראשון; מקום — צילום לאישור"): the rose garden
     // outside the west gate (shared/frag/rose-garden.js), on the place's feature "גנת הוורדים — מחוץ לשער המערב"
     try {
-      const RG = tm_roseGarden(ctx, { x0: -188, x1: -162, z0: 18, z1: 44, ground: terrainH, open: "e", name: "roseGarden" });
+      const RG = tm_roseGarden(ctx, { x0: -177, x1: -149.6, z0: 12, z1: 38, ground: terrainH, open: "n", wall: "e", name: "roseGarden" });
       ctx.shared.features = ctx.shared.features || {};
       ctx.shared.features.roseGarden = { key: "roseGarden", timed: false, isOn: () => RG.visible, on: () => { RG.visible = true; }, off: () => { RG.visible = false; } };
     } catch (e) { console.warn("[mount] rose garden skipped", e && e.message); }
