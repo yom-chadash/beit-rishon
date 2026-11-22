@@ -780,15 +780,17 @@
       // DEMOS_GROUP_300: the First Temple's demonstrations, for the group "הדגמות" at the head of the panel (built below, before the loop of
       // the places): a place's own item, or the pill's on the model; the throne's two need a midrash's throne (in the verses' reading
       // there is no ascent and no witnesses): Targum Sheni's, as the presentation shows them
+      // MENU_149_D (fix-d, the user's decision 149 ג): the demonstrations too along the route of the places - the palace, the altar's laver,
+      // the cells, the house's doors, the ark into the devir (a demonstration of the City of David, when it comes, goes first)
       function ui_demosList() {
         const thr = () => { const V = ctx.shared.throneVersion; if (V && V.current === "pesukim" && typeof V.set === "function") V.set("targumSheni"); };
         return [
-          { t: "המכונה מביאה את הכיור — לקידוש ידיים ורגליים ולהדחת העולה", pill: "mechonaDemo" },
-          { t: "פתיחת דלתות ההיכל", place: "פתיחת דלתות ההיכל — הדגמה" },
-          { t: "״דבקו שערים״ — הכנסת הארון", pill: "arkGatesDemo" },
-          { t: "עלייה בלולים", pill: "hei-lulim-demo" },
           { t: "עליית המלך לכסא", pill: "palaceThroneAscent", layer: "palace", run: thr },
-          { t: "עדי השקר — הכסא מרעיש", pill: "palaceThroneWitnesses", layer: "palace", run: thr, fly: "throneSteps" }   // DEMO_FLY_301
+          { t: "עדי השקר — הכסא מרעיש", pill: "palaceThroneWitnesses", layer: "palace", run: thr, fly: "throneSteps" },   // DEMO_FLY_301
+          { t: "המכונה מביאה את הכיור — לקידוש ידיים ורגליים ולהדחת העולה", pill: "mechonaDemo" },
+          { t: "עלייה בלולים", pill: "hei-lulim-demo" },
+          { t: "פתיחת דלתות ההיכל", place: "פתיחת דלתות ההיכל — הדגמה" },
+          { t: "״דבקו שערים״ — הכנסת הארון", pill: "arkGatesDemo" }
 //@@end altarShift
 //@@begin buildUI.after-PLACES
         ["הר הבית והחצרות", [
@@ -1482,7 +1484,7 @@
             ["none", "רבי יוסי ברבי יהודה — ״זה הסובב״: בלי ציורים", "**רבי יוסי ברבי יהודה** (זבחים סב.): ״זה הסובב״ — הכרכוב שבפסוק הוא הסובב, ואין ציורים.\n**הרמב״ם** אינו מזכיר כיור במזבח (תמה עליו תפארת ישראל, יכין מידות ג, ד: ״ותמהני שהשמיטו הרמב״ם, והרי קיי״ל כרבי מחברו״).\n**במודל:** בלי פרחים וציצים."]],
           current: "rabbi",
           onPick: (k) => { const K = ctx.shared.karkov; if (K && typeof K.set === "function") K.set(k); },
-          fly: () => flyView("mizbeach")
+          fly: () => { const fp = resolveFp("mizbeach"); if (fp) fly(fp.pos, fp.target); }   // MENU_149_D: flyView (buildUI.sp) is not in scope here - the row's view threw
         });
         // 1.3.3 (the user: "ספלים — להוסיף בשיטות"): the libation bowls by the south-west horn - ctx.shared.sfalim (40-altar.js), a completion
         // from the Mishnah as the shitin; the holes' two readings are the row "ספלי הניסוך" (its chips on this card)
@@ -1601,24 +1603,26 @@
       // title not listed keeps its place after the listed ones.
       {
         const ORDER = {
-          "הר הבית והחצרות": ["הר הבית והחצר הגדולה", "השער המזרחי", "ארון יהוידע שבשער — לתקלין עתיקין", "ארון יהוידע אצל המזבח — לתקלין חדתין", "החצר החיצונה", "לשכות החצר החיצונה", "העמוד — מקום המלך", "שתי הסנהדראות הקטנות",
-            "החצר הפנימית — חצר הכהנים", "חצר הכהנים", "בר שורא", "רצפת חצר הכהנים", "לשכת הגזית", "בית המטבחים", "בית המטבחים — מקרוב", "שערי חצר הכהנים",
-            "המעלות אל הבית"],
-          // 1.3.5 (the user: "סידורם לפי מצלמה, שלא יהיה קפיצות, כולל הדברים החדשים"): the three groups of the house and the altar too. The
-          // altar and what is on it, its ramp, the Levites' place east of it, the Sea in the north-east, the axis from the east and from the
-          // house's door, the laver and the bases in the south-west, the pillars; the house from outside - the ulam, its tables, the
-          // wickets of its wings, the house, its roofs, the devir from behind and the lul; inside - from the door westward, each thing
-          // where the eye passes it (the sotah's slab by the door, the golden altar before the tables' rows), and the floor's slope last
-          "המזבח וכלי הנחושת": ["מזבח הנחושת", "מידות המזבח", "היסוד, הסובב וחוט הסיקרא", "השיתין", "הכבש", "עולים במזרח ויורדים במערב — הכבש", "מקום הלויים המשוררים", "הים של שלמה",
-            "שנים עשר הבקר", "קו ציר הבית", "מפתח ההיכל אל המזבח", "כיור משה", "עשר המכונות והכיורות", "המכונות מקרוב", "יכין ובועז — מבט מפתח האולם",
-            "יכין — מבעד לפתח", "בועז — מבעד לפתח", "בועז — מרחוק", "כותרת העמוד", "כלי הבית"],
-          "הבית מבחוץ": ["האולם ובית החליפות", "פתח האולם ודלתותיו", "שולחנות האולם", "פשפשי בית החליפות", "הבית (בית ה׳)", "חלוני שקופים אטומים", "בית דילפא",
-            "גג הבית ותקרותיו", "העליות", "קודש הקדשים מבחוץ", "הלול שאחורי בית הכפורת"],
+          // MENU_149_D (below): the groups and the places in them along one route from outside in
+          "הר הבית והחצרות": ["הר הבית והחצר הגדולה", "משמרות השוערים", "השער המזרחי", "ארון יהוידע שבשער — לתקלין עתיקין", "החצר החיצונה", "לשכות החצר החיצונה", "שתי הסנהדראות הקטנות",
+            "העמוד — מקום המלך", "החצר הפנימית — חצר הכהנים", "חצר הכהנים", "בר שורא", "שערי חצר הכהנים", "רצפת חצר הכהנים", "לשכת הגזית", "בית המטבחים", "בית המטבחים — מקרוב",
+            "ארון יהוידע אצל המזבח — לתקלין חדתין"],
+          // 1.3.5 (the user: "סידורם לפי מצלמה, שלא יהיה קפיצות, כולל הדברים החדשים"); MENU_149_D: from the court's east - the axis seen from
+          // the east, the Levites' place east of the altar, the Sea and its oxen in the north, the altar and what is on it, its south-west
+          // corner and the ramp in the south, the laver and the bases, the view from the house's door, the pillars
+          "המזבח וכלי הנחושת": ["קו ציר הבית", "מקום הלויים המשוררים", "הים של שלמה", "שנים עשר הבקר", "מזבח הנחושת", "מידות המזבח", "היסוד, הסובב וחוט הסיקרא", "השיתין",
+            "הכבש", "עולים במזרח ויורדים במערב — הכבש", "כיור משה", "עשר המכונות והכיורות", "המכונות מקרוב", "מפתח ההיכל אל המזבח", "יכין ובועז — מבט מפתח האולם",
+            "יכין — מבעד לפתח", "בועז — מבעד לפתח", "בועז — מרחוק", "כותרת העמוד"],
+          "הבית מבחוץ": ["המעלות אל הבית", "האולם ובית החליפות", "פתח האולם ודלתותיו", "שולחנות האולם", "פשפשי בית החליפות", "הבית (בית ה׳)", "חלוני שקופים אטומים", "בית דילפא",
+            "גג הבית ותקרותיו", "העליות", "הלול שאחורי בית הכפורת", "קודש הקדשים מבחוץ", "גנת הוורדים"],
           "הבית מבפנים": ["פתח ההיכל ודלתותיו", "פתיחת דלתות ההיכל", "ההיכל", "טבלת השיש", "גילופי הקירות", "שכבות הקיר והרצפה", "רצפת הבית", "מזבח הזהב",
             "שכבות מזבח הזהב", "סידור הכלים", "מנורת משה", "שולחן משה ועשרה", "שולחן משה מקרוב", "רתוקות הזהב", "אמה טרקסין", "פתח הדביר", "הפרוכת",
-            "הפרוכת מצד הדביר", "קודש הקדשים — הדביר", "הכרובים", "הארון ובדיו", "מה שבתוך הארון", "אבן השתייה", "עליית קודש הקדשים", "שיפוע רצפת הבית"],
+            "הפרוכת מצד הדביר", "קודש הקדשים — הדביר", "הכרובים", "הארון ובדיו", "מה שבתוך הארון", "אבן השתייה", "עליית קודש הקדשים", "הכנסת הארון", "שיפוע רצפת הבית",
+            "כלי הבית"],
+          // MENU_149_D: from the far end of the palace's great court toward the house - the forest house, the halls, the house of Pharaoh's
+          // daughter, the other court, the garden, the king's house, and his ascent to the house of the Lord (the next group, the mount)
           "בית שלמה": ["החצר הגדולה", "בית יער הלבנון", "פנים בית יער הלבנון", "קירוי בית יער הלבנון", "העמודים והעב", "אולם העמודים",
-            "אולם הכסא ואולם המשפט", "כסא שלמה", "עליית המלך לכסא", "בית בת פרעה", "בית המלך", "החצר האחרת", "הגן", "המעלות מבית המלך"],
+            "אולם הכסא ואולם המשפט", "כסא שלמה", "עליית המלך לכסא", "בית בת פרעה", "החצר האחרת", "הגן", "בית המלך", "המעלות מבית המלך"],
           "השלמות מחז״ל ובחירות מודל": ["מידות החצרות", "גובה חומות החצרות", "שערי החצר הגדולה", "העמוד — במה", "רצפת השיש בחצר הכהנים",
             "לשכת הגזית — מקורות", "בית המטבחים — הטבעות", "הכבש והקרנות", "מקום המזבח", "השיתין", "היסוד, הסובב", "הכבשים הקטנים",
             "מקום הכיורות והים", "כיור משה — שני הברזים", "המכונות — האופנים", "המכונות — שלוש מסגרות", "ברזי הכיורות", "הדגמת המכונה",
@@ -1628,6 +1632,27 @@
             "הפרוכת — נשרים", "פתח הדביר — שני ביאורי", "אמה טרקסין — שלושה חלקים", "גוף הכרובים", "תבנית הכרובים", "מקום בית שלמה",
             "בית יער הלבנון — שלוש שיטות", "הסרת הנסרים", "כסא שלמה — הגרסאות", "החצר האחרת ובית בת פרעה", "בית המלך והגן"]
         };
+        // MENU_149_D (fix-d, 22.11.2026 - the user's decision 149 ג, the coordinator's execution): ONE ROUTE FROM OUTSIDE IN, as in the
+        // Second Temple's panel - from the City of David up to the palace, by "המעלות מבית המלך אל בית ה׳" to the mount, its east gate,
+        // the outer court, the inner court, the altar, the house from outside, the cells, inside, the devir. Three places move to where the
+        // eye passes them: the steps to the house (האוטם) open "הבית מבחוץ", the rose garden west of the house closes it, and the vessels of
+        // the house close the inside. CITY_RE - the places of the City of David (agent C's layer: עיר דוד, המלוא, the spring, קברי בית דוד,
+        // גן המלך): a group of them goes before "בית שלמה", and such a place in another group goes to the head of "בית שלמה" - so that
+        // places added later find their spot by themselves. KEEP THIS BLOCK THE LAST WORD ON THE ORDER of the places (after every insertion).
+        const CITY_RE = /עיר דוד|המלוא|מעי?ין|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/;
+        const grpOf = (n) => PLACES.find((g) => g[0] === n);
+        const moveTo = (title, to) => {
+          const dst = grpOf(to);
+          if (!dst) return;
+          for (const g of PLACES) {
+            if (g === dst) continue;
+            const k = g[1].findIndex((it) => it && String(it.t).startsWith(title));
+            if (k >= 0) { dst[1].push(g[1].splice(k, 1)[0]); return; }
+          }
+        };
+        moveTo("המעלות אל הבית", "הבית מבחוץ");
+        moveTo("גנת הוורדים", "הבית מבחוץ");
+        moveTo("כלי הבית", "הבית מבפנים");
         for (const g of PLACES) {
           const want = ORDER[g[0]];
           if (!want) continue;
@@ -1639,6 +1664,23 @@
             out.push(left.splice(k, 1)[0]);
           }
           g[1] = out.concat(left);
+        }
+        {
+          const isCity = (g) => CITY_RE.test(g[0]);
+          const sh = grpOf("בית שלמה");
+          if (sh) {
+            const lift = [];
+            for (const g of PLACES) {
+              if (g === sh || isCity(g) || g[0] === "השלמות מחז״ל ובחירות מודל") continue;
+              for (let k = 0; k < g[1].length; k++) if (g[1][k] && CITY_RE.test(String(g[1][k].t))) lift.push(g[1].splice(k--, 1)[0]);
+            }
+            const own = sh[1].filter((it) => it && CITY_RE.test(String(it.t)));
+            sh[1] = lift.concat(own, sh[1].filter((it) => !(it && CITY_RE.test(String(it.t)))));
+          }
+          const RANK = ["בית שלמה", "הר הבית והחצרות", "המזבח וכלי הנחושת", "הבית מבחוץ", "היציע — התאים", "הבית מבפנים"];
+          const at = new Map(PLACES.map((g, i) => [g, i]));
+          const rank = (g) => (isCity(g) ? -1 : RANK.indexOf(g[0]) >= 0 ? RANK.indexOf(g[0]) : 100 + at.get(g));
+          PLACES.sort((x, y) => rank(x) - rank(y) || at.get(x) - at.get(y));
         }
       }
       // the grid's views that repeated a place: the place stays, in its group (ui_VIEWS keeps them for the presentation and the labels)
@@ -1864,6 +1906,7 @@
           ["האולם לשיטת הרמב", { info: "לשיטת הרמב״ם (הלכות בית הבחירה ד), כפי שביארו הכסף משנה ותוספות יום טוב (מדות ד, ז): **בליטת האולם נמשכת בצפון ובדרום לכל אורך הבית**, 'עד מקצוע המערבית', ולא רק בחזית; בצד מערב אין בליטה (הלכות בית הבחירה ד, ד).\nבמודל: ברירת המחדל כרש״י (יומא לו.) — הבליטה בחזית בלבד, 'בית החליפות'. בוחרים בתפריט, תחת ״שיטות ומחלוקות״.",
             refs: [["רמב״ם בית הבחירה פרק ד", RB(4, 0)], ["מדות ד, ז", MI(4, 7)], ["יומא לו.", P(107, "לו.")]] }],
           ["המעלות מבית המלך", { p: "המעלות מבית המלך אל בית ה׳" }],
+          ["העלייה מבית המלך", { p: "המעלות מבית המלך אל בית ה׳" }],   // ASCENT2_D: the almug ramp's label (check.sh: "labels without sources")
           ["בית יער הלבנון", { p: "בית יער הלבנון" }],
           ["העמודים והעב", { p: "העמודים והעב — 'ועמדים ועב על פניהם'" }],
           ["״ואולם על פניהם״", { p: "העמודים והעב — 'ועמדים ועב על פניהם'" }],
@@ -2645,11 +2688,14 @@
       // lost: it stands after the groups, in "עוד". A row of a card only (row.cardOnly) keeps its place in OPS and is not counted.
 //@@end buildUI.after-tvNotes-note
 //@@begin buildUI.after-GROUPS
-          ["הר הבית והחצרות", ["lesserPlace", "eastSteps", "d1", "yehoyadaChests", "sanhedrinRows", "slaughterLayout"]],
-          ["המזבח וכלי הנחושת", ["seaPlacement", "altarPlace", "altarRTam", "altarYose", "altarKarkov", "altarLook", "maarachot", "maarachotYK", "rampGap", "altarRamps"]],
-          ["הבית מבחוץ והיציע", ["aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling"]],
-          ["הבית מבפנים", ["potot", "kodeshLayout", "kodeshOpinion", "breadShape", "d2", "d5", "devirDoor", "devirHeight", "d3", "cherubPose", "arkLayout"]],
+          // MENU_149_D (fix-d - the user's decision 149 ג): the groups along the route of the places (from outside in); the first one takes
+          // agent C's rows of the City of David by their words, whatever their ids (none yet - an empty group is not shown)
+          ["עיר דוד", OPS.filter((r) => r && r.id && /עיר דוד|המלוא|מעי?ין|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/.test(String(r.cap || "") + " " + String(r.short || ""))).map((r) => r.id)],
           ["בית שלמה", ["forestHouse", "throneVersion", "d4"]],
+          ["הר הבית והחצרות", ["lesserPlace", "yehoyadaChests", "d1", "eastSteps", "sanhedrinRows", "slaughterLayout"]],
+          ["המזבח וכלי הנחושת", ["altarPlace", "seaPlacement", "altarLook", "altarYose", "maarachot", "maarachotYK", "altarKarkov", "altarRTam", "rampGap", "altarRamps"]],
+          ["הבית מבחוץ והיציע", ["ulamRambam", "aliyot", "pillarCapital", "ulamTables", "ulamCeiling", "yatziaShape"]],
+          ["הבית מבפנים", ["potot", "d2", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "d3", "cherubPose", "arkLayout", "d5"]],
           ["הכהנים", ["scaleFigure", "priestBelt", "priestGarments", "hpEphod", "hpMitz", "kidReading"]]
 //@@end buildUI.after-GROUPS
 //@@begin buildUI.after-note-code

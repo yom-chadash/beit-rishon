@@ -668,19 +668,21 @@
 //@@end fly
 //@@begin altarShift
       // DEMOS_GROUP_300: the Second Temple's demonstrations, for the group "הדגמות" at the head of the panel (built before the places' loop)
+      // MENU_149_D (fix-d, the user's decision 149 ג): the demonstrations too along the route of the places - from the Shiloah, the women's
+      // court, בית המוקד and the lots, the morning's service, the laver, the mesibah, the wicket, the great gate, the devir
       function ui_demosList() {
         return [
-          { t: "סדר עבודת הבוקר", pill: "tamid-demo" },
-          { t: "ארבעת הפייסות ו״ברקאי״", place: "ארבעת הפייסות ו״ברקאי״ — הדגמה" },
-          { t: "פתיחת השער הגדול", place: "פתיחת השער הגדול — הדגמה" },
-          { t: "הכיור יורד לבור ועולה", pill: "alt-mukhni-demo" },
-          { t: "הכניסה בפשפש", pill: "hei-pish-demo" },
-          { t: "הכהן הגדול נכנס בקטורת", place: "הכהן הגדול נכנס בקטורת — הדגמה" },
-          { t: "הליכה במסיבה", place: "הליכה במסיבה — הדגמה" },
-          { t: "הכהן יורד לבית הטבילה", pill: "mes-tevila-demo" },
+          { t: "ניסוך המים — מן השילוח", place: "ניסוך המים מן השילוח — הדגמה" },   // SHILOACH_305
           { t: "שמחת בית השואבה", place: "שמחת בית השואבה — הדגמה" },   // SIMCHA_304 (until 2.0.12: the lamps alone - their place stays)
           { t: "הדלקת מנורות הזהב בעזרת נשים", place: "מנורות של זהב — שמחת בית השואבה" },   // DEMOLIST_305: the lamps alone, kept (the user, 23:49)
-          { t: "ניסוך המים — מן השילוח", place: "ניסוך המים מן השילוח — הדגמה" }   // SHILOACH_305
+          { t: "הכהן יורד לבית הטבילה", pill: "mes-tevila-demo" },
+          { t: "ארבעת הפייסות ו״ברקאי״", place: "ארבעת הפייסות ו״ברקאי״ — הדגמה" },
+          { t: "סדר עבודת הבוקר", pill: "tamid-demo" },
+          { t: "הכיור יורד לבור ועולה", pill: "alt-mukhni-demo" },
+          { t: "הליכה במסיבה", place: "הליכה במסיבה — הדגמה" },
+          { t: "הכניסה בפשפש", pill: "hei-pish-demo" },
+          { t: "פתיחת השער הגדול", place: "פתיחת השער הגדול — הדגמה" },
+          { t: "הכהן הגדול נכנס בקטורת", place: "הכהן הגדול נכנס בקטורת — הדגמה" }
 //@@end altarShift
 //@@begin buildUI.after-PLACES
         ["שערי הר הבית וחצרות", [
@@ -812,6 +814,64 @@
       ];
       const UI_MERGE = {};
       const UI_VIEW_HOME = {"harHabayit": "הר הבית", "shushanGate": "שער שושן", "royalStoa": "הסטיו המלכותי", "ezratNashim": "עזרת נשים", "nikanor": "שער ניקנור", "azarah": "העזרה", "mizbeach": "המזבח", "heichalFront": "ההיכל מבחוץ", "heichalInside": "ההיכל", "ulam": "האולם", "kodesh": "הקודש", "kodeshHakodashim": "קודש הקדשים ואבן השתייה"};
+      // MENU_149_D (fix-d, 22.11.2026 - the user's decision 149 ג, the coordinator's execution): ONE ROUTE FROM OUTSIDE IN, the same as
+      // the First Temple's panel - from the city in the south (the Shiloah, the pilgrims' way, the Huldah gates) round the mount (west,
+      // north, east - Shushan and the line to the Mount of Anointing), in through the soreg and the chel to the women's court and up the
+      // fifteen steps; the court from Nikanor's gate; the chambers from the women's court's corners and Nikanor's two, the north side from
+      // the east to בית המוקד, the south side from the west to לשכת המלח; the altar from its north (the rings, the slaughter place), the altar
+      // and what is on it, its south and the laver; the ulam, the house from outside (the cells, the mesibah, the upper storey, the lul),
+      // the great gate, inside, the devir, and the floor's slope last. An entry is a title or its start; a title not listed keeps its
+      // place after the listed ones. CITY_RE: the places of the City of David and its spring (agent C's layer, agent B2's spring) - a group
+      // of them goes first, and such a place goes up in the first group right after the guards. KEEP THIS BLOCK THE LAST WORD ON THE ORDER.
+      {
+        const ORDER = {
+          "שערי הר הבית וחצרות": ["הר הבית", "המשמרות", "מעיין השילוח", "ניסוך המים מן השילוח", "הליכת עולה רגל", "הבאת ביכורים", "שערי חולדה", "דין המנעל",
+            "הסטיו המלכותי", "בית המדרש", "שער קיפונוס", "גנת הוורדים", "שער טדי", "שער שושן", "שושן הבירה", "הר המשחה", "בית הכנסת", "הסורג", "החיל",
+            "שער עזרת נשים", "עזרת נשים", "מנורות של זהב", "שמחת בית השואבה", "שתי הסנהדראות הקטנות", "חמש עשרה המעלות"],
+          "שערי העזרה": ["העזרה", "שער ניקנור", "שלשה עשר שופרות", "עזרת ישראל", "בר שורא", "דוכן הלויים", "עזרת כהנים", "בין האולם ולמזבח", "שער בית המוקד",
+            "שער הקרבן", "שער הניצוץ", "שער הדלק", "שער הבכורות", "שער המים", "בית החליפות — חלונות הסכינים"],
+          "לשכות": ["לשכת הנזירים", "לשכת העצים", "לשכת המצורעים", "לשכת שמנים", "לשכת פנחס המלביש", "לשכת עושי חביתין", "לשכות כלי השיר", "לשכת בית האבן",
+            "לשכת הגזית", "ארבעת הפייסות", "לשכת העץ", "לשכת הגולה", "בית המוקד", "לשכת עושי לחם הפנים", "לשכת החותמות", "לשכת אבני המזבח", "לשכת הטלאים",
+            "הירידה לבית הטבילה", "המסיבה ובית הטבילה", "עליית שער הניצוץ", "לשכת בית אבטינס", "לשכת חשאים", "לשכת המדיחין", "לשכת הפרוה", "לשכת המלח",
+            "ישיבה בעזרה", "בגדי הכהנים", "הממונים שבמקדש"],
+          "מזבח וכלים": ["הטבעות", "בית המטבחים", "המזבח", "מידות המזבח", "חלקי יהודה ובנימין", "מצות ערבה", "שלוש המחתות", "ספלי הניסוך", "השיתין",
+            "כבשים קטנים — רש״י", "כבשים קטנים — תוספות", "הכבש הגדול", "עולים במזרח ויורדים במערב — הכבש", "שולחן החלבים", "הכיור", "הדגמת המוכני",
+            "סדר עבודת הבוקר"],
+          "ההיכל ופנים": ["הרובד הרביעי", "האולם", "שלוש עשרה הפרוכות", "הגפן של זהב", "הנברשת והטבלא של הילני", "ניצוצות הנברשת", "כלונסות הארז שבאולם",
+            "שולחנות האולם", "פשפשי בית החליפות", "התאים", "לשכת הכלים", "המסיבה", "הליכה במסיבה", "העלייה והלולין", "פתח העלייה ופנים העלייה",
+            "הלול שאחורי בית הכפורת", "פשפשי ההיכל", "השער הגדול", "פתיחת השער הגדול", "הקודש", "טבלת השיש", "פיתוחי הקירות", "המנורה", "מזבח הזהב",
+            "שולחן לחם הפנים", "כני הזהב שבהיכל", "שתי הפרוכות", "הכהן הגדול נכנס בקטורת", "קודש הקדשים ואבן השתייה", "שיפוע רצפת הבית"]
+        };
+        for (const g of PLACES) {
+          const want = ORDER[g[0]];
+          if (!want) continue;
+          const left = g[1].slice(), out = [];
+          for (const w of want) {
+            let i = left.findIndex((it) => it && it.t === w);
+            if (i < 0) i = left.findIndex((it) => it && String(it.t).startsWith(w));
+            if (i < 0) { console.warn("[ui.js] order: no place " + w); continue; }
+            out.push(left.splice(i, 1)[0]);
+          }
+          g[1] = out.concat(left);
+        }
+        const CITY_RE = /עיר דוד|המלוא|מעי?ין|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/;
+        const isCity = (g) => CITY_RE.test(g[0]);
+        const first = PLACES.find((g) => g[0] === "שערי הר הבית וחצרות");
+        if (first) {
+          const lift = [];
+          for (const g of PLACES) {
+            if (g === first || isCity(g)) continue;
+            for (let i = 0; i < g[1].length; i++) if (g[1][i] && !g[1][i].noButton && CITY_RE.test(String(g[1][i].t))) lift.push(g[1].splice(i--, 1)[0]);
+          }
+          const its = first[1], head = Math.max(0, its.findIndex((it) => it && String(it.t).startsWith("המשמרות")) + 1);
+          const city = lift.concat(its.slice(head).filter((it) => it && CITY_RE.test(String(it.t))));
+          first[1] = its.slice(0, head).concat(city, its.slice(head).filter((it) => !(it && CITY_RE.test(String(it.t)))));
+        }
+        const RANK = ["שערי הר הבית וחצרות", "שערי העזרה", "לשכות", "מזבח וכלים", "ההיכל ופנים"];
+        const at = new Map(PLACES.map((g, i) => [g, i]));
+        const rank = (g) => (isCity(g) ? -1 : RANK.indexOf(g[0]) >= 0 ? RANK.indexOf(g[0]) : 100 + at.get(g));
+        PLACES.sort((x, y) => rank(x) - rank(y) || at.get(x) - at.get(y));
+      }
 //@@end buildUI.after-PLACES
 //@@begin buildUI.after-b
 //@@end buildUI.after-b
@@ -1276,6 +1336,9 @@
           "15 · פנחס — המלבוש": {"p": "הממונים שבמקדש"},
           "צורת התאים — הרמב״ם, כציורו": {"info": "לשון המשנה (מידות ד, ג): ״שבצפון ושבדרום, חמשה על גבי חמשה, וחמשה על גביהם. ושבמערב, שלשה על גבי שלשה, ושנים על גביהם״; (ד, ד): ״התחתונה, חמש, ורבד שש. והאמצעית, שש, ורבד שבע. והעליונה, שבע״; (ד, ז): ״כתל התא חמש, והתא שש, כתל ההיכל שש״.\nהרמב״ם (בית הבחירה ד, י): ״כל אלו המקומות הפנויים שבין הכתלים הם הנקראים תאים״.\nהשגות הראב״ד (בית הבחירה ד, ט): ״שבכותל של היכל היה מקצר אמה ונמצא חלל התא שש משש אמות ומעלה ואותן שש אמה שהתא בהן חללו חמש הם היו כנגד אוטם ההיכל שהיו שש אמות וזהו שחשבו רוחב ההיכל כותל התא חמש והתא שש וכותל ההיכל שש והוא למעלה מן האוטם״.\nתוספות יום טוב (מידות ד, ג): ״מ״מ בענין הזה, שדיוטא התחתונה שמן התאים היא כנגד האוטם, מוכח מתוך פי׳ הרמב״ם, שמפרש בכאן שהתא הזה הוא בדיוטא האמצעית, שגם הוא סובר כן״ — כלומר, בעניין זה הרמב״ם והראב״ד אינם חולקים.\nבמודל (ברירת המחדל): הקומה התחתונה של התאים כנגד האוטם — שש אמות, מרצפת העזרה עד רצפת ההיכל — והקומה השנייה בגובה ההיכל. בקומה התחתונה כותל ההיכל שבע והתא חמש, ומשם ולמעלה כותל ההיכל שש והתא שש, כלשון הראב״ד. התקרה העליונה — על מה היא נשענת, לא נתבאר.", "refs": [["רמב״ם בית הבחירה ד, י", "Mishneh_Torah,_The_Chosen_Temple.4.10"], ["השגות הראב״ד בית הבחירה ד, ט", "Raavad_on_Beit_HaBechira.4.9"], ["תוי״ט מידות ד, ג", "Tosafot_Yom_Tov_on_Mishnah_Middot.4.3"], ["מידות ד, ג", "Mishnah_Middot.4.3"], ["מידות ד, ד", "Mishnah_Middot.4.4"], ["מידות ד, ז", "Mishnah_Middot.4.7"]], "title": "צורת התאים — הרמב״ם, כציורו"}
         };
+        // WEST2_D (check.sh: "labels without sources" - {"p"} names a place, and the west gates' card is a label's own): the Kaftor
+        // vaFerach's two labels open the card of "שני שערים במערב שלא היה להם שם"
+        for (const t of ["כפתור ופרח: ״שנים במערב״ — שער האולם", "כפתור ופרח: ״שנים במערב״ — שער ההיכל"]) LABEL_MAP[t] = LABEL_MAP["שני שערים במערב שלא היה להם שם"];
         // LABELS_B2 (fix-b2, 22.11.2026): the labels of this round open the card of their place (prefix, as the label is written)
         const LABEL_PREFIX = [["חומה — קנה אחד, שש אמות", {"p": "שער שושן"}], ["הכבש מגיע אל הר המשחה", {"p": "הר המשחה — קו הראייה לפתח ההיכל"}], ["הדרך מגיעה אל הר המשחה", {"p": "הר המשחה — קו הראייה לפתח ההיכל"}], ["״שהכהן השורף את הפרה", {"p": "הר המשחה — קו הראייה לפתח ההיכל"}], ["כאן הכותל נמוך — הקו עובר מעליו", {"p": "הר המשחה — קו הראייה לפתח ההיכל"}], ["פתח ההיכל — סוף קו הראייה", {"p": "הר המשחה — קו הראייה לפתח ההיכל"}], ["ארובות בקירוי", {"v": "ezratNashim"}], ["עזרת נשים מקורה, חוץ מארבע הלשכות", {"v": "ezratNashim"}], ["שלושים לשכות בהר הבית", {"v": "harHabayit"}], ["״ובאותן הרווחים היה דירת", {"v": "harHabayit"}], ["בית הכנסת שבהר הבית", {"p": "בית הכנסת שבהר הבית"}], ["בית המדרש שבהר הבית", {"p": "בית המדרש שבהר הבית"}], ["״שני פתחים זו כנגד זו״", {"p": "לשכת שמנים"}], ["הפתח השני — אל החיל", {"p": "לשכת שמנים"}], ["מלבן בני לוי", {"p": "לשכות כלי השיר — תחת עזרת ישראל"}], ["״וְאֶל־אַיִל תִּמֹרִים״", {"p": "שער הקרבן"}], ["תמרים — ״וְאֶל־אַיִל", {"p": "שער הקרבן"}], ["כבש לבהמות", {"p": "שער הבכורות"}], ["כהנים בעלי מומין מתליעין", {"p": "לשכת העצים"}], ["חלונות סתומים ״במחיצה בהירה", {"p": "האולם"}], ["בית החליפות — ״ששם גונזים", {"p": "בית החליפות — חלונות הסכינים"}], ["״וחלונה סתומה״", {"p": "בית החליפות — חלונות הסכינים"}], ["״אפיק שפה ועייל שפה״", {"v": "heichalFront"}], ["״וארבעה ילדים מפרחי כהנה", {"p": "מנורות של זהב — שמחת בית השואבה"}], ["״שהן מטילין לכל ספל וספל״", {"p": "מנורות של זהב — שמחת בית השואבה"}], ["״ולא היתה חצר בירושלים", {"p": "מנורות של זהב — שמחת בית השואבה"}], ["״שהמנורות עומדות על כן", {"p": "מנורות של זהב — שמחת בית השואבה"}], ["המנורות בלשכות שבפינות", {"p": "מנורות של זהב — שמחת בית השואבה"}], ["הזיזים — לגזוזטרא", {"p": "מנורות של זהב — שמחת בית השואבה"}], ["״ובאין וזוקפין אותן", {"p": "מצות ערבה — הדגמה"}], ["הערבות על היסוד בלבד", {"p": "מצות ערבה — הדגמה"}], ["״בכל יום מקיפין את המזבח", {"p": "מצות ערבה — הדגמה"}], ["אכסדרה — כ", {"v": "azarah"}], ["איצטבאות גבוהות", {"p": "בית המטבחים"}], ["כהנים יושבים ואוכלים קדשים בעזרה", {"p": "ישיבה בעזרה"}], ["גנת הוורדים", {"p": "גנת הוורדים — מחוץ לשער קיפונוס"}]];
         const labelTarget = (l) => {
@@ -2062,15 +2125,18 @@
       // lost: it stands after the groups, in "עוד". A row of a card only (row.cardOnly) keeps its place in OPS and is not counted.
 //@@end buildUI.after-tvNotes-note
 //@@begin buildUI.after-GROUPS
-          ["הר הבית והחיל", ["sh0", "sh1", "sh2", "sh90", "sh55", "sh3", "sh73", "sh61"]],
-          ["עזרת נשים", ["sh4", "sh5", "sh6", "sh60", "sh70"]],
-          ["העזרה", ["sh9", "sh91", "sh72", "sh54", "sh8", "sh11", "sh10", "sh14", "sh15", "sh62", "sh76"]],
-          ["לשכות העזרה ובית המוקד", ["sh7", "sh93", "sh50", "sh51", "sh66", "sh67", "sh52", "sh53"]],
-          ["המזבח, הכבש והכיור", ["sh16", "sh17", "sh63", "sh18", "sh19", "sh20", "sh21", "sh23", "sh71", "sh74", "sh24", "sh25", "sh26", "sh65"]],
-          ["האולם", ["sh27", "sh28", "sh29", "sh30", "sh31", "sh32"]],
-          ["בניין ההיכל, התאים והעלייה", ["sh92", "sh33", "sh34", "sh75", "sh35", "sh36", "sh37", "sh38", "sh39", "sh40", "sh41"]],
+          // MENU_149_D (fix-d - the user's decision 149 ג): the rows of each group along the route of the places (from outside in); the
+          // first group takes agent C's rows of the City of David by their words (none yet - an empty group is not shown)
+          ["עיר דוד", OPS.filter((r) => r && r.id && /עיר דוד|המלוא|מעי?ין|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/.test(String(r.cap || "") + " " + String(r.short || ""))).map((r) => r.id)],
+          ["הר הבית והחיל", ["sh0", "sh73", "sh61", "sh55", "sh1", "sh2", "sh90", "sh3"]],
+          ["עזרת נשים", ["sh4", "sh5", "sh70", "sh60", "sh8", "sh6"]],
+          ["העזרה", ["sh10", "sh9", "sh54", "sh72", "sh91", "sh76"]],
+          ["לשכות העזרה ובית המוקד", ["sh53", "sh7", "sh11", "sh50", "sh51", "sh66", "sh52", "sh67", "sh93"]],
+          ["המזבח, הכבש והכיור", ["sh15", "sh62", "sh14", "sh74", "sh16", "sh17", "sh19", "sh20", "sh21", "sh71", "sh63", "sh18", "sh23", "sh24", "sh25", "sh65", "sh26"]],
+          ["האולם", ["sh27", "sh28", "sh29", "sh30", "sh31", "sh32", "sh58"]],
+          ["בניין ההיכל, התאים והעלייה", ["sh34", "sh75", "sh33", "sh35", "sh36", "sh37", "sh38", "sh39", "sh40", "sh41"]],
           ["כלי ההיכל", ["sh42", "sh43", "sh44", "sh45", "sh57", "sh46", "sh48"]],
-          ["הפרוכות", ["sh47", "sh56", "sh58", "sh59", "sh49"]],
+          ["הפרוכות", ["sh47", "sh56", "sh49", "sh59", "sh92"]],
           ["סדר העבודה ובגדי הכהנים", ["sh12", "sh22", "sh13", "sh68", "sh69", "sh80", "sh64"]]
 //@@end buildUI.after-GROUPS
 //@@begin buildUI.after-note-code
