@@ -87,8 +87,7 @@
     const clumpL = (lx, ly, lz, s, n) => { for (let k = 0; k < (n || 8); k++) { const f = new Mesh(frond, fernM); f.position.set(lx, ly, lz); f.rotation.set(-0.35 - rr() * 0.6, k * (6.28 / (n || 8)) + rr() * 0.5, 0, "YXZ"); f.scale.setScalar(s * (0.75 + rr() * 0.45)); G.add(noPick(f)); } };
     const boulderL = (lx, ly, lz, s) => { const b = new Mesh(BLOBS[Math.floor(rr() * BLOBS.length)], boulM); b.position.set(lx, ly, lz); b.scale.set(s * (1 + rr() * 0.4), s * (0.55 + rr() * 0.25), s * (0.9 + rr() * 0.3)); b.rotation.y = rr() * 6.3; b.castShadow = b.receiveShadow = true; G.add(noPick(b)); return b; };
     const bushL = (lx, ly, lz, s) => { for (let k = 0; k < 4; k++) { const b = new Mesh(BLOBS[(k + 2) % BLOBS.length], leafM[k % 3]); b.position.set(lx + (rr() - 0.5) * s, ly + s * (0.35 + rr() * 0.3), lz + (rr() - 0.5) * s); b.scale.set(s * 0.6, s * 0.45, s * 0.6); G.add(noPick(b)); } clumpL(lx, ly, lz, s * 0.8, 5); };
-    // the opening's brow: one rounded stone of the cliff over the dark hole
-    { const b = new Mesh(BLOBS[2], rockM.clone()); b.material.vertexColors = false; b.material.color.set(0xb0602c); b.position.set(0.05 * S, MY + 0.4 * S, 0.3 * S); b.scale.set(0.6 * S, 0.2 * S, 0.16 * S); G.add(noPick(b)); }
+    // (BROW_OFF_B2, the user's decision 176 a: the orange stone over the opening, "like a hat" - removed; the opening stays in the rock)
     const toL = (fn) => (wx, wy, wz, s) => { const [lx, lz] = L(wx, wz); return fn(lx, wy, lz, s); };
     // ---- the basin under the fall: a round bed of stone, its water turning (the whirlpool), grey boulders round it, open toward the front
     const BR = (o.basinR || 1.0) * S, BZ = -(o.basinDz != null ? o.basinDz : 0.55) * S, BY = o.basinY != null ? o.basinY : GY + 0.36;
