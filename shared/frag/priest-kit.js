@@ -359,21 +359,28 @@
     // bands aslant, down to the forehead. Its height, the narrowing and the bands' number - model choices. Its origin stays HAT_Y (the
     // figures place it there); the lower edge is MIG.y0 over it.
     const HAT_H = 0.335, HAT_Y = HEAD_Y + 0.06, ARROW_Y = 2.75;
-    const MIG = { y0: 0.02, H: 0.38, rx: 0.13, rz: 0.142, top: 0.62, back: -0.014, bands: 6 };
-    const gHat = surf(48, 44, (u, v, o) => {
-      const a = u * TAU + Math.PI, body = 0.84, k = v < body ? v / body : 1;
-      // the cone, then its round head (from body to 1)
-      let R = 1 - (1 - MIG.top) * Math.pow(k, 1.15), y = MIG.y0 + v * MIG.H;
-      if (v > body) { const w = (v - body) / (1 - body); R = MIG.top * Math.sqrt(Math.max(0, 1 - w * w)); y = MIG.y0 + body * MIG.H + w * MIG.top * MIG.rz * 0.9; }
-      // the bands: each turn bulges at its lower edge and lies under the next; a shade in the fold between them
-      const t = (((v / body) * MIG.bands + 0.12 * u) % 1 + 1) % 1, on = v < body ? sstep(0.0, 0.05, v) : 1 - sstep(body, 1, v);
-      const bulge = on * (0.055 * (1 - t) * (1 - t) - 0.012), shade = on * Math.exp(-t / 0.08) * 0.32;
-      const r = R * (1 + bulge);
-      o.x = r * MIG.rx * Math.sin(a);
-      o.y = y;
-      o.z = r * MIG.rz * Math.cos(a) + MIG.back;
-      o.c = 1 - shade - 0.06 * on * Math.pow(t, 3);
-    });
+    // MIGBAAT_CHALAMISH_A2 (the user, on pictures 07-08: "נוראיות, וממש לא דומות לזו שבחלמיש" - A-10, A-11, B-03, B-07, B-22): as the
+    // booklet draws it - a tall white cylinder, hardly narrowing, about half as high again as the head, its head a low round dome; the
+    // cloth wound round it in bands that run ASLANT (three bands going round together), a soft fold between them; it sits back on the
+    // crown, a little tilted back, its lower edge from just over the ears round the back of the head, and in front it rises over the
+    // head's tefillin - the box and the strap lie on the hair, the hat above and behind them, nothing between (the user, after
+    // Shulchan Aruch OC 27:4, 382:231: "לא יהא דבר חוצץ בין תפילין לבשרו"; "גם רצועה לא עוברת מעל" - the strap round the head under its
+    // edge). Its measures, the tilt and the bands - model choices. Until now: a cone of six level bands, its edge round the head at
+    // one height. Its origin stays HAT_Y (the figures place it there).
+    const MIG = { y0: 0.012, H: 0.4, rx: 0.12, rz: 0.13, top: 0.74, back: -0.014, bands: 7, starts: 3, lift: 0.06, tilt: 0.14 };
+    const hatSurf = (P, bandsOn) => (u, v, o) => {
+      const a = u * TAU + Math.PI, body = 0.86, k = v < body ? v / body : 1, fr = Math.pow(Math.max(0, Math.cos(a)), 2);
+      let R = 1 - (1 - P.top) * Math.pow(k, 1.2), y = P.y0 + P.lift * fr * Math.pow(1 - k, 1.4) + v * P.H;
+      if (v > body) { const w = (v - body) / (1 - body); R = P.top * Math.sqrt(Math.max(0, 1 - w * w)); y = P.y0 + body * P.H + w * P.top * P.rz * 0.75; }
+      const t = (((v / body) * P.bands + u * P.starts) % 1 + 1) % 1, on = bandsOn ? (v < body ? sstep(0.0, 0.04, v) : 1 - sstep(body, 0.97, v)) : 0;
+      const r = R * (1 + on * (0.032 * (1 - t) * (1 - t) - 0.008));
+      const x = r * P.rx * Math.sin(a), z = r * P.rz * Math.cos(a) + P.back, c = Math.cos(P.tilt), sn = Math.sin(P.tilt);
+      o.x = x;
+      o.y = y * c + z * sn;            // tilted back: the front up, the top back
+      o.z = -y * sn + z * c;
+      o.c = 1 - on * (Math.exp(-t / 0.07) * 0.26 + 0.05 * Math.pow(t, 3));
+    };
+    const gHat = surf(48, 44, hatSurf(MIG, true));
     // TEFILLIN_A2 (fix-a2; the user's decision 67, 22.11.2026): THE HEAD'S TEFILLIN on every priest - Zevachim 19a (130:737-743):
     // "כֹּהֲנִים בַּעֲבוֹדָתָן... פְּטוּרִין מִן הַתְּפִלָּה וּמִן הַתְּפִילִּין"; "הָא דְּיָד, הָא דְּרֹאשׁ" (the arm's comes between, the head's does
     // not); "שְׂעָרוֹ הָיָה נִרְאֶה בֵּין צִיץ לְמִצְנֶפֶת, שֶׁשָּׁם מַנִּיחִין תְּפִילִּין". At the start of the hair (the user: "בתחילת צמיחת השער"):
@@ -383,25 +390,37 @@
     const TEF = { on: true, list: [] };
     const tefSet = (on) => { TEF.on = !!on; for (const m of TEF.list) m.visible = TEF.on; };
     const mTef = mat(0x111111, { roughness: 0.42, metalness: 0.0 });
-    const TY = 0.102, TB = 0.052;   // the box's middle over the head's, and its side
-    const gTefR = (() => {
-      const zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
-      const tilt = Math.atan2(n.y, n.z), parts = [];
-      const place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; };
-      parts.push(place(new BoxGeometry(TB * 1.22, TB * 1.22, 0.012), 0.008));          // the titura
-      parts.push(place(new BoxGeometry(TB, TB, TB), 0.014 + TB / 2));                   // the bayit
-      // the strap round the head: by the box's foot in front, down to the knot behind
-      const ring = [];
-      for (let i = 0; i < 40; i++) {
-        const ph = (i / 40) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = -0.035 + (TY - TB * 0.42 + 0.035) * w, r = headR(ph, y) + 0.004;
+    // TEFILLIN_PLACE_A2 (the user: "תעשה במקומם, גם מבחינת הרצועות שסביב הראש. אל תחרטט"; the box smaller): Shulchan Aruch OC 27:9
+    // (382:236) "מהתחלת עיקרי השער ממצחו עד סוף המקום שמוחו של תינוק רופס" - the box's foot at the start of the hair (the hair's edge
+    // here at y 0.079 over the head's middle), in the middle, over between the eyes; 27:10 (382:237) "צריך שיהיה הקשר מאחורי הראש למעלה
+    // בעורף... באמצע העורף ולא יטה לכאן או לכאן" - the strap from the box round the head, over the ears, to the knot behind, at the top of
+    // the nape, in its middle; 27:11 (382:238) "ישלשל הרצועות שיהיו תלוים לפניו ויגיעו עד הטבור או למעלה ממנו מעט" - the two ends from
+    // the knot over the shoulders and down before him, the right to the navel, the left a little shorter (the user). Until now the box
+    // was 0.052 and the ends stopped at the chest. Their thickness - a model choice.
+    const TY = 0.1, TB = 0.04;   // the box's middle over the head's, and its side
+    const tefRing = (n) => {   // the strap round the head: from the box's foot (front) over the ears (y ~0.05) to the knot (y -0.056)
+      const ring = [], yF = TY - TB * 0.45, yB = -0.056;
+      for (let i = 0; i < n; i++) {
+        const ph = (i / n) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = yB + (yF - yB) * Math.pow(w, 0.35), r = headR(ph, y) + 0.005;
         ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r));
       }
-      parts.push(new TubeGeometry(new CatmullRomCurve3(ring, true), 64, 0.0045, 4, true));
-      const kz = -(headR(Math.PI, -0.035) + 0.008);
-      parts.push(at(sph(0.017, 0.013, 0.009, 8, 6), 0, -0.036, kz));                   // the knot
-      for (const sd of [-1, 1]) {                                                         // the two ends, down before the shoulders
-        const pts = [[0.012, -0.04, kz + 0.004], [0.06, -0.1, -0.09], [0.085, -0.19, -0.015], [0.1, -0.29, 0.07], [0.098, -0.39, 0.15], [0.092, -0.5, 0.172]].map(([x, y, z]) => new Vector3(sd * x, y, z));
-        parts.push(new TubeGeometry(new CatmullRomCurve3(pts), 20, 0.0042, 4, false));
+      return ring;
+    };
+    const tefBox = () => {
+      const zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
+      const tilt = Math.atan2(n.y, n.z), place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; };
+      return [place(new BoxGeometry(TB * 1.25, TB * 1.25, 0.01), 0.007), place(new BoxGeometry(TB, TB, TB), 0.012 + TB / 2)];   // the titura, the bayit
+    };
+    const gTefR = (() => {
+      const parts = tefBox();
+      parts.push(new TubeGeometry(new CatmullRomCurve3(tefRing(48), true), 72, 0.0048, 4, true));
+      const kz = -(headR(Math.PI, -0.056) + 0.009);
+      parts.push(at(new BoxGeometry(0.024, 0.02, 0.012), 0, -0.058, kz));                 // the knot, in the nape's middle
+      for (const sd of [-1, 1]) {   // the two ends: behind the neck, over the shoulder by the neck, and down before him (sd -1 his right)
+        const end = sd < 0 ? -0.93 : -0.8;
+        const pts = [[0.008, -0.064, kz + 0.004], [0.05, -0.13, -0.118], [0.098, -0.19, -0.088], [0.13, -0.212, -0.02], [0.136, -0.235, 0.07], [0.134, -0.29, 0.122], [0.13, -0.36, 0.142],
+          [0.127, -0.48, 0.146], [0.124, -0.6, 0.15], [0.122, -0.72, 0.17], [0.121, end, sd < 0 ? 0.142 : 0.168]].map(([x, y, z]) => new Vector3(sd * x, y, z));
+        parts.push(new TubeGeometry(new CatmullRomCurve3(pts), 40, 0.0046, 4, false));
       }
       return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); if (q.attributes.normal === undefined) q.computeVertexNormals(); return q; }));
     })();
@@ -414,14 +433,19 @@
       const box = new Group();
       box.add(new Mesh(new BoxGeometry(TB * 1.3, TB * 1.25, 0.012), mTef));
       const b = new Mesh(new BoxGeometry(TB, TB, TB), mTef); b.position.z = 0.006 + TB / 2; box.add(b);
-      box.position.set(-rU * 0.62, -up * 0.36, rU * 0.78);   // on the inner front of the upper arm
-      box.rotation.y = -0.65;
+      // TEFILLIN_PLACE_A2: Shulchan Aruch OC 27:1 (382:228) "בזרוע שמאל, בבשר התופח שבעצם שבין הקובד"ו ובית השחי, ויטה התפלה מעט לצד
+      // הגוף" - on the swelling of the upper arm, about its middle, turned a little toward the body (the arm bare there: the sleeve rolled
+      // up - 55-tamid.js); a strap from it down to the elbow, and wound round the forearm
+      box.position.set(-rU * 0.55, -up * 0.5, rU * 0.82);
+      box.rotation.y = -0.6;
       shoulder.add(box);
       const pts = [];
       for (let i = 0; i <= 84; i++) { const k = i / 84, th = k * 7 * TAU, r = (rF * (1 - 0.18 * k)) + 0.006; pts.push(new Vector3(Math.cos(th) * r, -0.04 - k * (fo - 0.1), Math.sin(th) * r)); }
       const wind = new Mesh(new TubeGeometry(new CatmullRomCurve3(pts), 220, 0.0055, 4, false), mTef);
       elbow.add(wind);
-      for (const m of [box, wind]) { m.visible = TEF.on; TEF.list.push(m); }
+      const down = new Mesh(new TubeGeometry(new CatmullRomCurve3([new Vector3(-rU * 0.5, -up * 0.5 - TB * 0.6, rU * 0.85), new Vector3(-rU * 0.2, -up * 0.78, rU * 1.0), new Vector3(rU * 0.4, -up + 0.02, rU * 0.95)]), 12, 0.0055, 4, false), mTef);
+      shoulder.add(down);
+      for (const m of [box, wind, down]) { m.visible = TEF.on; TEF.list.push(m); }
       return { box, wind };
     };
     const gCap = sph(HR[0] * 1.1, HR[1] * 1.1, HR[2] * 1.1, 16, 5, 0, TAU, 0, 1.15);   // the elder's cap

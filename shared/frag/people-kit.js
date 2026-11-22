@@ -241,17 +241,18 @@
     // MIGBAAT_A2 (fix-a2, 22.11.2026; the user: "המגבעות — לשנות את כולן כמו בחוברת"): the priests' migba'at as the lotteries'
     // priest's now (priest-kit.js MIG) - a tall cone wound with bands, from the start of the hair up, the head's tefillin before it;
     // in fewer faces, and the mid level's without its bands. Until now the egg of PAYIS_FIGURE4D.
-    const MIGP = { y0: 0.02, H: 0.38, rx: 0.13, rz: 0.142, top: 0.62, back: -0.014, bands: 6 };
+    // MIGBAAT_CHALAMISH_A2: as priest-kit.js now (the booklet's tall wound cylinder, set back and tilted, rising in front over the
+    // tefillin) - the same measures
+    const MIGP = { y0: 0.012, H: 0.4, rx: 0.12, rz: 0.13, top: 0.74, back: -0.014, bands: 7, starts: 3, lift: 0.06, tilt: 0.14 };
     const hatK = (ws, hs) => at(surf(ws || 32, hs || 30, (u, v, o) => {
-      const a = u * TAU + Math.PI, body = 0.84, k = v < body ? v / body : 1, bands = !ws;
-      let R = 1 - (1 - MIGP.top) * Math.pow(k, 1.15), y = MIGP.y0 + v * MIGP.H;
-      if (v > body) { const w = (v - body) / (1 - body); R = MIGP.top * Math.sqrt(Math.max(0, 1 - w * w)); y = MIGP.y0 + body * MIGP.H + w * MIGP.top * MIGP.rz * 0.9; }
-      const t = (((v / body) * MIGP.bands + 0.12 * u) % 1 + 1) % 1, on = bands ? (v < body ? sstep(0, 0.05, v) : 1 - sstep(body, 1, v)) : 0;
-      const r = R * (1 + on * (0.055 * (1 - t) * (1 - t) - 0.012));
-      o.x = r * MIGP.rx * Math.sin(a);
-      o.y = y;
-      o.z = r * MIGP.rz * Math.cos(a) + MIGP.back;
-      o.c = 1 - on * (Math.exp(-t / 0.08) * 0.32 + 0.06 * Math.pow(t, 3));
+      const P = MIGP, a = u * TAU + Math.PI, body = 0.86, k = v < body ? v / body : 1, fr = Math.pow(Math.max(0, Math.cos(a)), 2), bands = !ws;
+      let R = 1 - (1 - P.top) * Math.pow(k, 1.2), y = P.y0 + P.lift * fr * Math.pow(1 - k, 1.4) + v * P.H;
+      if (v > body) { const w = (v - body) / (1 - body); R = P.top * Math.sqrt(Math.max(0, 1 - w * w)); y = P.y0 + body * P.H + w * P.top * P.rz * 0.75; }
+      const t = (((v / body) * P.bands + u * P.starts) % 1 + 1) % 1, on = bands ? (v < body ? sstep(0, 0.04, v) : 1 - sstep(body, 0.97, v)) : 0;
+      const r = R * (1 + on * (0.032 * (1 - t) * (1 - t) - 0.008));
+      const x = r * P.rx * Math.sin(a), z = r * P.rz * Math.cos(a) + P.back, c = Math.cos(P.tilt), sn = Math.sin(P.tilt);
+      o.x = x; o.y = y * c + z * sn; o.z = -y * sn + z * c;
+      o.c = 1 - on * (Math.exp(-t / 0.07) * 0.26 + 0.05 * Math.pow(t, 3));
     }), 0, 0.06, 0);
     // TEFILLIN_A2 (the user's decision 67): the head's tefillin on the priests and the Levites of a crowd (kind "kohen" / "levi") -
     // the box at the start of the hair, the strap round the head (priest-kit.js gTefR, in fewer faces); their own instanced mesh in
@@ -259,11 +260,11 @@
     // night of the water-drawing (tefOK). The Levite's cap is set back for it (kippahBack).
     const mTefP = new MeshStandardMaterial({ color: 0x111111, roughness: 0.42 });
     const tefG = (HY) => {
-      const TY = 0.102, TB = 0.052, zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
+      const TY = 0.1, TB = 0.04, zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
       const tilt = Math.atan2(n.y, n.z), place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; }, parts = [];
-      parts.push(place(new BoxGeometry(TB * 1.22, TB * 1.22, 0.012), 0.008), place(new BoxGeometry(TB, TB, TB), 0.014 + TB / 2));
-      const ring = [];
-      for (let i = 0; i < 24; i++) { const ph = (i / 24) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = -0.035 + (TY - TB * 0.42 + 0.035) * w, r = headR(ph, y) + 0.004; ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r)); }
+      parts.push(place(new BoxGeometry(TB * 1.25, TB * 1.25, 0.01), 0.007), place(new BoxGeometry(TB, TB, TB), 0.012 + TB / 2));
+      const ring = [];   // TEFILLIN_PLACE_A2: over the ears to the knot at the top of the nape (as priest-kit.js)
+      for (let i = 0; i < 24; i++) { const ph = (i / 24) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = -0.056 + (TY - TB * 0.45 + 0.056) * Math.pow(w, 0.35), r = headR(ph, y) + 0.005; ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r)); }
       parts.push(new TubeGeometry(new CatmullRomCurve3(ring, true), 32, 0.0045, 3, true));
       return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); return q.translate(0, HY, 0); }));
     };

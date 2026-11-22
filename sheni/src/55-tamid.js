@@ -680,12 +680,13 @@
           W1(K.at(K.sph(0.058, 0.058, 0.058, 12, 8), 0, -up / FS, 0))]), FS);
         const fore = (fo) => sc(W1(K.at(new CylinderGeometry(0.056, 0.046, fo / FS, 14), 0, -fo / FS / 2, 0)), FS);
         const hand = (side, fo) => sc(K.at(K.handRaw(side), 0, -(fo / FS + 0.045), 0), FS);
+        const handW = (side) => sc(K.at(K.handRaw(side), 0, -0.045, 0), FS);   // BIRKAT_HANDS_A2: the hand in its own wrist frame
         const foot = (side) => sc(K.footGeo(side).translate(-side * 0.1, 0, 0), FS);
         const P = { sx: K.SH_X * FS, sy: K.SH_Y * FS, up: K.UP * FS, fo: K.FORE * FS };      // the priest's own arm
         const H = { sx: 0.39, sy: 2.6, up: 0.6, fo: 0.66 };                                     // the high priest's: as this body (his garments)
         return {
           P, H,
-          upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) },
+          upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, handW: { 1: handW(1), "-1": handW(-1) },
           upH: upper(H.up), foH: fore(H.fo), handH: { 1: hand(1, H.fo), "-1": hand(-1, H.fo) },
           foot: { 1: foot(1), "-1": foot(-1) },
           // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin
@@ -751,16 +752,24 @@
           const by = bend ? bend.position.y : 0;   // KIDDUSH_BEND_212: the arms go with the body above the waist
           sh.position.set(side * A.sx, A.sy - by, 0);
           (bend || lean).add(sh);
-          sh.add(new Mesh(hp ? KG.upH : KG.upP, armMat));
+          // TEFILLIN_PLACE_A2 (the user: "של יד: הקציצה על הבשר. אפשר שהשרוול השמאלי יהיה מופשל מעליה"): the Levite's left sleeve rolled up
+          // to the shoulder - the arm bare (the box on the flesh), the rolled cloth a ring at its top
+          const bare = lev && side === 1 && !!K.tefArm;
+          sh.add(new Mesh(hp ? KG.upH : KG.upP, bare ? K.mSkin : armMat));
+          if (bare) { const rl = new Mesh(K.white(new TorusGeometry(0.074 * FS, 0.024 * FS, 6, 16)), armMat); rl.rotation.x = Math.PI / 2; rl.position.y = -0.06 * FS; sh.add(rl); }
           const el = new Group();
           el.position.y = -A.up;
           sh.add(el);
-          el.add(new Mesh(hp ? KG.foH : KG.foP, armMat));
-          el.add(new Mesh((hp ? KG.handH : KG.handP)[side], K.mSkin));
+          el.add(new Mesh(hp ? KG.foH : KG.foP, bare ? K.mSkin : armMat));
+          // BIRKAT_HANDS_A2: the hand on a wrist joint (it turns and bends for the priestly blessing - applyFig)
+          const wr = new Group();
+          wr.position.y = -A.fo;
+          el.add(wr);
+          wr.add(new Mesh(KG.handW[side], K.mSkin));
           const grip = new Group();
           grip.position.set(0, -(A.fo + 0.08), 0.03);
           el.add(grip);
-          return { sh, el, grip };
+          return { sh, el, grip, wr };
         };
         const L = arm(1), R = arm(-1);
         // TEFILLIN_A2 (the user, 00:58: "תפילין גם ללויים... של ראש ושל יד"): the Levite's arm tefillin, on his left arm (L)
@@ -2577,7 +2586,7 @@
       fingers: [[-1.25, 0.05, -0.45], [0.05, 0.08, -0.15], 0], knock: [[-1.4, 0.05, -1.3], [0.05, 0.08, -0.15], 0.05], wash: [[-0.95, -0.12, -0.55], [-0.95, -0.12, -0.55], 0.18],
       scoop: [[-0.95, 0.05, -0.35], [-0.95, 0.05, -0.35], 0.42], shovel: [[-0.85, -0.1, -0.5], [-0.75, -0.25, -0.7], 0.3], place: [[-0.9, -0.1, -0.4], [-0.9, -0.1, -0.4], 0.35],
       pour: [[-1.15, 0.05, -0.35], [0.05, 0.08, -0.15], 0.22], offer: [[-1.0, -0.05, -0.6], [-0.6, -0.1, -0.8], 0.15], point: [[-1.7, 0.1, -0.05], [0.05, 0.08, -0.15], 0],
-      reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.95, 0.32, -0.15], [-2.95, 0.32, -0.15], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12],
+      reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.5, 0.07, -0.04], [-2.5, 0.07, -0.04], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12],
       trumpet: [[-1.5, -0.25, -1.45], [-1.45, -0.3, -1.55], 0], cymbal: [[-1.0, 0.5, -1.2], [-1.0, 0.5, -1.2], 0], wave: [[-2.6, 0.35, -0.2], [0.05, 0.08, -0.15], 0],
       play: [[-0.75, -0.15, -1.15], [-0.2, -0.12, -1.35], 0], throw: [[-1.5, 0.05, -0.2], [0.05, 0.08, -0.15], 0.1], prostrate: [[-2.9, 0.4, 0], [-2.9, 0.4, 0], 1.48],
       // KIDDUSH_211 (the user, 14.11.2026 23:36; Zevachim 19b, 130:754): "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו
@@ -2919,6 +2928,10 @@
       }
       setArm(f.R, R, -1);
       setArm(f.L, Lv, 1);
+      // BIRKAT_HANDS_A2 (the user: "צריכים להושיט ידיים בדיוק כמו בחלמיש!" - B-07, B-25): in the blessing the arms go up straight before him,
+      // about 55 degrees over the level, side by side (POSES.raise); the hands turned so that the palms face forward, to the people, and
+      // bent back at the wrist - the fingers up. Elsewhere the hand straight on the arm
+      if (f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) { if (p === "raise") A2.wr.rotation.set(-0.64, -sd * Math.PI / 2, 0); else A2.wr.rotation.set(0, 0, 0); }
       if (f.bend) { f.bend.rotation.x = bendA; f.bend.rotation.z = bendZ; }
       if (f.legs) { setLeg(f, -1, legR); setLeg(f, 1, legL); }
       f.lean.rotation.x = lean;
