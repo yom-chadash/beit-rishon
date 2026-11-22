@@ -2400,6 +2400,52 @@
       SH.benches = { get on() { return BG.visible; }, set(on) { BG.visible = !!on; follow(); return BG.visible; } };
       if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (BG.visible) follow(); });
     }
+    // ---------- PILGRIM_B2 (fix-b2, 22.11.2026 - the user's decisions 19 and 29: "מסלול עולה רגל בגובה העין — כברטנורא"): THE PILGRIM'S
+    // WALK. Middot 2:2 (89:13): "כל הנכנסין להר הבית נכנסין דרך ימין ומקיפין ויוצאין דרך שמאל, חוץ ממי שאירעו דבר, שהוא מקיף לשמאל";
+    // the Bartenura there (643:64): "כגון הנכנסים דרך שערי חלדה שהן מן הימין, מקיפין דרך שער הטדי". The walk engine's eye (3.2 over the
+    // floor): up the stairs of the western gate of Chulda, in, to the right (east) along the south of the mount, north along its east (by the
+    // women's court and the Shushan gate), west along its north, and out by the Tadi gate. The way between the courts and the walls, its
+    // pace - model choices.
+    {
+      const EY = 3.2, Y = LV.HAR + EY;
+      const KEYS = [
+        [0, [0, -28 + EY, 396], [0, -20, 360]], [5, [0, -12 + EY, 352], [0, -2 + EY, 332]], [8.5, [0, Y, 334], [0, Y, 300]],
+        [12, [0, Y, 296], [0, Y, 272]], [15, [14, Y, 270], [80, Y, 270]], [22, [140, Y, 270], [220, Y, 262]],
+        [28, [262, Y, 250], [298, Y, 196]], [34, [298, Y, 150], [298, Y, 60]], [40, [298, Y, 40], [290, Y, -10]],
+        [46, [298, Y, -70], [292, Y, -120]], [52, [262, Y, -126], [180, Y, -126]], [59, [130, Y, -126], [60, Y, -132]],
+        [64, [58, Y, -146], [55, Y + 2, -170]], [67, [55, Y, -158], [55, Y + 3, -180]]
+      ];
+      const CAPS = [
+        [0, "״כל הנכנסין להר הבית נכנסין דרך ימין ומקיפין ויוצאין דרך שמאל״ (מידות ב, ב)"],
+        [6, "״כגון הנכנסים דרך שערי חלדה שהן מן הימין, מקיפין דרך שער הטדי״ (ברטנורא שם)"],
+        [13, "נכנסים בשער חולדה ופונים לימין — מזרחה"],
+        [30, "צפונה, לאורך המזרח — מול עזרת נשים ושער שושן"],
+        [44, "״חוץ ממי שאירעו דבר, שהוא מקיף לשמאל. מה לך מקיף לשמאל — שאני אבל: השוכן בבית הזה ינחמך״ (מידות ב, ב)"],
+        [53, "מערבה, לאורך הצפון"],
+        [61, "ויוצאים בשער הטדי — דרך שמאל; המסלול בין העזרות לחומות והקצב — בחירת מודל"]
+      ];
+      const PW = { run: false };
+      const finish = () => { PW.run = false; const sv = PW.saved; if (sv && sv.lg) sv.lg.visible = sv.labels; if (sv && sv.view && SH.viewLimits) SH.viewLimits.set(sv.view); if (PW.camLow0 === undefined) delete SH.camLow; else SH.camLow = PW.camLow0; PW.saved = null; };
+      const start = () => {
+        const Wk = SH.walk;
+        if (!Wk) return false;
+        if (typeof SH.stopDemos === "function") SH.stopDemos("pilgrimWalk");
+        let lg = null; try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {}
+        PW.saved = { lg, labels: lg ? lg.visible : true, view: SH.viewLimits ? SH.viewLimits.get() : null };
+        if (lg) lg.visible = false;
+        if (SH.viewLimits) SH.viewLimits.include([0, -30, 400]);
+        PW.camLow0 = SH.camLow; SH.camLow = -30;
+        PW.run = true;
+        Wk.run(KEYS, CAPS, finish);
+        return true;
+      };
+      const stop = () => { if (!PW.run) return; const Wk = SH.walk; if (Wk && Wk.on) Wk.stop(); else finish(); };
+      (SH.demoStops || (SH.demoStops = [])).push({ id: "pilgrimWalk", running: () => PW.run, stop,
+        pause: () => { const w = (SH.demoStops || []).find((q) => q.id === "walk"); if (w) w.pause(); },
+        resume: () => { const w = (SH.demoStops || []).find((q) => q.id === "walk"); if (w) w.resume(); },
+        paused: () => { const w = (SH.demoStops || []).find((q) => q.id === "walk"); return !!(w && w.paused()); }, restart: () => { stop(); start(); } });
+      SH.pilgrimWalk = { start, stop, get on() { return PW.run; } };
+    }
     // ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 16 and 24: "בסדר היום" in the Second Temple's cards): a place -> the stage of the
     // morning service done in it (55-tamid.js, its stages' ids); the card's link starts the presentation "סדר עבודת הבוקר" at that stage
     // (70-ui.js renderLinks). The choice of the stage for each place - a model choice.
