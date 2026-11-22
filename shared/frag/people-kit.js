@@ -350,9 +350,12 @@
       });
     };
     const arm = (S, E, W) => [shade(at(sph(0.074, 0.074, 0.074, 6, 4), S[0], S[1], S[2]), 1), shade(limb(S, E, 0.072, 0.06, 6), 0.95), shade(at(sph(0.06, 0.06, 0.06, 6, 3), E[0], E[1], E[2]), 0.95), shade(limb(E, W, 0.058, 0.048, 6), 0.9)];
-    // a hand lying flat: the palm, the fingers a little bent, the thumb at the inner side (sd: the arm's side; dir: its way, from +z)
+    // a hand lying flat: the palm, the fingers a little bent, the thumb at the inner side (sd: the arm's side; dir: its way, from +z).
+    // HAND_A2 (the user: "הידיים נראות מזעזע"): the hand of shared/frag/hand.js (tm_hand, in fewer faces) - from the wrist along +z,
+    // the palm down; until now three balls
+    const handFlat = (sd) => { const q = tm_hand({ sd, pose: "rest", low: true }).geo.clone(); q.rotateX(-Math.PI / 2); return q; };
     const hand = (sd, H, dir) => {
-      const q = mergeGeometries([at(sph(0.03, 0.0135, 0.042, 5, 3), 0, 0, 0.04), at(sph(0.027, 0.011, 0.03, 5, 3), 0, -0.006, 0.085), at(sph(0.01, 0.01, 0.024, 4, 2), -sd * 0.03, 0, 0.04)]);
+      const q = handFlat(sd);
       q.rotateY(dir);
       q.translate(H[0], H[1], H[2]);
       return skinPart(q);
@@ -413,7 +416,7 @@
         const W = pose === "bench" ? [sd * 0.15, 0.225, 0.26] : pose === "ground" ? [sd * 0.262, 0.225, 0.15] : (sd > 0 ? [0.11, 1.4, 0.25] : [-0.1, 1.46, 0.27]);
         if (!noArms) mc.push(shade(limb([sd * 0.245, SY - 0.01, 0], E, 0.074, 0.06, 5), 0.95));
         if (!noArms) mc.push(shade(limb(E, W, 0.058, 0.048, 5), 0.9));
-        if (!noArms) ms.push(skinPart(at(sph(0.032, 0.016, 0.05, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.05)));
+        if (!noArms) ms.push(skinPart(at(sph(0.04, 0.017, 0.1, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.1)));   // HAND_A2: as long as the near one
       }
       if (pose === "stand" && kind === "scribe") ms.push(shade(flatUV(at(rot(new BoxGeometry(0.21, 0.016, 0.27), -0.5), 0.01, 1.455, 0.37), 0.92, 0.86), 1));
       mc.push(headT(kind === "kohen" ? hatK(8, 6) : kind === "levi" ? kippahBack(10, 2) : kippah(10, 2)));
@@ -514,8 +517,7 @@
       const tube = (r0, r1) => shade(new CylinderGeometry(r1, r0, 1, 6, 1, true).translate(0, 0.5, 0), 0.93);
       const mC = clothMat(o.robe);
       const uA = mk(tube(0.072, 0.06), mC, 2 * n), fA = mk(tube(0.058, 0.048), mC, 2 * n), jA = mk(shade(new SphereGeometry(1, 7, 5), 0.95), mC, 4 * n);
-      const handG = (sd) => skinPart(mergeGeometries([at(sph(0.03, 0.0135, 0.042, 5, 3), 0, 0, 0.04), at(sph(0.027, 0.011, 0.03, 5, 3), 0, -0.006, 0.085),
-        at(sph(0.01, 0.01, 0.024, 4, 2), -sd * 0.026, 0.004, 0.03)]));
+      const handG = (sd) => skinPart(handFlat(sd));   // HAND_A2: tm_hand (fewer faces), along the forearm
       const hA = { 1: mk(handG(1), mSkin, n), "-1": mk(handG(-1), mSkin, n) };
       const cH = new Color();
       for (let i = 0; i < n; i++) {

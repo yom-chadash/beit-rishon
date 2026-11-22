@@ -1478,7 +1478,10 @@
           const up = K.UP * FS, fo = K.FORE * FS, sx = K.SH_X * FS, sy = K.SH_Y * FS;
           const gUp = sc(mergeGeometries([W1(K.sph(0.07, 0.07, 0.07, 14, 10)), W1(K.at(new CylinderGeometry(0.07, 0.058, up / FS, 14), 0, -up / FS / 2, 0)), W1(K.at(K.sph(0.058, 0.058, 0.058, 12, 8), 0, -up / FS, 0))]));
           const gFo = sc(W1(K.at(new CylinderGeometry(0.056, 0.046, fo / FS, 14), 0, -fo / FS / 2, 0)));
-          const gHand = (side) => sc(K.at(K.handRaw(side), 0, -(fo / FS + 0.045), 0));
+          const gHand = (side, pose) => sc(K.at(K.handRaw(side, pose), 0, -(fo / FS + 0.045), 0));
+          // HAND_A2: the hand at rest, and closed round what he holds (o.props, o.key - setActor); the grip's place: the closed hand's middle
+          const gHands = { rest: { 1: gHand(1), "-1": gHand(-1) }, grip: { 1: gHand(1, "grip"), "-1": gHand(-1, "grip") } };
+          const gAt = (side) => (K.handAt ? K.handAt(side, "grip") : new Vector3(0, -0.08, 0.03));
           const gFoot = (side) => sc(K.footGeo(side).translate(-side * 0.1, 0, 0));
           const g0 = new Group(), lean = new Group(), S = new Group();
           g0.name = "kohen-actor";
@@ -1496,7 +1499,7 @@
           const hat = new Mesh(K.gHat, K.mHat);
           hat.position.y = K.HAT_Y;
           S.add(hat);
-          const mRobeX = K.mRobe.clone(), mSkinX = K.mSkin.clone();   // the right arm's own materials (drawn over the stone inside a wall)
+          const mRobeX = K.mRobe.clone(), mSkinX = (K.mHand || K.mSkin).clone();   // the right arm's own materials (drawn over the stone inside a wall)
           mRobeX.transparent = mSkinX.transparent = true;
           const arm = (side, mR, mS) => {
             const sh = new Group();
@@ -1507,15 +1510,15 @@
             const el = new Group();
             el.position.y = -up;
             sh.add(el);
-            const m2 = new Mesh(gFo, mR), m3 = new Mesh(gHand(side), mS);
+            const m2 = new Mesh(gFo, mR), m3 = new Mesh(gHands.rest[side], mS);
             el.add(m2, m3);
-            const grip = new Group();
-            grip.position.set(0, -(fo + 0.08), 0.03);
+            const grip = new Group(), G = gAt(side);
+            grip.position.set(G.x, -fo + G.y, G.z);
             el.add(grip);
             for (const m of [m1, m2, m3]) m.castShadow = true;
-            return { sh, el, grip, meshes: [m1, m2, m3], q0: new Quaternion(), e0: new Quaternion() };
+            return { sh, el, grip, meshes: [m1, m2, m3], hand: m3, side, q0: new Quaternion(), e0: new Quaternion() };
           };
-          const L = arm(1, K.mRobe, K.mSkin), R = arm(-1, mRobeX, mSkinX);
+          const L = arm(1, K.mRobe, K.mHand || K.mSkin), R = arm(-1, mRobeX, mSkinX);
           const fl = new Mesh(gFoot(1), K.mSkin), fr = new Mesh(gFoot(-1), K.mSkin);
           fl.position.x = 0.1 * FS;
           fr.position.x = -0.1 * FS;
@@ -1530,7 +1533,7 @@
             const bow = new Mesh(new TorusGeometry(0.075, 0.024, 8, 18), keyM); bow.position.x = -0.05; key.add(bow);
             for (const m of key.children) { m.castShadow = true; m.userData.noPick = true; } }
           g.add(key);
-          A = { g0, lean, L, R, fl, fr, key, sash, K, white: false, props: null, mats: [mRobeX, mSkinX, keyM], P: { sx, sy, up, fo }, ph: 0, wk: 0, yaw: 0, yawT: null, last: null, xray: false };
+          A = { g0, lean, L, R, fl, fr, key, sash, K, white: false, props: null, mats: [mRobeX, mSkinX, keyM], P: { sx, sy, up, fo, gd: -gAt(1).y }, gHands, ph: 0, wk: 0, yaw: 0, yawT: null, last: null, xray: false };
         } catch (_) { bad = true; A = null; }
         return A;
       };
@@ -1538,7 +1541,7 @@
       // two bones to a point given in his own frame; w - how far from the base pose toward it
       const reach = (a, arm, side, t, pole, w) => {
         if (!(w > 0.001)) return;
-        const P = a.P, L1 = P.up, L2 = P.fo + 0.08;
+        const P = a.P, L1 = P.up, L2 = P.fo + (P.gd || 0.08);   // HAND_A2: to the closed hand's middle
         arm.q0.copy(arm.sh.quaternion);
         arm.e0.copy(arm.el.quaternion);
         tS.set(side * P.sx, P.sy, 0);
@@ -1604,6 +1607,8 @@
           a.key.traverse((q) => { q.renderOrder = xr ? 22 : 0; });
         }
         a.key.visible = !!o.key;
+        // HAND_A2: a hand that holds something closes round it
+        if (a.gHands) for (const [A2, held] of [[a.R, !!(o.key || (a.props && a.props.r))], [a.L, !!(a.props && a.props.l)]]) { const gq = a.gHands[held ? "grip" : "rest"][A2.side]; if (A2.hand.geometry !== gq) A2.hand.geometry = gq; }
         if (o.key) {
           a.g0.updateMatrixWorld(true);
           a.R.grip.getWorldPosition(a.key.position);

@@ -1,4 +1,5 @@
   // plugin/js/courts.js
+  //@@include hand
   //@@include strap
   //@@include people-kit
   async function build2(ctx2) {

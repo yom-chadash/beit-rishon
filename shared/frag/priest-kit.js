@@ -323,23 +323,38 @@
       at(sph(0.058, 0.058, 0.058, 12, 8), 0, -UP, 0),
       foreAt(new CylinderGeometry(0.056, 0.046, FORE, 14), FORE / 2)
     ].map(white));
-    // an open hand: the palm, four fingers a little apart, the thumb (sd: the arm's side - the thumb is to the front)
-    const handRaw = (sd) => {
-      const parts = [sph(0.03, 0.04, 0.0125, 10, 8)];
-      [-0.0215, -0.0072, 0.0072, 0.0215].forEach((x, i) => parts.push(at(rot(sph(0.0083, 0.031 - Math.abs(i - 1.4) * 0.004, 0.0083, 6, 6), 0, 0, x * 5), x * 1.25, -0.062, 0)));
-      parts.push(at(rot(sph(0.0098, 0.027, 0.0098, 6, 6), 0, 0, -sd * 0.75), -sd * 0.037, -0.012, 0.004));
-      const q = mergeGeometries(parts);
-      q.rotateY(sd * 0.95);                // the palm toward the body, the thumb to the front
-      return q;
+    // the hand (sd: the arm's side - the thumb is to the front). HAND_A2 (the user: "הידיים נראות מזעזע! אין קשר ביניהם לבין ידיים"): the
+    // hand of shared/frag/hand.js (tm_hand) - a palm, four fingers of three joints, a thumb - in this kit's old frame: the wrist HAND_W
+    // over its origin (the places that put it - handW, hand(side, fo), handOpen - as they were), turned so that the palm is toward the
+    // body and the thumb to the front. pose: "rest" (a little bent), "open", "flat", "grip", "point". Until now a ball and four
+    // sausages, half the size (the palm 0.08 long; now the hand 0.232 - about the face, chin to hairline)
+    const HAND_W = 0.045;
+    // HAND_SDF_A2: the hand's skin - the face's own material (its texture's plain skin: tm_hand's uv), with the hand's vertex colours
+    // (the shade between the fingers, the nails, the palm) - so the hands are of the face's tone (with fix-e's face.js: its new texture)
+    const mHand = mFace.clone();
+    mHand.vertexColors = true;
+    const handRaw = (sd, pose = "rest", low = false, mid = false) => { const q = tm_hand({ sd, pose, low, mid }).geo.clone(); q.translate(0, HAND_W, 0); q.rotateY(sd * 0.95); return q; };
+    // the hand in its own wrist's frame (the wrist at 0), in amot - as the houses' handW; one geometry per side and pose (shared)
+    const HWR = {};
+    const handWr = (sd, pose = "rest", mid = false) => { const k = (sd > 0 ? 1 : -1) + pose + (mid ? "m" : ""); return HWR[k] || (HWR[k] = handRaw(sd, pose, false, mid).translate(0, -HAND_W, 0).scale(FS, FS, FS)); };   // HAND_SDF_A2: mid - in fewer faces
+    // places on the hand, in its wrist's frame (amot): the middle of the closed hand's ring - where a handle lies (grip) - and the palm's middle
+    // HAND_GRIP_A2: what - "grip" (round a handle) or "fist" (round a thin rod): the ring's middle; "gripAx" / "fistAx": the handle's way
+    // through it (a unit vector, from the little finger's side to the first finger's); else the palm's middle
+    const handAt = (sd, what) => {
+      const ax = /Ax$/.test(what), pose = what.replace(/Ax$/, ""), closed = pose === "grip" || pose === "fist", H = tm_hand({ sd, pose: closed ? pose : "rest" });
+      const v = ax ? H.sk.gripAx.clone() : closed ? H.sk.grip.clone() : new Vector3(0, -H.sk.PM, -0.012);
+      v.applyAxisAngle(new Vector3(0, 1, 0), sd * 0.95);
+      return ax ? v : v.multiplyScalar(FS);
     };
     const handOpen = (sd) => foreAt(handRaw(sd), FORE + 0.045);   // PRIEST_KIT_207: the same hand (handRaw: in its own frame, for 55-tamid.js)
-    // the hand of "הצביעו": closed, one finger out
-    const handPoint = () => mergeGeometries([foreAt(sph(0.03, 0.034, 0.024, 10, 8), FORE + 0.036), foreAt(new CylinderGeometry(0.0095, 0.011, 0.085, 6), FORE + 0.105)]);
+    // the hand of "הצביעו": closed, one finger out (HAND_A2: tm_hand "point", the right hand)
+    const handPoint = () => foreAt(handRaw(-1, "point"), FORE + 0.045);
     const armPlace = (q, sd) => at(rot(q, -0.04, 0, sd * 0.17), sd * SH_X, SH_Y, 0);     // the arms a little away from the body
     const gRobe = mergeGeometries([gRobeBody, armPlace(sleeveGeo(), 1)]);
     // (the skin that does not move: the neck, the left hand, the ankles and the bare feet - a little apart, the toes outward)
     const footGeo = (sd) => mergeGeometries([at(new CylinderGeometry(0.034, 0.04, 0.14, 8), sd * 0.1, 0.1, -0.01), at(rot(sph(0.043, 0.027, 0.098, 10, 6), 0, sd * 0.22, 0), sd * 0.108, 0.027, 0.095)]);
-    const gSkinStill = mergeGeometries([at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), armPlace(handOpen(1), 1), footGeo(-1), footGeo(1)]);
+    const gSkinStill = mergeGeometries([at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0), footGeo(-1), footGeo(1)]);
+    const gHandStill = armPlace(handOpen(1), 1);   // HAND_SDF_A2: the left hand apart (its material mHand - its own vertex colours)
     // (the right arm moves: it hangs, and at "הצביעו" it is stretched forward, one finger out)
     const gSleeve = sleeveGeo(), gHandOpen = handOpen(-1), gHandPoint = handPoint();
     const ARM_DOWN = [-0.04, -0.17], ARM_OUT = [-1.15, -0.05];
@@ -437,8 +452,8 @@
       // TEF_WRAP_A2 (the user's decision 119, via the coordinator - Shulchan Aruch OC 27:8, 382:235: "ותמתח על אצבע אמצעית ויכרוך ממנה על
       // אצבעו שלשה כריכות ויקשור, ונוהגים העולם לכרוך על הזרוע ששה או שבעה כריכות"): seven turns round the forearm, under the sleeve
       // (elbow: the forearm's group, 0 .. -fo along its -y; not seen but in a section), and from the wrist the strap comes out on the
-      // back of the hand to the middle finger, and three turns round it (wrist: the hand's own group - in the hand's frame, handRaw,
-      // its middle at -0.045, then scaled FS). Until now a turn and a half round the palm. TEF_STRAP_A2: a flat strap of leather (tm_strap),
+      // back of the hand to the middle finger, and three turns round it (wrist: the hand's own group - in the hand's frame, tm_hand,
+      // then turned and scaled FS). Until now a turn and a half round the palm. TEF_STRAP_A2: a flat strap of leather (tm_strap),
       // not a round cord. Its breadth, the turns' spacing and where on the finger - model choices.
       const SW = 0.0105, ST = 0.0016;   // the strap on the arm, kit units: its breadth and thickness
       if (elbow && fo > 0) {
@@ -454,29 +469,25 @@
         list.push(m);
       }
       if (wrist) {
-        // in the hand's own frame before it is turned (handRaw): the palm's middle at 0, the fingers down (-y), its back toward +z, the
-        // thumb at -sd x; the middle finger at x -sd 0.009 (its middle at y -0.062, half its length LM), turned by x 5 about z
-        const PA = 0.03, PB = 0.04, PC = 0.0125, XM = -sd * 0.009, LM = sd > 0 ? 0.0294 : 0.0286, FR = 0.0083, PHI = XM / 1.25 * 5;
-        const back = (x, y) => PC * Math.sqrt(Math.max(0, 1 - (x / PA) * (x / PA) - (y / PB) * (y / PB)));
-        const axisX = (y) => XM + Math.sin(PHI) * (-0.062 - y);   // the finger's axis, a little aslant
-        const fingR = (y) => FR * Math.sqrt(Math.max(0, 1 - ((y + 0.062) / LM) * ((y + 0.062) / LM)));
-        const lift = ST / 2 + 0.0007, pts = [];
-        // out of the sleeve on the little finger's side, aslant across the back of the hand to the middle finger's knuckle
-        for (const [x, y] of [[sd * 0.011, 0.064], [sd * 0.013, 0.046], [sd * 0.012, 0.033], [sd * 0.009, 0.018], [sd * 0.003, 0.0], [-sd * 0.004, -0.018], [XM * 0.9, -0.031]])
-          pts.push(new Vector3(x, y, Math.max(back(x, y), 0.0035) + lift));
-        // three turns round the middle finger, from its root down, starting on its back
-        const Y0 = -0.041, Y1 = -0.069, NT = 3, per = 24;
+        // HAND_A2: on the hand of tm_hand ("rest" - the Levites' hands do not change their pose), in its frame before it is turned: the
+        // wrist at 0, the fingers down, its back toward +z, the thumb at -sd x. Out of the sleeve on the little finger's side, aslant
+        // across the back of the hand to the middle finger's knuckle, and three turns round its first joint, from the knuckle down
+        const H = tm_hand({ sd, pose: "rest" }), MF = H.sk.fingers[1], back = H.sk.back, lift = ST / 2 + 0.0007, pts = [];
+        const K0 = MF.j[0];
+        for (const [x, y] of [[sd * 0.02, 0.032], [sd * 0.023, 0.012], [sd * 0.02, -0.012], [sd * 0.013, -0.045], [sd * 0.003, -0.078], [K0.x * 0.75, -0.105], [K0.x, -0.12]])
+          pts.push(new Vector3(x, y, Math.max(back(x, y), 0.006) + lift));
+        const A0 = MF.j[0], A1 = MF.j[1], ax = A1.clone().sub(A0), alen = ax.length();
+        ax.normalize();
+        const e2 = new Vector3(0, 0, 1).addScaledVector(ax, -ax.z).normalize(), e1 = new Vector3().crossVectors(ax, e2);
+        const NT = 3, per = 24, R0 = MF.r[0];
         for (let k = 0; k <= NT * per; k++) {
-          const u = k / (NT * per), y = Y0 + (Y1 - Y0) * u, th = Math.PI / 2 + sd * u * NT * TAU, r = fingR(y) + lift;
-          pts.push(new Vector3(axisX(y) + Math.cos(th) * r, y, Math.sin(th) * r));
+          const u = k / (NT * per), th = sd * u * NT * TAU, at = A0.clone().addScaledVector(ax, alen * (0.18 + 0.64 * u)), r = R0 + lift;
+          pts.push(at.addScaledVector(e2, Math.cos(th) * r).addScaledVector(e1, Math.sin(th) * r));
         }
-        const nrm = (p) => {
-          if (p.y < Y0 + 0.003) return new Vector3(p.x - axisX(p.y), 0, p.z);   // round the finger: out from its axis
-          return new Vector3(0.25 * p.x / (PA * PA) * PC * PC, 0.15 * p.y / (PB * PB) * PC * PC, 1);   // the back of the hand
-        };
+        const onFinger = (p) => { const q = p.clone().sub(A0), t = q.dot(ax); return t > alen * 0.1 ? q.addScaledVector(ax, -t) : null; };
+        const nrm = (p) => onFinger(p) || new Vector3(0, 0, 1);
         const g = tm_strap(pts, nrm, SW * 0.82, ST, false, 260);
         g.rotateY(sd * 0.95);   // as handRaw
-        g.translate(0, -0.045, 0);
         g.scale(FS, FS, FS);
         const m = new Mesh(g, mTef);
         m.name = "tefillin-yad-hand";
@@ -528,7 +539,7 @@
         fin[sd] = F; palmN[sd] = N;
         // the palm's middle: on its own foot's forepart (the foot's middle z 0.095 + DZ, 0.05 before it; its top 0.05 there), or as KP
         const P = M0.palms ? new Vector3(M0.palms[sd][0], M0.palms[sd][1], M0.palms[sd][2]) : new Vector3(sd * (KID_FX + 0.008 + 0.05 * sy), 0.066, 0.095 + KID_DZ + 0.05 * cy);
-        wrist[sd] = P.addScaledVector(F, -0.045).multiplyScalar(FS);
+        wrist[sd] = P.addScaledVector(F, -tm_hand({ sd, pose: "flat" }).sk.PM).multiplyScalar(FS);   // HAND_A2: the middle of the palm from the wrist (0.045 until now)
       }
       const toBend = (p, th) => { const dy = p.y - WY, c = Math.cos(th), s2 = Math.sin(th); return [p.x, dy * c + p.z * s2, -dy * s2 + p.z * c]; };
       let th = 0.9;

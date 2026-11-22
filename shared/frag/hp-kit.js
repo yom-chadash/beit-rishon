@@ -593,11 +593,12 @@
           const wr = new Group();
           wr.position.y = -A.fo;
           el.add(wr);
-          wr.add(new Mesh(GA.hand[side], K.mSkin));
+          wr.add(wr.userData.hand = new Mesh(GA.hand[side], K.mHand || K.mSkin));   // HAND_A2: kept - the houses put it to its pose
           const grip = new Group();
-          grip.position.set(0, -(A.fo + 0.08), 0.03);
+          if (K.handAt) { const G = K.handAt(side, "grip"); grip.position.set(G.x, -A.fo + G.y, G.z); grip.userData.fo = A.fo; }   // HAND_A2: where a handle lies in the closed hand
+          else grip.position.set(0, -(A.fo + 0.08), 0.03);
           el.add(grip);
-          sh.rotation.set(0.05, side * 0.08, 0); el.rotation.x = -0.15;   // standing, the arms hanging (58-ark.js ARK_POSE.stand)
+          sh.rotation.set(0.05, side * 0.08, hp ? side * 0.1 : 0); el.rotation.x = -0.15;   // standing, the arms hanging (58-ark.js ARK_POSE.stand); HAND_A2: the high priest's a little out, his hands clear of the robe
           return { sh, el, grip, wr };
         };
         return [arm(1), arm(-1)];

@@ -197,6 +197,7 @@
     return m;
   }
 
+  //@@include hand
   //@@include strap
   //@@include people-kit
   async function buildCourts(ctx) {

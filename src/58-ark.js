@@ -9,10 +9,11 @@
   // over whole: the same head, face, beard, kutonet, avnet, migba'at, hands and feet, the same textures and materials. Built once, lazily.
   function ark_kit() {
     if (ark_kit.kit) return ark_kit.kit;
+    //@@include hand
     //@@include strap
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
-      BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, footGeo, mat, mRobe, mSkin, mHat, mFace, mEye, mSashDyed, mSashWhite,
+      BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, handWr, handAt, footGeo, mat, mRobe, mSkin, mHand, mHat, mFace, mEye, mSashDyed, mSashWhite,
       mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs });   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
   }
   // ARK_FIG_208: the kit's arms in amot (as the Second Temple's 55-tamid.js makeFigKit): the sleeve from the shoulder to the elbow, the
@@ -23,11 +24,14 @@
     const upper = (up) => sc(mergeGeometries([W1(K.sph(0.07, 0.07, 0.07, 14, 10)), W1(K.at(new CylinderGeometry(0.07, 0.058, up / FS, 14), 0, -up / FS / 2, 0)),
       W1(K.at(K.sph(0.058, 0.058, 0.058, 12, 8), 0, -up / FS, 0))]), FS);
     const fore = (fo) => sc(W1(K.at(new CylinderGeometry(0.056, 0.046, fo / FS, 14), 0, -fo / FS / 2, 0)), FS);
-    const hand = (side, fo) => sc(K.at(K.handRaw(side), 0, -(fo / FS + 0.045), 0), FS);
+    const hand = (side, fo, pose) => sc(K.at(K.handRaw(side, pose), 0, -(fo / FS + 0.045), 0), FS);
     const foot = (side) => sc(K.footGeo(side).translate(-side * 0.1, 0, 0), FS);
     const P = { sx: K.SH_X * FS, sy: K.SH_Y * FS, up: K.UP * FS, fo: K.FORE * FS };
     const handW = (side) => sc(K.at(K.handRaw(side), 0, -0.045, 0), FS);   // KIDDUSH_FLAT_A2: the hand in its own wrist frame (as 55-tamid.js KG.handW)
+    // HAND_A2 (the user: "הידיים נראות מזעזע"): the kit's new hand (shared/frag/hand.js) - at rest; closed round the staff (gripP); flat on
+    // the foot in kiddush (handF)
     return (ark_kitArms.kg = { P, upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, handW: { 1: handW(1), "-1": handW(-1) }, foot: { 1: foot(1), "-1": foot(-1) },
+      gripP: { 1: hand(1, P.fo, "grip"), "-1": hand(-1, P.fo, "grip") }, handF: K.handWr ? { 1: K.handWr(1, "flat"), "-1": K.handWr(-1, "flat") } : null,
       neck: K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0),
       // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin
       thigh: W1(new CylinderGeometry(0.084 * FS, 0.1 * FS, 1, 12, 1, true).translate(0, 0.5, 0)),
@@ -86,9 +90,10 @@
       fo.castShadow = true;
       el.add(fo);
       // KIDDUSH_FLAT_A2: with a waist (the washing priest) the hand on its own wrist (wr), which turns for the palm on the foot
-      if (waist) { const wr = new Group(); wr.position.y = -KG.P.fo; el.add(wr); wr.add(new Mesh(KG.handW[side], K.mSkin)); return { sh, el, wr }; }
-      el.add(new Mesh(KG.handP[side], K.mSkin));
-      return { sh, el };
+      if (waist) { const wr = new Group(); wr.position.y = -KG.P.fo; el.add(wr); wr.add(wr.userData.hand = new Mesh(KG.handW[side], K.mHand)); return { sh, el, wr, side }; }
+      const hm = new Mesh(KG.handP[side], K.mHand);
+      el.add(hm);
+      return { sh, el, hand: hm, side };
     };
     const L = arm(1), R = arm(-1);
     const fl = new Mesh(KG.foot[1], K.mSkin), fr = new Mesh(KG.foot[-1], K.mSkin);
@@ -188,6 +193,13 @@
   // the feet together, he bows, each palm flat on the back of its foot, at once (the kit's kidHands - the same in the Second Temple's
   // 55-tamid.js); u 0..1 - how far into it. Until now (KIDDUSH_BEND_212) the legs upright, bent at the waist by kb, each hand on the
   // front of its leg as low as it reached.
+  // HAND_A2: an arm's hand (ark_priestFig without a waist) closed round the staff, or at rest
+  function ark_staffHand(A2, on) {
+    const KG = ark_kitArms();
+    if (!A2 || !A2.hand || !KG.gripP) return;
+    const gq = (on ? KG.gripP : KG.handP)[A2.side];
+    if (A2.hand.geometry !== gq) A2.hand.geometry = gq;
+  }
   function ark_kiddush(w, u, mode = "tk") {
     const K = ark_kit(), FS = K.FS;
     // KIDDUSH_RYOSE_A2: mode "ryose" - Rabbi Yose b. R. Yehuda: the right foot on the left, the hands one on the other above (the kit's)
@@ -198,6 +210,9 @@
     ark_setArm(w.R, mix(ARK_POSE.stand, H.arm[-1]), -1);
     const qI = ark_kiddush.qI || (ark_kiddush.qI = new Quaternion());
     for (const [A2, sd] of [[w.L, 1], [w.R, -1]]) if (A2.wr) A2.wr.quaternion.slerpQuaternions(qI, H.wq[sd], u);
+    // HAND_A2: the palms flat on the feet (and on the hand in "ryose") once he is down to them; else at rest
+    const KG = ark_kitArms();
+    if (KG.handF) for (const [A2, sd] of [[w.L, 1], [w.R, -1]]) { const m = A2.wr && A2.wr.userData.hand, gq = u > 0.35 ? KG.handF[sd] : KG.handW[sd]; if (m && m.geometry !== gq) m.geometry = gq; }
     K.kidLegs(w, H, u);   // the feet (and in "ryose" the right leg laid on the left)
     return H;
   }
@@ -356,7 +371,7 @@
       cuff.rotation.x = Math.PI / 2;
       cuff.position.y = -KG.P.fo + 0.03;
       el.add(cuff);
-      const hand = new Mesh(KG.handP[side], K.mSkin);
+      const hand = new Mesh(KG.handP[side], K.mHand);
       hand.rotation.y = side * Math.PI / 2;
       el.add(hand);
       return { sh, el, hand };
@@ -520,6 +535,7 @@
         p.g.position.set(X + dx, Y, s * 1.1);
         p.g.rotation.y = -Math.PI / 2;
         ark_setArm(s > 0 ? p.L : p.R, ARK_POSE.staff, s > 0 ? 1 : -1);
+        ark_staffHand(s > 0 ? p.L : p.R, true);   // HAND_A2: the hand closed round the staff
         pv.add(p.g);
       }
     };
@@ -678,7 +694,8 @@
       if (holding) {
         const st = ARK_POSE.staff, sd = ARK_POSE.stand, k = hold01;
         ark_setArm(p.staffArm, [st[0] + (sd[0] - st[0]) * (1 - k), st[1] + (sd[1] - st[1]) * (1 - k), st[2] + (sd[2] - st[2]) * (1 - k)], p.side);
-      } else ark_setArm(p.staffArm, [0.32 * sw, 0.08, -0.25 * moving - 0.15 * (1 - moving)], p.side);
+        ark_staffHand(p.staffArm, k > 0.5);   // HAND_A2
+      } else { ark_setArm(p.staffArm, [0.32 * sw, 0.08, -0.25 * moving - 0.15 * (1 - moving)], p.side); ark_staffHand(p.staffArm, false); }
       ark_setArm(p.freeArm, [-0.32 * sw, 0.08, -0.25 * moving - 0.15 * (1 - moving)], -p.side);
       p.lean.position.y = Math.abs(Math.cos(ph)) * 0.035 * moving;
       p.fl.position.z = 0.17 * sw;

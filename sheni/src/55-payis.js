@@ -30,9 +30,10 @@
     g.name = "payisDemo";
     g.visible = false;
     ctx2.root.add(g);
+    //@@include hand
     //@@include strap
     //@@include priest-kit
-    SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, handRaw, footGeo,
+    SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, handRaw, handWr, handAt, mHand, footGeo,
       WAIST, gRobeLow, gRobeUp, bZ, spl,
       mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards,
       MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs };   // MIGBAAT_A2, TEFILLIN_A2
@@ -83,7 +84,7 @@
       const body = new Mesh(gRobe, robe);
       body.castShadow = true;
       f.add(body);
-      f.add(new Mesh(gSkinStill, mSkin));
+      f.add(new Mesh(gSkinStill, mSkin), new Mesh(gHandStill, mHand));
       if (sash) { const sm = new Mesh(gSash, mSashDyed); f.add(sm); SASHES.push(sm); }
       // (every priest a little different: the turn of his head, his height)
       const yaw = (rnd() - 0.5) * 0.5;
@@ -99,7 +100,7 @@
       armR.position.set(-SH_X, SH_Y, 0);
       armR.rotation.set(ARM_DOWN[0], 0, ARM_DOWN[1]);
       armR.add(new Mesh(gSleeve, robe));
-      const hOpen = new Mesh(gHandOpen, mSkin), hPoint = new Mesh(gHandPoint, mSkin);
+      const hOpen = new Mesh(gHandOpen, mHand), hPoint = new Mesh(gHandPoint, mHand);
       hPoint.visible = false;
       armR.add(hOpen);
       armR.add(hPoint);
