@@ -1,4 +1,5 @@
   // plugin/js/courts.js
+  //@@include strap
   //@@include people-kit
   async function build2(ctx2) {
     const { H: H2, M: M2 } = ctx2;

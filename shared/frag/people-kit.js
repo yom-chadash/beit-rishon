@@ -265,7 +265,8 @@
       parts.push(place(new BoxGeometry(TB * 1.25, TB * 1.25, 0.01), 0.007), place(new BoxGeometry(TB, TB, TB), 0.012 + TB / 2));
       const ring = [];   // TEFILLIN_PLACE_A2: over the ears to the knot at the top of the nape (as priest-kit.js)
       for (let i = 0; i < 24; i++) { const ph = (i / 24) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = -0.056 + (TY - TB * 0.45 + 0.056) * Math.pow(w, 0.35), r = headR(ph, y) + 0.005; ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r)); }
-      parts.push(new TubeGeometry(new CatmullRomCurve3(ring, true), 32, 0.0045, 3, true));
+      // TEF_STRAP_A2 (the user: "דקות, שחורות ושטוחות (רצועת עור), ולא חוט עגול"): a flat strap (tm_strap), its face on the head; until now a round cord
+      parts.push(tm_strap(ring, (p) => new Vector3(p.x / (HR[0] * HR[0]), p.y / (HR[1] * HR[1]), p.z / (HR[2] * HR[2])), 0.013, 0.0018, true, 40));
       return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); return q.translate(0, HY, 0); }));
     };
     const tefOK = () => { const S = ctx.shared || {}; return !(S.tefOff && S.tefOff.size) && !(S.ykEntry && S.ykEntry.on) && !(S.simchaShoeva && S.simchaShoeva.on); };

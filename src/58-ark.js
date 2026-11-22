@@ -9,6 +9,7 @@
   // over whole: the same head, face, beard, kutonet, avnet, migba'at, hands and feet, the same textures and materials. Built once, lazily.
   function ark_kit() {
     if (ark_kit.kit) return ark_kit.kit;
+    //@@include strap
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
       BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, footGeo, mat, mRobe, mSkin, mHat, mFace, mEye, mSashDyed, mSashWhite,

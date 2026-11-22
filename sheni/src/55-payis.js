@@ -30,6 +30,7 @@
     g.name = "payisDemo";
     g.visible = false;
     ctx2.root.add(g);
+    //@@include strap
     //@@include priest-kit
     SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, handRaw, footGeo,
       WAIST, gRobeLow, gRobeUp, bZ, spl,
