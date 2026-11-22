@@ -35,6 +35,39 @@
       WAIST, gRobeLow, gRobeUp, bZ, spl,
       mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards,
       MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef };   // MIGBAAT_A2, TEFILLIN_A2
+    // HP_KIT_A2: the high priest in his eight and the priest in his four - one construction for both houses (shared/frag/hp-kit.js): the
+    // morning service's high priest (55-tamid.js) and "בגדי הכהנים" (below); built when first asked
+    //@@include hp-kit
+    SH.hpKit = () => hpKit(SH.priestKit);
+    // HP_KIT_A2 (the user via the coordinator: "מתג כזה תעשה גם בבית שני"): "בגדי הכהנים" - a priest in his four garments and the high
+    // priest in his eight, side by side between the ulam and the altar, facing east, as in the First Temple (58-ark.js): the same pair
+    // (hpKit pair), its readings - the avnet of the common priest (Yoma 12b), the ephod and the mitznefet - set from the opinions table.
+    // ctx.shared.priestGarments = { on, set(on), reading(o), state }
+    {
+      const PG = new Group();
+      PG.name = "priestGarments";
+      PG.visible = false;
+      ctx2.root.add(PG);
+      ctx2.layers.priestGarments = PG;
+      // on the lower landing of the steps between the ulam and the altar ("אמה אמה ורובד שלש", Middot 3:6 - x 31..34, 2 amot above the
+      // court; 30-courts.js), 7 amot west of the altar's west face (x 39.5) - model choice
+      const X = 32.5, Y = LV.KOH + 2, Z = 14;
+      let P = null;
+      const want = { belt: "kilayim", ephod: "rashi", mitz: "rashi" };
+      const PGI = { info: "בגדי הכהנים — הפירוט בתפריט, תחת ״הכהנים״: ״בגדי הכהנים — כהן הדיוט וכהן גדול״.", refs: [["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }]] };
+      ctx2.labels.push(Object.assign({ text: "כהן הדיוט — ארבעה בגדים", x: X, y: Y + 3.9, z: Z - 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI),
+        Object.assign({ text: "כהן גדול — שמונה בגדים", x: X, y: Y + 4.35, z: Z + 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI));
+      SH.priestGarments = {
+        get on() { return PG.visible; },
+        get state() { return Object.assign({}, want); },
+        reading(o) { Object.assign(want, o || {}); if (P) P.set(want); return Object.assign({}, want); },
+        set(on) {
+          if (on && !P) { P = SH.hpKit().pair(); P.g.position.set(X, Y, Z); PG.add(P.g); P.set(want); }
+          PG.visible = !!on;
+          return PG.visible;
+        }
+      };
+    }
     // TEFILLIN_A2 (fix-a2; the user, 22.11.2026 01:04: "תפילין — אין לאף אחד בשבת, ביום טוב... ובחול המועד", nor by night): the
     // priests' tefillin (the kit's, and the morning service's - 55-tamid.js) are hidden while any reason in SH.tefOff stands - this
     // demonstration's night (until the dawn), the morning service's night (55-tamid.js applySky), and the High Priest's entry on

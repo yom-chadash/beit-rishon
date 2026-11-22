@@ -108,85 +108,15 @@
     }
     return { g, lean, bend, legs, L, R, fl, fr, hat, hg, S: U };   // (HP_RISHON_A2: hat, hg, S - for the high priest's garments)
   }
-  // HP_RISHON_A2 (the user's decision 70 b): THE HIGH PRIEST IN HIS EIGHT - the Rambam, Klei HaMikdash 8:2 (338:124) "בגדי זהב הן בגדי
-  // כהן גדול והם שמנה כלים. הארבעה של כל כהן. ומעיל ואפוד וחשן וציץ"; on the priest of the kit (the kutonet, the avnet, the
-  // tefillin): the me'il "כלו תכלת... ואין לו בית יד, אלא נחלק לשתי כנפים מסוף הגרון עד למטה" (9:3, 338:145), on its hem
-  // pomegranates of tekhelet, argaman and tola'at shani and seventy-two golden bells (9:4, 146); the ephod "רחבו כרחב גבו של אדם
-  // מכתף לכתף, וארכו מכנגד אצילי הידים מאחוריו עד הרגלים", its cheshev round him (9:9, 151), its shoulder pieces and their two
-  // shoham stones; the choshen "זרת על זרת מרבע", four rows of stones (9:6, 148), on golden chains; the tzitz "טס של זהב רחב שתי
-  // אצבעות ומקיף מאזן לאזן" (9:1, 143) on the forehead, under the head's tefillin ("שערו היה נראה בין ציץ למצנפת, ששם מניחין
-  // תפילין", Zevachim 19a); the mitznefet wound "כמי שלופף על השבר" (8:2) - instead of the migba'at. Their colours, measures and the
-  // stones' colours - model choices.
-  function ark_hpFig() {
-    const K = ark_kit(), w = ark_priestFig(4), S = w.S, TAU = K.TAU, sp = (t, y) => K.spl(t, y);
-    if (w.hat) w.hat.visible = false;
-    const std = (c, o) => new MeshStandardMaterial(Object.assign({ color: c, roughness: 0.78 }, o || {}));
-    const mTech = std(0x2a4b94, { side: DoubleSide }), mGold = std(0xd8b24a, { metalness: 0.85, roughness: 0.32 }), mArg = std(0x7c2147), mShani = std(0xb52a26), mCord = std(0x2a4b94);
-    const weaveT = K.cnv(64, 64, 6, 1, (c) => { const cols = ["#d4ad47", "#2a4b94", "#d4ad47", "#7c2147", "#d4ad47", "#b52a26", "#d4ad47", "#efe9da"]; for (let i = 0; i < 8; i++) { c.fillStyle = cols[i]; c.fillRect(i * 8, 0, 8, 64); } });
-    const mWeave = std(0xffffff, { map: weaveT, side: DoubleSide, roughness: 0.6, metalness: 0.25 });
-    const add = (geo, m, par) => { const q = new Mesh(geo, m); q.castShadow = true; (par || S).add(q); return q; };
-    // the me'il: from the throat to above the feet, its front split (a narrow gap), no sleeves
-    const GAP = 0.09;
-    add(K.surf(48, 26, (u, v, o) => {
-      const y = 0.24 + v * (1.85 - 0.24), a = 2 * Math.PI + GAP + u * (2 * Math.PI - 2 * GAP), k = Math.max(0, (1.25 - y) / 1.0);
-      o.x = (sp(K.bX, y) + 0.016 + 0.035 * k) * Math.sin(a); o.z = (sp(K.bZ, y) + 0.018 + 0.035 * k) * Math.cos(a); o.y = y; o.c = 1; o.tu = u; o.tv = v;
-    }), mTech);
-    // the hem: 72 bells and 72 pomegranates, one by one
-    {
-      const y = 0.255, rx = sp(K.bX, y) + 0.016 + 0.035, rz = sp(K.bZ, y) + 0.018 + 0.035, N = 144;
-      const pg = new SphereGeometry(0.019, 8, 6), bg = new ConeGeometry(0.015, 0.03, 8); bg.translate(0, -0.006, 0);
-      const ims = [mTech, mArg, mShani].map((m) => new InstancedMesh(pg, m, 24)), ib = new InstancedMesh(bg, mGold, 72), m4 = new Matrix4(), ps = new Vector3(), q0 = new Quaternion(), one = new Vector3(1, 1, 1);
-      let np = [0, 0, 0], nb = 0;
-      for (let i = 0; i < N; i++) {
-        const a = 2 * Math.PI + GAP + ((i + 0.5) / N) * (2 * Math.PI - 2 * GAP);
-        m4.compose(ps.set(rx * Math.sin(a), y - 0.02, rz * Math.cos(a)), q0, one);
-        if (i % 2) { ib.setMatrixAt(nb++, m4); } else { const c = (i / 2) % 3; ims[c].setMatrixAt(np[c]++, m4); }
-      }
-      for (const m of [...ims, ib]) S.add(m);
-    }
-    // the ephod: over the back, from the elbows' height to the feet; its cheshev round him; the shoulder pieces and their stones
-    add(K.surf(26, 18, (u, v, o) => {
-      const y = 0.3 + v * (1.36 - 0.3), a = Math.PI + (u - 0.5) * 2.4, k = Math.max(0, (1.25 - y) / 1.0);
-      o.x = (sp(K.bX, y) + 0.06 + 0.04 * k) * Math.sin(a); o.z = (sp(K.bZ, y) + 0.065 + 0.04 * k) * Math.cos(a); o.y = y; o.c = 1; o.tu = u * 3; o.tv = v;
-    }), mWeave);
-    add(K.surf(48, 3, (u, v, o) => {
-      const y = 1.3 + v * 0.085, a = u * TAU;
-      o.x = (sp(K.bX, y) + 0.06) * Math.sin(a); o.z = (sp(K.bZ, y) + 0.066) * Math.cos(a); o.y = y; o.c = 1; o.tu = u * 8; o.tv = v;
-    }), mWeave);
-    const strap = (sd) => new CatmullRomCurve3([[0.12, 1.36, 0.17], [0.15, 1.6, 0.17], [0.17, 1.8, 0.09], [0.18, 1.87, 0.0], [0.17, 1.8, -0.1], [0.15, 1.5, -0.17], [0.14, 1.36, -0.19]].map(([x, y, z]) => new Vector3(sd * x, y, z)));
-    for (const sd of [-1, 1]) {
-      add(new TubeGeometry(strap(sd), 24, 0.022, 6, false), mWeave);
-      add(new SphereGeometry(0.034, 10, 8).scale(1, 0.6, 1.2).translate(sd * 0.18, 1.895, 0.0), std(0x2f7d5a, { roughness: 0.25, metalness: 0.1 }));   // the shoham stone
-      add(new TorusGeometry(0.036, 0.008, 6, 14).rotateX(Math.PI / 2).translate(sd * 0.18, 1.885, 0.0), mGold);
-    }
-    // the choshen on the chest: a square of the weave, its golden frame, four rows of three stones, its chains to the shoulders
-    {
-      const yc = 1.56, zc = sp(K.bZ, yc) + 0.035, H = 0.24;
-      add(new BoxGeometry(H, H, 0.012).translate(0, yc, zc), mWeave);
-      add(new BoxGeometry(H + 0.02, H + 0.02, 0.006).translate(0, yc, zc - 0.006), mGold);
-      const SC = [0xa31e2a, 0x7fae3c, 0x2f8a4f, 0x2fb3a7, 0x2a5ad6, 0xe7e9f0, 0xc8783a, 0x9a8f86, 0x7b3fa0, 0xd7c25a, 0x1e6b52, 0x5f7f4d];   // the twelve (model choice of colours)
-      for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {
-        const x = (c - 1) * 0.07, y = yc + 0.09 - r * 0.06;
-        add(new BoxGeometry(0.05, 0.042, 0.016).translate(x, y, zc + 0.012), std(SC[r * 3 + c], { roughness: 0.18, metalness: 0.15 }));
-        add(new BoxGeometry(0.058, 0.05, 0.008).translate(x, y, zc + 0.004), mGold);
-      }
-      for (const sd of [-1, 1]) add(new TubeGeometry(new CatmullRomCurve3([new Vector3(sd * 0.11, yc + H / 2, zc + 0.006), new Vector3(sd * 0.15, 1.78, 0.1), new Vector3(sd * 0.18, 1.88, 0.03)]), 12, 0.006, 4, false), mGold);
-    }
-    // the tzitz on the forehead (under the tefillin), its cords of tekhelet to the back; the mitznefet over the crown
-    {
-      const hg = w.hg, R0 = K.HR[0] + 0.006;
-      const tz = new Mesh(new CylinderGeometry(K.HR[2] * 0.95, K.HR[2] * 0.95, 0.042, 24, 1, true, -1.25, 2.5), mGold);
-      tz.scale.set(K.HR[0] / K.HR[2] * 1.02, 1, 1); tz.position.y = 0.062; tz.material.side = DoubleSide; hg.add(tz);
-      for (const sd of [-1, 1]) { const cd = new Mesh(new TubeGeometry(new CatmullRomCurve3([new Vector3(sd * R0 * 0.95, 0.062, 0.04), new Vector3(sd * R0, 0.05, -0.06), new Vector3(sd * 0.03, 0.03, -K.HR[2] - 0.01)]), 10, 0.004, 4, false), mCord); hg.add(cd); }
-      const mz = K.surf(40, 20, (u, v, o) => {
-        const a = u * TAU + Math.PI, fr = Math.pow(Math.max(0, Math.cos(a)), 2), y = 0.075 + 0.05 * fr * (1 - v) + v * 0.17, R = (1 - 0.35 * Math.pow(v, 2.2)) * (1 + 0.035 * (((v * 6 + u * 2) % 1) < 0.25 ? 1 : 0));
-        o.x = K.HR[0] * 1.12 * R * Math.sin(a); o.z = K.HR[2] * 1.1 * R * Math.cos(a) - 0.012; o.y = y; o.c = 1 - 0.12 * ((((v * 6 + u * 2) % 1) < 0.25) ? 1 : 0);
-      });
-      const mzM = new Mesh(mz, std(0xf3f0e6, { vertexColors: true, roughness: 0.9 })); mzM.castShadow = true; hg.add(mzM);
-      const top = new Mesh(new SphereGeometry(1, 16, 6, 0, TAU, 0, Math.PI / 2), std(0xf3f0e6, { roughness: 0.9 })); top.scale.set(K.HR[0] * 0.73, 0.05, K.HR[2] * 0.72); top.position.set(0, 0.245, -0.012); hg.add(top);
-    }
-    w.g.name = "highPriest";
-    return w;
+  // HP_KIT_A2 (the user via the coordinator, 22.11.2026: "בבית ראשון להשתמש באותה בנייה עצמה, ולא בבנייה נפרדת"): THE HIGH PRIEST IN
+  // HIS EIGHT AND THE PRIEST IN HIS FOUR - the Second Temple's construction itself (shared/frag/hp-kit.js; until now its 55-tamid.js
+  // buildHP), on this kit: the robe, the ephod by Rashi or by the Rambam, its shoulders of the ephod's work (the user's decision 105),
+  // the breastplate, the tzitz, the mitznefet of shesh tilted back with its cords of techelet by Rashi or by the Ramban. (Until 1.4.x
+  // here a construction of its own - ark_hpFig - which the user did not accept: "האפוד... לא נכון".) Built once, lazily.
+  function ark_hpKit() {
+    if (ark_hpKit.k) return ark_hpKit.k;
+    //@@include hp-kit
+    return (ark_hpKit.k = hpKit(ark_kit()));
   }
   // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "הקידוש צריך להיות יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר! בכל ההדגמות!"),
   // as the Second Temple's 55-tamid.js: the leg in the figure's frame (kit units; side +1 the left) - the hip; the knee and the ankle
@@ -512,28 +442,28 @@
       ctx.animated.push(() => { if (SF.on) place(); });
     }
     // HP_RISHON_A2 (the user's decision 70 b): "בגדי הכהנים" - a priest in his four garments and the high priest in his eight, side by
-    // side between the ulam and the altar, facing east; built when first asked. ctx.shared.priestGarments = { on, set(on) }.
+    // side between the ulam and the altar, facing east; built when first asked. HP_KIT_A2: the pair of both houses (hpKit pair - the
+    // Second Temple has the same, 55-payis.js), its readings - the common priest's avnet (Yoma 12b), the ephod and the mitznefet - from
+    // the opinions table. ctx.shared.priestGarments = { on, set(on), reading(o), state }.
     {
       const PG = new Group();
       PG.name = "priestGarments";
       PG.visible = false;
       ctx.root.add(PG);
       ctx.layers.priestGarments = PG;
-      let built = false;
+      const X = 37, Y = 6, Z = 14;
+      let P = null;
+      const want = { belt: "kilayim", ephod: "rashi", mitz: "rashi" };
       // (LABEL_NEAR_A2: each caption over its own figure, at a height of its own, and it keeps shrinking as the eye comes near - kMin)
       const PGI = { info: "בגדי הכהנים — הפירוט בתפריט, תחת ״הכהנים״: ״בגדי הכהנים — כהן הדיוט וכהן גדול״.", refs: [["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }]] };
-      ctx.labels.push(Object.assign({ text: "כהן הדיוט — ארבעה בגדים", x: 37, y: 6 + 3.9, z: 12.6, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI),
-        Object.assign({ text: "כהן גדול — שמונה בגדים", x: 37, y: 6 + 4.35, z: 15.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI));
+      ctx.labels.push(Object.assign({ text: "כהן הדיוט — ארבעה בגדים", x: X, y: Y + 3.9, z: Z - 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI),
+        Object.assign({ text: "כהן גדול — שמונה בגדים", x: X, y: Y + 4.35, z: Z + 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI));
       ctx.shared.priestGarments = {
         get on() { return PG.visible; },
+        get state() { return Object.assign({}, want); },
+        reading(o) { Object.assign(want, o || {}); if (P) P.set(want); return Object.assign({}, want); },
         set(on) {
-          if (on && !built) {
-            built = true;
-            const a = ark_priestFig(1), b = ark_hpFig();
-            a.g.position.set(37, 6, 12.6); b.g.position.set(37, 6, 15.4);
-            a.g.rotation.y = b.g.rotation.y = Math.PI / 2;
-            for (const f of [a, b]) { f.g.traverse((o) => { if (o.isMesh) o.userData.noPick = true; }); PG.add(f.g); }
-          }
+          if (on && !P) { P = ark_hpKit().pair(); P.g.position.set(X, Y, Z); PG.add(P.g); P.set(want); }
           PG.visible = !!on;
           return PG.visible;
         }

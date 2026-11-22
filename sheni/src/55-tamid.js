@@ -699,6 +699,16 @@
       })() : null;
       const makeFigKit = (id, kind) => {
         const K = KIT, FS = K.FS, lev = kind === "L", hp = kind === "H", n = Object.keys(figs).length;
+        // HP_KIT_A2: the high priest - the one construction of both houses (SH.hpKit, shared/frag/hp-kit.js: his body, his eight
+        // garments and their readings - the ephod, the mitznefet - on the kit's head, sleeves, hands and feet)
+        if (hp && SH.hpKit) {
+          const F = SH.hpKit().figure();
+          F.g.visible = false;
+          group.add(F.g);
+          const f = { id, g: F.g, lean: F.lean, bend: null, legs: null, A: F.A, L: F.L, R: F.R, fl: F.fl, fr: F.fr, levite: false, kind, body: F.body, belt: F.belt, st: null, tag: null, kit: true, neck: null, upper: null, garb: F.garb };
+          figs[id] = f;
+          return f;
+        }
         const g = new Group(), lean = new Group();
         g.add(lean);
         let body, belt = null, bend = null, neckG = null, upG = null;   // NIGHT_SIT_305: the neck's pivot; the part above the waist
@@ -875,241 +885,9 @@
       //  the mitznefet - TM.mitz: Rashi "כמין כפת כובע" (28:4) "למעלה בגבה הראש ואינה עמקה לכנס בה כל הראש עד המצח", with his three
       //   cords, the middle one over it (28:37); or the Ramban "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל" (28:31; the Rambam
       //   8:2 "כמי שלופף על השבר"), with the Rambam's one cord "נקשר... כנגד הערף" (9:2) "למעלה מן המצנפת" (10:3)
-      const HEX = (n) => "#" + new Color(n).getHexString();
-      const canvasTex = (w, h, draw, rep) => {
-        const cv = document.createElement("canvas");
-        cv.width = w; cv.height = h;
-        draw(cv.getContext("2d"), w, h);
-        const t = new CanvasTexture(cv);
-        t.colorSpace = SRGBColorSpace;
-        t.anisotropy = 4;
-        if (rep) { t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(rep[0], rep[1]); }
-        return t;
-      };
-      const STONES = [["אדם", "ראובן", 0xb3222c], ["פטדה", "שמעון", 0x3f8f4c], ["ברקת", "לוי", 0x1d9a86],
-        ["נפך", "יהודה", 0xc8711f], ["ספיר", "דן", 0x2c52b4], ["יהלם", "נפתלי", 0xdce6ec],
-        ["לשם", "גד", 0x8d5aa6], ["שבו", "אשר", 0x6d7176], ["אחלמה", "יששכר", 0x9a376a],
-        ["תרשיש", "זבולן", 0x2a90b8], ["שהם", "יוסף", 0x2a3331], ["ישפה", "בנימין", 0x63a067]];
-      const buildHP = (f) => {
-        const L = f.lean, out = {}, TILE = 0.42;   // TILE: amot to the ephod's texture
-        const T = new Group();   // his torso: all that lies on the tunic, flat as it (ZS)
-        T.scale.z = ZS;
-        L.add(T);
-        const mk = (geo, mat, x = 0, y = 0, z = 0, par = T) => { const m = new Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; par.add(m); return m; };
-        const tube = (pts, r, mat) => mk(new TubeGeometry(new CatmullRomCurve3(pts.map((p) => new Vector3(p[0], p[1], p[2]))), Math.max(10, pts.length * 7), r, 5, false), mat);
-        // a cord of plies twined round its path (the user: "פתיל, לא צינור"): the cords of techelet two plies, the chains of gold three
-        // ("מעשה עבת. מעשה קליעת חוטין", Rashi 28:14)
-        const cord = (pts, r, mat, plies = 2, pitch = 0.028) => {
-          const curve = new CatmullRomCurve3(pts.map((p) => new Vector3(p[0], p[1], p[2])));
-          const len = curve.getLength(), n = Math.max(24, Math.ceil(len / 0.005)), fr = curve.computeFrenetFrames(n, false), geos = [];
-          for (let k = 0; k < plies; k++) {
-            const ps = [];
-            for (let i = 0; i <= n; i++) {
-              const u = i / n, th = (u * len / pitch) * Math.PI * 2 + k * Math.PI * 2 / plies;
-              ps.push(curve.getPointAt(u).addScaledVector(fr.normals[i], Math.cos(th) * r * 0.55).addScaledVector(fr.binormals[i], Math.sin(th) * r * 0.55));
-            }
-            geos.push(new TubeGeometry(new CatmullRomCurve3(ps), n, r * 0.56, 5, false));
-          }
-          return mk(mergeGeometries(geos), mat);
-        };
-        const ribbon = (pts, w, mat) => {   // a flat band along a path, its width along x
-          const P = new CatmullRomCurve3(pts.map((p) => new Vector3(p[0], p[1], p[2]))).getPoints(30), pos = [], uv = [], idx = [];
-          let len = 0;
-          P.forEach((p, i) => { if (i) len += p.distanceTo(P[i - 1]); pos.push(p.x - w / 2, p.y, p.z, p.x + w / 2, p.y, p.z); uv.push(0, len / TILE, w / TILE, len / TILE); if (i) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); } });
-          const g = new BufferGeometry();
-          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
-          g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
-          g.setIndex(idx);
-          g.computeVertexNormals();
-          return mk(g, mat);
-        };
-        const M = {
-          techelet: std(COL.techelet, { roughness: 0.75, side: DoubleSide }),
-          // "חמשת מינים הללו שזורין בכל חוט וחוט... ואחר כך שוזר את כלם כאחד" (Rashi 28:6): its threads twined (twine), the ground red with
-          // the gold between; the figures of "מעשה חשב" in techelet - flowers and leaves on a vine, as the site the user sent (its picture
-          // 191: red, its figures blue; model choice). The user: "הצבע של האפוד גם לא נכון"
-          ephod: std(0xffffff, { roughness: 0.6, metalness: 0.12, side: DoubleSide, map: (() => {
-            const S = 256, cv = twine(S, S, [[COL.techelet, 0.3], [COL.argaman, 0.14], [COL.tolaat, 0.16], [COL.shesh, 0.26], [0xd8b04c, 0.14]], 31, 3, 1.2, 0.45), c = cv.getContext("2d");
-            const NAVY = "rgba(36,52,120,0.78)", BLUE = "rgba(96,124,200,0.85)", EDGE = "rgba(232,206,130,0.75)";
-            const flower = (x, y, R, rot) => {
-              for (let k = 0; k < 6; k++) {
-                const an = rot + (k * Math.PI) / 3, px = x + Math.cos(an) * R * 0.55, py = y + Math.sin(an) * R * 0.55;
-                c.fillStyle = NAVY; c.beginPath(); c.ellipse(px, py, R * 0.52, R * 0.27, an, 0, Math.PI * 2); c.fill();
-                c.strokeStyle = EDGE; c.lineWidth = 1.2; c.stroke();
-                c.fillStyle = BLUE; c.beginPath(); c.ellipse(px, py, R * 0.3, R * 0.11, an, 0, Math.PI * 2); c.fill();
-              }
-              c.fillStyle = "#e3bd52"; c.beginPath(); c.arc(x, y, R * 0.2, 0, Math.PI * 2); c.fill();
-            };
-            const leaf = (x, y, an, l) => {
-              c.fillStyle = NAVY; c.beginPath(); c.ellipse(x, y, l, l * 0.36, an, 0, Math.PI * 2); c.fill();
-              c.strokeStyle = BLUE; c.lineWidth = 1; c.beginPath(); c.moveTo(x - Math.cos(an) * l * 0.8, y - Math.sin(an) * l * 0.8); c.lineTo(x + Math.cos(an) * l * 0.8, y + Math.sin(an) * l * 0.8); c.stroke();
-            };
-            for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {   // drawn round, so that the tile repeats whole
-              c.save(); c.translate(ox, oy);
-              c.strokeStyle = NAVY; c.lineWidth = 3.2;
-              for (const [x0, y0, x1, y1, cx, cy] of [[64, 64, 192, 192, 160, 80], [64, 64, -64, 192, -40, 90], [192, 192, 320, 320, 290, 210], [192, 192, 64, 320, 90, 300]]) { c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1); c.stroke(); }
-              for (const [x, y, an] of [[120, 92, 0.4], [150, 150, -0.9], [228, 230, 2.2], [40, 140, 1.9], [100, 220, -0.6], [215, 120, 0.9], [20, 40, 2.6], [150, 20, 0.2]]) leaf(x, y, an, 17);
-              flower(64, 64, 34, 0.2); flower(192, 192, 34, 0.7); flower(192, 64, 15, 0); flower(64, 192, 15, 0.5);
-              c.restore();
-            }
-            return texOf(cv);
-          })() }),
-          tefillin: std(0x141414, { roughness: 0.45 }),
-          shoham: std(0x1f6450, { roughness: 0.14, metalness: 0.1 }),
-          pom: std(0x86304a, { roughness: 0.8 })
-        };
-        // the robe and its hem
-        // the robe: "ואין לו בית יד אלא נחלק לשתי כנפים מסוף הגרון עד למטה כדרך כל המעילים ואינו מחבר אלא כנגד כל הגרון בלבד" (9:3; the
-        // user: "אין ידיים") - two wings, before and behind, joined only round the neck; the arms out between them
-        {
-          const prof = MEIL;
-          const rows = [];
-          for (let i = 1; i < prof.length; i++) { const n = Math.max(1, Math.round((prof[i][0] - prof[i - 1][0]) / 0.06)); for (let k = i === 1 ? 0 : 1; k <= n; k++) rows.push([lerp(prof[i - 1][0], prof[i][0], k / n), lerp(prof[i - 1][1], prof[i][1], k / n)]); }
-          const NX = 64, pos = [], idx = [];
-          rows.forEach(([y, r]) => { for (let i = 0; i <= NX; i++) { const ph = (i / NX) * Math.PI * 2, k = 1 + 0.032 * clamp((2.0 - y) / 1.7, 0, 1) * Math.sin(8 * ph + 0.7 * Math.sin(3 * ph)); pos.push(Math.sin(ph) * r * k, y - 0.07 * smooth(clamp((y - 2.6) / 0.23, 0, 1)) * Math.pow(Math.max(0, Math.cos(ph)), 1.5), Math.cos(ph) * r * k); } });
-          for (let j = 0; j < rows.length - 1; j++) {
-            const ym = (rows[j][0] + rows[j + 1][0]) / 2;
-            for (let i = 0; i < NX; i++) {
-              const ph = ((i + 0.5) / NX) * Math.PI * 2, side = Math.min(Math.abs(ph - HP), Math.abs(ph - 3 * HP));
-              if (ym < 2.74 && side < 0.3) continue;   // between the wings
-              const p0 = j * (NX + 1) + i, p1 = p0 + NX + 1;
-              idx.push(p0, p0 + 1, p1, p1, p0 + 1, p1 + 1);
-            }
-          }
-          const mg = new BufferGeometry();
-          mg.setAttribute("position", new Float32BufferAttribute(pos, 3));
-          mg.setIndex(idx);
-          mg.computeVertexNormals();
-          mk(mg, M.techelet);
-        }
-        const bellG = new LatheGeometry([V2(0.023, -0.016), V2(0.02, -0.012), V2(0.016, 0.006), V2(0.011, 0.02), V2(0.001, 0.022)], 8);
-        const bells = new InstancedMesh(bellG, MAT.gold, 72), poms = new InstancedMesh(new SphereGeometry(0.019, 8, 6).scale(1, 1.35, 1), M.pom, 72);
-        const m4 = new Matrix4();
-        for (let w = 0; w < 2; w++) for (let i = 0; i < 72; i++) {   // each wing: from its one edge to the other, bell and pomegranate by turns
-          const an = -HP + 0.3 + (i / 71) * (Math.PI - 0.6) + w * Math.PI;
-          m4.makeTranslation(Math.sin(an) * 0.461, 0.272, Math.cos(an) * 0.461);
-          (i % 2 ? poms : bells).setMatrixAt(w * 36 + (i >> 1), m4);
-        }
-        for (const im of [bells, poms]) { im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; T.add(im); }
-        // the ephod behind, its band round, its two shoulders and their stones
-        // the ephod by Rashi (the user: "רק רש״י"): "כמין סינר של נשים רוכבות סוסים, וחוגר אותו מאחוריו כנגד לבו למטה מאציליו, רחבו כמדת
-        // רחב גבו של אדם ויותר, ומגיע עד עקביו" (28:6), "ונקפל הסינר לפני הכהן על מתניו, וקצת כרסו מכאן ומכאן עד כנגד קצות החשן" (28:26):
-        // a cloth 1.9 amot wide (model choice: so that girded its ends come before him under the breastplate's corners), round the back and
-        // the sides, hanging to the heels
-        {
-          const prof = [[0.12, 0.482], [0.55, 0.476], [1.3, 0.428], [1.85, 0.39], [1.97, 0.394]];
-          const rAt = (y) => { for (let i = 1; i < prof.length; i++) if (y <= prof[i][0]) return lerp(prof[i - 1][1], prof[i][1], (y - prof[i - 1][0]) / (prof[i][0] - prof[i - 1][0])); return prof[prof.length - 1][1]; };
-          const XE = 0.25, NY = 16, NX = 32, pos = [], uv = [], idx = [];   // its ends hang straight, x = +-XE (the breastplate's corners)
-          for (let j = 0; j <= NY; j++) {
-            const y = lerp(0.12, 1.97, j / NY), r = rAt(y), span = Math.PI - Math.asin(Math.min(1, XE / r));
-            for (let i = 0; i <= NX; i++) { const ph = Math.PI + lerp(-span, span, i / NX), k = 1 + 0.022 * clamp((1.9 - y) / 1.8, 0, 1) * Math.sin(10 * ph); pos.push(Math.sin(ph) * r * k, y, Math.cos(ph) * r * k); uv.push((lerp(-span, span, i / NX) * r) / TILE, y / TILE); }
-          }
-          for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const p0 = j * (NX + 1) + i, p1 = p0 + NX + 1; idx.push(p0, p1, p0 + 1, p1, p1 + 1, p0 + 1); }
-          const eg = new BufferGeometry();
-          eg.setAttribute("position", new Float32BufferAttribute(pos, 3));
-          eg.setAttribute("uv", new Float32BufferAttribute(uv, 2));
-          eg.setIndex(idx);
-          eg.computeVertexNormals();
-          out.ephod = { rashi: mk(eg, M.ephod) };
-        }
-        // the Rambam's: "רחבו כרחב גבו של אדם מכתף לכתף. וארכו מכנגד אצילי הידים מאחוריו עד הרגלים" (9:9) - behind only
-        out.ephod.rambam = mk((() => {
-          const g = new LatheGeometry([[0.12, 0.478], [0.55, 0.471], [1.3, 0.424], [1.85, 0.386], [1.97, 0.394]].map(([y, r]) => V2(r, y)), 14, Math.PI * 2 / 3, Math.PI * 2 / 3), p = g.attributes.position, uv = g.attributes.uv;
-          for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); uv.setXY(i, (Math.atan2(-x, -z) * Math.hypot(x, z)) / TILE, p.getY(i) / TILE); }
-          return g;
-        })(), M.ephod);
-        // its band "קשור על לבו תחת החשן" (9:11) - its knot and its ends not drawn (the user: "מה הקשר של הסרט באפוד ובאבנט? לא קשור")
-        mk(uvScale(new CylinderGeometry(0.394, 0.39, 0.13, 36, 1, true), 6, 0.13 / ((Math.PI * 2 * 0.394) / 6)), M.ephod, 0, 1.965, 0);
-        for (const s of [1, -1]) {
-          // the shoulder: a broad strap of the ephod's work ("שתי רצועות רחבות", Rashi 28:7) from its upper edge behind, over the shoulder,
-          // folded down before him a little; the shoham on the shoulder in its gold
-          ribbon([[s * 0.21, 2.0, -0.348], [s * 0.21, 2.3, -0.357], [s * 0.21, 2.55, -0.333], [s * 0.21, 2.72, -0.262], [s * 0.21, 2.818, 0], [s * 0.21, 2.742, 0.252], [s * 0.21, 2.64, 0.307]], 0.13, M.ephod);
-          // "וקובע על כל כתף וכתף אבן שהם מרבע משקע בבית של זהב" (9:9): the square stone in its gold, lying on the shoulder (the user: "מה
-          // עשית בכתפיים?" - they stood up as boxes); outside the torso's flattening, set on the strap where it passes over
-          const sg = new Group();
-          sg.position.set(s * 0.21, 2.792, 0.094);
-          sg.rotation.x = 0.5;
-          L.add(sg);
-          mk(new BoxGeometry(0.104, 0.014, 0.104), MAT.gold, 0, 0, 0, sg);
-          mk(new BoxGeometry(0.08, 0.018, 0.08), M.shoham, 0, 0.008, 0, sg);
-          mk(new CylinderGeometry(0.03, 0.033, 0.014, 20).rotateX(HP), MAT.gold, s * 0.21, 2.645, 0.335);   // "והמשבצות נתונות בראשיהם לפני כתפיו" (Rashi 28:6): flat on the strap's end
-          cord([[s * 0.235, 2.505, 0.44], [s * 0.226, 2.575, 0.38], [s * 0.21, 2.64, 0.33]], 0.0085, MAT.gold, 3, 0.03);                        // the chains
-          // the lower rings "על שפתו אשר אל עבר האפוד ביתה" (28:26: on its inner side), their cords under the arms to the shoulders' lower
-          // rings "למעלה מן החשב" (9:9, 9:11)
-          cord([[s * 0.235, 2.035, 0.405], [s * 0.35, 2.045, 0.25], [s * 0.398, 2.05, 0.0], [s * 0.35, 2.05, -0.27], [s * 0.21, 2.045, -0.37]], 0.0055, M.techelet);
-          mk(new TorusGeometry(0.017, 0.005, 5, 10), MAT.gold, s * 0.235, 2.505, 0.44);
-          mk(new TorusGeometry(0.017, 0.005, 5, 10), MAT.gold, s * 0.235, 2.035, 0.41);
-          mk(new TorusGeometry(0.017, 0.005, 5, 10), MAT.gold, s * 0.21, 2.05, -0.362);   // "למעלה מן החגורה מעט... והן כנגד סוף החשן" (Rashi 28:27)
-        }
-        // the breastplate: its middle before the heart; four rows of three, the first above
-        const ch = new Group();
-        ch.position.set(0, 2.27, 0.424);   // "יהיה החשן על לבו בשוה" (9:11)
-        T.add(ch);
-        mk(uvScale(new BoxGeometry(0.5, 0.5, 0.024), 0.5 / TILE, 0.5 / TILE), M.ephod, 0, 0, 0, ch);
-        const setG = new BoxGeometry(0.114, 0.114, 0.02), stG = new BoxGeometry(0.094, 0.094, 0.026);
-        STONES.forEach(([, tribe, hex], i) => {
-          const r = Math.floor(i / 3), k = i % 3, x = (1 - k) * 0.155, y = 0.18 - r * 0.12;
-          mk(setG, MAT.gold, x, y, 0.016, ch);
-          const light = new Color(hex).getHSL({}).l > 0.6;
-          const map = canvasTex(128, 128, (c, w, h) => {
-            const col = new Color(hex), g = c.createRadialGradient(w * 0.36, h * 0.32, 4, w / 2, h / 2, w * 0.75);
-            g.addColorStop(0, HEX(col.clone().lerp(new Color(0xffffff), 0.4).getHex()));
-            g.addColorStop(1, HEX(col.clone().multiplyScalar(0.6).getHex()));
-            c.fillStyle = g; c.fillRect(0, 0, w, h);
-            c.textAlign = "center"; c.textBaseline = "middle"; c.direction = "rtl";
-            // above Reuven and below Binyamin the Gemara's words (Yoma 73b: "״אברהם יצחק ויעקב״ כתיב שם", "״שבטי ישורון״ כתיב שם" - the user:
-            // as the Gemara; their places as the Rambam 9:7)
-            const lines = i === 0 ? [["אברהם יצחק ויעקב", 15, 0.3], [tribe, 30, 0.64]] : i === 11 ? [[tribe, 28, 0.37], ["שבטי ישורון", 17, 0.72]] : [[tribe, tribe.length > 4 ? 29 : 35, 0.5]];
-            for (const [txt, fs, fy] of lines) {
-              c.font = "700 " + fs + "px 'Frank Ruhl Libre', 'David', 'Times New Roman', serif";
-              c.fillStyle = light ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.4)"; c.fillText(txt, w / 2 + 1.2, h * fy + 1.6);
-              c.fillStyle = light ? "rgba(40,48,60,0.85)" : "rgba(255,255,255,0.84)"; c.fillText(txt, w / 2, h * fy);
-            }
-          });
-          mk(stG, std(0xffffff, { map, roughness: 0.16, metalness: 0.05 }), x, y, 0.026, ch);
-        });
-        // the tzitz on the forehead, from ear to ear; his hair seen above it, and there the tefillin
-        const tz = canvasTex(512, 66, (c, w, h) => {
-          const g = c.createLinearGradient(0, 0, 0, h);
-          g.addColorStop(0, "#f6dc80"); g.addColorStop(0.5, "#dab64c"); g.addColorStop(1, "#b48c2c");
-          c.fillStyle = g; c.fillRect(0, 0, w, h);
-          c.textAlign = "center"; c.textBaseline = "middle"; c.direction = "rtl";
-          c.font = "700 27px 'Frank Ruhl Libre', 'David', 'Times New Roman', serif";
-          for (const [t, y] of [["לה׳", 17], ["קדש", 48]]) { c.fillStyle = "rgba(90,60,10,0.8)"; c.fillText(t, w / 2 + 1, y + 1.5); c.fillStyle = "#fff3c0"; c.fillText(t, w / 2, y); }
-        });
-        mk(new CylinderGeometry(1, 1, 0.078, 36, 1, true, -HP, Math.PI).scale(0.174, 1, 0.194), std(0xffffff, { map: tz, metalness: 0.75, roughness: 0.3, side: DoubleSide }), 0, 3.085, HZ, L);
-        mk(new BoxGeometry(0.056, 0.056, 0.056), M.tefillin, 0, 3.172, 0.164 + HZ, L).rotation.x = -0.55;
-        // the mitznefet sits back on the head (model choice: its frame hd tilted 0.3 back about the head's centre): its front edge above the
-        // hair and the tefillin, its back over the nape; loc() = a point of the figure in that frame
-        const TILT = -0.3, cT = Math.cos(TILT), sT = Math.sin(TILT);
-        const loc = (x, y, z) => { const yy = y - 3.04, zz = z - HZ; return [x, yy * cT + zz * sT, -yy * sT + zz * cT]; };
-        const hd = new Group();
-        hd.position.set(0, 3.04, HZ);
-        hd.rotation.x = TILT;
-        L.add(hd);
-        const rashi = new Group(), rashiW = new Group(), ramban = new Group();
-        hd.add(rashi, ramban);
-        L.add(rashiW);
-        const tubeIn = (par, pts, r, mat) => { const tm = cord(pts, r * 0.7, mat); par.add(tm); return tm; };
-        // Rashi: "כמין כפת כובע", high on the head; his cords: the two at the ends tied behind the nape, the middle one over it
-        mk(mergeGeometries([tint(plain(new SphereGeometry(0.19, 18, 10, 0, Math.PI * 2, 0, HP).scale(1, 0.95, 1).translate(0, 0.125, 0)), COL.hat),
-          tint(plain(new TorusGeometry(0.186, 0.022, 6, 26).rotateX(HP).translate(0, 0.13, 0)), COL.hat2)]), MAT.fig, 0, 0, 0, rashi);
-        const nape = (k) => { const t = k / 12, p = headAt(HP + t * Math.PI, 0.366 - 0.58 * Math.sin(t * Math.PI), 0.027); return [p.x, p.y, p.z]; };
-        tubeIn(rashiW, Array.from({ length: 13 }, (_, k) => nape(k)), 0.0075, M.techelet);
-        const NP = nape(6);
-        mk(new SphereGeometry(0.011, 6, 5), M.techelet, NP[0], NP[1], NP[2] - 0.004, rashiW);
-        const mer = [0.3, 0.8, 1.35, 1.9, 2.45, 2.9].map((an) => [0, 0.125 + 0.1895 * Math.sin(an), 0.199 * Math.cos(an)]);
-        tubeIn(rashi, [loc(0, 3.122, 0.196 + HZ), ...mer, loc(0, 3.03, HZ - 0.222), loc(NP[0], NP[1], NP[2])], 0.0075, M.techelet);
-        // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it
-        const turns = [[0.14, 0.19], [0.195, 0.198], [0.25, 0.2], [0.305, 0.196], [0.355, 0.185]].map(([y, R], i) => tint(plain(new TorusGeometry(R, 0.032, 6, 24).rotateX(HP).translate(0, y, 0)), i % 2 ? COL.hat2 : COL.hat));
-        mk(mergeGeometries([...turns, tint(plain(new CylinderGeometry(0.185, 0.185, 0.24, 20, 1, true).translate(0, 0.25, 0)), COL.hat2),
-          tint(plain(new SphereGeometry(0.185, 18, 6, 0, Math.PI * 2, 0, HP).scale(1, 0.3, 1).translate(0, 0.37, 0)), COL.hat)]), MAT.fig, 0, 0, 0, ramban);
-        tubeIn(ramban, [loc(0.174, 3.085, HZ), [0.214, 0.1, -0.08], [0.17, 0.165, -0.17], [0, 0.175, -0.235], [-0.17, 0.165, -0.17], [-0.214, 0.1, -0.08], loc(-0.174, 3.085, HZ)], 0.0075, M.techelet);
-        mk(new SphereGeometry(0.011, 6, 5), M.techelet, 0, 0.175, -0.24, ramban);
-        out.mitz = { rashi: [rashi, rashiW], ramban: [ramban] };
-        return out;
-      };
-      const hpGarb = buildHP(makeFig("hp", "H"));
+      // HP_KIT_A2: his eight garments - buildHP, its stones and its textures - are now in shared/frag/hp-kit.js (SH.hpKit), one
+      // construction for both houses; the readings as before (TM.ephod, TM.mitz - applyGarb)
+      const hpGarb = makeFig("hp", "H").garb || null;
       // ---- the sleepers of Beit HaMoked (Tamid 1:1): the elders on the stone benches ("רובדין של אבן", 30-courts.js - MOKED_WIDE_211,
       // FLOOR_211: the lower step x -33..-31 top 17, the upper -33..-32 top 18, z -69.5..-65.5, and the same on the east; the floor
       // 16), the young on the floor by the hearth, each
