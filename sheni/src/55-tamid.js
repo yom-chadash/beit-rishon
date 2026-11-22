@@ -35,8 +35,11 @@
     const V3 = (x, y, lz) => [x, y, lz + D];
     // (the methods never use `this`: the tour calls them unbound)
     const TM = SH.tamid = {
-      order: "abba", lamps: "rambam", belt: "kilayim", mitz: "rashi", ephod: "rashi", shalom: "mishna", kidd: "tk", active: false, stage: -1, sec: 0, qa: null,
-      readings: () => ({ order: TM.order, lamps: TM.lamps, belt: TM.belt, mitz: TM.mitz, ephod: TM.ephod, shalom: TM.shalom, kidd: TM.kidd }),
+      order: "abba", lamps: "rambam", belt: "kilayim", mitz: "rashi", ephod: "rashi", shalom: "mishna", kidd: "tk", hp: "off", active: false, stage: -1, sec: 0, qa: null,
+      readings: () => ({ order: TM.order, lamps: TM.lamps, belt: TM.belt, mitz: TM.mitz, ephod: TM.ephod, shalom: TM.shalom, kidd: TM.kidd, hp: TM.hp }),
+      // HP_TAMID_A2 (the user's decision 70 a): the high priest in his eight garments - Tamid 7:1, 7:3 (88:38, 40) - "בזמן שכהן גדול
+      // נכנס להשתחוות" and "בזמן שכהן גדול רוצה להקטיר": in the stages of the blessing and of the limbs, when chosen
+      setHp: (m) => { TM.hp = m === "on" ? "on" : "off"; retour(); return TM.hp; },
       // KIDDUSH_A2 (the user's decision 82): the kiddush - the Tanna Kamma and the Rambam (the default) or R. Yose b. R. Yehuda with his
       // fellow helping him (Zevachim 19b, 130:754-755) - the presentation built again at the same stage
       setKidd: (m) => { TM.kidd = m === "ryose" ? "ryose" : "tk"; retour(); return TM.kidd; },
@@ -2400,6 +2403,21 @@
       const others = [...REST, "b4", "e", "s11", "s12", "s13"];
       others.forEach((k, i) => a.go(k, [21.6, 7.6 - i * 1.6], 0.3 + i * 0.08, 6.5 + i * 0.08, { yaw: HP }));
       for (const k of [...others, "s3", "s4", "mc", "f", "k"]) a.pose(k, "raise", 10, 18.5);
+      // HP_TAMID_A2: Tamid 7:1 (88:38) "בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו, אחד בימינו, ואחד בשמאלו, ואחד באבנים טובות... נכנס
+      // והשתחוה ויצא" - he goes into the heichal with three priests holding him (b1 at his right, b2 at his left, b3 before him by the
+      // stones of the breastplate), bows and comes out; at the blessing he stands in the middle, his hands not above the tzitz - "חוץ מכהן
+      // גדול שאינו מגביה את ידיו למעלה מן הציץ" (7:2, 88:39). The three's places - model choices.
+      if (TM.hp === "on") {
+        const IN = [[20.5, 0], [15, 0], [8, 0], [2.6, 0], [-6.2, 0], [-12, 0]];
+        a.walk("hp", IN, 0, 5.2, { yaw: -HP });
+        [["b1", 1.0, 0], ["b2", -1.0, 0], ["b3", 0, -0.75]].forEach(([k, dz, dx]) => a.walk(k, IN.map(([x, z]) => [x + dx, z + dz]), 0, 5.2, { yaw: -HP }));
+        a.pose("hp", "prostrate", 5.4, 7.2);
+        a.walk("hp", [[-12, 0], [-6.2, 0], [2.6, 0], [8, 0], [15, 0], [21.6, 0]], 7.4, 10, { yaw: HP });
+        [["b1", 7.6, 1.6], ["b2", 7.6, -1.6], ["b3", 7.6, 3.2]].forEach(([k, t, z]) => a.walk(k, [[-12, z * 0.6], [2.6, z * 0.6], [15, z], [21.6, z * 6]], t, 10.2, { yaw: HP }));
+        a.pose("hp", "offer", 10.4, 18.5);
+        a.tag("hp", "״בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו״ (תמיד ז, א)", 0.5, 7.2);
+        a.tag("hp", "״חוץ מכהן גדול שאינו מגביה את ידיו למעלה מן הציץ״ (תמיד ז, ב)", 10.4, 18.5);
+      }
       // SOUND_211: no chord for the blessing - the priests' words are a caption only (the user, 15.11.2026: speech in the captions)
     };
     const UPTOP = A(57.4, 7.2), FIRE = () => V3(61.9, TOP + 3.6, 1);
@@ -2418,6 +2436,18 @@
         if (i < 2) a.walk("e", [UPTOP, A(51.4, 12.2), [48.9, onRamp(2 * i + 2)[1] + 0.6]], t + 3.4, t + 5.0, { yaw: -HP });
       }
       a.tag("e", "מעלה האברים למזבח", 1);
+      // HP_TAMID_A2: Tamid 7:3 (88:40) "בזמן שכהן גדול רוצה להקטיר, היה עולה בכבש והסגן בימינו. הגיע למחצית הכבש, אחז הסגן בימינו
+      // והעלהו. הושיט לו הראשון הראש והרגל, וסמך עליהן וזרקן" - he goes up the ramp's east side with the deputy at his right; the one who
+      // brings the limbs up hands them to him at the top, and he throws them (the others' order - as the stage)
+      if (TM.hp === "on") {
+        const up = [A(60.2, 41.7), A(60.0, 26), A(59.8, 12.2), A(58.6, 8.8)];
+        a.walk("hp", up, 0, 4.6, { yaw: Math.PI });
+        a.walk("sg", up.map((q) => [q[0] - 1.1, q[1]]), 0, 4.6, { yaw: Math.PI });
+        a.pose("sg", "greet", 2.2, 4.4);
+        for (let i = 0; i < 3; i++) { const t = 5 + i * 5.0; a.pose("hp", "offer", t + 2.2, t + 2.5); a.pose("hp", "throw", t + 2.5, t + 3.1); }
+        a.tag("hp", "״בזמן שכהן גדול רוצה להקטיר, היה עולה בכבש והסגן בימינו״ (תמיד ז, ג)", 0.4, 6);
+        a.tag("hp", "״הושיט לו הראשון הראש והרגל, וסמך עליהן וזרקן״ (תמיד ז, ג)", 6.2, 20);
+      }
       // PACE_215: the two of the meal and the cakes walk meanwhile to their places by their parts on the ramp (until 2.0.14 they ran
       // there in the first 3 s of the next stage)
       a.go("s11", [48.9, onRamp(6)[1] + 0.6], 6, 18, { yaw: -HP });
