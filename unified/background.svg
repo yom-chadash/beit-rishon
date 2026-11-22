@@ -126,14 +126,13 @@
     <!-- the gold plating and the cornice -->
     <rect x="592" y="210" width="416" height="14" fill="url(#gold)"/>
     <rect x="600" y="224" width="400" height="5" fill="#8a6a2c" opacity=".45"/>
-    <!-- the spikes on the roof (כלה עורב) -->
-    <g fill="#e8bd5a">
-      <path d="M600 210 l3 -12 l3 12Z"/><path d="M618 210 l3 -12 l3 12Z"/><path d="M636 210 l3 -12 l3 12Z"/><path d="M654 210 l3 -12 l3 12Z"/>
-      <path d="M672 210 l3 -12 l3 12Z"/><path d="M690 210 l3 -12 l3 12Z"/><path d="M708 210 l3 -12 l3 12Z"/><path d="M726 210 l3 -12 l3 12Z"/>
-      <path d="M744 210 l3 -12 l3 12Z"/><path d="M762 210 l3 -12 l3 12Z"/><path d="M780 210 l3 -12 l3 12Z"/><path d="M798 210 l3 -12 l3 12Z"/>
-      <path d="M816 210 l3 -12 l3 12Z"/><path d="M834 210 l3 -12 l3 12Z"/><path d="M852 210 l3 -12 l3 12Z"/><path d="M870 210 l3 -12 l3 12Z"/>
-      <path d="M888 210 l3 -12 l3 12Z"/><path d="M906 210 l3 -12 l3 12Z"/><path d="M924 210 l3 -12 l3 12Z"/><path d="M942 210 l3 -12 l3 12Z"/>
-      <path d="M960 210 l3 -12 l3 12Z"/><path d="M978 210 l3 -12 l3 12Z"/><path d="M996 210 l3 -12 l3 12Z"/>
+    <!-- the spikes on the roof (כלה עורב) - drawn larger than to scale, so they show (the user, 22.11.2026: "להגדיל את כליא עורב") -->
+    <g fill="#e8bd5a" stroke="#8a6a2c" stroke-width=".6">
+      <path d="M600 210 l4.5 -24 l4.5 24Z"/><path d="M619.5 210 l4.5 -24 l4.5 24Z"/><path d="M639 210 l4.5 -24 l4.5 24Z"/><path d="M658.5 210 l4.5 -24 l4.5 24Z"/><path d="M678 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M697.5 210 l4.5 -24 l4.5 24Z"/><path d="M717 210 l4.5 -24 l4.5 24Z"/><path d="M736.5 210 l4.5 -24 l4.5 24Z"/><path d="M756 210 l4.5 -24 l4.5 24Z"/><path d="M775.5 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M795 210 l4.5 -24 l4.5 24Z"/><path d="M814.5 210 l4.5 -24 l4.5 24Z"/><path d="M834 210 l4.5 -24 l4.5 24Z"/><path d="M853.5 210 l4.5 -24 l4.5 24Z"/><path d="M873 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M892.5 210 l4.5 -24 l4.5 24Z"/><path d="M912 210 l4.5 -24 l4.5 24Z"/><path d="M931.5 210 l4.5 -24 l4.5 24Z"/><path d="M951 210 l4.5 -24 l4.5 24Z"/><path d="M970.5 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M990 210 l4.5 -24 l4.5 24Z"/>
     </g>
     <!-- the opening of the porch -->
     <rect x="752" y="300" width="96" height="202" fill="#2a1a0c"/>
