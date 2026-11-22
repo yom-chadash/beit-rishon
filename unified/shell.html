@@ -65,6 +65,22 @@
   #rights{margin:2px 0 0;padding:8px 18px;border-radius:var(--radius-lg);font-family:var(--font-main);font-size:1.12rem;line-height:1.4;color:var(--tm-ink);background:var(--tm-card);border:1.5px solid var(--color-primary);text-align:center;box-shadow:0 6px 20px var(--tm-shade-card)}
   #rights b{font-size:1.45rem;font-weight:800;color:var(--tm-gold);margin-inline-end:6px}
   @media(max-width:640px){#rights{font-size:.98rem}#rights b{font-size:1.2rem}}
+  #rights{cursor:pointer}
+  #rights:hover,#rights:focus-visible{background:var(--tm-card-hover);outline:none}
+  #lic{position:absolute;z-index:6;top:18px;left:50%;transform:translateX(-50%);width:min(52em,calc(100% - 28px));max-height:calc(100% - 36px);display:flex;flex-direction:column;overflow:hidden;background:var(--tm-card-note);border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);box-shadow:0 14px 40px var(--tm-shade-note);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:16px 22px 14px;color:var(--tm-ink-note);font-family:var(--font-main);font-size:min(0.95rem,3.2vh,4vw);line-height:1.65}
+  #lic[hidden]{display:none}
+  #lic .body{flex:1 1 auto;min-height:0;overflow:auto;padding-inline-end:6px}
+  #lic h2{font-size:1.5em;line-height:1.3;color:var(--tm-gold);margin:4px 0 10px}
+  #lic h3{font-size:1.15em;color:var(--tm-gold);margin:14px 0 6px}
+  #lic p{margin:0 0 8px}
+  #lic ol{margin:0 0 8px;padding-inline-start:22px}
+  #lic li{margin:0 0 4px}
+  #lic hr{border:0;border-top:1px solid var(--color-primary);opacity:.5;margin:14px 0}
+  #lic b{color:var(--tm-gold)}
+  #lic .foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;font-family:var(--font-ui)}
+  #lic .foot span{font-size:0.8em;color:var(--tm-ink-dim)}
+  #lic button{font-family:var(--font-ui);font-size:0.9em;font-weight:600;padding:7px 22px;border-radius:var(--radius-pill);cursor:pointer;background:var(--color-primary);color:var(--color-on-primary);border:0;white-space:nowrap}
+  #lic button:hover,#lic button:focus-visible{filter:brightness(1.12);outline:none}
   @media(max-width:640px){
     #pick h1{font-size:1.6rem}
     #pick .row{flex-direction:column;align-items:center;gap:12px}
@@ -189,6 +205,10 @@ __BACKGROUND_SVG__
       </ul>
       <div class="foot"><span>ההודעה הזאת מוצגת פעם אחת.</span><button type="button" id="uni-note-ok">הבנתי</button></div>
     </div>
+    <div id="lic" role="dialog" aria-modal="true" aria-label="רישיון ותנאי שימוש" hidden>
+      <div class="body">__LICENSE_HTML__</div>
+      <div class="foot"><span>הרישיון המלא נמצא גם במאגר: github.com/yoniny/beit-rishon</span><button type="button" id="lic-close">סגירה</button></div>
+    </div>
     <div id="uni-msg" role="status" hidden></div>
     <div id="pick">
       <h1>בית המקדש</h1>
@@ -204,7 +224,7 @@ __BACKGROUND_SVG__
           <span class="back">חוזר למקום שבו עזבת</span>
         </button>
       </div>
-      <p id="rights"><b>כל הזכויות שמורות.</b> אין לשנות את התוסף. פרטים ברישיון שבמאגר.</p>
+      <button type="button" id="rights" aria-haspopup="dialog" aria-controls="lic" title="פתיחת הרישיון"><b>כל הזכויות שמורות.</b> אין לשנות את התוסף. פרטים ברישיון שבמאגר.</button>
     </div>
   </div>
   <footer id="uni-bar" hidden>
@@ -613,6 +633,16 @@ __BACKGROUND_SVG__
     if (e.key === "1") show("rishon");
     else if (e.key === "2") show("sheni");
   });
+  // ---------- the license: the banner "כל הזכויות שמורות" opens LICENSE.md's own text (the user, 22.11.2026: "שהבאנר יוביל לרישיון במלל שלו") ----------
+  (function () {
+    var btn = document.getElementById("rights"), dlg = document.getElementById("lic"), x = document.getElementById("lic-close");
+    if (!btn || !dlg || !x) return;
+    var close = function () { if (dlg.hidden) return; dlg.hidden = true; try { btn.focus({ preventScroll: true }); } catch (_) {} };
+    btn.addEventListener("click", function () { dlg.hidden = false; var b = dlg.querySelector(".body"); if (b) b.scrollTop = 0; try { x.focus({ preventScroll: true }); } catch (_) {} });
+    x.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    document.addEventListener("pointerdown", function (e) { if (!dlg.hidden && !dlg.contains(e.target) && e.target !== btn && !btn.contains(e.target)) close(); });
+  })();
   // ---------- 2.0.2: the one-time note about the unified plugin ----------
   // Shown on the choice screen until it is closed ("הבנתי") or a house is chosen while it shows; remembered in Otzaria's plugin
   // storage (storage.get / storage.set) and in localStorage (the only store outside Otzaria) - either one saying "seen" is enough.

@@ -28,6 +28,24 @@ const argv = process.argv.slice(2);
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
 const log = (m) => console.log('[unified] ' + m);
 const read = (p) => fs.readFileSync(p, 'utf8');
+function licenseHtml(md) {
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inl = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  const out = []; let ol = false;
+  const endOl = () => { if (ol) { out.push('</ol>'); ol = false; } };
+  for (const raw of md.replace(/\r/g, '').split('\n')) {
+    const l = raw.trim();
+    if (!l) { endOl(); continue; }
+    let m;
+    if ((m = l.match(/^##\s+(.*)$/))) { endOl(); out.push('<h3>' + inl(m[1]) + '</h3>'); }
+    else if ((m = l.match(/^#\s+(.*)$/))) { endOl(); out.push('<h2>' + inl(m[1]) + '</h2>'); }
+    else if (/^-{3,}$/.test(l)) { endOl(); out.push('<hr>'); }
+    else if ((m = l.match(/^(\d+)\.\s+(.*)$/))) { if (!ol) { out.push('<ol>'); ol = true; } out.push('<li value="' + m[1] + '">' + inl(m[2]) + '</li>'); }
+    else { endOl(); out.push('<p>' + inl(l) + '</p>'); }
+  }
+  endOl();
+  return out.join('\n');
+}
 
 const src = { rishon: opt('--rishon', path.join(root, 'plugin')), sheni: opt('--sheni') };
 if (!src.sheni) throw new Error('--sheni <the built plugin folder of בית שני> is required');
@@ -116,6 +134,9 @@ function shell(standalone, sourcesHtml) {
   s = s.replace(/\/\*__CONFIG__\*\/[\s\S]*?\/\*__END_CONFIG__\*\//, () => JSON.stringify(cfg));
   s = s.split('__PLUGIN_VERSION__').join(version);
   s = s.replace('__BACKGROUND_SVG__', () => bg);
+  // the license dialog of the choice screen: LICENSE.md (the repository's root) as it is - its words unchanged, only its markdown
+  // made HTML (headings, paragraphs, numbered lists, bold, the rule) - the user: "שהבאנר יוביל לרישיון במלל שלו" (22.11.2026)
+  s = s.replace('__LICENSE_HTML__', () => licenseHtml(read(path.join(root, 'LICENSE.md'))));
   s = s.replace('<!--__HOUSE_SOURCES__-->', () => sourcesHtml || '');
   // 2.0.2: the words index (unified/words-index.js, written by tools196/gen_words.py with the houses' own lines): the shell counts with
   // it in which house the words of Otzaria's search field are found. Not in the one-file HTML (no Otzaria there, no search field button).
