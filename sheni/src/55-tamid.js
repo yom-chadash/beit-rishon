@@ -1910,7 +1910,7 @@
       a.tag("t", "צובר את הגחלים — כעשר אמות מתחתית הכבש", 29.6, 33.4);
       // BROTHERS_215: the two brothers who stood by Beit HaMoked go, at a walk, to the meeting place of the patrol before the chavitin
       // makers' chamber (Tamid 1:3, "הגיעו אלו ואלו אצל בית עושי חביתין"), where their brothers stand - so that the run to the laver in
-      // the next stage ("והן רצין ובאין", 2:1) starts there for all four, and not 150 amot away (until 2.0.14 it was run in 4.4 s)
+      // the next stage ("והם רצו ובאו", 2:1) starts there for all four, and not 150 amot away (until 2.0.14 it was run in 4.4 s)
       a.go("b2", [88.4, 23.2], 3, 21, { yaw: -HP });
       a.go("b4", [88.4, 24.9], 3.6, 21.6, { yaw: -HP });
       // (in the Rambam's order the lots were cast in the hall of hewn stone after the search: the two who carried the torches come too)

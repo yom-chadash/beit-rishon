@@ -278,20 +278,14 @@
       };
     }
     gateTrim({ axis: "x", gx: 55, gz: CO.harN, arched: false, inward: 1, wl: wallN, leaves: false });
-    // 1.5.0 (the user: "תצייר בלי ותכתוב לא מאומת"): the other reading of Tadi's top - "אבנים זקופות", two UPRIGHT stones (one on each
-    // jamb, standing straight up beside the opening's top) instead of the leaning pair - drawn as a toggle (ctx2.shared.tadi), UNVERIFIED
-    const tadiM = new Group(), tadiZ = new Group();
-    g.add(tadiM); g.add(tadiZ);
-    tadiZ.visible = false;
+    // TADI_ONE_S1 (the user's decision on scan 1, finding 17: "להוריד את האפשרות 'אבנים זקופות — לא מאומת'"): Tadi's top in the one
+    // reading that has a source - "שתי אבנים מטות זו על גב זו" (Middot 2:3). Until now (1.5.0) a toggle also drew "אבנים זקופות" (the
+    // Ra'aviah's, in Tosafot Yom Tov on 1:3), two upright stones beside the opening's top, marked unverified; the toggle, its stones and its
+    // label are gone. (The Ra'aviah's words stay in the cards, as a source.)
+    const tadiM = new Group();
+    g.add(tadiM);
     ctx2.layers = ctx2.layers || {};
     ctx2.layers.tadiMutot = tadiM;
-    ctx2.layers.tadiZekufot = tadiZ;
-    ctx2.shared.tadi = { mode: "mutot", set(m) { this.mode = m === "zekufot" ? "zekufot" : "mutot"; tadiM.visible = this.mode === "mutot"; tadiZ.visible = this.mode === "zekufot"; } };
-    for (const s of [-1, 1]) {
-      const up = H2.box(tadiZ, 1.2, 5.5, T + 1.2, M2.stoneLight, 55 + s * 4.4, 20, CO.harN);
-      H2.occ(up).userData.fadeWith = wallN;
-    }
-    ctx2.labels.push({ text: "אבנים זקופות — לא מאומת", x: 55, y: 28, z: CO.harN - 4, size: 2, layer: "tadiZekufot" });
     for (const s of [-1, 1]) {
       // Middot 2:3: Tadi has no flat lintel but "two stones leaning on each other" (an inverted V).
       // 1.0.19: the triangle between them is OPEN (a gable-shaped hole in the wall, see wallN opening.gable);

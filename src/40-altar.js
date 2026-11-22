@@ -1007,7 +1007,7 @@
           info: "היסוד — השלמה מן המשנה: 'שכל מזבח שאין לו קרן וכבש ויסוד וריבוע – פסול' (זבחים סב.), ולכן גם למזבח שלמה היה יסוד. צורתו כמשנה: 'עלה אמה וכנס אמה, זה היסוד' (מדות ג, א).\nבבית שני: 'קרן מזרחית דרומית לא היה לה יסוד... לפי שלא היתה בחלקו של טורף' (זבחים נג:).\nהתוספות, על בית ראשון: 'היה להם יסוד לדרום שהיה משוך בחלקו של טורף חוץ מרוח מזרחית שלא נשתנה שהיה בלא יסוד' (תוספות זבחים סא:). בקצרה — רבינו תם (שם): 'דמסתמא בבית ראשון לא היה יסוד לקרן דרומית מזרחית', כבבית שני; ראו בתפריט, תחת ״שיטות ומחלוקות״, במתג ״יסוד המזבח בדרום — ומקום המזבח״.\nרש״י, על מזבח משה: 'יסוד וסובב לא היו ממעטין בארכו ורחבו לפי שמקיפין ובולטין סביביו' (רש״י זבחים נט:). ולרש״י, כרבי יוסי במדות, 'בתחילה בימי שלמה לא היה אלא כ\"ח' (רש״י זבחים סא:), ועשרים על עשרים הם מקום המערכה.\nבמודל: **היסוד על פני כל הצפון, כל המערב וכל הדרום, ובמזרח רק אמה אחת בקרן הצפונית**; לקרן הדרומית המזרחית אין יסוד בצד המזרח. עשרים על עשרים של הפסוק (דברי הימים ב ד, א) הם גוף המזבח, והיסוד והסובב בולטים סביבו. המזבח לא הורחב — בחירת מודל.\nהיסוד כבית קיבול: רש״י (שמות כט, יב): 'אל יסוד המזבח. כמין בליטת בית קבול עשוי לו סביב סביב, לאחר שעלה אמה מן הארץ'. במודל: שפה נמוכה על קצה גג היסוד, בכל מקום שיש יסוד; מידות השפה — בחירת מודל.",
           refs: [
             ["זבחים סב.", { book: 130, index: 2110 }], ["מדות ג, א", { book: 89, index: 19 }], ["זבחים נג:", { book: 130, index: 1865 }],
-            ["תוספות זבחים סא:", { book: 1936, index: 654 }], ["רש״י זבחים נג:", { book: 2191, index: 2590 }],
+            ["תוספות זבחים סא:", { book: 1936, index: 659 }], ["רש״י זבחים נג:", { book: 2191, index: 2590 }],
             ["רש״י זבחים נט:", { book: 2191, index: 2871 }], ["רש״י זבחים סא:", { book: 2191, index: 2952 }],
             ["רמב״ם בית הבחירה ב, י", { book: 337, index: 33 }], ["דברי הימים ב ד, א", { book: 39, index: 57 }], ["רש״י שמות כט, יב", { book: 3692, index: 2101 }]
           ]
@@ -1080,7 +1080,7 @@
       const R_SUGYA = [["זבחים סב:", { book: 130, index: 2129 }], ["רמב״ם בית הבחירה ב, יד", { book: 337, index: 37 }]];
       const RAMP_REFS = {
         rashi: R_SUGYA.concat([["רש״י זבחים סב:", { book: 2191, index: 3022 }], ["רש״י זבחים סד.", { book: 2191, index: 3089 }]]),
-        tosafot: R_SUGYA.concat([["תוספות זבחים סד.", { book: 1936, index: 681 }], ["תוספות יום טוב זבחים ו, ג", { book: 945, index: 183 }],
+        tosafot: R_SUGYA.concat([["תוספות זבחים סד.", { book: 1936, index: 686 }], ["תוספות יום טוב זבחים ו, ג", { book: 945, index: 183 }],
           ["משנה למלך בית הבחירה ב, יד", { book: 4606, index: 25 }], ["לחם שמים בית הבחירה ב, יד", { book: 5069, index: 31 }]])
       };
       let cur = "rashi";
@@ -1110,7 +1110,9 @@
       // [46.6, 9, 25.5] (in pictures: Rashi - the one ramp at the foot; the Tosafot - the second above it, rising to the sovev)
       ctx.shared.flyPoints.mizbeachRamps = { pos: [RX0 - 9.5, F + 16, ZS + 12], target: [RX0 - 0.4, F + 3, ZS + 4.5] };
       // the south-west corner from outside: the yesod's corner, the sovev, the red line, the western small ramps and the shitin
-      ctx.shared.flyPoints.mizbeachSW = { pos: [SHX - 14, F + 10, SHZ + 15], target: [SHX + 2.5, F + 3, SHZ - 3] };
+      // MIZBEACH_SW_S1 (scan 1, finding 19): higher, over the bases of the south row (two of their lavers hid a third of the old view, from
+      // [SHX - 14, F + 10, SHZ + 15], and the labels crowded at its top): the corner, the yesod, the sovev and the red line, the shitin by them
+      ctx.shared.flyPoints.mizbeachSW = { pos: [SHX - 11.5, F + 23, SHZ + 13], target: [SHX + 2.5, F + 2, SHZ - 3] };
     }
 
     // --- 1.0.2: the look of the altar - stone (1.0.1-L, the default) or Abarbanel's bronze plating; only the materials change ---
@@ -1191,7 +1193,9 @@
       const rx = ACX - 8 - 0.05, rz = ACZ + S / 2 + 14;   // the ramp is 16 wide (RW above); the window mid-way along it, near the ground
       H2.box(g, 0.1, 1.5, 1.5, M2.altarStone, rx, F + 0.15, rz);
       H2.box(g, 0.1, 1, 1, darkMat, rx - 0.04, F + 0.4, rz);
-      ctx.labels.push({ text: "רבובה — חלון בכבש (רמב״ם ב, יד; לבית ראשון לא מאומת)", x: rx - 2, y: F + 3.2, z: rz, size: 1.2 });
+      // UNVERIFIED_S1 (scan 1, finding 17; the user's decision): no source found in Otzaria that speaks of the rubuva in the First Temple's
+      // ramp (37 places of "רבובה", none of them of the First Temple) - "לא נמצא מקור ישיר לבית ראשון" instead of "לבית ראשון לא מאומת"
+      ctx.labels.push({ text: "רבובה — חלון בכבש (רמב״ם ב, יד; לא נמצא מקור ישיר לבית ראשון)", x: rx - 2, y: F + 3.2, z: rz, size: 1.2 });
     }
     // --- 1.3.3 (the user: "הוספת את מדידת אמות המזבח לבית ראשון?"): THE ALTAR'S MEASURES DRAWN, as in the Second Temple plugin - a thin
     // frame round every step at its own height, its number of amot on a dark plate on all four sides (read from every side and from above),

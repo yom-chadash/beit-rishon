@@ -1414,8 +1414,31 @@
           if (r.width > 0 && r.height > 0) top = Math.min(top, r.top);
         }
         if (c) { const r = c.getBoundingClientRect(); if (r.width > 0) left = Math.max(4, Math.round(r.left)); }
+        let bottom = Math.max(8, Math.round(window.innerHeight - top + 8));
+        // DPAUSE_CARD_S1 (scan 1, finding 6): an open explanation card (#tm-xcard - a demonstration started from the group "הדגמות" opens
+        // its card at the left) is not covered: the bar moves to the right of the card, or, where there is no room there (a narrow window,
+        // the phone's bottom sheet), above it - and above the demonstration's caption, if it would lie on it there. Until now it sat on the
+        // card's foot, over its "למקור" tabs.
+        const xc = document.getElementById("tm-xcard");
+        const seen = (e) => { if (!e) return false; const cs = getComputedStyle(e); return cs.display !== "none" && cs.visibility !== "hidden"; };
+        if (seen(xc)) {
+          const r = xc.getBoundingClientRect(), w = el.offsetWidth || 260, h = el.offsetHeight || 40;
+          const bT = window.innerHeight - bottom - h, bB = window.innerHeight - bottom;
+          if (r.width > 0 && r.left < left + w && left < r.right && r.top < bB && bT < r.bottom) {
+            const pn = document.getElementById("tm-panel"), pr = seen(pn) ? pn.getBoundingClientRect() : null;
+            const room = (pr && pr.width > 0 && pr.left > r.right ? pr.left : window.innerWidth) - 8;
+            if (r.right + 8 + w <= room || r.top - h - 8 < 56) left = Math.round(r.right + 8);
+            else bottom = Math.round(window.innerHeight - r.top + 8);
+            // and not on the demonstration's caption (#tm-...-cap, at the foot of the picture) either: above it
+            for (const cp of document.body.children) {
+              if (!/-cap$/.test(cp.id || "") || !seen(cp)) continue;
+              const q = cp.getBoundingClientRect(), t = window.innerHeight - bottom - h, bt = window.innerHeight - bottom;
+              if (q.width > 0 && q.left < left + w && left < q.right && q.top < bt && t < q.bottom) bottom = Math.round(window.innerHeight - q.top + 8);
+            }
+          }
+        }
         el.style.left = left + "px";
-        el.style.bottom = Math.max(8, Math.round(window.innerHeight - top + 8)) + "px";
+        el.style.bottom = bottom + "px";
       } catch (_) {}
     };
     const paint = () => {
