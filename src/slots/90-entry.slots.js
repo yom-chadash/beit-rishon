@@ -169,6 +169,7 @@
       { name: "interior.js", build: buildInterior },
       { name: "kelim.js", build: buildKelim },   // 1.0.1-L (L.88): the vessels of I Kings 7 (57-kelim.js); before ui.js, it reads the labels
       { name: "ark.js", build: buildArk },   // ARK_GATES_208 (58-ark.js): "דבקו שערים" - the ark brought into the devir
+      { name: "parallels.js", build: buildParallels },   // PARALLELS_C (fix-c, 59-parallels.js): the counterparts of the Second Temple's places
       { name: "palace.js", build: buildPalace },
       { name: "ui.js", build: buildUI },
       { name: "tour.js", build: buildTour }   // 1.0.1-H: the presentation (75-tour.js); after ui.js, it uses ctx.ui
@@ -182,6 +183,7 @@
       "טוען את הקודש וקודש הקדשים",
       "טוען את כלי הבית",
       "מכין את הכנסת הארון",
+      "מוסיף את בית הכנסת, השולחנות והמעיין",
       "טוען את בית שלמה",
 //@@end initModules-2
 //@@begin guardCamera.lo

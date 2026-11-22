@@ -12,7 +12,7 @@ const src = path.join(root, 'src');
 // src/slots/ and shared/frag/ put in), written to build/check/ for node --check
 const chk = path.join(root, 'build', 'check');
 fs.mkdirSync(chk, { recursive: true });
-const mods = { '10-core.js': [], '20-mount.js': ['buildMount'], '30-courts.js': ['buildCourts'], '40-altar.js': ['buildAltar'], '45-vessels.js': ['buildVessels'], '50-heichal.js': ['buildHeichal'], '55-interior.js': ['buildInterior'], '57-kelim.js': ['buildKelim'], '60-palace.js': ['buildPalace'], '70-ui.js': ['buildUI'], '72-words.js': ['buildWords'], '75-tour.js': ['buildTour'], '90-entry.js': [] };
+const mods = { '10-core.js': [], '20-mount.js': ['buildMount'], '30-courts.js': ['buildCourts'], '40-altar.js': ['buildAltar'], '45-vessels.js': ['buildVessels'], '50-heichal.js': ['buildHeichal'], '55-interior.js': ['buildInterior'], '57-kelim.js': ['buildKelim'], '59-parallels.js': ['buildParallels'], '60-palace.js': ['buildPalace'], '70-ui.js': ['buildUI'], '72-words.js': ['buildWords'], '75-tour.js': ['buildTour'], '90-entry.js': [] };
 let problems = 0;
 const warn = (m) => { problems++; console.log('PROBLEM: ' + m); };
 const decls = {};

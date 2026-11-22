@@ -505,9 +505,9 @@
     lbl("החצר החיצונה", (WC.x0 + WC.x1) / 2, 13, 22, 4); // 1.0.1 (the user): "החצר החיצונה"; Rashi on I Kings 6:36 calls it עזרת נשים; not "החצר החדשה" (Rashi Pesachim 92a: that is הר הבית)
     lbl("השער המזרחי של החצר החיצונה", WC.x1 + 6, WC.y + 9, 0, 3.5); // the court's gate (1.0.1, D.2.d); "שער בית ה' העליון" of II Kings 15:35 (Yotam) is a name only, not modeled separately
     lbl("השער המזרחי", CO2.harE + 9, 28, gE.z, 5);
-    lbl("השער הצפוני", gN.x, 28, CO2.harN - 9, 5);
-    lbl("השער הדרומי", gS.x, 28, CO2.harS + 9, 5);
-    lbl("השער המערבי", CO2.harW - 9, 28, gW.z, 5);
+    lbl("השער הצפוני — שער טדי", gN.x, 28, CO2.harN - 9, 5);   // NAMES_C (fix-c, 22.11.2026; the user: "לבצע"): the names of Middot 1:3 - a model choice in this house
+    lbl("השער הדרומי — שער חולדה", gS.x, 28, CO2.harS + 9, 5);
+    lbl("השער המערבי — שער קיפונוס", CO2.harW - 9, 28, gW.z, 5);
 
     // ---------- fly points and shared data ----------
     ctx.shared.flyPoints = ctx.shared.flyPoints || {};

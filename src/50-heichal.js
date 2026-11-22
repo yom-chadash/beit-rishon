@@ -1231,15 +1231,8 @@
       });
       ctx.shared.lul = { box: LB };
     }
-    // niches for the knives (model choice: 12 per wing, 1 x 1) on the wing's west and east faces
-    {
-      const nm = [];
-      for (const s of [-1, 1]) for (let i = 0; i < 6; i++) {
-        const z = s * (18 + i * 3);
-        nm.push(hei_m4(HE + 0.1, F + 3.5, z), hei_m4(UI - 0.1, F + 3.5, z));
-      }
-      hei_inst(g, new BoxGeometry(0.2, 1, 1), dark, nm, false);
-    }
+    // (fix-c, 22.11.2026: the 24 plain niches for the knives that stood here - a model choice, 12 per wing on the wings' west and east
+    // faces - gave way to the windows of Beit HaChalifot, one for each watch, in the north wing as Rashi Sukkah 56a: 59-parallels.js)
     // paving of the hall, the two doorways and the wings, between the walls (stone: no gold in the ulam - Rashi, Metzudot, Ralbag on
     // II Chr 3:4; Malbim disagrees - DEV note); a skin 0.02 thin on the אוטם, so that what stands on the floor (Yachin and Boaz, the
     // heichal doorposts of 55-interior.js) stands in it no deeper than 0.02
