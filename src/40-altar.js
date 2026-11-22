@@ -116,6 +116,46 @@
     // רבי יוסי ברבי יהודה אומר: זה הסובב"; Rashi there (line 2987, of Moses' altar) "סביב הקיר משעלה שש אמות גובה... היקף הבליטה
     // קטנה חוגרתו סביב לנוי וזהו סובב" - the band is the sovev now; and the lip at the top is the other כרכוב, "וחד לכהנים דלא
     // נשתרקו" (line 2988 "שפתו היקף מעקה קטן סביב שלא יחליקו"). The middle of the height is the red line's (below).
+    // KARKOV_A2 (fix-a2, 22.11.2026; the user's decision 3): THE KARKOV ON THE SOVEV'S BAND, as Rashi reads Zevachim 62a (2191:2982, of
+    // Moses' altar): "סביב הקיר משעלה שש אמות גובה... היקף הבליטה קטנה חוגרתו סביב לנוי וזהו סובב וכיור דאפליגו ביה רבי ור' יוסי בר'
+    // יהודה" - so here the flowers and buds (Rashi 2969 "ציורים של פרחים וציצים וקלעים סביב למזבח") stand on the band of the sovev itself,
+    // its top amah under the ledge, above the red line; of the altar's own metal or stone (the look switch dresses them). The same two
+    // readings as the Second Temple's - ctx.shared.karkov.set("rabbi" | "none"), Rabbi the default. Not where the ramp meets the altar.
+    // KARKOV_A2: the flowers and buds of the karkov - instanced, one mesh for the flowers and one for the buds, along faces
+    // [[x0, z0, x1, z1, nx, nz] ...] (nx, nz - the face's outward normal), at the height yc, skipping the x ranges in `skip` on faces
+    // whose normal is +z (the ramp's place); a molding above and below (y0, y1). Their size and spacing - model choices.
+    const karkovBand = (parent, faces, y0, y1, mat, skip) => {
+      const yc = (y0 + y1) / 2, sc = Math.min(1, (y1 - y0) / 0.6);
+      const petal = (k) => { const q = new SphereGeometry(1, 6, 4); q.scale(0.065 * sc, 0.11 * sc, 0.035 * sc); q.translate(0, 0.1 * sc, 0.02 * sc); q.rotateZ(k * Math.PI * 2 / 5); return q; };
+      const ctr = new SphereGeometry(1, 8, 5); ctr.scale(0.06 * sc, 0.06 * sc, 0.05 * sc); ctr.translate(0, 0, 0.035 * sc);
+      const gFlower = mergeGeometries([ctr, petal(0), petal(1), petal(2), petal(3), petal(4)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const bud = new SphereGeometry(1, 7, 5); bud.scale(0.05 * sc, 0.12 * sc, 0.045 * sc); bud.translate(0, 0.02 * sc, 0.03 * sc);
+      const leaf = (s) => { const q = new SphereGeometry(1, 5, 3); q.scale(0.03 * sc, 0.08 * sc, 0.02 * sc); q.rotateZ(s * 0.8); q.translate(s * 0.05 * sc, -0.07 * sc, 0.015 * sc); return q; };
+      const gBud = mergeGeometries([bud, leaf(-1), leaf(1)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const pts = [];
+      for (const [x0, z0, x1, z1, nx, nz] of faces) {
+        const L = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(L / 0.5);
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n, x = x0 + (x1 - x0) * u, z = z0 + (z1 - z0) * u;
+          if (nz > 0.5 && skip && skip.some(([a, b]) => x > a && x < b)) continue;
+          pts.push([x + nx * 0.005, z + nz * 0.005, Math.atan2(nx, nz), i % 2]);
+        }
+      }
+      const m4 = new Matrix4(), q4 = new Quaternion(), up = new Vector3(0, 1, 0), one = new Vector3(1, 1, 1), ps = new Vector3();
+      for (const kind of [0, 1]) {
+        const list = pts.filter((p) => p[3] === kind), im = new InstancedMesh(kind ? gBud : gFlower, mat, list.length);
+        list.forEach(([x, z, yaw], i) => { q4.setFromAxisAngle(up, yaw); m4.compose(ps.set(x, yc, z), q4, one); im.setMatrixAt(i, m4); });
+        im.instanceMatrix.needsUpdate = true;
+        im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true;
+        parent.add(im);
+      }
+      for (const [x0, z0, x1, z1, nx, nz] of faces) for (const y of [y0, y1 - 0.04]) {   // the moldings
+        const L = Math.hypot(x1 - x0, z1 - z0), b = new Mesh(new BoxGeometry(Math.abs(nx) > 0.5 ? 0.05 : L, 0.04, Math.abs(nx) > 0.5 ? L : 0.05), mat);
+        b.position.set((x0 + x1) / 2 + nx * 0.02, y + 0.02, (z0 + z1) / 2 + nz * 0.02);
+        b.userData.noPick = true;
+        parent.add(b);
+      }
+    };
     const YS = 1;                                      // the yesod: 1 out, 1 high (Middot 3:1 "עלה אמה וכנס אמה")
     const SVH = 6;                                     // the sovev's ledge 6 above the floor: 1 + 5 (Middot 3:1 "עלה חמש וכנס אמה")
     const MID = S + 2;                                 // 22: the wall below the sovev, 1 out of the body all round (the sovev's amah)
@@ -123,6 +163,14 @@
     const XW = ACX - MID / 2, XE = ACX + MID / 2;      // 44, 66 (1.3.2): the wall's west and east faces
     const ZN = ACZ - MID / 2, ZS = ACZ + MID / 2;      // -11, 11: its north and south faces
     bodyParts.push(H2.box(defG, MID, SVH, MID, BR, ACX, F, ACZ));   // the wall up to the sovev, y 6..12 (the body stands inside it)
+    {   // KARKOV_A2: its flowers on the four faces, F + 5.1 .. F + 5.96
+      const kg = new Group();
+      kg.name = "karkov";
+      defG.add(kg);
+      karkovBand(kg, [[XW, ZN, XE, ZN, 0, -1], [XW, ZS, XE, ZS, 0, 1], [XW, ZN, XW, ZS, -1, 0], [XE, ZN, XE, ZS, 1, 0]], F + 5.1, F + 5.96, BR, [[41.3, 57.7]]);
+      kg.traverse((o) => { if (o.isMesh) bodyParts.push(o); });
+      ctx.shared.karkov = { mode: "rabbi", set(m) { this.mode = m === "none" ? "none" : "rabbi"; kg.visible = this.mode === "rabbi"; return this.mode; } };
+    }
     bandParts.push(
       H2.box(defG, YO, YS, YS, BRD, ACX, F, ZN - YS / 2),                     // north, the whole side with both corners: x 37.5..61.5, z -12..-11
       H2.box(defG, YS, YS, MID + YS, BRD, XW - YS / 2, F, ACZ + YS / 2),      // west, the whole side with the south-west corner: z -11..12

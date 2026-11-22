@@ -39,6 +39,50 @@
     sikra.color.set(9318179);
     const bandY = F + 4.925;
     const holeMat = new MeshBasicMaterial({ color: 1315081 });
+    // KARKOV_A2 (fix-a2, 22.11.2026; the user's decisions 1-2): THE KARKOV OF BEAUTY - flowers and buds standing out of the wall, white
+    // as the altar ("ומלבנים אותן", Middot 3:4), in the upper amah under the sovev's roof, above the red line. Zevachim 62a (130:2109,
+    // 2112): "איזהו כרכוב? רבי אומר: זה כיור, רבי יוסי ברבי יהודה אומר: זה הסובב"; "תרי הוו; חד לנוי, וחד לכהנים דלא נשתרקו"; Rashi
+    // (2191:2969-2970) "ציורים של פרחים וציצים וקלעים סביב למזבח"; "ציורים סביב למעלה מאמצעו"; Yachin, Middot 3:4 (819:321): "ובאמה
+    // העליונה שבגובה הסובב למעלה מחוט הסקרא היו מצויירים פרחים וציצים בולטים מהקיר סביב"; 3:17 (819:347) "ו' טפחים למטה מגג הסובב,
+    // שבאותן ו' טפחים היה כיור". Two readings - ctx2.shared.karkov.set("rabbi" | "none"): Rabbi (the default), or without (R. Yose b.
+    // R. Yehuda: "זה הסובב"; the Rambam does not mention it). Not under the ramp's head (the south face, where the ramp floats).
+    const KARKOV_MAT = M2.plaster.clone();
+    KARKOV_MAT.color.setRGB(0.97, 0.96, 0.92);
+    // KARKOV_A2: the flowers and buds of the karkov - instanced, one mesh for the flowers and one for the buds, along faces
+    // [[x0, z0, x1, z1, nx, nz] ...] (nx, nz - the face's outward normal), at the height yc, skipping the x ranges in `skip` on faces
+    // whose normal is +z (the ramp's place); a molding above and below (y0, y1). Their size and spacing - model choices.
+    const karkovBand = (parent, faces, y0, y1, mat, skip) => {
+      const yc = (y0 + y1) / 2, sc = Math.min(1, (y1 - y0) / 0.6);
+      const petal = (k) => { const q = new SphereGeometry(1, 6, 4); q.scale(0.065 * sc, 0.11 * sc, 0.035 * sc); q.translate(0, 0.1 * sc, 0.02 * sc); q.rotateZ(k * Math.PI * 2 / 5); return q; };
+      const ctr = new SphereGeometry(1, 8, 5); ctr.scale(0.06 * sc, 0.06 * sc, 0.05 * sc); ctr.translate(0, 0, 0.035 * sc);
+      const gFlower = mergeGeometries([ctr, petal(0), petal(1), petal(2), petal(3), petal(4)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const bud = new SphereGeometry(1, 7, 5); bud.scale(0.05 * sc, 0.12 * sc, 0.045 * sc); bud.translate(0, 0.02 * sc, 0.03 * sc);
+      const leaf = (s) => { const q = new SphereGeometry(1, 5, 3); q.scale(0.03 * sc, 0.08 * sc, 0.02 * sc); q.rotateZ(s * 0.8); q.translate(s * 0.05 * sc, -0.07 * sc, 0.015 * sc); return q; };
+      const gBud = mergeGeometries([bud, leaf(-1), leaf(1)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const pts = [];
+      for (const [x0, z0, x1, z1, nx, nz] of faces) {
+        const L = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(L / 0.5);
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n, x = x0 + (x1 - x0) * u, z = z0 + (z1 - z0) * u;
+          if (nz > 0.5 && skip && skip.some(([a, b]) => x > a && x < b)) continue;
+          pts.push([x + nx * 0.005, z + nz * 0.005, Math.atan2(nx, nz), i % 2]);
+        }
+      }
+      const m4 = new Matrix4(), q4 = new Quaternion(), up = new Vector3(0, 1, 0), one = new Vector3(1, 1, 1), ps = new Vector3();
+      for (const kind of [0, 1]) {
+        const list = pts.filter((p) => p[3] === kind), im = new InstancedMesh(kind ? gBud : gFlower, mat, list.length);
+        list.forEach(([x, z, yaw], i) => { q4.setFromAxisAngle(up, yaw); m4.compose(ps.set(x, yc, z), q4, one); im.setMatrixAt(i, m4); });
+        im.instanceMatrix.needsUpdate = true;
+        im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true;
+        parent.add(im);
+      }
+      for (const [x0, z0, x1, z1, nx, nz] of faces) for (const y of [y0, y1 - 0.04]) {   // the moldings
+        const L = Math.hypot(x1 - x0, z1 - z0), b = new Mesh(new BoxGeometry(Math.abs(nx) > 0.5 ? 0.05 : L, 0.04, Math.abs(nx) > 0.5 ? L : 0.05), mat);
+        b.position.set((x0 + x1) / 2 + nx * 0.02, y + 0.02, (z0 + z1) / 2 + nz * 0.02);
+        b.userData.noPick = true;
+        parent.add(b);
+      }
+    };
     const buildBody = (grp, W) => {
       const x0 = 71.5 - W, z1 = -19.5 + W, cx = 71.5 - W / 2, cz = -19.5 + W / 2;
       H2.box(grp, W, 1, 1, AS, cx, F, -19);                              // the yesod along the north
@@ -59,6 +103,13 @@
       // little out of the faces below it, and paler than the altar's stones - so that the step reads at once. Its measures stay the
       // Mishnah's ("עלה חמש אמות וכנס אמה, זהו הסובב", Middot 3:1); the slab's thickness and colour - a model choice
       H2.box(grp, W - 2 + 0.32, 0.34, W - 2 + 0.32, SOVEV_MAT, cx, F + 5.68, cz);
+      {   // KARKOV_A2: on the four faces of the wall below the sovev (x0 + 1 .. 70.5, z -18.5 .. z1 - 1), between the red line and the sovev's slab
+        const kg = new Group(), xa = x0 + 1, xb = 70.5, za = -18.5, zb = z1 - 1, rx = W === 32 ? 0 : 2;
+        kg.name = "karkov";
+        karkovBand(kg, [[xa, za, xb, za, 0, -1], [xa, zb, xb, zb, 0, 1], [xa, za, xa, zb, -1, 0], [xb, za, xb, zb, 1, 0]], F + 5.09, F + 5.68, KARKOV_MAT, [[47.3 + rx, 63.7 + rx]]);
+        grp.add(kg);
+        (buildBody.karkov || (buildBody.karkov = [])).push(kg);
+      }
       H2.box(grp, W - 4, 3.1, W - 4, AS, cx, F + 5.9, cz);
       for (const hx of [x0 + 2.5, 69]) for (const hz of [-17, z1 - 2.5])
         H2.box(grp, 1, 1.1, 1, AS, hx, F + 8.9, hz);
@@ -133,6 +184,12 @@
       { text: "כאן אין יסוד — רב: ״בבנין״ (זבחים נד.)", x: 73.2, y: F + 0.9, z: 16.4, size: 1.25, layers: ["altarBody32", "yesodRavL"], moveWithAltar: true },
       { text: "יסוד בחלקו של יהודה — לוי: ״בדמים״, אין נותנים עליו דם (זבחים נד.)", x: 73.2, y: F + 0.9, z: 16.4, size: 1.25, layers: ["altarBody32", "yesodLevL"], moveWithAltar: true }
     );
+    // KARKOV_A2: the reading's switch, and the label's group
+    const karkovL = new Group();
+    mv.add(karkovL);
+    ctx2.layers.karkovL = karkovL;
+    ctx2.labels.push({ text: "כרכוב — פרחים וציצים (רבי: ״זה כיור״, זבחים סב.)", x: 73.4, y: F + 5.4, z: -2, size: 1.1, layers: ["altarBody32", "karkovL"], moveWithAltar: true });
+    ctx2.shared.karkov = { mode: "rabbi", set(m) { this.mode = m === "none" ? "none" : "rabbi"; const on = this.mode === "rabbi"; for (const g of buildBody.karkov || []) g.visible = on; karkovL.visible = on; return this.mode; } };
     ctx2.shared.yesodLevi = { on: false, set(v) { this.on = !!v; for (const g of buildBody.levi || []) g.visible = this.on; for (const g of buildBody.rav || []) g.visible = !this.on; yRavL.visible = !this.on; yLevL.visible = this.on; return this.on; } };   // 1.9.3; YESOD_211
     // ===== 1.0.21: ramps rebuilt as solid wedges (the old small ramps were thin slabs standing on posts).
     // Main ramp: Middot 3:3 (32 x 16, south of the altar); it rises 9 amot to the top of the altar; its top is NOT joined to the altar ("a little air",

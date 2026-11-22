@@ -673,7 +673,7 @@
         throne: ["throneVersion"], throneSteps: ["throneVersion"],
         heichalSouth: ["yatziaShape"], yatziaSection: ["yatziaShape"], yatziaDoor: ["yatziaShape"],   // 1.3.4: the yatzia's readings
         arkInside: ["arkLayout"],   // 1.3.3 (the user: "על הדרך תוסיף מתגי שיטות"): what is in the ark - R. Meir / R. Yehuda
-        mizbeach: ["altarPlace", "altarRTam", "altarYose", "altarLook", "altarRamps", "maarachot", "maarachotYK"], mizbeachSE: ["altarRTam", "altarPlace"], mizbeachTop: ["maarachot", "maarachotYK", "altarYose"], mizbeachMeasures: ["altarYose"], sfalim: ["sfalim"],   // 1.3.3   // 1.0.2: the small ramps (ctx.shared.altarRamps; no row, no chips); 1.2.3: the altar's place too (the user)
+        mizbeach: ["altarPlace", "altarRTam", "altarYose", "altarKarkov", "altarLook", "altarRamps", "maarachot", "maarachotYK"], mizbeachSE: ["altarRTam", "altarPlace"], mizbeachTop: ["maarachot", "maarachotYK", "altarYose"], mizbeachMeasures: ["altarYose"], sfalim: ["sfalim"],   // 1.3.3   // 1.0.2: the small ramps (ctx.shared.altarRamps; no row, no chips); 1.2.3: the altar's place too (the user)
         altarFromDoor: ["altarPlace"], altarPlaceView: ["altarPlace"], mizbeachSW: ["altarPlace", "altarRTam", "altarRamps"], mizbeachRamps: ["altarPlace", "altarRTam", "altarRamps", "rampGap"]
       };
       const UI_OPS_P = {
@@ -699,7 +699,7 @@
       const UI_OPS_L = [
         [/^(?:יכין|בועז)/, ["pillarCapital"]],
         [/^(?:הים(?:\s|$)|ים של שלמה)/, ["seaPlacement"]],
-        [/^מזבח הנחושת/, ["altarPlace", "altarRTam", "altarYose", "altarLook", "altarRamps", "maarachot", "maarachotYK"]],
+        [/^מזבח הנחושת/, ["altarPlace", "altarRTam", "altarYose", "altarKarkov", "altarLook", "altarRamps", "maarachot", "maarachotYK"]],
         [/^היסוד/, ["altarRTam"]],   // 1.3.7: R. Tam's reading on the yesod's own label   // 1.2.3: the place's chips on the altar's own label too
         [/^(?:היסוד|הסובב|הכבשים הקטנים|כבש קטן|שני כבשים קטנים)/, ["altarRamps"]],
         [/^ספלי הניסוך/, ["sfalim"]],   // 1.3.3
@@ -1486,6 +1486,18 @@
             feature: { key: "leviimPlace", isOn: () => LV.get(), on: () => LV.set(true), off: () => LV.set(false) },
             info: String(LV.info || "") + " הסימון מוצג לחמש עשרה שניות.", refs: Array.isArray(LV.refs) ? LV.refs : [] });
         }
+        // KARKOV_A2 (fix-a2; the user's decision 3): the karkov on the sovev's band (ctx.shared.karkov, 40-altar.js)
+        if (ctx.shared.karkov) opRow({
+          id: "altarKarkov", short: "הכרכוב — פרחים וציצים במזבח", cardFly: true,
+          chips: { rabbi: "רבי: כיור", none: "ר׳ יוסי בר״י: הסובב" },
+          cap: "הכרכוב (כיור) של המזבח",
+          refs: [["זבחים סב.", { book: 130, index: 2109 }], ["רש״י זבחים סב.", { book: 2191, index: 2969 }], ["רש״י זבחים סב. (תרי הוו)", { book: 2191, index: 2982 }], ["יכין מידות ג, ד", { book: 819, index: 321 }]],
+          options: [["rabbi", "רבי — ״זה כיור״: פרחים וציצים", "**הגמרא** (זבחים סב.): ״איזהו כרכוב? רבי אומר: זה כיור, רבי יוסי ברבי יהודה אומר: זה הסובב״; ובסוף הסוגיא: ״תרי הוו; חד לנוי, וחד לכהנים דלא נשתרקו״.\n**רש״י** (שם): ״ציורים של פרחים וציצים וקלעים סביב למזבח כמו סיידו וכיירו״; ״זה כיור — ציורים סביב למעלה מאמצעו״.\n**בבית ראשון — על פס הסובב:** רש״י (זבחים סב.), על מזבח משה: ״סביב הקיר משעלה שש אמות גובה... היקף הבליטה קטנה חוגרתו סביב לנוי, וזהו סובב וכיור דאפליגו ביה רבי ור׳ יוסי בר׳ יהודה״.\n**במודל:** פרחים וציצים לסירוגין על פס הסובב, באמה העליונה שמעל חוט הסיקרא, בארבע הרוחות, מחומר המזבח (לפי ״מראה המזבח״); לא מתחת לראש הכבש. צורתם, גודלם והמרווח ביניהם — בחירת מודל."],
+            ["none", "רבי יוסי ברבי יהודה — ״זה הסובב״: בלי ציורים", "**רבי יוסי ברבי יהודה** (זבחים סב.): ״זה הסובב״ — הכרכוב שבפסוק הוא הסובב, ואין ציורים.\n**הרמב״ם** אינו מזכיר כיור במזבח (תמה עליו תפארת ישראל, יכין מידות ג, ד: ״ותמהני שהשמיטו הרמב״ם, והרי קיי״ל כרבי מחברו״).\n**במודל:** בלי פרחים וציצים."]],
+          current: "rabbi",
+          onPick: (k) => { const K = ctx.shared.karkov; if (K && typeof K.set === "function") K.set(k); },
+          fly: () => flyView("mizbeach")
+        });
         // 1.3.3 (the user: "ספלים — להוסיף בשיטות"): the libation bowls by the south-west horn - ctx.shared.sfalim (40-altar.js), a completion
         // from the Mishnah as the shitin; the holes' two readings are the row "ספלי הניסוך" (its chips on this card)
         const SF = ctx.shared.sfalim;
@@ -2528,7 +2540,7 @@
 //@@end buildUI.after-tvNotes-note
 //@@begin buildUI.after-GROUPS
           ["הר הבית והחצרות", ["lesserPlace", "eastSteps", "yehoyadaChests", "sanhedrinRows", "slaughterLayout"]],
-          ["המזבח וכלי הנחושת", ["seaPlacement", "altarPlace", "altarRTam", "altarYose", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps"]],
+          ["המזבח וכלי הנחושת", ["seaPlacement", "altarPlace", "altarRTam", "altarYose", "altarKarkov", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps"]],
           ["הבית מבחוץ והיציע", ["aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling"]],
           ["הבית מבפנים", ["potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout"]],
           ["בית שלמה", ["forestHouse", "throneVersion"]],
