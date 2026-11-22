@@ -15,7 +15,8 @@
   //     the face), w x d, its walls of stone 1 thick, its water at its lowest ground + 0.95 - or null for none;
   //   lights: { torch: 85, moon: 34, torchColor, moonColor, torchPos: [x, y over the opening, z], moonPos } (the frame's; off until setLit);
   //   sfx(name, opts) - the house's player of sounds (optional); roar: { name: "water", dur: 4.5, gain: 3.2 } }
-  // -> { G, mouth: {x, y, z}, basinY, pool: { y0, rim, wl, water } | null, setBottom(y), setLit(k), roar(), tick(t), swirlMat(),
+  //   lake: { dx, dz, rx, rz } - the natural pool the fall drops into (default { 2.0, -1.9, 3.2, 2.3 }); false - the small basin instead;
+  // -> { G, mouth: {x, y, z}, basinY, pool: { y0, rim, wl, water } | null, lake: { cx, cz, rx, rz, y, center } | null, standFor(off), setBottom(y), setLit(k), roar(), tick(t), swirlMat(),
   //      clump(x, y, z, s), boulder(x, y, z, s), bush(x, y, z, s) (world coordinates), lights }
   function tm_shiloach(ctx, o) {
     const G = new Group(); G.name = o.name || "shiloachKit"; (o.parent || ctx.root).add(G);
@@ -87,11 +88,16 @@
     const boulderL = (lx, ly, lz, s) => { const b = new Mesh(BLOBS[Math.floor(rr() * BLOBS.length)], boulM); b.position.set(lx, ly, lz); b.scale.set(s * (1 + rr() * 0.4), s * (0.55 + rr() * 0.25), s * (0.9 + rr() * 0.3)); b.rotation.y = rr() * 6.3; b.castShadow = b.receiveShadow = true; G.add(noPick(b)); return b; };
     const bushL = (lx, ly, lz, s) => { for (let k = 0; k < 4; k++) { const b = new Mesh(BLOBS[(k + 2) % BLOBS.length], leafM[k % 3]); b.position.set(lx + (rr() - 0.5) * s, ly + s * (0.35 + rr() * 0.3), lz + (rr() - 0.5) * s); b.scale.set(s * 0.6, s * 0.45, s * 0.6); G.add(noPick(b)); } clumpL(lx, ly, lz, s * 0.8, 5); };
     // the opening's brow: one rounded stone of the cliff over the dark hole
-    { const b = new Mesh(BLOBS[2], rockM.clone()); b.material.vertexColors = false; b.material.color.set(0xa4582a); b.position.set(0.05 * S, MY + 0.42 * S, 0.22 * S); b.scale.set(0.62 * S, 0.24 * S, 0.3 * S); G.add(noPick(b)); }
+    { const b = new Mesh(BLOBS[2], rockM.clone()); b.material.vertexColors = false; b.material.color.set(0xb0602c); b.position.set(0.05 * S, MY + 0.4 * S, 0.3 * S); b.scale.set(0.6 * S, 0.2 * S, 0.16 * S); G.add(noPick(b)); }
     const toL = (fn) => (wx, wy, wz, s) => { const [lx, lz] = L(wx, wz); return fn(lx, wy, lz, s); };
     // ---- the basin under the fall: a round bed of stone, its water turning (the whirlpool), grey boulders round it, open toward the front
     const BR = (o.basinR || 1.0) * S, BZ = -(o.basinDz != null ? o.basinDz : 0.55) * S, BY = o.basinY != null ? o.basinY : GY + 0.36;
-    { const bed = new Mesh(new CylinderGeometry(BR, BR * 0.8, BY - GY + 0.8, 24, 1, true), new MeshStandardMaterial({ color: 0x5f5a52, roughness: 1, side: DoubleSide })); bed.position.set(0, (BY + GY - 0.8) / 2, BZ); G.add(noPick(bed));
+    // NATURAL_POOL_B2 (the user's decision 122 b: "בריכה טבעית שהמפל נופל לתוכה, כבחלמיש; מקום המילוי בהתאם" - in both houses): by default
+    // the fall drops straight into a natural pool before the face (o.lake: { dx, dz, rx, rz } in the kit's frame; o.lake === false - the
+    // small basin of before). Its size and outline - model choices
+    const LK = o.lake === false ? null : Object.assign({ dx: 2.0, dz: -1.9, rx: 3.2, rz: 2.3 }, o.lake || {});
+    const inLake = (x, z, k) => !!LK && Math.pow((x - LK.dx * S) / (LK.rx * S * (k || 1)), 2) + Math.pow((z - LK.dz * S) / (LK.rz * S * (k || 1)), 2) < 1;
+    if (!LK) { const bed = new Mesh(new CylinderGeometry(BR, BR * 0.8, BY - GY + 0.8, 24, 1, true), new MeshStandardMaterial({ color: 0x5f5a52, roughness: 1, side: DoubleSide })); bed.position.set(0, (BY + GY - 0.8) / 2, BZ); G.add(noPick(bed));
       const swirlM = new MeshStandardMaterial({ map: swirlTex, roughness: 0.1, metalness: 0.05, emissive: 0x2a5a8a, emissiveIntensity: 0.6 });
       const wtr = new Mesh(new CircleGeometry(BR + 0.05, 32).rotateX(-Math.PI / 2), swirlM); wtr.position.set(0, BY, BZ); G.add(noPick(wtr));
       for (let i = 0; i < 11; i++) { const a = -Math.PI * 0.2 + (i / 10) * Math.PI * 1.4 + (rr() - 0.5) * 0.15, r = BR + 0.16 * S; boulderL(Math.cos(a) * r, BY - 0.05, BZ + Math.sin(a) * r * 0.9 + 0.1, (0.32 + rr() * 0.22) * S); } }
@@ -125,16 +131,36 @@
       for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (rr() - 0.5) * 2.6, v = 0.25 + rr() * 0.5, y = sp.base + 1.6 + (sp.top - sp.base - 1.6) * v, f = (1 - 0.5 * Math.pow(v, 1.5)) * 0.97;
         const x = sp.cx + Math.cos(a) * sp.rx * f, z = sp.cz + Math.sin(a) * sp.rz * f; if (Math.abs(x) < 1.6 * S && y < MY + 2) continue; clumpL(x, y, z, (0.8 + rr() * 0.6) * S, 7); }
     }
-    for (let i = 0; i < 52; i++) { const x = (rr() - 0.5) * 24 * S, z = -0.2 * S + rr() * 3.4 * S - Math.abs(x) * 0.02; if (x > -4.8 * S && x < 2.8 * S && z < 1.7 * S) continue;   // the way to the opening and the view of it from the side left clear
+    for (let i = 0; i < 52; i++) { const x = (rr() - 0.5) * 24 * S, z = -0.2 * S + rr() * 3.4 * S - Math.abs(x) * 0.02; if ((x > -4.8 * S && x < 2.8 * S && z < 1.7 * S) || inLake(x, z, 1.15)) continue;   // the way to the opening and the view of it from the side left clear
       clumpL(x, gL(x, z) - 0.05, z, (0.9 + rr() * 0.8) * S, 9); }
     for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) { const x = sx * (1.1 + rr() * 1.6) * S, y = MY + (1.3 + i * 1.1 + rr() * 0.5) * S, z = 0.25 * S; clumpL(x, y, z, (0.7 + rr() * 0.4) * S, 6); }   // on the face, beside the opening (Chalamish p. 13)
-    for (let i = 0; i < 16; i++) { const x = (rr() - 0.5) * 22 * S, z = -0.8 * S + rr() * 2.4 * S; if (Math.abs(x) < 2.6 * S) continue; bushL(x, gL(x, z) - 0.1, z, (0.9 + rr() * 0.6) * S); }
-    for (let i = 0; i < 14; i++) { const x = (rr() - 0.5) * 24 * S, z = -2.5 * S + rr() * 3 * S; if (Math.abs(x) < 3 * S) continue; boulderL(x, gL(x, z) + 0.1, z, (0.5 + rr() * 0.7) * S); }
+    for (let i = 0; i < 16; i++) { const x = (rr() - 0.5) * 22 * S, z = -0.8 * S + rr() * 2.4 * S; if (Math.abs(x) < 2.6 * S || inLake(x, z, 1.25)) continue; bushL(x, gL(x, z) - 0.1, z, (0.9 + rr() * 0.6) * S); }
+    for (let i = 0; i < 14; i++) { const x = (rr() - 0.5) * 24 * S, z = -2.5 * S + rr() * 3 * S; if (Math.abs(x) < 3 * S || inLake(x, z, 1.2)) continue; boulderL(x, gL(x, z) + 0.1, z, (0.5 + rr() * 0.7) * S); }
     // ---- the great pool (optional): four walls of stone and a floor, its water turning, grey boulders on its rim (the way to the basin left
     //      open), ferns along its sides and bushes behind it; a rill from the basin to it
     const EXTRA = [];
     const swirlMat = () => { const t = swirlTex.clone(); t.needsUpdate = true; t.center.set(0.5, 0.5); const m = new MeshStandardMaterial({ map: t, roughness: 0.12, metalness: 0.08, transparent: true, opacity: 0.92, emissive: 0x24507c, emissiveIntensity: 0.5 }); EXTRA.push(t); return m; };
     let POOL = null;
+    let LAKE = null;
+    if (LK) {   // NATURAL_POOL_B2: the pool - an irregular round of water, turning, a bank of wet earth round it, grey boulders on its edge
+      const cx = LK.dx * S, cz = LK.dz * S, rx = LK.rx * S, rz = LK.rz * S, N = 48;
+      const rad = (a) => 1 + 0.09 * Math.sin(a * 3 + 1.3) + 0.06 * Math.sin(a * 5 + 0.4);
+      const edge = (a, k) => [cx + Math.cos(a) * rx * rad(a) * k, cz + Math.sin(a) * rz * rad(a) * k];
+      const pos = [0, 0, 0], nor = [0, 1, 0], uv = [0.5, 0.5], idx = [];
+      for (let i = 0; i <= N; i++) { const a = i / N * 6.283, [x, z] = edge(a, 1); pos.push(x - cx, 0, z - cz); nor.push(0, 1, 0); uv.push(0.5 + 0.5 * Math.cos(a) * rad(a), 0.5 + 0.5 * Math.sin(a) * rad(a)); if (i) idx.push(0, i + 1, i); }
+      const wg = new BufferGeometry(); wg.setAttribute("position", new Float32BufferAttribute(pos, 3)); wg.setAttribute("normal", new Float32BufferAttribute(nor, 3)); wg.setAttribute("uv", new Float32BufferAttribute(uv, 2)); wg.setIndex(idx);
+      const wm = swirlMat(); wm.side = DoubleSide; wm.transparent = false; wm.opacity = 1;
+      const water = new Mesh(wg, wm); water.position.set(cx, BY, cz); water.renderOrder = 2; G.add(noPick(water));
+      const sp = [], si = [];
+      for (let i = 0; i <= N; i++) { const a = i / N * 6.283, [x1, z1] = edge(a, 0.97), [x2, z2] = edge(a, 1.28); sp.push(x1, BY + 0.01, z1, x2, Math.min(BY + 0.5, gL(x2, z2) + 0.03), z2); if (i) { const k = i * 2; si.push(k - 2, k - 1, k, k - 1, k + 1, k); } }
+      const sg2 = new BufferGeometry(); sg2.setAttribute("position", new Float32BufferAttribute(sp, 3)); sg2.setIndex(si); sg2.computeVertexNormals();
+      const bank = new Mesh(sg2, new MeshStandardMaterial({ color: 0x6a5e4c, roughness: 1, side: DoubleSide })); bank.receiveShadow = true; G.add(noPick(bank));
+      const BANK = [-1.0 * S, FZ];   // the dry bank beside the fall, on its left as one faces the cliff - where one stands to fill
+      for (let i = 0; i < 26; i++) { const a = i / 26 * 6.283 + (rr() - 0.5) * 0.12, [x, z] = edge(a, 1.06); if (Math.hypot(x - BANK[0], z - BANK[1]) < 1.5 * S || Math.hypot(x, z - FZ) < 0.8 * S) continue; boulderL(x, BY - 0.05, z, (0.42 + rr() * 0.45) * S); }
+      for (let i = 0; i < 4; i++) { const a = rr() * 6.283, k = 0.35 + rr() * 0.4, [x, z] = edge(a, k); if (Math.hypot(x, z - FZ) < 1.2 * S) continue; boulderL(x, BY - 0.12, z, (0.3 + rr() * 0.25) * S); }   // a few stones in the water
+      for (let i = 0; i < 10; i++) { const a = rr() * 6.283, [x, z] = edge(a, 1.4 + rr() * 0.3); if (Math.hypot(x - BANK[0], z - BANK[1]) < 1.8 * S || z > 0.2 * S) continue; clumpL(x, gL(x, z) - 0.05, z, (0.8 + rr() * 0.6) * S, 8); }   // ferns round it (Chalamish p. 13)
+      LAKE = { cx, cz, rx, rz, y: BY, center: W(cx, cz) };
+    }
     if (o.pool) {
       const P = o.pool, pw = P.w * S, pd = P.d * S, cx = P.dx * S, cz = P.dz * S, W2 = pw / 2, D2 = pd / 2;
       let lo = Infinity; for (const ax of [-W2, 0, W2]) for (const az of [-D2, 0, D2]) lo = Math.min(lo, gL(cx + ax, cz + az));
@@ -173,5 +199,8 @@
     };
     tick(0);
     const [mx, mz] = W(0, 0.3 * S);
-    return { G, mouth: { x: mx, y: MY, z: mz }, basinY: BY, pool: POOL, setBottom, setLit, roar, tick, swirlMat, clump: toL(clumpL), boulder: toL(boulderL), bush: toL(bushL), lights: { torch, moon } };
+    // where one stands to fill a vessel under the fall (NATURAL_POOL_B2): on the bank on the fall's left, facing across it; off = the vessel's
+    // mouth from the figure in the figure's own frame (facing +z) - { x, z } -> { x, z, yaw } in the world
+    const standFor = (off) => { const ox = (off && off.x) || 0, oz = (off && off.z) || 0.9; if (!LK) { const [x, z] = W(-ox, FZ - oz); return { x, z, yaw }; } const [x, z] = W(-oz, FZ + ox); return { x, z, yaw: yaw + Math.PI / 2 }; };
+    return { G, mouth: { x: mx, y: MY, z: mz }, basinY: BY, pool: POOL, lake: LAKE, standFor, setBottom, setLit, roar, tick, swirlMat, clump: toL(clumpL), boulder: toL(boulderL), bush: toL(bushL), lights: { torch, moon } };
   }

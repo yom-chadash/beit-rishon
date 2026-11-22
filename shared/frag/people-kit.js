@@ -379,8 +379,8 @@
       else cloth.push(robe([0.1, 0.4, 0.7, 1.0, 1.3, 1.45, 1.58, 1.644, 1.708, 1.772, 1.836, 1.9], 0, true));
       for (const sd of [-1, 1]) {
         if (pose === "bench") {
-          for (const q of arm([sd * 0.245, SY - 0.01, 0], [sd * 0.27, 0.43, 0.03], [sd * 0.15, 0.225, 0.26])) cloth.push(q);
-          skin.push(hand(sd, [sd * 0.13, 0.2, 0.27], -sd * 0.25));
+          if (!noArms) for (const q of arm([sd * 0.245, SY - 0.01, 0], [sd * 0.27, 0.43, 0.03], [sd * 0.15, 0.225, 0.26])) cloth.push(q);   // (EAT_B2: noArms - the arms are the caller's)
+          if (!noArms) skin.push(hand(sd, [sd * 0.13, 0.2, 0.27], -sd * 0.25));
           cloth.push(shade(at(sph(0.05, 0.032, 0.1, 5, 3), sd * 0.1, -L + 0.032, 0.42), 0.4));                       // the shoes
         } else if (pose === "ground") {
           for (const q of arm([sd * 0.245, SY - 0.01, 0], [sd * 0.285, 0.44, -0.02], [sd * 0.262, 0.225, 0.15])) cloth.push(q);
@@ -467,11 +467,11 @@
       for (const p of pts) { ax += p[0] / n; az += p[1] / n; }
       let R = 0;
       const slots = [];   // MUSICIANS_305: each figure's hair - its mesh and place there
-      pts.forEach(([x, z, yaw], i) => {
+      pts.forEach(([x, z, yaw, py], i) => {   // (ROUTE_CROWD_B2: an optional 4th - the figure's own height, for a crowd on sloping ground)
         const big = o.big === i, j0 = big ? 0 : rnd(), s = o.s * (big ? 1.08 : o.exact ? 1 : 0.97 + j0 * 0.06), fw = o.fwd || 0;   // NAZIR_LOCKS_211: o.exact - the size and the turn as given
         const jy = (rnd() - 0.5) * (o.pose === "bench" ? 0.16 : 0.3);
         qt.setFromAxisAngle(up, yaw + (o.exact ? 0 : jy));
-        m4.compose(ps.set(x + Math.sin(yaw) * fw, o.y, z + Math.cos(yaw) * fw), qt, sc.set(s, s, s));
+        m4.compose(ps.set(x + Math.sin(yaw) * fw, py != null ? py : o.y, z + Math.cos(yaw) * fw), qt, sc.set(s, s, s));
         for (const im of [cloth, skin, fm, mCl, mSk, mHr]) im.setMatrixAt(i, m4);
         if (avN) { avN.setMatrixAt(i, m4); avD.setMatrixAt(i, m4); }   // AVNET_305
         if (tef) tef.setMatrixAt(i, m4);   // TEFILLIN_A2
