@@ -303,7 +303,11 @@
     // side (x 103), east / west on the house axis (z 0) so the three east gates line up (SPEC 3).
     const gE = { x: CO2.harE, z: MNT_EW_GATE_Z }, gW = { x: CO2.harW, z: MNT_EW_GATE_Z };
     const gN = { x: MNT_NS_GATE_X, z: CO2.harN }, gS = { x: MNT_NS_GATE_X, z: CO2.harS };
-    const bandOpts = { height: WH, thickness: T, y: LV2.HAR, stoneH: MNT_STONE_BAND, cedarH: MNT_CEDAR_BAND, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
+    // WALL_PLAIN_C (fix-c, 22.11.2026 - the user, 12:33: "לשנות לחומה רגילה"): the great court's wall is a plain wall of hewn stone, its
+    // height and place as before. "שלשה טורים גזית וטור כרתת ארזים" is said of the king's court (I Kings 7:12; Metzudat David 3345:562 "אשר
+    // היה מסבב כל בתי המלך"; Ralbag 3645:236 "שהחצר הגדולה אשר בה בית המלך") and of the inner court (6:36) - not of this wall. (Until now
+    // it was banded "as the king's court", a model choice.) One course band the wall's whole height = no cedar course.
+    const bandOpts = { height: WH, thickness: T, y: LV2.HAR, stoneH: WH, cedarH: 0, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
     const wallN = mnt_bandWall(g, Object.assign({ axis: "x", length: CO2.HAR + T, cx: CX, cz: CO2.harN, openings: [{ center: gN.x - CX, width: MNT_GATE_W }] }, bandOpts));
     const wallS = mnt_bandWall(g, Object.assign({ axis: "x", length: CO2.HAR + T, cx: CX, cz: CO2.harS, openings: [{ center: gS.x - CX, width: MNT_GATE_W }] }, bandOpts));
     const wallE = mnt_bandWall(g, Object.assign({ axis: "z", length: CO2.HAR - T, cx: CO2.harE, cz: CZ, openings: [{ center: gE.z - CZ, width: MNT_GATE_W }] }, bandOpts));
