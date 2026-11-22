@@ -1987,6 +1987,148 @@
         pose();
       });
     }
+    // ---------- EXEDRA_B2 (fix-b2, 22.11.2026 - the user's decisions 59 and 65): THE EXEDRAS ROUND THE COURT ----------
+    // Tamid 1:3 (88:4): "ונחלקו לשתי כתות, אלו הולכים באכסדרא דרך המזרח, ואלו הולכים באכסדרא דרך המערב"; Tamid 28b (138:83-84): "ומי הוו
+    // אכסדראות בעזרה?... אמר רב חסדא: באכסדראות של בנין". Two readings (the row "האכסדראות שבעזרה"): THE RAMBAM (the default; his commentary,
+    // Tamid 1:3 - 575:8 - "אכסדרא הנזכרת כאן הוא גוף בולט מגוף כתלי העזרה שסביב על כולה, והוא שאמרו אכסדראות של בנין היו, ולא היה שם גג
+    // של קורות כשאר הזיזים"; Beit HaBechirah 1:9 - 337:11 - "אלא של אבנים או לבנים"): a built stone body standing out of the court's walls,
+    // all round, no beams and no columns - drawn as a stone overhang on corbels; THE BARTENURA (634:31): "עמודים יוצאים חוץ לכתלי העזרה,
+    // ומן העמודים ועד כתלי העזרה היה סכך על גביהן... והמזבח היה שלא במקום הסכך" - columns, and a covering from them to the walls. The run
+    // follows the faces the courts' module built (the court's walls and the fronts of the chambers in it - found by rays at load, the gates
+    // left open). MODEL CHOICES: the depth (4 amot), the heights, the corbels' and the columns' spacing and form, the covering's material;
+    // the Rambam's "body" as an overhang (rather than a raised walk on the floor) - a question for the user.
+    {
+      const XR = grp("exedraRambam", true), XB = grp("exedraBartenura", false);
+      const DEP = 4, YP = 19;
+      const cands = [];
+      {
+        ctx2.root.updateMatrixWorld(true);
+        const bb = new Box3();
+        ctx2.root.traverse((o) => {
+          if (!o.isMesh || o.isInstancedMesh) return;
+          for (let q = o; q; q = q.parent) if (q.visible === false) return;
+          if (o.material && o.material.transparent && o.material.opacity < 0.5) return;
+          try { bb.setFromObject(o); } catch (_) { return; }
+          if (bb.max.y - bb.min.y < 7 || bb.max.y < YP + 2 || bb.min.y > YP) return;
+          const nearN = bb.max.z <= -47 && bb.min.z >= -80, nearS = bb.min.z >= 47 && bb.max.z <= 80;
+          const nearW = bb.max.x <= -84 && bb.min.x >= -110, nearE = bb.min.x >= 86 && bb.max.x <= 110;
+          if (nearN || nearS || nearW || nearE) cands.push(o);
+        });
+      }
+      const rcX = new Raycaster(), O = new Vector3(), D = new Vector3();
+      const hit = (o, d, max) => { rcX.set(O.set(o[0], o[1], o[2]), D.set(d[0], d[1], d[2])); rcX.far = max; const h = rcX.intersectObjects(cands, false); return h.length ? h[0].point : null; };
+      // the runs: along x (north and south) or z (west and east); `o` - the ray's start on the other axis, `d` - toward the wall
+      const SIDES = [{ run: "x", a0: -90, a1: 90, o: -42, d: -1 }, { run: "x", a0: -90, a1: 90, o: 42, d: 1 },
+        { run: "z", a0: -64, a1: 64, o: -85, d: -1 }, { run: "z", a0: -64, a1: 64, o: 87, d: 1 }];
+      const P = (S, a, u) => S.run === "x" ? [a, S.f - S.d * u] : [S.f - S.d * u, a];   // a point `u` in from the face
+      const geo = { rStone: [], rDark: [], bStone: [], cedar: [], col: [] };
+      const box = (list, w, h, d, x, y, z) => list.push(new BoxGeometry(w, h, d).translate(x, y + h / 2, z));
+      const floorAt = (x, z) => (x > 82.5 ? LV.AZ : LV.KOH);   // Israel's court east of 82.5, the priests' court (and round the house) at 16
+      let nSeg = 0;
+      for (const S of SIDES) {
+        const F = [];
+        for (let a = S.a0; a <= S.a1; a += 1) {
+          const o = S.run === "x" ? [a, YP, S.o] : [S.o, YP, a], d = S.run === "x" ? [0, 0, S.d] : [S.d, 0, 0];
+          const p = hit(o, d, 30);
+          F.push(p ? (S.run === "x" ? p.z : p.x) : null);
+        }
+        // a door's narrow gap (the ray went into a chamber) takes the face on both its sides
+        for (let i = 1; i < F.length - 1; i++) {
+          if (F[i - 1] == null) continue;
+          let j = i; while (j < F.length && j - i < 6 && (F[j] == null || Math.abs(F[j] - F[i - 1]) > 0.25)) j++;
+          if (j > i && j < F.length && j - i < 6 && F[j] != null && Math.abs(F[j] - F[i - 1]) <= 0.25) for (let k = i; k < j; k++) F[k] = F[i - 1];
+        }
+        let s0 = null;
+        const flush = (i1) => {
+          if (s0 == null) return;
+          const i0 = s0; s0 = null;
+          if (i1 - i0 < 3) return;   // too short
+          const f = F[i0], a0 = S.a0 + i0 - 0.5, a1 = S.a0 + i1 - 1 + 0.5, L = a1 - a0, am = (a0 + a1) / 2;
+          const T = Object.assign({}, S, { f });
+          const [cx, cz] = P(T, am, DEP / 2), Y = floorAt(cx, cz);
+          const W = S.run === "x" ? [L, DEP] : [DEP, L];
+          nSeg++;
+          // the Rambam: a stone overhang 9 amot over the floor, a moulded edge, and corbels every 3 amot
+          box(geo.rStone, W[0], 1.1, W[1], cx, Y + 9, cz);
+          { const [ex, ez] = P(T, am, DEP - 0.2); box(geo.rStone, S.run === "x" ? L : 0.5, 0.45, S.run === "x" ? 0.5 : L, ex, Y + 8.75, ez); }
+          for (let a = a0 + 1.2; a < a1 - 0.6; a += 3) {
+            for (let k = 0; k < 3; k++) {   // a stepped corbel: three courses, each standing out further
+              const dep = 0.9 + k * 1.0, [kx, kz] = P(T, a, dep / 2);
+              box(geo.rDark, S.run === "x" ? 0.7 : dep, 0.62, S.run === "x" ? dep : 0.7, kx, Y + 7.1 + k * 0.62, kz);
+            }
+          }
+          // the Bartenura: columns DEP in from the face, an architrave on them, and the covering from them to the wall
+          const nC = Math.max(2, Math.round(L / 5) + 1);
+          for (let i = 0; i < nC; i++) {
+            const a = a0 + 0.6 + (L - 1.2) * i / (nC - 1), [qx, qz] = P(T, a, DEP - 0.5);
+            geo.col.push(new CylinderGeometry(0.38, 0.44, 9.2, 12).translate(qx, Y + 0.5 + 4.6, qz));
+            box(geo.bStone, 1.2, 0.5, 1.2, qx, Y, qz);
+            box(geo.bStone, 1.1, 0.5, 1.1, qx, Y + 9.7, qz);
+          }
+          { const [bx, bz] = P(T, am, DEP - 0.5); box(geo.bStone, S.run === "x" ? L : 0.9, 0.8, S.run === "x" ? 0.9 : L, bx, Y + 10.2, bz); }
+          { const [rx, rz] = P(T, am, (DEP + 0.1) / 2); box(geo.cedar, S.run === "x" ? L : DEP + 0.1, 0.45, S.run === "x" ? DEP + 0.1 : L, rx, Y + 11, rz); }
+        };
+        for (let i = 0; i <= F.length; i++) {
+          const f = i < F.length ? F[i] : null;
+          if (s0 != null && (f == null || Math.abs(f - F[s0]) > 0.25)) flush(i);
+          if (f != null && s0 == null) s0 = i;
+        }
+      }
+      const mergeTo = (list, mat, g) => { if (!list.length) return; const m = new Mesh(mergeGeometries(list), mat); m.castShadow = m.receiveShadow = true; g.add(m); };
+      mergeTo(geo.rStone, M2.stoneLight, XR);
+      mergeTo(geo.rDark, M2.stone, XR);
+      mergeTo(geo.bStone, M2.stoneLight, XB);
+      mergeTo(geo.col, M2.stoneLight, XB);
+      mergeTo(geo.cedar, M2.cedar, XB);
+      SH.__exedraQA = { cands: cands.length, segments: nSeg };
+      ctx2.labels.push(
+        { text: "אכסדרה — כרמב״ם: גוף בולט בנוי מכתלי העזרה, בלי גג של קורות (פירוש המשניות, תמיד א, ג)", x: -40, y: LV.KOH + 13, z: -60, size: 1.5, layer: "exedraRambam" },
+        { text: "אכסדרה — כברטנורא: עמודים, ומן העמודים ועד כתלי העזרה סכך (תמיד א, ג)", x: -40, y: LV.KOH + 13.5, z: -60, size: 1.5, layer: "exedraBartenura" });
+      const XE = { mode: "rambam" };
+      SH.exedra = { get mode() { return XE.mode; }, set(m) { XE.mode = m === "bartenura" ? "bartenura" : m === "none" ? "none" : "rambam"; XR.visible = XE.mode === "rambam"; XB.visible = XE.mode === "bartenura"; return XE.mode; } };
+    }
+    // ---------- BENCHES_B2 (fix-b2, 22.11.2026 - the user's decision 77): THE HIGH STONE BENCHES BETWEEN THE ALTAR, THE SLAUGHTER PLACE AND
+    // THE RAMP ----------
+    // Pesachim 65b (106:2002-2006): "שבח הוא לבני אהרן שילכו עד ארכובותיהם בדם... בהולכת אברים לכבש ובהולכת דם, מיהא היכי אזלי? דמסגי
+    // אאיצטבי"; Zevachim 35a (130:1255) "ולעבודה היכי אזלי? אזלי אאיצטבי"; Rashi there (2191:1664): "איצטבאות גבוהין היו שם בנין אבנים ואינן
+    // חוצצין דמן הרצפה הן". The form - Chalamish ("אלחנן וחיים עולים לירושלים", the list of sources, on p. 30): "רצפת עזרת הכהנים בנויה
+    // שורות שורות, גבוהות ונמוכות, כדי שהכהנים יוכלו ללכת על השורות הגבוהות בלא שבגדיהם יתלכלכו בדם". Off by default (the row "האיצטבאות
+    // הגבוהות שבעזרה"); shown: rows of stone, an amah wide and half an amah high, with low channels between them, north to south - from the
+    // slaughter place to the ramp, round the altar and its ramp. In the altar's frame (they move with its place). MODEL CHOICES: the rows'
+    // width, height, direction and the area they cover.
+    {
+      const BG = grp("highBenches", false);
+      const F = LV.KOH, RW = 1, RH = 0.5, GAP = 0.75;
+      const parts = [];
+      const Z0 = -32.5, Z1 = 45.5;   // in the altar's frame (world z - 12.5 at the Mishnah's place): from the rings' edge to past the ramp's foot
+      for (let x = 30 + RW / 2; x <= 80; x += RW + GAP) {
+        const cut = [];
+        if (x > 38.6 && x < 72.4) cut.push([-20.4, 12.6]);   // the altar's base (and its yesod)
+        if (x > 45.6 && x < 65.4) cut.push([12.4, 43.6]);    // the ramp and its little ramps
+        if (x > 38.5 && x < 45.6) cut.push([12.4, 20.5]);    // the shitin's corner and the tables west of the ramp
+        cut.sort((a, b) => a[0] - b[0]);
+        let z = Z0;
+        for (const [c0, c1] of cut.concat([[Z1, Z1]])) {
+          if (c0 - z > 1) parts.push(new BoxGeometry(RW, RH, c0 - z).translate(x, F + RH / 2, (z + c0) / 2));
+          z = Math.max(z, c1);
+        }
+      }
+      const bm = new Mesh(mergeGeometries(parts), M2.stoneLight); bm.receiveShadow = bm.castShadow = true; BG.add(bm);
+      const lb = { text: "איצטבאות גבוהות — ״דמסגי אאיצטבי״ (פסחים סה:); צורתן כחלמיש: שורות גבוהות ונמוכות", x: 76, y: F + 4, z: -14 + 12.5, size: 1.4, layer: "highBenches" };
+      ctx2.labels.push(lb);
+      let bz = 12.5;
+      const follow = () => {
+        const AP = SH.altarPlace, dz = AP && AP.dz && typeof AP.dz[AP.current] === "number" ? AP.dz[AP.current] : 12.5;
+        BG.position.z = dz;
+        if (dz !== bz) {
+          const oz = lb.z; lb.z = -14 + dz; bz = dz;
+          let lg = null; try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {}
+          if (lg) for (const spr of lg.children) if ((spr.userData && spr.userData.label === lb) || (Math.abs(spr.position.x - lb.x) < 1e-3 && Math.abs(spr.position.z - oz) < 1e-3)) { spr.position.z = lb.z; break; }
+        }
+      };
+      SH.benches = { get on() { return BG.visible; }, set(on) { BG.visible = !!on; follow(); return BG.visible; } };
+      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (BG.visible) follow(); });
+    }
     // ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 16 and 24: "בסדר היום" in the Second Temple's cards): a place -> the stage of the
     // morning service done in it (55-tamid.js, its stages' ids); the card's link starts the presentation "סדר עבודת הבוקר" at that stage
     // (70-ui.js renderLinks). The choice of the stage for each place - a model choice.
