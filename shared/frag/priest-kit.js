@@ -431,26 +431,48 @@
     // the head's tefillin on a head made by headOn (its group): priests only - the figures that are priests ask for it
     const tefOn = (hg) => { const m = new Mesh(gTefR, mTef); m.name = "tefillin-rosh"; m.visible = TEF.on; hg.add(m); TEF.list.push(m); return m; };
     // TEFILLIN_A2: THE ARM'S, for the Levites (the user, 00:58: "תפילין גם ללויים" - no priestly garments, nothing between): on the left
-    // arm's upper part, the strap wound seven times round the forearm (a model choice, to be shown to the user). up / fo: the arm's two
-    // lengths in its own frame (the shoulder at 0, the elbow at -up; the forearm from the elbow, 0 .. -fo); rU / rF: their radii.
-    const tefArm = (shoulder, elbow, up, fo, rU, rF) => {
-      const box = new Group();
-      box.add(new Mesh(new BoxGeometry(TB * 1.3, TB * 1.25, 0.012), mTef));
-      const b = new Mesh(new BoxGeometry(TB, TB, TB), mTef); b.position.z = 0.006 + TB / 2; box.add(b);
-      // TEFILLIN_PLACE_A2: Shulchan Aruch OC 27:1 (382:228) "בזרוע שמאל, בבשר התופח שבעצם שבין הקובד"ו ובית השחי, ויטה התפלה מעט לצד
-      // הגוף" - on the swelling of the upper arm, about its middle, turned a little toward the body (the arm bare there: the sleeve rolled
-      // up - 55-tamid.js); a strap from it down to the elbow, and wound round the forearm
-      box.position.set(-rU * 0.55, -up * 0.5, rU * 0.82);
-      box.rotation.y = -0.6;
-      shoulder.add(box);
-      const pts = [];
-      for (let i = 0; i <= 84; i++) { const k = i / 84, th = k * 7 * TAU, r = (rF * (1 - 0.18 * k)) + 0.006; pts.push(new Vector3(Math.cos(th) * r, -0.04 - k * (fo - 0.1), Math.sin(th) * r)); }
-      const wind = new Mesh(new TubeGeometry(new CatmullRomCurve3(pts), 220, 0.0055, 4, false), mTef);
-      elbow.add(wind);
-      const down = new Mesh(new TubeGeometry(new CatmullRomCurve3([new Vector3(-rU * 0.5, -up * 0.5 - TB * 0.6, rU * 0.85), new Vector3(-rU * 0.2, -up * 0.78, rU * 1.0), new Vector3(rU * 0.4, -up + 0.02, rU * 0.95)]), 12, 0.0055, 4, false), mTef);
-      shoulder.add(down);
-      for (const m of [box, wind, down]) { m.visible = TEF.on; TEF.list.push(m); }
-      return { box, wind };
+    // arm's upper part. up / fo: the arm's two lengths in its own frame (the shoulder at 0, the elbow at -up; the forearm from the elbow,
+    // 0 .. -fo); rU / rF: their radii.
+    // LEVITE_SLEEVE_A2 (the user's decision 96, corrected): the sleeve is NOT rolled up - the box lies on the flesh under the sleeve
+    // ("בזרוע שמאל, בבשר התופח שבעצם שבין הקובד"ו ובית השחי, ויטה התפלה מעט לצד הגוף", Shulchan Aruch OC 27:1 - 382:228), seen only as a
+    // bulge in the garment over it (sleeveMat: the sleeve's own material); the strap wound round the arm under the sleeve, seen only where
+    // it comes out by the hand (wrist: the hand's own group - a turn round the palm below the sleeve's end; sd: the arm's side)
+    const tefArm = (shoulder, elbow, up, fo, rU, rF, sleeveMat, wrist, sd = 1) => {
+      const list = [];
+      if (sleeveMat) {
+        const dir = new Vector3(Math.sin(-0.6), 0, Math.cos(-0.6)), rs = rU * 0.915 - 0.004;
+        // a rounded cube under the cloth (the box and its titura), not a ball
+        const bg = sph(1, 1, 1, 16, 12), bp = bg.attributes.position;
+        for (let i = 0; i < bp.count; i++) { const x = bp.getX(i), y = bp.getY(i), z = bp.getZ(i), f = (u) => Math.sign(u) * Math.pow(Math.abs(u), 0.45); bp.setXYZ(i, f(x) * TB * 0.82, f(y) * TB * 0.8, f(z) * TB * 0.5); }
+        bg.computeVertexNormals();
+        const bump = new Mesh(white(bg), sleeveMat);
+        bump.name = "tefillin-bulge";
+        bump.position.set(dir.x * rs, -up * 0.5, dir.z * rs);
+        bump.rotation.y = -0.6;
+        shoulder.add(bump);
+        list.push(bump);
+      }
+      if (wrist) {
+        // the strap out of the sleeve on the back of the hand, and round the palm (kit units in the hand's frame, scaled FS)
+        const a = sd * 0.95, ca = Math.cos(a), sa = Math.sin(a), th0 = Math.atan2(0.0165 * Math.sin(0.95), sd * 0.0335 * Math.cos(0.95));   // th0: the outer side
+        const wrap = [];
+        for (let i = 0; i <= 28; i++) {
+          const k = i / 28, th = th0 + k * 1.6 * TAU, y = -0.03 - k * 0.026;
+          const lx = Math.cos(th) * 0.0335, lz = Math.sin(th) * 0.0165;   // round the palm (its breadth, its thickness), then turned as the hand (handRaw)
+          wrap.push(new Vector3(lx * ca + lz * sa, y, -lx * sa + lz * ca));
+        }
+        const w0 = wrap[0];
+        const pts = [new Vector3(w0.x * 1.05, 0.03, w0.z * 1.05), new Vector3(w0.x * 1.12, 0.004, w0.z * 1.12), ...wrap];
+        const g = new TubeGeometry(new CatmullRomCurve3(pts), 90, 0.0042, 4, false);
+        g.translate(0, -0.012, 0);
+        g.scale(FS, FS, FS);
+        const m = new Mesh(g, mTef);
+        m.name = "tefillin-yad-hand";
+        wrist.add(m);
+        list.push(m);
+      }
+      for (const m of list) { m.visible = TEF.on; TEF.list.push(m); }
+      return { list };
     };
     const gCap = sph(HR[0] * 1.1, HR[1] * 1.1, HR[2] * 1.1, 16, 5, 0, TAU, 0, 1.15);   // the elder's cap
     const gFlame = new ConeGeometry(0.2, 0.7, 8); gFlame.translate(0, 0.35, 0);

@@ -752,15 +752,12 @@
           const by = bend ? bend.position.y : 0;   // KIDDUSH_BEND_212: the arms go with the body above the waist
           sh.position.set(side * A.sx, A.sy - by, 0);
           (bend || lean).add(sh);
-          // TEFILLIN_PLACE_A2 (the user: "של יד: הקציצה על הבשר. אפשר שהשרוול השמאלי יהיה מופשל מעליה"): the Levite's left sleeve rolled up
-          // to the shoulder - the arm bare (the box on the flesh), the rolled cloth a ring at its top
-          const bare = lev && side === 1 && !!K.tefArm;
-          sh.add(new Mesh(hp ? KG.upH : KG.upP, bare ? K.mSkin : armMat));
-          if (bare) { const rl = new Mesh(K.white(new TorusGeometry(0.074 * FS, 0.024 * FS, 6, 16)), armMat); rl.rotation.x = Math.PI / 2; rl.position.y = -0.06 * FS; sh.add(rl); }
+          // LEVITE_SLEEVE_A2 (the user's decision 96, corrected): the sleeve is not rolled up - the arm tefillin under it (K.tefArm, below)
+          sh.add(new Mesh(hp ? KG.upH : KG.upP, armMat));
           const el = new Group();
           el.position.y = -A.up;
           sh.add(el);
-          el.add(new Mesh(hp ? KG.foH : KG.foP, bare ? K.mSkin : armMat));
+          el.add(new Mesh(hp ? KG.foH : KG.foP, armMat));
           // BIRKAT_HANDS_A2: the hand on a wrist joint (it turns and bends for the priestly blessing - applyFig)
           const wr = new Group();
           wr.position.y = -A.fo;
@@ -773,7 +770,8 @@
         };
         const L = arm(1), R = arm(-1);
         // TEFILLIN_A2 (the user, 00:58: "תפילין גם ללויים... של ראש ושל יד"): the Levite's arm tefillin, on his left arm (L)
-        if (lev && K.tefArm) K.tefArm(L.sh, L.el, A.up, A.fo, 0.07 * FS, 0.056 * FS);
+        // LEVITE_SLEEVE_A2: the box a bulge in the sleeve over it, the strap seen only where it comes out by the hand
+        if (lev && K.tefArm) K.tefArm(L.sh, L.el, A.up, A.fo, 0.07 * FS, 0.056 * FS, armMat, L.wr, 1);
         const fl = new Mesh(KG.foot[1], K.mSkin), fr = new Mesh(KG.foot[-1], K.mSkin);
         fl.position.x = 0.1 * FS;
         fr.position.x = -0.1 * FS;
@@ -851,7 +849,7 @@
         f.g.traverse((o) => { if (o.isMesh && o.name === "tefillin-rosh") heads.push(o); });
         for (const m of heads) { const hg = m.parent; m.removeFromParent(); const hair = hg.children[2]; if (hair && hair.isMesh) { hair.visible = false; const head = hg.children[0]; head.geometry.computeBoundingBox(); const bb = head.geometry.boundingBox, c = bb.getCenter(new Vector3()), sz = bb.getSize(new Vector3()); const sc = new Mesh(new SphereGeometry(1, 16, 8, 0, Math.PI * 2, 0, 1.5), KID_HAIR); sc.scale.set(sz.x * 0.53, sz.y * 0.53, sz.z * 0.54); sc.rotation.x = -0.42; sc.position.set(c.x, c.y + sz.y * 0.04, c.z - sz.z * 0.03); hg.add(sc); } }   // the hair over the crown and the back, the forehead and the face bare
         const arm = [];
-        if (KIT && KIT.mTef) f.g.traverse((o) => { if (o.isMesh && o.material === KIT.mTef) arm.push(o.parent && o.parent.isGroup && o.parent.children.every((c) => c.material === KIT.mTef) ? o.parent : o); });
+        if (KIT && KIT.mTef) f.g.traverse((o) => { if (o.isMesh && o.name === "tefillin-bulge") arm.push(o); else if (o.isMesh && o.material === KIT.mTef) arm.push(o.parent && o.parent.isGroup && o.parent.children.every((c) => c.material === KIT.mTef) ? o.parent : o); });
         for (const o of new Set(arm)) o.removeFromParent();
       }
       // NIGHT_WATCH_305: the night's watch - Ish Har HaBayit (his tribe is not said: plain clothes in a colour of his own, as the
