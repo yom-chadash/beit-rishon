@@ -183,7 +183,11 @@
       if (gx === -18 && s < 0) continue;   // 1.8.0: Beit HaMoked's own gate to the chel - by the house, below
       const joined = (gx === -78 && s > 0) || (gx === -48 && s < 0);   // a small gate's landing joins this one's free end in the readings of thirteen gates
       chelFlight(g, gx, s, s > 0 ? 1 : -1, { endRail: !joined });
-      stairsR(g, { width: 10, totalRise: 2.5, steps: 5, dir: s < 0 ? "S" : "N", x: gx, y: 13.5, z: 70 * s, tread: 0.5 });
+      // GATE_STEPS_A2 (fix-a2; the user's decision 79, 22.11.2026): the last two and a half amot inside the gate - a step of one amah and
+      // three of half an amah, as the Rambam, Beit HaBechirah 6:3 (337:96): "ועולה ממנו לעזרת הכהנים במעלה גבוהה אמה ועליה דוכן יש בו
+      // שלש מעלות. רום כל מעלה חצי אמה". Until now five steps of half an amah. The amah step's tread (an amah) - a model choice.
+      H2.stairs(g, { width: 10, totalRise: 1, steps: 1, dir: s < 0 ? "S" : "N", x: gx, y: 13.5, z: 70 * s, tread: 1 });   // (no rail on one step)
+      stairsR(g, { width: 10, totalRise: 1.5, steps: 3, dir: s < 0 ? "S" : "N", x: gx, y: 14.5, z: 69 * s, tread: 0.5 });
     }
     // 1.4.0 (the user, the reviewer's note 2): the step of one amah and the duchan's three steps run the WHOLE width of the court (135),
     // as Tiferet Yisrael draws them (the Mishnah, 2:6, gives them no length); until 1.3.0 they were 60 wide
