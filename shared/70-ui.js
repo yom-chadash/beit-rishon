@@ -830,11 +830,18 @@ body.tm-measuring canvas{cursor:crosshair}
       for (const spr of labelGroup.children) spr.userData.base = spr.scale.clone();
       ctx.animated.push(function() {
         const cp = ctx.camera.position;
+        const tanHalf = Math.tan(((ctx.camera.fov || 50) * Math.PI) / 360);   // LABEL_CAP_S1
         for (const spr of labelGroup.children) {
           const d = cp.distanceTo(spr.position);
           const sz = spr.userData.base.y;
           const kMin = spr.userData.label && typeof spr.userData.label.kMin === "number" ? spr.userData.label.kMin : 0.3;   // LABEL_NEAR_A2: a label may keep shrinking as the eye comes near (a figure's caption)
-          const k = Math.min(1.5, Math.max(kMin, d / 170));
+          // LABEL_CAP_S1 (scan 1, findings 2, 4, 22: a label beside the eye - "מזבח הזהב" in the incense demonstration, the oven's in לשכת עושי
+          // לחם הפנים, "המנורה" by the curtains - filled a corner of the screen and was cut by its edge): nearer than 170 * kMin a label stops
+          // shrinking, so on the screen it grew without end as the eye came near. Now, near, it grows no taller than 5% of the window's height
+          // (as a large place name from afar; its letters - about 3%), nor shrinks below its size from afar; from its usual distance
+          // (d / 170 >= kMin) nothing changes. (9% was tried: the oven's label in לשכת עושי לחם הפנים stayed too large.)
+          const kCap = (0.05 * 2 * d * tanHalf) / (sz || 1);
+          const k = Math.min(1.5, Math.max(d / 170, Math.min(kMin, kCap)));
           spr.scale.set(spr.userData.base.x * k, spr.userData.base.y * k, 1);
           // 1.3.7 / 1.9.5: a label may name its own reach (`far`, amot) - the captions of a switch that is looked at from the whole
           // Mount's view (the gatekeepers' sides); without it the reach goes by the label's size, as before
@@ -2616,7 +2623,12 @@ body.tm-measuring canvas{cursor:crosshair}
             for (const [, its] of PLACES) { const o = its.find((x) => x && x.t === d.place); if (o) { it = Object.assign({}, o, { t: d.t }); break; } }
           } else {
             it = { t: d.t };
-            Object.defineProperty(it, "info", { get: () => { const b = pillOf(d.pill); return (b && b.title) || ""; }, enumerable: true });
+            // DEMO_CARD_S1 (scan 1, finding 10; the user's decision): a pill's demonstration opens the card of its own place (d.card) - its
+            // text and its sources, as the demonstrations started by a place do; the action stays the pill's (its own flight, not the place's)
+            let src = null;
+            if (d.card) for (const [, its] of PLACES) { const o = its.find((x) => x && x.t === d.card); if (o) { src = o; break; } }
+            if (src) { for (const k of ["info", "refs", "key", "more"]) if (src[k] != null) it[k] = src[k]; }
+            else Object.defineProperty(it, "info", { get: () => { const b = pillOf(d.pill); return (b && b.title) || ""; }, enumerable: true });
           }
           if (!it) continue;
           if (d.pill) {

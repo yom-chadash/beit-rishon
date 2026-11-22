@@ -163,13 +163,22 @@
     // אמה ושלחה חצי אמה", 2:3) - four amot wide, six left clear beside it; in the south they go down eastwards, in the north westwards
     // (Beit HaMoked stands east of them). The steps of the side gates are not described in the Mishnah: their place, width and
     // direction are model choices (said in the chel's card). Until 2.0.1: 12 steps outside the soreg, a landing, 15 steps to the podium.
+    // RAIL_CORNER_S1 (scan 1, finding 8): a corner post is built once - two sides of one landing that meet share it, and a reading's rail
+    // (g7 / g13r, below) that ends on a post of the court's own rails (g - always shown) uses that post. Until now each side built its own,
+    // one inside the other (six such pairs, at the landings' corners).
+    const railPostsG = new Set();
     const platRail = (parent, x0, x1, z0, z1, y, sides) => {   // a bronze rail on the named edges ("n" = z0, "s" = z1, "w" = x0, "e" = x1) of a landing
       const HH = 1.35;
+      const posts = new Set();
       const run = (ax, a0, a1, fixed) => {
         const len = a1 - a0, n = Math.max(1, Math.round(len / 3));
         for (let i = 0; i <= n; i++) {
-          const t = a0 + 0.12 + (len - 0.24) * i / n, p = new Mesh(new BoxGeometry(0.1, HH, 0.1), railMat);
-          p.position.set(ax === "x" ? t : fixed, y + HH / 2, ax === "x" ? fixed : t);
+          const t = a0 + 0.12 + (len - 0.24) * i / n, px = ax === "x" ? t : fixed, pz = ax === "x" ? fixed : t, k = px.toFixed(2) + "," + y.toFixed(2) + "," + pz.toFixed(2);
+          if (posts.has(k) || (parent !== g && railPostsG.has(k))) continue;
+          posts.add(k);
+          if (parent === g) railPostsG.add(k);
+          const p = new Mesh(new BoxGeometry(0.1, HH, 0.1), railMat);
+          p.position.set(px, y + HH / 2, pz);
           parent.add(p);
         }
         const r = new Mesh(new BoxGeometry(ax === "x" ? len : 0.13, 0.11, ax === "x" ? 0.13 : len), railMat);
@@ -622,7 +631,7 @@
     lbl("שער עזרת נשים", 233, 29.5, 0, 3.5);   // 1.1.0: was "השער העליון" (no source for that name here)
     // 1.9.1 (the user: "שער מזרחי תכתוב שער התחתון לרמבם"): Rambam, Klei HaMikdash 7:6 "שער התחתון והוא שער עזרת נשים... שער העליון
     // הוא שער נקנור ולמה נקרא שער עליון לפי שהוא למעלה מעזרת נשים"; the Mishnah, Sukkah 5:4-5; the Bartenura there; Kaftor VaFerach
-    lbl("״השער התחתון״ — לרמב״ם", 233, 32.5, 0, 2);
+    lbl("״השער התחתון״ — לרמב״ם", 233, 34.5, 0, 2);   // LABEL_PAIRS_S1 (finding 5): five over the gate's name (it was three: from afar the two lay on each other)
     lbl("עזרת נשים", 161, 9, 40, 4);
     const chambers = [
       { x0: 188.5, z0: 27.5, xw: 188.5, name: "לשכת הנזירים", prop: "fire" },
@@ -686,7 +695,8 @@
       eznProps[c.name] = g;
       const l0 = ctx2.labels.length;
       lbl(c.name, cx, 20, cz, 3);
-      if (c.prop === "wood") lbl("לרמב״ם — ״לשכת דיר העצים״", cx, 17.4, cz, 1.6);   // DIR_ETZIM_211 (stage ב, point 15; the user: V): Rambam BHB 5:8 (337:83)
+      if (c.prop === "wood") lbl("לרמב״ם — ״לשכת דיר העצים״", cx, 16.2, cz, 1.6);   // LABEL_PAIRS_S1 (finding 5): 3.8 under the chamber's name (it was 2.6: the two lay on each other)
+      // DIR_ETZIM_211 (stage ב, point 15; the user: V): Rambam BHB 5:8 (337:83)
       if (c.prop === "fire") {
         // 1.9.1 (the user: "לשכת הנזירים... צריכה יותר אלמנטים קשורים"): Middot 2:5 "ששם הנזירים מבשלין את שלמיהן, ומגלחין את שערן,
         // ומשלחים תחת הדוד"; the Bartenura: the hair is burnt "באש שתחת היורה שמבשלים בה את השלמים, ככתוב ונתן על האש אשר תחת זבח השלמים"
@@ -1736,6 +1746,7 @@
         g.add(panel);
         H2.box(g, pw + 0.3, 0.18, 0.2, M2.cedar, cx + 0.9, y + 5.75, cz - 2.13);         // a ledge under the windows
         lbl("ששה ותשעים חלון — ארבעה לכל משמר (רמב״ם כלי המקדש ח, ח–ט)", cx, y + 11.2, cz - 1.6, 0.8);   // NOTE 9: the window's edge cut its first words
+        ctx2.labels[ctx2.labels.length - 1].far = 60;   // LABEL_PAIRS_S1 (scan 1, finding 5): a caption of the room's inside - not from afar, where it lay on the chamber's own name (ten views)
         // the table by the door (KLI_SHIR_211: the door west - the table east of the way in, under the windows), a white tunic folded on it
         const tX = cx - 0.1, tZ = cz - 1.5;
         H2.box(g, 1.7, 0.12, 1.1, M2.cedar, tX, y + 1.35, tZ);
@@ -1809,6 +1820,7 @@
       H2.cyl(g, 0.35, 0.5, 1.2, clay, cx - 0.4, y, cz + 1.75, 12);                          // the oil jar
       H2.cyl(g, 0.6, 0.7, 1.3, sackMat, cx + 0.9, y, cz + 1.55, 10);                         // the flour
       lbl("חביתי כהן גדול — שתים עשרה חלות על מחבת", cx, y + 13, cz, 1.2);   // CHAVITIN_211: 13 over the floor (9 until 2.0.1) - over the eye of the views inside
+      ctx2.labels[ctx2.labels.length - 1].far = 60;   // LABEL_PAIRS_S1 (finding 5): as the windows' caption in לשכת פנחס המלביש - not from afar (ten views)
     };
     // KLI_SHIR_211: the chamber of the instruments under each of the gate's chambers (Middot 2:6 "ששם הלוים נותנים כנורות ונבלים ומצלתים
     // וכל כלי שיר"): lyres hanging on pegs along the west wall, harps standing by the side toward the steps, cymbals on a table, and a Levite
@@ -2822,7 +2834,9 @@
           pad.position.set(p1[0] + 0.5, p1[1] + 0.02, oz); LG.add(pad);
           loaf(LG, crust, p1[0] + 0.5, p1[1] + 0.05, oz, HP);
         }
-        lbl("תנור של מתכת — שתי חלות בבת אחת", ox - 0.2, FL + 7.6, oz + 1.5, 0.66);   // NOTE 6 (U-48, 2): above the oven's rim, which cut it
+        lbl("תנור של מתכת — שתי חלות בבת אחת", ox - 1.2, FL + 3.7, oz - 1.2, 0.66);   // NOTE 6 (U-48, 2): above the oven's rim, which cut it
+        // OVEN_LABEL_S1 (scan 1, finding 4): low over the oven's mouth and a little to its west (it stood 7.6 over the floor and 1.5 to the south,
+        // beside the eye of the place's view - large, at the window's edge, its first words out of the picture; checked in pictures, 960 x 600)
         lbl("שלושה דפוסים של זהב — לבצק, לתנור ולחלה שנרדתה", tx0, FL + 2.5, tz0 + 0.9, 0.62);
         lbl("עשר חלות מוכנות, ושתיים בתנור", sx0 + 1.5, FL + 3.6, sz0 + 0.4, 0.62);
         // ---- the kneading (the Yachin's words; R. Yehuda): the trough and the dough, the kneader, the flour and the warm water, and
