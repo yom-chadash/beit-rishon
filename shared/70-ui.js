@@ -1321,11 +1321,55 @@ body.tm-measuring canvas{cursor:crosshair}
       const xOps = document.createElement("div");   // 1.0.2 (item 4): "שיטות:" and the chips, when the subject has opinions
       xOps.className = "o";
       xOps.style.display = "none";
+      // SAME_PLACE_B2 / ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 15, 16 and 24): the card's own links, under its opinions:
+      // "אותו מקום בבית השני" - the same place in the other house (the shell opens it there: house-bridge.js window.__tmGoPlace) - for the
+      // places that have a counterpart (UI_SAME_PAIRS: [the First Temple's title, the Second Temple's]); and in the Second Temple "בסדר
+      // היום" - the morning service's presentation at the stage done in that place (ctx.shared.placeOrder: title -> stage id, 57-add208.js)
+      const xLinks = document.createElement("div");
+      xLinks.className = "o";
+      xLinks.style.display = "none";
       xcard.appendChild(xHead);
       xcard.appendChild(xBody);
       xcard.appendChild(xRefs);
       xcard.appendChild(xOps);
+      xcard.appendChild(xLinks);
       document.body.appendChild(xcard);
+      const UI_SAME_PAIRS = [
+        ["הר הבית והחצר הגדולה", "הר הבית"], ["השער המזרחי", "שער שושן"], ["החצר הפנימית — חצר הכהנים", "העזרה"], ["חצר הכהנים", "עזרת כהנים"],
+        ["בר שורא — חומה קטנה לפנים מן החומה", "בר שורא — חומה קטנה לפנים מן החומה"], ["שתי הסנהדראות הקטנות", "שתי הסנהדראות הקטנות"],
+        ["משמרות השוערים (דברי הימים א כו)", "המשמרות — שלושה לכהנים ועשרים ואחד ללויים"], ["לשכת הגזית", "לשכת הגזית — הסנהדרין"],
+        ["בית המטבחים", "בית המטבחים"], ["מזבח הנחושת", "המזבח"], ["מידות המזבח — קווי האמות", "מידות המזבח — 32, 30, 28, 26, 24, והמזבח הקודם 28 על 28"],
+        ["השיתין — השלמה מן המשנה", "השיתין — שני הנקבים וטבלת השיש"], ["ספלי הניסוך — השלמה מן המשנה", "ספלי הניסוך"],
+        ["הכבשים הקטנים — השלמה מן הגמרא", "כבשים קטנים — רש״י"], ["הכבש", "הכבש הגדול"], ["עולים במזרח ויורדים במערב — הכבש", "עולים במזרח ויורדים במערב — הכבש"],
+        ["כיור משה", "הכיור"], ["מקום הלויים המשוררים", "דוכן הלויים"], ["האולם ובית החליפות", "האולם"], ["פשפשי בית החליפות", "פשפשי בית החליפות"],
+        ["שולחנות האולם — ר׳ יוסי בר׳ יהודה", "שולחנות האולם — שיש וזהב"], ["פתח ההיכל ודלתותיו", "השער הגדול — ארבע הדלתות"],
+        ["פתיחת דלתות ההיכל — הדגמה", "פתיחת השער הגדול — הדגמה"], ["ההיכל", "הקודש"], ["שיפוע רצפת הבית", "שיפוע רצפת הבית"],
+        ["טבלת השיש — עפר הסוטה", "טבלת השיש — עפר הסוטה"], ["מנורת משה ועשר המנורות", "המנורה"], ["שולחן משה ועשרה השולחנות", "שולחן לחם הפנים"],
+        ["מזבח הזהב", "מזבח הזהב"], ["גילופי הקירות — כרובים, תמורות, פטורי ציצים, פקעים", "פיתוחי הקירות — כרובים דצורתא"],
+        ["הפרוכת", "שתי הפרוכות — בין הקודש לקודש הקדשים"], ["קודש הקדשים — הדביר", "קודש הקדשים ואבן השתייה"], ["אבן השתייה", "קודש הקדשים ואבן השתייה"],
+        ["הלול שאחורי בית הכפורת", "הלול שאחורי בית הכפורת"], ["היציע והתאים", "התאים — שלושים ושמונה בשלוש קומות"],
+        ["עליית קודש הקדשים — מעל הדביר", "העלייה והלולין"]
+      ];
+      const samePlaceOf = (t) => {
+        const h = typeof window.__tmHouse === "string" ? window.__tmHouse : null;
+        if (!h || typeof window.__tmGoPlace !== "function") return null;
+        const i = h === "rishon" ? 0 : 1, p = UI_SAME_PAIRS.find((q) => q[i] === t);
+        return p ? p[1 - i] : null;
+      };
+      const renderLinks = (title) => {
+        xLinks.textContent = "";
+        const t = String(title || ""), other = samePlaceOf(t), PO = ctx.shared.placeOrder, st = PO && PO[t];
+        const T = ctx.shared.tour, TM = ctx.shared.tamid;
+        const link = (txt, tip, fn) => { const a = document.createElement("a"); a.textContent = txt; a.title = tip; a.addEventListener("click", (e) => { e.preventDefault(); fn(); }); xLinks.appendChild(a); };
+        if (other) link(window.__tmHouse === "rishon" ? "אותו מקום בבית השני" : "אותו מקום בבית הראשון", "פותח את \u201d" + other + "\u201d בבית " + (window.__tmHouse === "rishon" ? "השני" : "הראשון"), () => window.__tmGoPlace(other));
+        if (st && T && TM && typeof T.start === "function") link("בסדר היום", "פותח את מצגת סדר עבודת הבוקר בשלב שנעשה כאן", () => {
+          xcardClose();
+          if (T.start("tamid") === false) return;
+          const i = (T.slides || []).findIndex((x) => x && x.id === st);
+          if (i > 0 && typeof T.goto === "function") T.goto(i);
+        });
+        xLinks.style.display = xLinks.childNodes.length ? "" : "none";
+      };
       let xOpen = false, xAnchor = null, xSide = null, xOpsIds = null, xRow = null;
       //@@slot buildUI.UI_OPS_V
       const opsFor = (subj) => {
@@ -1490,6 +1534,7 @@ body.tm-measuring canvas{cursor:crosshair}
         xOpsIds = Array.isArray(ops) && ops.length ? ops : null;
         xRow = row || null;
         renderChips(xOps, xOpsIds, xChipPicked);
+        renderLinks(title);   // SAME_PLACE_B2 / ORDER_B2
         xAnchor = anchor || null;
         xSide = side || null;
         xOpen = true;
@@ -4465,6 +4510,13 @@ body.tm-measuring canvas{cursor:crosshair}
         act();
       });
       //@@slot buildUI.after-tg
+      // SAME_PLACE_B2: the place asked by the other house (the shell's message "place" - house-bridge.js: the event "tm-place", or
+      // window.__tmPlace when it came before this point) is opened as its own button opens it
+      {
+        const goPlace = (t) => { const b = placeBtnByT[t]; if (!b) return false; const d = b.closest && b.closest("details"); if (d) d.open = true; b.click(); return true; };
+        window.addEventListener("tm-place", (e) => { const t = e && e.detail; window.__tmPlace = null; if (t) setTimeout(() => goPlace(String(t)), 60); });
+        if (window.__tmPlace) { const t = String(window.__tmPlace); window.__tmPlace = null; setTimeout(() => goPlace(t), 400); }
+      }
       ctx.ui = {
         topbarAdd,            // 1.1.0: (el, order, icon, label) - a button into the top bar (75-tour.js: the presentation button)
         setTopBtn: ui_setTopBtn,

@@ -453,6 +453,14 @@ __BACKGROUND_SVG__
   function countWords(h, q) {
     try { return typeof window.__tmWordsCount === "function" ? window.__tmWordsCount(h, q) || 0 : 0; } catch (_) { return 0; }
   }
+  // SAME_PLACE_B2 (fix-b2, 22.11.2026 - the user's decision 15): "אותו מקום בבית השני" - show the house and hand it the place's title
+  var placeWait = {};
+  function sendPlace(h, title) {
+    if (!CFG.houses[h]) return;
+    show(h);
+    if (helloed[h]) send(h, { tm: "place", title: title });
+    else placeWait[h] = title;
+  }
   function sendWords(h, q) {
     if (!CFG.houses[h]) return;
     var o = h === "rishon" ? "sheni" : "rishon";
@@ -539,11 +547,13 @@ __BACKGROUND_SVG__
       else send(h, { tm: "result", id: d.id, ok: false, error: { message: "no Otzaria" } });
     } else if (d.tm === "switch") {
       if (typeof d.words === "string" && d.words && CFG.houses[d.to]) sendWords(d.to, d.words);   // 2.0.2: the other house, the same words
+      else if (typeof d.place === "string" && d.place && CFG.houses[d.to]) sendPlace(d.to, d.place);   // SAME_PLACE_B2: the other house, at a place
       else show(d.to);
     } else if (d.tm === "hello") {
       send(h, { tm: "visible", visible: current === h });
       helloed[h] = true;
       if (wordsWait[h]) { send(h, { tm: "words", detail: wordsWait[h] }); wordsWait[h] = null; }
+      if (placeWait[h]) { send(h, { tm: "place", title: placeWait[h] }); placeWait[h] = null; }
     }
   });
 

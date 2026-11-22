@@ -1808,4 +1808,14 @@
         set: (on) => { if (on) start(); else stop(); }
       });
     }
+    // ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 16 and 24: "בסדר היום" in the Second Temple's cards): a place -> the stage of the
+    // morning service done in it (55-tamid.js, its stages' ids); the card's link starts the presentation "סדר עבודת הבוקר" at that stage
+    // (70-ui.js renderLinks). The choice of the stage for each place - a model choice.
+    SH.placeOrder = {
+      "הר הבית": "ihb", "בית המוקד": "moked", "לשכת הגזית — הסנהדרין": "lot2", "לשכת הטלאים — בבית המוקד": "lamb",
+      "הכיור": "kiyor", "הדגמת המוכני — הכיור יורד לבור ועולה": "kiyor", "המזבח": "terumah", "בית המטבחים": "tobeit", "הטבעות": "akedah",
+      "השער הגדול — ארבע הדלתות": "gate", "פתיחת השער הגדול — הדגמה": "gate", "הקודש": "inner", "המנורה": "lamps5", "מזבח הזהב": "ketoret",
+      "הכבש הגדול": "evarim", "שולחן החלבים — שני השולחנות שבמערב הכבש": "evarim", "שלוש המחתות — בכל יום וביום הכיפורים": "machta",
+      "האולם": "birkat", "לשכת עושי חביתין": "mincha", "ספלי הניסוך": "nesachim", "דוכן הלויים": "shir"
+    };
   }
