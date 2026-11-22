@@ -573,5 +573,620 @@
         off: () => { AG.visible = false; tefOn(false); } };
       ctx.animated.push(() => { if (!AG.visible) return; sync(); pose(); });
     }
+
+    // ---------- 9. THE WATER'S LIBATION FROM THE SHILOACH - A DEMONSTRATION (SHILOACH_305 / SHILOACH_CHALAMISH_B2 of the Second Temple) ----------
+    // Mishnah Sukkah 4:9 (56:48): "נסוך המים כיצד. צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער המים, תקעו והריעו ותקעו.
+    // עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם... מערבי של מים, מזרחי של יין... ולמנסך אומרים לו, הגבה ידך"; Sukkah 5:4 (56:54) - the
+    // two priests with trumpets "בשער העליון שיורד מעזרת ישראל לעזרת נשים... עד שמגיעין לשער היוצא מזרח... הפכו פניהן למערב"; Tamid 7:3
+    // (88:40) - the deputy on the horn with the sudar, the two on the table of the fats. IN THIS HOUSE (the user's decision 111): the way by
+    // the First Temple's own building - no women's court and no gates of Chulda. The inner court's east gate (its round steps go down to the
+    // outer court - Rashi on I Kings 6:36 calls that court "עזרת נשים") stands for "השער העליון", the outer court's east gate for "השער היוצא
+    // מזרח"; out by the great court's east gate and down its stairs, to the spring (ctx.shared.shiloachSpring1: its place, the spout and the
+    // stream - the shared builder of the Second Temple's spring, shared/frag/shiloach.js); back by the same stairs and across the great
+    // court to the inner court's south-eastern gate, which stands for "שער המים" (the easternmost of the south, as Middot 1:4 orders the
+    // Second Temple's gates - a model choice), up the ramp, to the left, into the western bowl (40-altar.js: the bowls by the south-west horn).
+    // The card says the order is the Mishnah's, said in the Second Temple's days. At night by torches, back at dawn (as Chalamish draws the
+    // Second Temple's); no tefillin (ctx.shared.tefOff). The way, its times and the figures' places - model choices.
+    {
+      const SP1 = () => ctx.shared.shiloachSpring1 || null;
+      // the priests are the First Temple's own priest-kit figures (58-ark.js ark_priestFig: the white kutonet, the avnet, the migba'at),
+      // a grip in each hand for the flask and the sudar
+      const K = (() => { try { return typeof ark_kit === "function" && typeof ark_priestFig === "function" ? ark_kit() : null; } catch (_) { return null; } })();
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), smooth = (u) => u * u * (3 - 2 * u), lerp = (a, b, u) => a + (b - a) * u;
+      const fnc = (f) => typeof f === "function";
+      const groundY = (x, z, from) => { const y = fnc(ctx.shared.floorY) ? ctx.shared.floorY(x, from == null ? 40 : from, z) : -Infinity; return isFinite(y) ? y : -28; };
+      const mkPriest = (n) => {
+        const f = ark_priestFig(n), KG = ark_kitArms();
+        for (const A2 of [f.L, f.R]) { const grip = new Group(); grip.position.set(0, -(KG.P.fo + 0.08), 0.03); A2.el.add(grip); A2.grip = grip; }
+        f.g.traverse((m) => { if (m.isMesh) m.userData.noPick = true; });
+        f.g.name = "shiloachPriest1";
+        f.g.visible = false;
+        return f;
+      };
+      const setArm = (A2, v, side) => { A2.sh.rotation.set(v[0], 0, side * v[1]); A2.el.rotation.set(v[2], 0, 0); };
+      const ARM = { rest: [0.05, 0.08, -0.15], carry: [-0.25, 0.1, -0.85], fill: [-1.05, 0.12, -0.35], pour: [-1.2, 0.1, -0.55], tR: [-1.42, 0.05, -0.2], tL: [-1.28, -0.06, -0.38] };
+      // ---- the night (the Second Temple's 55-payis.js NIGHT, carried over: the sky's sun under the horizon, the lights low; the dawn)
+      const NIGHT = ctx.shared.nightKit || (ctx.shared.nightKit = (() => {
+        let sky = null, sun = null, hemi = null, saved = null, envOff = false;
+        const P = {
+          night: { el: -16, az: 0.15, sunI: 0.5, sunC: 0x8fa6d8, hemI: 1.35, hemC: 0x7f8fc4, gndC: 0x3d4668, fog: 0x0a0f1c, exp: 1.0 },
+          alot: { el: -11, az: 0.15, sunI: 0.5, sunC: 0x94a9d8, hemI: 1.35, hemC: 0x7f8fc4, gndC: 0x3d4668, fog: 0x121829, exp: 1.0 },
+          heir: { el: -2, az: 0.15, sunI: 0.7, sunC: 0xffd9b0, hemI: 1.3, hemC: 0xa0a6c0, gndC: 0x5a5a68, fog: 0x4a4a58, exp: 0.95 },
+          morning: { el: 9, az: 0.2, sunI: 1.5, sunC: 0xffe2bd, hemI: 0.62, hemC: 0xa9b3c8, gndC: 0x4a4436, fog: 0x8d8f98, exp: 0.9 }
+        };
+        const find = () => {
+          if (sky && sun && hemi) return true;
+          for (const o of ctx.scene.children) {
+            if (o.isDirectionalLight) sun = o;
+            else if (o.isHemisphereLight) hemi = o;
+            else if (o.material && o.material.uniforms && o.material.uniforms.sunPosition) sky = o;
+          }
+          return !!(sky && sun && hemi);
+        };
+        const c1 = new Color(), c2 = new Color();
+        const mixHex = (a, b, k) => c1.setHex(a).lerp(c2.setHex(b), k).getHex();
+        const apply = (A, B, k) => {
+          const L = (a, b) => a + (b - a) * k;
+          const el = L(A.el, B.el) * Math.PI / 180;
+          sky.material.uniforms.sunPosition.value.set(Math.cos(el), Math.sin(el), L(A.az, B.az));
+          sun.intensity = L(A.sunI, B.sunI);
+          sun.color.setHex(mixHex(A.sunC, B.sunC, k));
+          hemi.intensity = L(A.hemI, B.hemI);
+          hemi.color.setHex(mixHex(A.hemC, B.hemC, k));
+          hemi.groundColor.setHex(mixHex(A.gndC, B.gndC, k));
+          if (ctx.scene.fog) ctx.scene.fog.color.setHex(mixHex(A.fog, B.fog, k));
+          ctx.renderer.toneMappingExposure = L(A.exp, B.exp);
+        };
+        return {
+          P,
+          begin() {
+            if (!find() || saved) return !!saved;
+            saved = { sp: sky.material.uniforms.sunPosition.value.clone(), sunI: sun.intensity, sunC: sun.color.getHex(), hemI: hemi.intensity,
+              hemC: hemi.color.getHex(), gndC: hemi.groundColor.getHex(), fog: ctx.scene.fog ? ctx.scene.fog.color.getHex() : 0,
+              exp: ctx.renderer.toneMappingExposure, env: ctx.scene.environment };
+            return true;
+          },
+          set(a, b, k) {
+            if (!saved) return;
+            const A = P[a], B = P[b || a];
+            apply(A, B, Math.max(0, Math.min(1, k || 0)));
+            const dark = (A.el + (B.el - A.el) * (k || 0)) < 3;
+            if (dark !== envOff) { envOff = dark; ctx.scene.environment = dark ? null : saved.env; }
+          },
+          end() {
+            if (!saved) return;
+            sky.material.uniforms.sunPosition.value.copy(saved.sp);
+            sun.intensity = saved.sunI; sun.color.setHex(saved.sunC);
+            hemi.intensity = saved.hemI; hemi.color.setHex(saved.hemC); hemi.groundColor.setHex(saved.gndC);
+            if (ctx.scene.fog) ctx.scene.fog.color.setHex(saved.fog);
+            ctx.renderer.toneMappingExposure = saved.exp;
+            ctx.scene.environment = saved.env;
+            envOff = false;
+            saved = null;
+          },
+          get on() { return !!saved; }
+        };
+      })());
+      const SHL = { D: null, run: false, night: false, saved: null };
+      const AW = (x, lz) => [x, lz + altarDz()];   // in the altar's frame (the row "מקום המזבח" moves it)
+      const yAt = (D2, x, z, near) => { const k = Math.round(x * 4) + "," + Math.round(z * 4) + "," + Math.round(near); let y = D2.ys.get(k); if (y === undefined) { y = groundY(x, z, near + 2.6); D2.ys.set(k, y); } return y; };
+      const plen = (pts) => { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; };
+      const along = (pts, u) => {
+        const L = plen(pts) * clamp(u, 0, 1);
+        let acc = 0;
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i - 1], b = pts[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+          if (acc + l >= L || i === pts.length - 1) { const f = l > 0 ? clamp((L - acc) / l, 0, 1) : 0; return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), Math.atan2(b[0] - a[0], b[1] - a[1])]; }
+          acc += l;
+        }
+        return [pts[0][0], pts[0][1], 0];
+      };
+      // the beats (demo seconds; the walk engine runs them at ctx.shared.demoSlow)
+      const T = { walk0: 4.0, out1: 9.0, decl1: 11.8, east1: 15.6, steps1: 18.4, path1: 27.4, rim1: 28.6, fill0: 29.4, fill1: 32.4, back0: 33.4,
+        backS: 42.2, back1: 44.6, wg0: 50.7, wg1: 53.1, blow0: 53.3, blow1: 57.5, in1: 60.3, ramp1: 64.7, top1: 67.5, pour0: 68.1, pour1: 71.7, end: 74.3 };
+      const FILL_LEAN = 0.1, POUR_LEAN = 0.08, TILT = 1.62;
+      const QG = new Quaternion(), QT = new Quaternion(), AX = new Vector3(), NECK = new Vector3(0, -0.21, 0), MOUTH = new Vector3(0, 0.3, 0), V1 = new Vector3();
+      const setJug = (fig, jug, tilt, yaw) => {
+        fig.g.updateMatrixWorld(true);
+        fig.R.grip.getWorldQuaternion(QG).invert();
+        QT.setFromAxisAngle(AX.set(Math.cos(yaw), 0, -Math.sin(yaw)), tilt);
+        jug.quaternion.copy(QG).multiply(QT);
+        jug.position.copy(NECK).applyQuaternion(QT).applyQuaternion(QG);
+        jug.updateMatrixWorld(true);
+      };
+      const mouthW = (jug, out) => jug.localToWorld(out.copy(MOUTH));
+      const measure = (D2, arm, lean, tilt) => {   // the flask's mouth from his feet, his face to +z
+        const p = D2.p;
+        p.g.position.set(0, 0, 0); p.g.rotation.y = 0;
+        p.lean.position.set(0, 0, 0); p.lean.rotation.x = lean;
+        setArm(p.R, arm, -1);
+        setJug(p, D2.flask, tilt, 0);
+        const m = mouthW(D2.flask, new Vector3()), o = p.g.getWorldPosition(new Vector3());
+        return { x: m.x - o.x, y: m.y - o.y, z: m.z - o.z };
+      };
+      // the bowls of the libations (40-altar.js: by the south-west horn, on the top; R. Yose's altar takes them 2 west and 2 south)
+      const BOWL = () => (yose() ? AW(ACX - 10.7, 10.6) : AW(ACX - 8.7, 8.6));   // the western, of the water
+      const bowlY = () => { const B = BOWL(), k = Math.round(B[1] * 10) + (yose() ? 1000 : 0); if (SHL.byK !== k) { SHL.byK = k; SHL.by = groundY(B[0], B[1], 22); } return SHL.by; };
+      const standP = () => { const B = BOWL(), o = SHL.offP || { x: 0, z: 0.9 }; return [B[0] - o.x, B[1] - o.z]; };
+      // under the spring's fall, his face to its cliff (the kit's frame turned by its yaw: the figure's own offsets turned with it)
+      const standF = () => {
+        const S = SP1(), o = SHL.offF || { x: 0, z: 0.9 };
+        if (!S) return [0, 0];
+        const y = S.yaw || 0, c = Math.cos(y), n = Math.sin(y);
+        return [S.spout[0] - (o.x * c + o.z * n), S.spout[2] - (-o.x * n + o.z * c)];
+      };
+      const buildDemo = () => {
+        if (SHL.D) return SHL.D;
+        const DG = new Group();
+        DG.name = "shiloachDemo1";
+        DG.visible = false;
+        ctx.root.add(DG);
+        const p = mkPriest(2), t1 = mkPriest(4), t2 = mkPriest(6);
+        for (const f of [p, t1, t2]) DG.add(f.g);
+        const gold = new MeshStandardMaterial({ color: 0xd8ad45, metalness: 0.9, roughness: 0.28 });
+        const jugGeo = () => mergeGeometries([   // a golden jug with a handle and a lip, as Chalamish draws it (the Second Temple's)
+          new LatheGeometry([[0.001, 0], [0.065, 0], [0.105, 0.045], [0.118, 0.12], [0.098, 0.19], [0.05, 0.235], [0.044, 0.27], [0.062, 0.3], [0.001, 0.3]].map(([r, y]) => new Vector2(r, y)), 20),
+          new TorusGeometry(0.075, 0.013, 6, 14, Math.PI * 1.15).rotateZ(-Math.PI * 0.62).translate(-0.1, 0.17, 0),
+          new ConeGeometry(0.03, 0.08, 8, 1, true).rotateZ(-Math.PI / 2.6).translate(0.07, 0.29, 0)]);
+        const flask = new Mesh(jugGeo(), gold);
+        flask.castShadow = true; flask.userData.noPick = true; flask.position.set(0, -0.2, 0.02);
+        p.R.grip.add(flask);
+        const fwater = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true), new MeshStandardMaterial({ color: 0x7fc0f0, transparent: true, opacity: 0.8, roughness: 0.1 }));
+        fwater.visible = false; DG.add(fwater);
+        const silver = new MeshStandardMaterial({ color: 0xe6e6ea, metalness: 0.85, roughness: 0.25, side: DoubleSide });
+        for (const f of [t1, t2]) {   // the silver trumpets (Numbers 10:2), from the mouth forward and up
+          const tr = new Group();
+          const tube = new Mesh(new CylinderGeometry(0.022, 0.026, 1.25, 10), silver); tube.position.y = 0.625;
+          const bell = new Mesh(new CylinderGeometry(0.16, 0.03, 0.26, 16, 1, true), silver); bell.position.y = 1.36;
+          tr.add(tube, bell);
+          tr.position.set(0, K.HEAD_Y * K.FS - 0.17, 0.14);
+          tr.rotation.x = 1.25;
+          tr.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.userData.noPick = true; } });
+          f.lean.add(tr);
+          f.tr = tr;
+        }
+        const D2 = SHL.D = { DG, p, t1, t2, flask, fwater, ys: new Map() };
+        // the rest of the people (the Second Temple's buildExtra): the wine's priest, the deputy with the sudar, the streams, the watchers,
+        // the procession with torches, the Levite with the lyre at the spring, the Levites east of the altar
+        try {
+          const PP = tm_people(ctx);
+          const ROBES = [0x6b5a3e, 0x4a4f5a, 0x5c4a3a, 0x3e4a5e, 0x7a6a50, 0x5a3e4a, 0x3e5a4a];
+          const w = mkPriest(8); DG.add(w.g);
+          const wjug = new Mesh(jugGeo(), gold); wjug.castShadow = true; wjug.userData.noPick = true; wjug.position.set(0, -0.2, 0.02); w.R.grip.add(wjug);
+          const wwine = new Mesh(new CylinderGeometry(0.035, 0.05, 1, 8, 1, true), new MeshStandardMaterial({ color: 0x8a1626, transparent: true, opacity: 0.85, roughness: 0.15 }));
+          wwine.visible = false; DG.add(wwine);
+          const sg = mkPriest(10); DG.add(sg.g);
+          const sud = (() => {   // the sudar (the Second Temple's: a black cloth 0.62 x 1.0, its corner in the hand)
+            const sg2 = new Group(), W0 = 0.62, L0 = 1.0, geo = new PlaneGeometry(W0, L0, 6, 10);
+            geo.translate(-W0 / 2, -L0 / 2, 0);
+            const pos = geo.attributes.position, base0 = Float32Array.from(pos.array);
+            const m = new Mesh(geo, new MeshStandardMaterial({ color: 0x17171c, roughness: 0.9, side: DoubleSide })); m.castShadow = true; m.userData.noPick = true; sg2.add(m);
+            sg2.userData.tick = (t, k) => { for (let i = 0; i < pos.count; i++) { const x = base0[i * 3], y = base0[i * 3 + 1], d = Math.hypot(x, y) / L0; pos.array[i * 3 + 2] = (0.03 + 0.16 * k) * d * Math.sin(6.5 * d - (3 + 7 * k) * t) + 0.05 * k * d * d * Math.sin(2.1 * t); pos.array[i * 3] = x * (1 - 0.12 * k * d * (0.5 + 0.5 * Math.sin(4 * t + 3 * d))); } pos.needsUpdate = true; geo.computeVertexNormals(); };
+            sg2.userData.tick(0, 0); return sg2;
+          })();
+          sg.R.grip.add(sud);
+          // the men and boys who watch in the outer court, on both sides of the way
+          const watch = new Group(); DG.add(watch); watch.visible = false;
+          let q = 1122;
+          const rr = () => (q = (q * 1664525 + 1013904223) >>> 0) / 4294967296;
+          const men = [], boys = [];
+          for (let x = 112; x < 218; x += 7 + rr() * 3) for (const sd of [-1, 1]) {
+            const z = sd * (6.2 + rr() * 6), list = rr() < 0.3 ? boys : men;
+            list.push([x + (rr() - 0.5) * 2, z, sd > 0 ? Math.PI : 0]);
+          }
+          const yOC = ctx.shared.newCourt ? ctx.shared.newCourt.y : 3;
+          PP.crowd(watch, men, { y: yOC, s: 1.4, pose: "stand", kind: "worker", robe: ROBES[1], tone: (i) => i % 4, name: "shiloachWatcher1" });
+          PP.crowd(watch, boys, { y: yOC, s: 1.0, pose: "stand", kind: "worker", robe: ROBES[4], tone: (i) => (i + 1) % 4, name: "shiloachBoy1" });
+          // the procession with torches: men and boys round the priest, out and back
+          const torchM = new MeshStandardMaterial({ color: 0x5b3a1e, roughness: 0.8 });
+          const flameM = new MeshStandardMaterial({ color: 0xffb13a, emissive: 0xff7a10, emissiveIntensity: 2.2, transparent: true, opacity: 0.92 });
+          const stickG = new CylinderGeometry(0.025, 0.035, 1.1, 6).translate(0, 0.55, 0), flameG = new ConeGeometry(0.11, 0.36, 8).translate(0, 0.18, 0);
+          const COL = [0x2f6b3a, 0x5b3a8a, 0x2e5d9a, 0xc9a227, 0x9a3030, 0x2a8a80, 0xb86a2a, 0x6b7a2e, 0x8a3a6a, 0x3a4a8a, 0xa8552e, 0x40706a];
+          const glowTex = (() => { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const c2 = cv.getContext("2d"); const gr = c2.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, "rgba(255,190,90,0.85)"); gr.addColorStop(0.4, "rgba(255,140,40,0.35)"); gr.addColorStop(1, "rgba(255,120,20,0)"); c2.fillStyle = gr; c2.fillRect(0, 0, 64, 64); return new CanvasTexture(cv); })();
+          const glowM = new SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: AdditiveBlending });
+          const fol = [], LANES = [-2.0, -0.9, 0.9, 2.0];
+          for (let i = 0; i < 36; i++) {
+            const G = new Group(); G.visible = false; DG.add(G);
+            const kid = i === 17 || i === 29, boy = !kid && i % 5 === 3;
+            PP.crowd(G, [[0, 0, 0]], { y: 0, s: kid ? 0.8 : boy ? 1.05 : 1.4, pose: "stand", kind: kid || boy ? "student" : "worker", robe: COL[(i * 5) % COL.length], tone: () => i % 4, exact: true, name: "shiloachProcession1" });
+            let fl = null;
+            if (!kid) {
+              const T0 = new Group(); T0.position.set(boy ? -0.27 : -0.36, boy ? 0.98 : 1.3, 0.3); T0.rotation.x = 0.15; G.add(T0);
+              T0.add(new Mesh(stickG, torchM));
+              fl = new Mesh(flameG, flameM); fl.position.y = 1.1; T0.add(fl);
+              const gl = new Sprite(glowM); gl.scale.set(1.7, 1.7, 1); gl.position.y = 0.2; gl.userData.noPick = true; fl.add(gl);
+              if (i % 6 === 2) { const lt = new PointLight(0xffa040, 22, 20, 1.6); lt.position.y = 0.25; fl.add(lt); }
+            }
+            const lead = i < 12, k = lead ? i : i - 12;
+            fol.push({ G, fl, lag: i * 0.37, d: lead ? -(1.2 + k * 0.5) : 1.0 + k * 0.55, side: LANES[i % 4] + (((i * 7) % 5) - 2) * 0.08, rank: lead ? k * 0.5 : 0 });
+          }
+          // a Levite with a lyre at the spring
+          const lev = new Group(); DG.add(lev); lev.visible = false;
+          PP.crowd(lev, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind: "levi", robe: 0xe9e3d3, tone: () => 2, exact: true, name: "shiloachLevite1" });
+          {
+            const wood = new MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.6 }), str = new MeshStandardMaterial({ color: 0xeae2c8, roughness: 0.4 });
+            const LY = new Group(); LY.position.set(0.05, 1.25, 0.38); LY.rotation.x = -0.25; lev.add(LY);
+            const armL = (sx) => { const c = new Mesh(new TubeGeometry(new CatmullRomCurve3([new Vector3(sx * 0.12, 0, 0), new Vector3(sx * 0.2, 0.25, 0), new Vector3(sx * 0.16, 0.5, 0)]), 8, 0.02, 5, false), wood); LY.add(c); };
+            armL(-1); armL(1);
+            const bar = new Mesh(new CylinderGeometry(0.018, 0.018, 0.4, 6).rotateZ(Math.PI / 2), wood); bar.position.y = 0.5; LY.add(bar);
+            const bx = new Mesh(new BoxGeometry(0.3, 0.1, 0.06), wood); LY.add(bx);
+            for (let kk = -3; kk <= 3; kk++) { const sm = new Mesh(new CylinderGeometry(0.003, 0.003, 0.46, 3), str); sm.position.set(kk * 0.03, 0.26, 0.02); LY.add(sm); }   // seven strings (Arachin 13b)
+          }
+          // the Levites with the song east of the altar - "עמדים מזרח למזבח" (II Chr 5:12; 40-altar.js, the place of the singers), flutes among
+          // them (Arachin 2:3 "ובשמונת ימי החג... החליל מכה לפני המזבח"); their faces to the people, east (the user's decision 99). In the altar's group
+          const duch = new Group(); duch.visible = false;
+          const agd = altarG(); (agd || DG).add(duch);
+          const LZ = [-8.4, -6.0, -3.6, -1.2, 1.2, 3.6, 6.0, 8.4], flutes = [1, 3, 5], LX = ACX + 17;   // x 72 (the place: x 69..77)
+          PP.crowd(duch, LZ.map((z) => [LX, z, Math.PI / 2]), { y: AZ, s: 1.4, pose: "stand", kind: "levi", robe: 0xe9e3d3, tone: (i) => i % 4, name: "shiloachLevites1" });
+          const reed = new MeshStandardMaterial({ color: 0xc8b07a, roughness: 0.6 });
+          for (const i of flutes) {
+            const fm = new Mesh(new CylinderGeometry(0.026, 0.034, 0.62, 8), reed);   // from the mouth forward and down (he faces east, +x)
+            fm.position.set(LX + 0.17 + 0.19, AZ + 1.86 - 0.25, LZ[i]); fm.rotation.z = 0.64; fm.castShadow = true; fm.userData.noPick = true; duch.add(fm);
+          }
+          Object.assign(D2, { w, wjug, wwine, sg, sud, watch, fol, lev, duch });
+        } catch (e) { console.warn("[parallels] shiloach people", e && e.message); }
+        try { SHL.offF = measure(D2, ARM.fill, FILL_LEAN, 0); SHL.offP = measure(D2, ARM.pour, POUR_LEAN, TILT); } catch (e) { console.warn("[parallels] shiloach measure", e && e.message); }
+        return D2;
+      };
+      // ---------- 10. THE SPRING OF THE SHILOACH (item 10) - the shared build: tm_shiloach (B2's shared/frag/shiloach.js, brought in by
+      // 20-mount.js; in the Second Temple SHILOACH_KIT_B2) - the cliff, the small opening, the white fall into the basin, the great pool,
+      // the green, the torches' and the moon's light, the roar. ITS PLACE IN THIS HOUSE waits for the user (the coordinator's question
+      // 117) - he answered (22.11.2026 12:09, again 12:11: "117 א"): IN THE KIDRON VALLEY, ON ITS WESTERN SLOPE, SOUTH-EAST OF THE MOUNT, as
+      // proposed - "והורדתם אתו אל־גחון" (I Kings 1:33; Rashi: "הוא מעין השלוח"), "ויעלו משם" (1:45), "מערבה לגיחון בנחל" (II Chr 33:14).
+      // The cliff in the slope (west), the water out to the east, toward the valley's floor; the great pool south of it, before its face;
+      // the way comes down the valley from the north, to its east side. The mouth's height is measured on the priest's own figure, as there.
+      // SPRING_C = null builds nothing (and hides the demonstration and its places).
+      const SPRING_C = { x: 470, z: 556, yaw: -Math.PI / 2, approach: [478, 538], pool: { dx: 12, dz: -6, w: 15, d: 8 } };   // { x, z, yaw, approach: [x, z] (the way's end before it), pool: { dx, dz, w, d } (the kit's frame) }
+      let springLabel = null;
+      if (SPRING_C) {
+        ctx.shared.shiloach1 = { place: SPRING_C };
+        // its label over the cliff (its height set when the spring is built, on the ground found then)
+        springLabel = { text: "מעיין השילוח", x: SPRING_C.x, y: -36, z: SPRING_C.z, size: 4 };
+        (ctx.labels = ctx.labels || []).push(springLabel);
+      }
+      const mergeStatic = (G0) => {   // the kit's many fronds, boulders, leaves and spires - one mesh for each of their materials (few draw calls)
+        const by = new Map();
+        for (const o of G0.children) if (o.isMesh && o.material && !o.material.transparent) { const l = by.get(o.material) || []; l.push(o); by.set(o.material, l); }
+        for (const [mat, list] of by) {
+          if (list.length < 3) continue;
+          let mg = null;
+          try { mg = mergeGeometries(list.map((o) => { o.updateMatrix(); return o.geometry.clone().applyMatrix4(o.matrix); })); } catch (_) { mg = null; }
+          if (!mg) continue;
+          const m = new Mesh(mg, mat);
+          m.castShadow = list.some((o) => o.castShadow); m.receiveShadow = true; m.userData.noPick = true;
+          G0.add(m);
+          for (const o of list) G0.remove(o);
+        }
+      };
+      const buildSpring = () => {
+        if (SHL.spring !== undefined) return SHL.spring;
+        SHL.spring = null;
+        if (!SPRING_C || typeof tm_shiloach !== "function" || !K) return null;
+        try {
+          const D2 = buildDemo();
+          if (!SHL.offF) SHL.offF = measure(D2, ARM.fill, FILL_LEAN, 0);
+          const C = SPRING_C, yaw = C.yaw || 0, c = Math.cos(yaw), n = Math.sin(yaw);
+          const Wl = (lx, lz) => [C.x + lx * c + lz * n, C.z - lx * n + lz * c];   // the kit's frame -> the world (as tm_shiloach's own)
+          const g0 = Wl(0, -0.9), gy = groundY(g0[0], g0[1], 60);
+          const mouthY = gy + Math.max(1.15, SHL.offF.y + 0.34), basinY = gy + 0.36;
+          const kit = tm_shiloach(ctx, { x: C.x, z: C.z, mouthY, yaw, ground: (x, z) => groundY(x, z, 60), parent: ctx.root, seed: 4706, name: "shiloachSpring1",
+            basinY, basinDz: 0.55, fallZ: 0.5, pool: C.pool || null, lights: { torch: 85, moon: 34 },
+            sfx: (nm, op) => { if (fnc(ctx.shared.sfx)) ctx.shared.sfx(nm, op); }, roar: { name: "water", dur: 4.5, gain: 3.2 } });
+          mergeStatic(kit.G);
+          kit.setBottom(basinY);
+          const fp = Wl(0, -0.5);   // where the fall comes down (fallZ: 0.5 before the face)
+          SHL.spring = ctx.shared.shiloachSpring1 = {
+            kit, gy, yaw, Wl, mouthY, approach: C.approach || Wl(-8, -28), spout: [fp[0], mouthY, fp[1]],
+            streamTo: (y) => kit.setBottom(y == null ? basinY : y), lights: (on) => kit.setLit(on ? 1 : 0)
+          };
+          const V3 = new Vector3(C.x, mouthY, C.z);
+          ctx.animated.push(() => { if (!SHL.run && !(ctx.camera && ctx.camera.position.distanceTo(V3) < 70)) return; kit.tick(performance.now() / 1000); });
+          // the eye may go down into the valley, to the spring (the guard's floor, 90-entry.js: under -27.5 only where the floor under the
+          // target is lower - the valley)
+          SHL.camLow = Math.min(-27.5, gy - 3);
+          if (springLabel) { const lq = Wl(0, 3.5); par_moveLabel(ctx, springLabel, lq[0], gy + 18, lq[1]); }
+          ctx.shared.camLow = SHL.camLow;
+        } catch (e) { console.warn("[parallels] shiloach spring", e && e.message); SHL.spring = null; }
+        return SHL.spring;
+      };
+      // built at the first frame (the floor's ray needs the whole scene), as the Second Temple's
+      if (SPRING_C) ctx.animated.push(() => { if (SHL.spring === undefined && fnc(ctx.shared.floorY)) buildSpring(); });
+      // ---- the ways (each [x, z] in the world). Out: the inner court's east gate (x 93.5, its round steps to the outer court's floor),
+      // the outer court's east gate (x 228.5) and its steps, the great court to its east gate (x 353) and down its 56 stairs (to x 383.5,
+      // y -28); then to the spring. Back: up the stairs, across the great court south of the outer court, to the inner court's south-eastern
+      // gate (x 40), up its twelve steps (z 78.5 -> 72.5), in, to the ramp's foot, up its east half, on the top to the left, to the bowl.
+      const valley = () => {
+        const S = SP1(), A = S ? S.approach : [460, 540];
+        // from the stairs' foot down into the valley, by its western slope (a model choice), to the place before the spring
+        return [[383.5, 0], [398, 30], [420, 140], [440, 300], [A[0] - 8, A[1] - 40], A];
+      };
+      const WAYS = () => {
+        const V = valley(), Vr = V.slice().reverse();
+        return [
+          { pts: [[91.6, 0], [91.7, 0]], t: [0, 0.1], near: 7, endYaw: Math.PI / 2 },   // in the gate, behind the two with trumpets
+          { pts: [[91.7, 0], [98, 0], [106, 0], [226.5, 0]], t: [T.walk0 + 0.5, T.out1 + 0.5], near: 7, endYaw: -Math.PI / 2 },   // his face to the west there
+          { pts: [[226.5, 0], [229.5, 0], [233, 0], [300, 0], [355.5, 0]], t: [T.decl1 + 0.2, T.east1], near: 4, proc: true },
+          { pts: [[355.5, 0], [383.5, 0]], t: [T.east1, T.steps1], stairs: [0, -28], proc: true },
+          { pts: V, t: [T.steps1, T.path1], terrain: true, proc: true },
+          { pts: [V[V.length - 1], standF()], t: [T.path1, T.rim1], terrain: true, endYaw: SP1() ? SP1().yaw || 0 : 0 },   // his face to the spout
+          { pts: [standF()].concat(Vr.slice(1)), t: [T.back0, T.backS], terrain: true, proc: true },
+          { pts: [[383.5, 0], [355.5, 0]], t: [T.backS, T.back1], stairs: [-28, 0], proc: true },
+          { pts: [[355.5, 0], [336, 6], [300, 74], [250, 86], [150, 90], [60, 90], [44, 86], [40, 80.5]], t: [T.back1 + 0.1, T.wg0], near: 4, proc: true },   // the procession with him, south of the outer court
+          { pts: [[40, 80.5], [40, 78.5], [40, 72.5], [40, 71]], t: [T.wg0, T.wg1], steps: [[78.5, 0], [72.5, 6]], endYaw: Math.PI },   // up to the gate, his face into the court
+          { pts: [[40, 71], [40, 66], [46, 60], AW(57.0, 44.5)], t: [T.blow1, T.in1], near: 7 },
+          { pts: [AW(57.0, 44.5), AW(57.0, yose() ? 15.5 : 13.5)], t: [T.in1, T.ramp1], ramp: true },
+          { pts: [AW(57.0, yose() ? 15.5 : 13.5), AW(56.4, yose() ? 11.6 : 9.6)].concat(yose() ? [AW(50, 10.8), AW(46.6, 10.4)] : [AW(51.5, 8.9), AW(48.4, 8.3)]).concat([standP()]), t: [T.ramp1, T.top1], near: 18, endYaw: 0 }   // "ופנה לשמאלו"
+        ];
+      };
+      const wayY = (D2, w, q, u) => {
+        if (w.stairs) return yAt(D2, q[0], q[1], lerp(w.stairs[0], w.stairs[1], clamp(u, 0, 1)) + 1);   // on the treads (the ray from a little over the line of the stairs)
+        if (w.steps) { const [a, b] = w.steps; return yAt(D2, q[0], q[1], (q[1] >= a[0] ? a[1] : q[1] <= b[0] ? b[1] : lerp(a[1], b[1], (a[0] - q[1]) / (a[0] - b[0]))) + 1); }
+        return yAt(D2, q[0], q[1], w.terrain ? 60 : w.ramp ? 20 : w.near);
+      };
+      const placeOn = (D2, f, w, t, carry) => {
+        const u = (t - w.t[0]) / Math.max(1e-3, w.t[1] - w.t[0]), q = along(w.pts, u);
+        f.g.position.set(q[0], wayY(D2, w, q, u), q[1]);
+        f.g.rotation.y = u >= 1 && w.endYaw != null ? w.endYaw : q[2];
+        const walking = u > 0 && u < 1, ph = t * 9;
+        f.fl.position.z = walking ? 0.17 * Math.sin(ph) : 0;
+        f.fr.position.z = walking ? -0.17 * Math.sin(ph) : 0;
+        f.lean.position.y = walking ? Math.abs(Math.cos(ph)) * 0.035 : 0;
+        setArm(f.L, walking ? [0.3 * Math.sin(ph), 0.08, -0.25] : ARM.rest, 1);
+        setArm(f.R, carry ? ARM.carry : walking ? [-0.3 * Math.sin(ph), 0.08, -0.25] : ARM.rest, -1);
+        return u;
+      };
+      const wayAt = (WS, t) => { let cur = null; for (const w of WS) if (t >= w.t[0] - 0.01) cur = w; return cur; };
+      const apply = (t) => {
+        const D2 = buildDemo(), WS = WAYS(), p = D2.p, S = SP1();
+        const cur = wayAt(WS, t);
+        p.g.visible = !!cur && t < T.end;
+        if (cur) placeOn(D2, p, cur, Math.min(t, cur.t[1]), true);
+        const yaw = p.g.rotation.y;
+        p.lean.rotation.x = 0;
+        let fillK = 0, pourK = 0;
+        if (t >= T.fill0 && t < T.back0) {   // filling under the spring's stream
+          fillK = smooth(clamp((t - T.fill0) / 0.6, 0, 1)) * (1 - smooth(clamp((t - T.fill1) / 0.6, 0, 1)));
+          setArm(p.R, ARM.carry.map((v, i) => lerp(v, ARM.fill[i], fillK)), -1);
+          p.lean.rotation.x = FILL_LEAN * fillK;
+        }
+        if (t >= T.pour0 && t < T.end) {   // pouring into the western bowl, his hand raised ("ולמנסך אומרים לו, הגבה ידך")
+          pourK = smooth(clamp((t - T.pour0) / 0.6, 0, 1)) * (1 - smooth(clamp((t - T.pour1) / 0.6, 0, 1)));
+          setArm(p.R, ARM.carry.map((v, i) => lerp(v, ARM.pour[i], pourK)), -1);
+          p.lean.rotation.x = POUR_LEAN * pourK;
+        }
+        setJug(p, D2.flask, TILT * pourK, yaw);
+        const m = mouthW(D2.flask, V1);
+        if (S && fnc(S.streamTo)) S.streamTo(fillK > 0.9 && p.g.visible ? m.y + 0.02 : null);
+        D2.fwater.visible = false;
+        if (pourK > 0.92 && p.g.visible) {
+          const by = bowlY(), h = Math.max(0.05, m.y - by);
+          D2.fwater.visible = true; D2.fwater.position.set(m.x, by + h / 2, m.z); D2.fwater.scale.y = h;
+        }
+        // the opening (Sukkah 5:4): the two with trumpets in the inner court's east gate, their walk blowing to the outer court's east gate
+        const tOpen = t < T.decl1 + 0.3;
+        if (tOpen) {
+          for (const [f, sd] of [[D2.t1, -1], [D2.t2, 1]]) {
+            const z = sd * 3.0, wy = t < T.walk0 ? { pts: [[94.4, z], [94.5, z]], t: [0, 0.1], near: 7, endYaw: Math.PI / 2 }
+              : { pts: [[94.4, z], [98.4, z], [106, z], [227.6, z]], t: [T.walk0, T.out1], near: 7, endYaw: -Math.PI / 2 };
+            f.g.visible = true;
+            placeOn(D2, f, wy, Math.min(t, wy.t[1]), false);
+            const blowK = t < T.walk0 ? smooth(clamp((t - 0.6) / 0.5, 0, 1)) * (1 - smooth(clamp((t - 3.4) / 0.4, 0, 1)))
+              : t < T.out1 ? 1 - smooth(clamp((t - T.out1 + 0.4) / 0.4, 0, 1)) : 0;
+            if (blowK > 0) { setArm(f.R, ARM.rest.map((v, i) => lerp(v, ARM.tR[i], blowK)), -1); setArm(f.L, ARM.rest.map((v, i) => lerp(v, ARM.tL[i], blowK)), 1); }
+            f.tr.visible = blowK > 0.3 || t < T.out1;
+          }
+        }
+        // at the altar the same two stand ON THE TABLE OF THE FATS (Tamid 7:3; the user's decision 102) - the marble table (ctx.shared.rampTables)
+        const tAlt = t >= T.top1 - 1.2 && t < T.end;
+        if (tAlt) {
+          const blowA = smooth(clamp((t - T.pour0 + 0.4) / 0.5, 0, 1)) * (1 - smooth(clamp((t - T.pour1) / 0.5, 0, 1)));
+          const RT = ctx.shared.rampTables, MB = RT ? RT.marble : AW(ACX - 15.4, 13.6), B = BOWL();
+          for (const [f, dz2] of [[D2.t1, -0.38], [D2.t2, 0.38]]) {
+            f.g.visible = true;
+            f.g.position.set(MB[0], AZ + (RT ? RT.top : 1.5) + 0.01, MB[1] + dz2);
+            f.g.rotation.y = Math.atan2(B[0] - MB[0], B[1] - (MB[1] + dz2));
+            setArm(f.R, ARM.rest.map((v, i) => lerp(v, ARM.tR[i], blowA)), -1);
+            setArm(f.L, ARM.rest.map((v, i) => lerp(v, ARM.tL[i], blowA)), 1);
+            f.tr.visible = blowA > 0.3;
+          }
+        }
+        // the two at the gate that stands for the Water Gate: on its steps' head, either side of the way in
+        const tOn = t >= T.wg0 && t < T.in1 + 1;
+        for (const [f, x] of [[D2.t1, 36.4], [D2.t2, 43.6]]) {
+          if (!tAlt && !tOpen) f.g.visible = tOn;
+          if (!tOn) continue;
+          f.g.position.set(x, AZ, 73.4);
+          f.g.rotation.y = x < 40 ? 0.35 : -0.35;   // their faces out, to the south, a little toward the way in
+          const up = smooth(clamp((t - T.blow0 + 0.6) / 0.5, 0, 1)) * (1 - smooth(clamp((t - T.blow1) / 0.5, 0, 1)));
+          setArm(f.R, ARM.rest.map((v, i) => lerp(v, ARM.tR[i], up)), -1);
+          setArm(f.L, ARM.rest.map((v, i) => lerp(v, ARM.tL[i], up)), 1);
+          f.tr.visible = up > 0.3;
+        }
+        try { extraApply(D2, WS, t); } catch (e) { if (!SHL.warned) { SHL.warned = true; console.warn("[parallels] shiloach extra", e && e.message); } }
+      };
+      const extraApply = (D2, WS, t) => {
+        if (!D2.fol) return;
+        if (SHL.night) {
+          if (t < T.back0) NIGHT.set("night", "night", 0);
+          else if (t < T.back1) NIGHT.set("night", "alot", smooth(clamp((t - T.back0) / (T.back1 - T.back0), 0, 1)));
+          else if (t < T.in1) NIGHT.set("alot", "heir", smooth(clamp((t - T.back1) / (T.in1 - T.back1), 0, 1)));
+          else NIGHT.set("heir", "morning", smooth(clamp((t - T.in1) / (T.top1 - T.in1), 0, 1)));
+        }
+        D2.watch.visible = t < T.decl1 + 0.5;
+        const fl = 0.85 + 0.15 * Math.sin(t * 17);
+        const wp = wayAt(WS, t);
+        // the procession, from the great court's east gate out (decl1 + 1.2) to the gate that stands for the Water Gate (they stay below
+        // it while the two blow): the way they walk - his, if it is one of theirs (proc, stairs, terrain), else the last of theirs before it
+        // (they wait at its end, in their ranks)
+        let pw = null;
+        if (t >= T.decl1 + 1.2 && t < T.blow1 + 1.0) for (const q of WS) if ((q.proc || q.stairs || q.terrain) && t >= q.t[0] - 0.01) pw = q;
+        const S = SP1(), sf = standF(), syw = S ? S.yaw || 0 : 0, sc = Math.cos(syw), sn = Math.sin(syw);
+        // at the spring they stand in an arc behind him (the kit's frame: before its face, -z), clear of the pool on his east and of the
+        // eye at his west side
+        const atK = S ? smooth(clamp((t - (T.path1 - 0.6)) / 1.8, 0, 1)) * (1 - smooth(clamp((t - T.back0) / 1.0, 0, 1))) : 0;
+        const pwI = pw ? WS.indexOf(pw) : -1;
+        const Sp = !pw ? 0 : pw === wp ? clamp((t - pw.t[0]) / Math.max(1e-3, pw.t[1] - pw.t[0]), 0, 1) * plen(pw.pts) : plen(pw.pts);
+        D2.fol.forEach((F, i) => {
+          F.G.visible = !!pw;
+          if (!pw) return;
+          let w = pw, L = plen(w.pts), S2 = Sp - F.d;
+          if (S2 < 0 && pwI > 0) { const pv = WS[pwI - 1]; if (pv.proc || pv.stairs || pv.terrain) { w = pv; L = plen(w.pts); S2 = Math.max(0, L + S2); } }
+          S2 = clamp(S2, 0, Math.max(0, L - 1.6 - F.rank));
+          const u = L > 0 ? S2 / L : 0, qq = along(w.pts, u), yaw = qq[2];
+          let x = qq[0] + Math.cos(yaw) * F.side, z = qq[1] - Math.sin(yaw) * F.side;
+          let ry = t >= w.t[1] && w.endYaw != null && w === wp ? w.endYaw : yaw, near = w.stairs ? lerp(w.stairs[0], w.stairs[1], u) + 1 : w.terrain ? 60 : 4;
+          if (atK > 0) {
+            const row = i % 4, k = Math.floor(i / 4), ph = (-30 + 55 * (k + 0.5 * (row % 2)) / 9.5) * Math.PI / 180, r = 5.5 + row * 1.3;
+            const lx = Math.sin(ph) * r, lz = -Math.cos(ph) * r, ax = sf[0] + lx * sc + lz * sn, az = sf[1] - lx * sn + lz * sc;
+            x = lerp(x, ax, atK); z = lerp(z, az, atK); near = 60;
+            if (atK > 0.5) ry = Math.atan2(sf[0] - x, sf[1] - z);
+          }
+          F.G.position.set(x, yAt(D2, x, z, near) + (u > 0 && u < 0.999 && atK < 0.99 ? Math.abs(Math.sin(t * 8 + F.lag)) * 0.04 : 0), z);
+          F.G.rotation.y = ry;
+          if (F.fl) F.fl.scale.set(fl, 0.9 + 0.2 * Math.sin(t * 23 + F.lag * 3), fl);
+        });
+        if (S && fnc(S.lights)) S.lights(SHL.run && t >= T.path1 - 1.2 && t < T.back0 + 2.4);
+        // the Levite with the lyre at the spring: on its east, by the pool's corner, his face to the priest (seen behind him from the eye)
+        const lvOn = !!S && t >= T.path1 - 1 && t < T.back0 + 1.6;
+        D2.lev.visible = lvOn;
+        if (lvOn) { const lp = S.Wl ? S.Wl(2.8, -4.6) : [sf[0] + 2.8, sf[1] - 3.2]; D2.lev.position.set(lp[0], yAt(D2, lp[0], lp[1], 60), lp[1]); D2.lev.rotation.y = Math.atan2(sf[0] - lp[0], sf[1] - lp[1]); }
+        // the libation: the wine's priest with him up the ramp, to the eastern bowl; the deputy on the south-west horn
+        const w2 = D2.w, wOn = t >= T.in1 - 1.2 && t < T.end;
+        w2.g.visible = wOn;
+        if (wOn) {
+          const B = BOWL(), o = SHL.offP || { x: 0, z: 0.9 }, sw = [B[0] + 0.9 - o.x, B[1] - o.z], zt = yose() ? 15.5 : 13.5;
+          const WW = [{ pts: [AW(58.6, 46.5), AW(58.6, 46.6)], t: [0, 0.1], near: 7 },
+            { pts: [AW(58.6, 44.5), AW(58.6, zt)], t: [T.in1 + 0.5, T.ramp1 + 0.5], ramp: true },
+            { pts: [AW(58.6, zt), AW(58.0, zt - 3.8), AW(52.5, zt - 4.4), AW(49.4, zt - 5.0), sw], t: [T.ramp1 + 0.5, T.top1 + 0.5], near: 18, endYaw: 0 }];
+          let cw = WW[0]; for (const q2 of WW) if (t >= q2.t[0] - 0.01) cw = q2;
+          placeOn(D2, w2, cw, Math.min(t, cw.t[1]), true);
+          const pk = smooth(clamp((t - T.pour0) / 0.6, 0, 1)) * (1 - smooth(clamp((t - T.pour1) / 0.6, 0, 1)));
+          if (pk > 0) { setArm(w2.R, ARM.carry.map((v, i) => lerp(v, ARM.pour[i], pk)), -1); w2.lean.rotation.x = POUR_LEAN * pk; } else w2.lean.rotation.x = 0;
+          setJug(w2, D2.wjug, TILT * pk, w2.g.rotation.y);
+          D2.wwine.visible = false;
+          if (pk > 0.92) { const mm = D2.wjug.localToWorld(V1.copy(MOUTH)), by = bowlY(), h = Math.max(0.05, mm.y - by); D2.wwine.visible = true; D2.wwine.position.set(mm.x, by + h / 2, mm.z); D2.wwine.scale.y = h; }
+        }
+        const sOn = t >= T.top1 - 1.0 && t < T.end;
+        D2.sg.g.visible = sOn;
+        if (sOn) {
+          const [hx, hz] = yose() ? AW(ACX - 11.5, 11.5) : AW(ACX - 9.5, 9.5);   // the south-west horn (40-altar.js: 1 x 1 x 1 on the top's corner)
+          const hk = hx * 1000 + hz;
+          if (SHL.hornK !== hk) { SHL.hornK = hk; let hy = -Infinity; for (const [dx, dz2] of [[0, 0], [0.25, 0.25], [-0.25, 0.25], [0.25, -0.25], [-0.25, -0.25]]) hy = Math.max(hy, groundY(hx + dx, hz + dz2, 22)); SHL.hornY = isFinite(hy) ? hy : AZ + 11; }
+          const S3 = D2.sg;
+          S3.g.position.set(hx, SHL.hornY, hz); S3.g.rotation.y = Math.PI / 2 + 0.35;
+          const wave = smooth(clamp((t - T.pour0 + 0.7) / 0.5, 0, 1)) * (1 - smooth(clamp((t - T.pour1 - 0.4) / 0.5, 0, 1)));
+          setArm(S3.R, ARM.rest.map((v, i) => lerp(v, [-2.85, 0.18, -0.15][i], wave)), -1);
+          setArm(S3.L, ARM.rest, 1);
+          S3.fl.position.z = S3.fr.position.z = 0; S3.lean.position.y = 0; S3.lean.rotation.x = 0;
+          if (D2.sud && D2.sud.userData.tick) D2.sud.userData.tick(t, wave);
+        }
+        D2.duch.visible = t >= T.in1 - 1 && t < T.end;
+      };
+      // ---- the eye (keys [t, eye, look], demo seconds) and the words
+      const pAt = (t) => {   // where he is at demo second t (for the eye)
+        const D2 = buildDemo(), w = wayAt(WAYS(), t);
+        if (!w) return [91.7, 6, 0];
+        const u = clamp((t - w.t[0]) / Math.max(1e-3, w.t[1] - w.t[0]), 0, 1), q = along(w.pts, u);
+        return [q[0], wayY(D2, w, q, u), q[1]];
+      };
+      const keys = () => {
+        const S = SP1(), sy = S.gy, M = S.mouthY != null ? S.mouthY : S.spout[1];
+        const Wl = S.Wl || ((lx, lz) => [S.spout[0] + lx, S.spout[2] + 0.5 + lz]), kp = (lx, y, lz) => { const q = Wl(lx, lz); return [q[0], y, q[1]]; };
+        const off = (t, d) => { const p = pAt(t); return [t, [p[0] + d[0], p[1] + d[1], p[2] + d[2]], [p[0], p[1] + 1.4, p[2]]]; };
+        const A1 = AW(57.0, 30), B = BOWL();
+        return [
+          [0, [118, 15, 18], [96, 9.5, 0]], [3.4, [119, 14.5, 16], [97, 9, 0]], [T.walk0 + 1.6, [150, 17, 26], [122, 4, 0]], [T.out1 - 1.2, [196, 15, 24], [224, 4, 0]],
+          [T.out1 + 0.8, [244, 12, 13], [224, 5, 0]], [T.decl1, [242, 13, 14], [224, 5, 0]],
+          [T.decl1 + 1.4, [268, 10, 24], [248, 1, 0]], [T.east1 - 1.4, [338, 9, 22], [312, 1, 0]], [T.east1, [334, 10, 20], [356, 3, 0]],
+          [T.east1 + 1.4, [392, 6, 24], [372, -12, 0]], [T.steps1, [404, -12, 22], [384, -27, 2]],
+          off(T.steps1 + 3, [-14, 18, 30]), off(T.steps1 + 6, [-14, 18, 30]),   // down the valley: before them, a little above, from its western side
+          // the spring (as the Second Temple's: the cliff, the opening and the pool at a man's height; the filling closer, from the side)
+          [T.path1 - 2.2, kp(10.5, sy + 9, -35.4), kp(2.5, sy + 4, -1.4)],
+          (() => { const p = pAt(T.path1 - 0.4), sp = S.spout; return [T.path1 - 0.4, kp(10, sy + 4.5, -16), [lerp(p[0], sp[0], 0.35), sy + 1.6, lerp(p[2], sp[2], 0.35)]]; })(),   // he comes in, the cliff beside
+          [T.rim1, kp(-3.8, sy + 1.8, -1.9), kp(0.6, M - 0.1, -0.5)], [T.fill1, kp(-3.4, sy + 1.7, -1.7), kp(0.6, M - 0.1, -0.5)],
+          off(T.back0 + 1.0, [9, 8, 13]),   // he turns back with the full flask
+          off(T.back0 + 3.2, [-10, 20, -40]), off(T.back0 + 6.2, [-10, 20, -40]),   // up the valley: before them, looking back at them
+          [T.backS - 0.6, [404, -12, 24], [384, -27, 2]], [T.back1 - 0.4, [372, 8, 22], [354, 2, 0]],
+          off(T.back1 + 0.9, [26, 44, 74]), off(T.back1 + 3.2, [26, 44, 74]), off(T.wg0 - 1.2, [22, 30, 52]),   // across the great court, from high in the south-east
+          [T.wg0 - 0.2, [58, 18, 104], [42, 4, 80]], [T.wg1 - 0.4, [56, 16, 96], [40, 7.5, 73]], [T.blow1, [57, 15.6, 95], [40, 7.6, 73.2]],
+          [T.blow1 + 1.0, [72, 34, 92], [48, 6, 60]], [T.in1 - 0.8, [76, 18, A1[1] + 18], [57, 8, A1[1] + 8]], [T.ramp1 - 1.0, [72, 22, A1[1] - 2], [57, 13, A1[1] - 12]],
+          [T.top1, [33, 22, B[1] + 11], [B[0] + 3, 15.5, B[1] - 1]], [T.pour0 + 0.8, [41, 20.4, B[1] + 8.6], [B[0] + 0.3, 16.2, B[1] - 0.4]],
+          [T.pour0 + 2.8, [48, 22.5, B[1] + 13], [B[0] + 0.6, 16.2, B[1] - 0.6]], [T.end, [48.5, 22.5, B[1] + 13.4], [B[0] + 0.6, 16.2, B[1] - 0.6]]
+        ];
+      };
+      const caps = [
+        [0, "״נסוך המים כיצד. צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח״ (סוכה ד, ט)"],
+        [1.2, "״ועמדו שני כהנים בשער העליון שיורד מעזרת ישראל לעזרת נשים, ושתי חצוצרות בידיהן. קרא הגבר, תקעו והריעו ותקעו״ (סוכה ה, ד) — בבית ראשון: השער המזרחי של החצר הפנימית (בחירת מודל)"],
+        [T.walk0 + 0.4, "״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח״ (סוכה ה, ד) — בבית ראשון: השער המזרחי של החצר החיצונה (בחירת מודל)"],
+        [T.out1 + 0.4, "״הגיעו לשער היוצא ממזרח, הפכו פניהן למערב, ואמרו... ואנו ליה עינינו״ (סוכה ה, ד)"],
+        [T.decl1 + 0.2, "ויוצאים בשער המזרחי של החצר הגדולה, בלפידים כפי שהובא בחלמיש — הדרך בבית ראשון: בחירת מודל; ההליכה מואצת"],
+        [T.steps1, "אל השילוח — הדרך ומקום המעיין: בחירת מודל"],
+        [T.rim1 - 0.4, "״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו); ״היה ממלא מן השלוח״ (סוכה ד, ט)"],
+        [T.back0 + 0.6, "וחוזרים לפני עלות השחר, כפי שהובא בחלמיש — במעלות שער המזרח ובחצר הגדולה: בחירת מודל"],
+        [T.wg0, "״הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט) — בבית ראשון: השער המזרחי שבדרום החצר הפנימית, כסדר ״שבדרום, שער הדלק. שני לו, שער הבכורות. שלישי לו, שער המים״ (מדות א, ד); בחירת מודל"],
+        [T.in1 - 0.4, "״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם״ (סוכה ד, ט)"],
+        [T.top1 - 0.6, "״הסגן עומד על הקרן והסודרים בידו״ (תמיד ז, ג)"],
+        [T.pour0 - 0.3, "״מערבי של מים, מזרחי של יין״; ״ולמנסך אומרים לו, הגבה ידך״ (סוכה ד, ט); ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם״ (תמיד ז, ג)"],
+        [T.pour0 + 2.0, "״והניף הסגן בסודרין... ודברו הלוים בשיר״ (תמיד ז, ג); ״ובשנים עשר יום בשנה החליל מכה לפני המזבח... ובשמונת ימי החג״ (ערכין ב, ג). סדר המשנה נאמר בימי הבית השני"]
+      ];
+      const tefOn = (on) => { const TO = ctx.shared.tefOff || (ctx.shared.tefOff = new Set()); if (on) TO.add("shiloach1"); else TO.delete("shiloach1"); };
+      const finish = () => {
+        SHL.run = false;
+        if (SHL.D) { SHL.D.DG.visible = false; if (SHL.D.duch) SHL.D.duch.visible = false; }
+        if (SHL.night) { NIGHT.end(); SHL.night = false; }
+        const S = SP1();
+        if (S && fnc(S.streamTo)) S.streamTo(null);
+        if (S && fnc(S.lights)) S.lights(false);
+        tefOn(false);
+        const sv = SHL.saved;
+        if (sv && sv.lg) sv.lg.visible = sv.labels;
+        if (sv && sv.view && ctx.shared.viewLimits) ctx.shared.viewLimits.set(sv.view);
+        if (sv && sv.fade != null && ctx.shared.fadeState) ctx.shared.fadeState.on = sv.fade;
+        if (SHL.camLow != null) ctx.shared.camLow = SHL.camLow; else delete ctx.shared.camLow;
+        SHL.saved = null;
+      };
+      const start = () => {
+        const Wk = ctx.shared.walk, S = SP1() || buildSpring();
+        if (!Wk || !K || !S) return false;
+        const D2 = buildDemo();
+        if (fnc(ctx.shared.stopDemos)) ctx.shared.stopDemos("shiloachDemo1");
+        let lg = null;
+        try { lg = ctx.root.getObjectByName("labels"); } catch (_) {}
+        SHL.saved = { lg, labels: lg ? lg.visible : true, view: ctx.shared.viewLimits ? ctx.shared.viewLimits.get() : null, fade: ctx.shared.fadeState ? ctx.shared.fadeState.on : null };
+        if (lg) lg.visible = false;
+        if (ctx.shared.fadeState) ctx.shared.fadeState.on = false;
+        if (ctx.shared.viewLimits) { for (const k of keys()) { ctx.shared.viewLimits.include(k[1]); ctx.shared.viewLimits.include(k[2]); } }
+        ctx.shared.camLow = Math.min(-27.5, S.gy - 3);
+        SHL.night = !!NIGHT.begin();
+        tefOn(true);
+        D2.DG.visible = true;
+        SHL.run = true;
+        apply(0);
+        Wk.run(keys(), caps, finish);
+        return true;
+      };
+      const stop = () => { if (!SHL.run) return; const Wk = ctx.shared.walk; if (Wk && Wk.on) Wk.stop(); else finish(); };
+      let sndT = -1;
+      ctx.animated.push(() => {
+        if (!SHL.run) { sndT = -1; return; }
+        const Wk = ctx.shared.walk, t = Wk && fnc(Wk.now) ? Math.max(0, Wk.now()) : 0;
+        try { apply(t); } catch (e) { console.warn("[parallels] shiloach", e && e.message); }
+        try {
+          if (sndT >= 0 && t > sndT && fnc(ctx.shared.sfx)) {
+            if (sndT < 0.8 && t >= 0.8) ctx.shared.sfx("trumpets");
+            for (const ts of [T.path1 - 1.2, T.rim1 + 1.5, T.fill0 + 2.5]) if (sndT < ts && t >= ts) ctx.shared.sfx("water", { dur: 4.5, gain: 3.2 });   // "נובעים בקול גדול"
+            if (sndT < T.blow0 && t >= T.blow0) ctx.shared.sfx("trumpets");
+            if (sndT < T.pour0 && t >= T.pour0) ctx.shared.sfx("trumpets");
+            if (sndT < T.pour0 + 0.5 && t >= T.pour0 + 0.5) ctx.shared.sfx("water", { dur: 2.0, gain: 0.6 });
+          }
+        } catch (_) {}
+        sndT = t;
+      });
+      const walkEntry = () => (ctx.shared.demoStops || []).find((q) => q.id === "walk");
+      (ctx.shared.demoStops || (ctx.shared.demoStops = [])).push({ id: "shiloachDemo1", running: () => SHL.run, stop,
+        pause: () => { const w = walkEntry(); if (w && w.pause) w.pause(); }, resume: () => { const w = walkEntry(); if (w && w.resume) w.resume(); },
+        paused: () => { const w = walkEntry(); return !!(w && w.paused && w.paused()); }, restart: () => { stop(); start(); } });
+      ctx.shared.shiloachDemo1 = { start, stop, T, get on() { return SHL.run; }, at: (t) => { buildSpring(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); }, ways: () => WAYS(), spring: () => buildSpring() };
+    }
     ctx.shared.parallels = { watchers };
   }
