@@ -301,8 +301,8 @@
       }
       return Math.sqrt(bd);
     };
-    const val_in = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, zi] = P[i], [xj, zj] = P[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
-    const val_lerp = (T, z) => { if (z <= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const [z0, y0] = T[i - 1], [z1, y1] = T[i]; return y0 + (y1 - y0) * (z - z0) / (z1 - z0); } return T[T.length - 1][1]; };
+    const val_in = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const xi = P[i][0], zi = P[i][1], xj = P[j][0], zj = P[j][1]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
+    const val_lerp = (T, z) => { if (z <= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const z0 = T[i - 1][0], y0 = T[i - 1][1]; return y0 + (T[i][1] - y0) * (z - z0) / (T[i][0] - z0); } return T[T.length - 1][1]; };
     const val_one = (V, x, z, h0) => {   // one valley's carving at (x, z), over the old ground h0
       // (the floor's height, the weight and the far bank's width go by the point's own z, not by its nearest point on the axis: on the
       // inner side of a bend the nearest point jumps from one stretch to the next, and the ground would jump with it)
@@ -318,9 +318,9 @@
       if (val_in(x, z, VAL.city)) return 0;
       const E = val_near(x, z, VAL.city, true), hz = (1 - val_sstep((E.ex - 25) / 30)) * (1 - val_sstep((E.ez - 862) / 16));   // the north-west: Hezekiah's wall
       let d = E.d - (4 + 15 * hz);
-      const [tx0, tx1, tz0, tz1] = VAL.terrace;
-      d = Math.min(d, Math.hypot(Math.max(tx0 - x, x - tx1, 0), Math.max(tz0 - z, z - tz1, 0)) - 8);
-      for (const S of VAL.spring) d = Math.min(d, val_dist(x, z, S) - 18);
+      const T = VAL.terrace, tx = Math.max(T[0] - x, x - T[1], 0), tz = Math.max(T[2] - z, z - T[3], 0);
+      d = Math.min(d, Math.sqrt(tx * tx + tz * tz) - 8);
+      d = Math.min(d, val_dist(x, z, VAL.spring[0]) - 18, val_dist(x, z, VAL.spring[1]) - 18);
       d = Math.min(d, val_dist(x, z, VAL.path) - 7);
       return val_sstep(d / VAL_BANK);
     };
