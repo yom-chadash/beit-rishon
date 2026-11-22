@@ -39,6 +39,73 @@
     sikra.color.set(9318179);
     const bandY = F + 4.925;
     const holeMat = new MeshBasicMaterial({ color: 1315081 });
+    // KARKOV_A2 (fix-a2, 22.11.2026; the user's decisions 1-2): THE KARKOV OF BEAUTY - flowers and buds standing out of the wall, white
+    // as the altar ("ומלבנים אותן", Middot 3:4), in the upper amah under the sovev's roof, above the red line. Zevachim 62a (130:2109,
+    // 2112): "איזהו כרכוב? רבי אומר: זה כיור, רבי יוסי ברבי יהודה אומר: זה הסובב"; "תרי הוו; חד לנוי, וחד לכהנים דלא נשתרקו"; Rashi
+    // (2191:2969-2970) "ציורים של פרחים וציצים וקלעים סביב למזבח"; "ציורים סביב למעלה מאמצעו"; Yachin, Middot 3:4 (819:321): "ובאמה
+    // העליונה שבגובה הסובב למעלה מחוט הסקרא היו מצויירים פרחים וציצים בולטים מהקיר סביב"; 3:17 (819:347) "ו' טפחים למטה מגג הסובב,
+    // שבאותן ו' טפחים היה כיור". Two readings - ctx2.shared.karkov.set("rabbi" | "none"): Rabbi (the default), or without (R. Yose b.
+    // R. Yehuda: "זה הסובב"; the Rambam does not mention it). Not under the ramp's head (the south face, where the ramp floats).
+    const KARKOV_MAT = M2.plaster.clone();
+    KARKOV_MAT.color.setRGB(0.97, 0.96, 0.92);
+    // KARKOV_A2: the flowers and buds of the karkov - instanced, one mesh for the flowers and one for the buds, along faces
+    // [[x0, z0, x1, z1, nx, nz] ...] (nx, nz - the face's outward normal), at the height yc, skipping the x ranges in `skip` on faces
+    // whose normal is +z (the ramp's place); a molding above and below (y0, y1). Their size and spacing - model choices.
+    const karkovBand = (parent, faces, y0, y1, mat, skip) => {
+      // KARKOV_BIG_A2 (the user: "יותר בולט וגדול"): the flowers and buds 1.4 times as large, standing out 2.6 times as far, a little
+      // farther apart (0.62); the moldings above and below thicker - model choices
+      const yc = (y0 + y1) / 2, sc = Math.min(1, (y1 - y0) / 0.6) * 1.4, D = 2.6 / 1.4;
+      const petal = (k) => { const q = new SphereGeometry(1, 7, 5); q.scale(0.065 * sc, 0.11 * sc, 0.035 * sc * D); q.translate(0, 0.1 * sc, 0.02 * sc * D); q.rotateZ(k * Math.PI * 2 / 5); return q; };
+      const ctr = new SphereGeometry(1, 9, 6); ctr.scale(0.06 * sc, 0.06 * sc, 0.05 * sc * D); ctr.translate(0, 0, 0.035 * sc * D);
+      const gFlower = mergeGeometries([ctr, petal(0), petal(1), petal(2), petal(3), petal(4)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const bud = new SphereGeometry(1, 8, 6); bud.scale(0.05 * sc, 0.12 * sc, 0.045 * sc * D); bud.translate(0, 0.02 * sc, 0.03 * sc * D);
+      const leaf = (s) => { const q = new SphereGeometry(1, 6, 4); q.scale(0.03 * sc, 0.08 * sc, 0.02 * sc * D); q.rotateZ(s * 0.8); q.translate(s * 0.05 * sc, -0.07 * sc, 0.015 * sc * D); return q; };
+      const gBud = mergeGeometries([bud, leaf(-1), leaf(1)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const pts = [];
+      for (const [x0, z0, x1, z1, nx, nz] of faces) {
+        const L = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(L / 0.62);
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n, x = x0 + (x1 - x0) * u, z = z0 + (z1 - z0) * u;
+          if (nz > 0.5 && skip && skip.some(([a, b]) => x > a && x < b)) continue;
+          pts.push([x + nx * 0.005, z + nz * 0.005, Math.atan2(nx, nz), i % 2]);
+        }
+      }
+      const m4 = new Matrix4(), q4 = new Quaternion(), up = new Vector3(0, 1, 0), one = new Vector3(1, 1, 1), ps = new Vector3();
+      for (const kind of [0, 1]) {
+        const list = pts.filter((p) => p[3] === kind), im = new InstancedMesh(kind ? gBud : gFlower, mat, list.length);
+        list.forEach(([x, z, yaw], i) => { q4.setFromAxisAngle(up, yaw); m4.compose(ps.set(x, yc, z), q4, one); im.setMatrixAt(i, m4); });
+        im.instanceMatrix.needsUpdate = true;
+        im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true;
+        parent.add(im);
+      }
+      for (const [x0, z0, x1, z1, nx, nz] of faces) for (const y of [y0, y1 - 0.04]) {   // the moldings
+        const L = Math.hypot(x1 - x0, z1 - z0), b = new Mesh(new BoxGeometry(Math.abs(nx) > 0.5 ? 0.12 : L + 0.24, 0.06, Math.abs(nx) > 0.5 ? L + 0.24 : 0.12), mat);
+        b.position.set((x0 + x1) / 2 + nx * 0.06, y + 0.03, (z0 + z1) / 2 + nz * 0.06);
+        b.userData.noPick = true;
+        parent.add(b);
+      }
+    };
+    // HORNS_A2 (fix-a2, 22.11.2026; the user's decisions 47, 49, 80): THE HORNS HOLLOW, a square opening at the top as the booklet
+    // draws it - the Rambam, Beit HaBechirah 2:8 (337:31): "וְאַרְבַּע הַקְּרָנוֹת חֲלוּלוֹת הָיוּ מִתּוֹכָן". Four walls (a sixth of an amah thick,
+    // a model choice) and the hollow dark within them, half the horn deep. A group whose origin is at the altar's top; height h
+    // over it (and 0.1 sunk into it).
+    const hornHollow = (parent, mat, x, y, z, h, inner) => {
+      const hg = new Group(), T = 0.34, W = 1, H = h + 0.1;   // SUDAR_A2: the mouth a third of the horn (0.32), as the booklet draws it (0.68 until now) - the deputy stands on its rim
+      hg.position.set(x, y, z);
+      for (const [w, d, ox, oz] of [[W, T, 0, -(W - T) / 2], [W, T, 0, (W - T) / 2], [T, W - 2 * T, -(W - T) / 2, 0], [T, W - 2 * T, (W - T) / 2, 0]]) {
+        const m = new Mesh(new BoxGeometry(w, H, d), mat);
+        m.position.set(ox, H / 2 - 0.1, oz);
+        m.castShadow = m.receiveShadow = true;
+        hg.add(m);
+      }
+      const din = h * 0.55, lin = new Mesh(new BoxGeometry(W - 2 * T - 0.004, din, W - 2 * T - 0.004), inner);   // the hollow: its walls and floor dark (seen from within)
+      lin.material = inner.userData.back || (inner.userData.back = Object.assign(inner.clone(), { side: BackSide }));
+      lin.position.y = h - din / 2 - 0.004;
+      hg.add(lin);
+      parent.add(hg);
+      return hg;
+    };
+    const hornInner = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
     const buildBody = (grp, W) => {
       const x0 = 71.5 - W, z1 = -19.5 + W, cx = 71.5 - W / 2, cz = -19.5 + W / 2;
       H2.box(grp, W, 1, 1, AS, cx, F, -19);                              // the yesod along the north
@@ -59,9 +126,17 @@
       // little out of the faces below it, and paler than the altar's stones - so that the step reads at once. Its measures stay the
       // Mishnah's ("עלה חמש אמות וכנס אמה, זהו הסובב", Middot 3:1); the slab's thickness and colour - a model choice
       H2.box(grp, W - 2 + 0.32, 0.34, W - 2 + 0.32, SOVEV_MAT, cx, F + 5.68, cz);
+      {   // KARKOV_A2: on the four faces of the wall below the sovev (x0 + 1 .. 70.5, z -18.5 .. z1 - 1), between the red line and the sovev's slab
+        const kg = new Group(), xa = x0 + 1, xb = 70.5, za = -18.5, zb = z1 - 1, rx = W === 32 ? 0 : 2;
+        kg.name = "karkov";
+        karkovBand(kg, [[xa, za, xb, za, 0, -1], [xa, zb, xb, zb, 0, 1], [xa, za, xa, zb, -1, 0], [xb, za, xb, zb, 1, 0]], F + 5.09, F + 5.68, KARKOV_MAT, [[47.3 + rx, 63.7 + rx]]);
+        grp.add(kg);
+        (buildBody.karkov || (buildBody.karkov = [])).push(kg);
+      }
       H2.box(grp, W - 4, 3.1, W - 4, AS, cx, F + 5.9, cz);
+      // HORNS_A2: hollow, and their height by the reading of the altar's measures (hornsFit, below)
       for (const hx of [x0 + 2.5, 69]) for (const hz of [-17, z1 - 2.5])
-        H2.box(grp, 1, 1.1, 1, AS, hx, F + 8.9, hz);
+        (buildBody.horns || (buildBody.horns = [])).push(hornHollow(grp, AS, hx, F + 9, hz, 1, hornInner));
       H2.box(grp, W - 1.76, 0.15, 0.12, sikra, cx, bandY, -18.53);
       H2.box(grp, W - 1.76, 0.15, 0.12, sikra, cx, bandY, z1 - 0.97);
       H2.box(grp, 0.12, 0.15, W - 1.8, sikra, x0 + 0.97, bandY, cz);
@@ -120,6 +195,7 @@
     mv.add(body28);
     buildBody(body32, 32);
     buildBody(body28, 28);
+    ctx2.shared.__horns = buildBody.horns;   // HORNS_A2 (tests)
     ctx2.layers = ctx2.layers || {};
     ctx2.layers.altarBody32 = body32;
     ctx2.layers.altarBody28 = body28;
@@ -133,6 +209,14 @@
       { text: "כאן אין יסוד — רב: ״בבנין״ (זבחים נד.)", x: 73.2, y: F + 0.9, z: 16.4, size: 1.25, layers: ["altarBody32", "yesodRavL"], moveWithAltar: true },
       { text: "יסוד בחלקו של יהודה — לוי: ״בדמים״, אין נותנים עליו דם (זבחים נד.)", x: 73.2, y: F + 0.9, z: 16.4, size: 1.25, layers: ["altarBody32", "yesodLevL"], moveWithAltar: true }
     );
+    // KARKOV_A2: the reading's switch, and the label's group
+    const karkovL = new Group();
+    mv.add(karkovL);
+    ctx2.layers.karkovL = karkovL;
+    ctx2.labels.push({ text: "כרכוב — פרחים וציצים (רבי: ״זה כיור״, זבחים סב.)", x: 73.4, y: F + 5.4, z: -2, size: 1.1, layers: ["altarBody32", "karkovL"], moveWithAltar: true,
+      info: "**הכרכוב** (זבחים סב.): ״איזהו כרכוב? רבי אומר: זה כיור, רבי יוסי ברבי יהודה אומר: זה הסובב״. רש״י: ״זה כיור — ציורים סביב למעלה מאמצעו״. במודל — כרבי: פרחים וציצים בולטים, לבנים, באמה העליונה שמעל חוט הסיקרא; ובתפריט, תחת ״שיטות ומחלוקות״ — ״הכרכוב — פרחים וציצים במזבח״. גודלם והמרווח ביניהם — בחירת מודל.",
+      refs: [["זבחים סב.", { book: 130, index: 2109 }], ["רש״י זבחים סב.", { book: 2191, index: 2970 }]] });
+    ctx2.shared.karkov = { mode: "rabbi", set(m) { this.mode = m === "none" ? "none" : "rabbi"; const on = this.mode === "rabbi"; for (const g of buildBody.karkov || []) g.visible = on; karkovL.visible = on; return this.mode; } };
     ctx2.shared.yesodLevi = { on: false, set(v) { this.on = !!v; for (const g of buildBody.levi || []) g.visible = this.on; for (const g of buildBody.rav || []) g.visible = !this.on; yRavL.visible = !this.on; yLevL.visible = this.on; return this.on; } };   // 1.9.3; YESOD_211
     // ===== 1.0.21: ramps rebuilt as solid wedges (the old small ramps were thin slabs standing on posts).
     // Main ramp: Middot 3:3 (32 x 16, south of the altar); it rises 9 amot to the top of the altar; its top is NOT joined to the altar ("a little air",
@@ -236,6 +320,84 @@
         { text: "״והיום כהן גדול עולה באמצע ויורד באמצע״ (יומא ד, ה)", x: ACX, y: F + RAMP_H(23) + 3.0, z: 23, size: 1.1, box: true, rim: "#e2b13c", layer: "rampWays", moveWithAltar: true });
       ctx2.shared.features = ctx2.shared.features || {};
       ctx2.shared.features.rampWays = { key: "rampWays", timed: false, isOn: () => WG.visible, on: () => { WG.visible = true; }, off: () => { WG.visible = false; } };
+    }
+    // LUL_A2 (the user's decision 60): THE LITTLE LUL - "לול קטן היה בין כבש למזבח במערבו של כבש, ואחת לשבעים שנה פרחי כהונה יורדין
+    // לשם, ומלקטין משם יין קרוש" (Sukkah 49a, 108:1263); Rashi there (2163:2318): "ולול היה באותו אויר במערבו של כבש, בשמונה אמות
+    // מערבית של כבש... ואותו חלל שהנסכים יורדין לתוכו... ומוקף ארבע מחיצות עד קרקעיתו". A small opening in the floor with its lid,
+    // against the altar's base (z 12.5), at the ramp's west side - where it can be seen (Rashi places it in the air between them, in the
+    // ramp's western half). Its size and the lid - model choices. In rampG: it goes with the altar's place.
+    {
+      const LG = new Group();
+      LG.position.set(ACX - 8.6, F, 13.0);
+      rampG.add(LG);
+      H2.box(LG, 1.1, 0.06, 1.1, M2.stoneSmooth, 0, 0, 0);                                       // its curb
+      const hole = new Mesh(new BoxGeometry(0.7, 0.03, 0.7), new MeshStandardMaterial({ color: 0x120c08, roughness: 1 })); hole.position.y = 0.05; LG.add(hole);
+      const lid = new Mesh(new BoxGeometry(0.66, 0.05, 0.66), M2.bronze); lid.position.set(0.12, 0.09, 0.08); lid.rotation.y = 0.18; lid.castShadow = true; LG.add(lid);   // the lid, a little aside
+      const rg = new Mesh(new TorusGeometry(0.08, 0.018, 6, 12), M2.bronze); rg.rotation.x = Math.PI / 2; rg.position.set(0.12, 0.12, 0.08); LG.add(rg);
+      ctx2.labels.push({ text: "הלול הקטן — ״לול קטן היה בין כבש למזבח במערבו של כבש״ (סוכה מט.)", x: ACX - 8.6, y: F + 1.6, z: 13.4, size: 1.0, moveWithAltar: true,
+        info: "**הלול הקטן** (סוכה מט.): ״אמר רבי אלעזר בר צדוק: לול קטן היה בין כבש למזבח במערבו של כבש, ואחת לשבעים שנה פרחי כהונה יורדין לשם, ומלקטין משם יין קרוש״.\n**רש״י** (שם): ״ולול היה באותו אויר במערבו של כבש, בשמונה אמות מערבית של כבש... ואותו חלל שהנסכים יורדין לתוכו... ומוקף ארבע מחיצות עד קרקעיתו״.\nבמודל: פתח קטן ומכוסה ברצפה, צמוד ליסוד המזבח, במערב הכבש — במקום שנראה מן העזרה (לרש״י — באויר שבין הכבש למזבח, בחציו המערבי של הכבש). גודלו והמכסה — בחירת מודל.",
+        refs: [["סוכה מט.", { book: 108, index: 1263 }], ["רש״י סוכה מט.", { book: 2163, index: 2318 }]] });
+    }
+    // SALT_A2 (the user's decision 51): THE SALT - "בשלשה מקומות המלח נתונה: בלשכת המלח, ועל גבי הכבש, ובראשו של מזבח... על גבי הכבש
+    // – ששם מולחים את האברים, בראשו של מזבח – ששם מולחין הקומץ והלבונה והקטורת... ועולת העוף" (Menachot 21b, 131:727; the Rambam,
+    // Issurei HaMizbeach 5:13, 339:80) - a heap of salt on the ramp's west half, by its top, and one on the altar's top by its south
+    // edge; and "בוזקין מלח על גבי כבש בשביל שלא יחליקו" (Eruvin 104a, 105:3801) - a little salt strewn on the ramp's face. The heaps'
+    // size and places - model choices. In rampG (the ramp's) and mv (the top's): they go with the altar's place.
+    {
+      const SM = new MeshStandardMaterial({ color: 0xf4f2ec, roughness: 0.75 });
+      // SALT_HEAP_A2 (the user on picture 29: "ערמה גדולה ועבה. נראה לי שגם לא כל כך מסודר כמו שעשית"): a big, thick heap, not neat - a
+      // lumpy mound, its rim uneven, a smaller lump or two leaning on it and loose grains round its foot; white with a little grey. Its
+      // size (about two and a half amot across, more than an amah high) and its form - model choices.
+      const SMH = new MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9, flatShading: true });
+      const heap = (parent, x, y, z, r, seed0 = 1) => {
+        let sd = seed0 * 7919 + 13;
+        const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+        const g = new Group();
+        g.position.set(x, y, z);
+        parent.add(g);
+        const mound = (R, H, cx, cz) => {
+          const geo = new SphereGeometry(1, 44, 14, 0, Math.PI * 2, 0, Math.PI / 2), P = geo.attributes.position, col = [];
+          const ph = [rnd() * 6.3, rnd() * 6.3, rnd() * 6.3], lumps = Array.from({ length: 9 }, () => [rnd() * 6.3, 0.25 + rnd() * 0.6, 0.12 + rnd() * 0.2, 0.08 + rnd() * 0.12]);
+          const c0 = new Color(0xf7f6f1), c1 = new Color(0xc6c4bd), c = new Color();
+          for (let i = 0; i < P.count; i++) {
+            const vx = P.getX(i), vy = P.getY(i), vz = P.getZ(i), a = Math.atan2(vx, vz), k = Math.hypot(vx, vz);
+            const rim = 1 + 0.16 * Math.sin(3 * a + ph[0]) + 0.09 * Math.sin(5 * a + ph[1]) + 0.05 * Math.sin(11 * a + ph[2]);   // the uneven foot
+            let up = vy;
+            for (const [la, lr, lw, lh] of lumps) { const da = Math.atan2(Math.sin(a - la), Math.cos(a - la)), d = Math.hypot(da * k, k - lr); up += lh * Math.exp(-(d * d) / (lw * lw)) * (vy > 0.02 ? 1 : 0); }
+            const n = 0.035 * (Math.sin(vx * 17 + vz * 11) + Math.sin(vz * 23 - vx * 7));   // its face rough
+            P.setXYZ(i, cx + vx * R * rim * (1 + n), Math.max(0, up * H * (1 + n * 2)), cz + vz * R * rim * (1 + n));
+            c.copy(c0).lerp(c1, Math.max(0, Math.min(1, 0.35 + 3 * n + 0.25 * (rnd() - 0.5))) * 0.55);
+            col.push(c.r, c.g, c.b);
+          }
+          geo.setAttribute("color", new Float32BufferAttribute(col, 3));
+          geo.computeVertexNormals();
+          const m = new Mesh(geo, SMH); m.castShadow = true; m.receiveShadow = true; g.add(m);
+        };
+        mound(r, r * 0.82, 0, 0);
+        mound(r * 0.45, r * 0.42, r * 0.82, -r * 0.35);
+        mound(r * 0.3, r * 0.22, -r * 0.7, r * 0.6);
+        // loose grains round its foot
+        const gg = new IcosahedronGeometry(0.045, 0), NG = 90, gm = new InstancedMesh(gg, SM, NG), m4 = new Matrix4(), ps = new Vector3(), sc = new Vector3(), q = new Quaternion(), e = new Euler();
+        for (let i = 0; i < NG; i++) { const a = rnd() * 6.283, d = r * (1.05 + rnd() * 0.55), s2 = 0.6 + rnd() * 1.2; m4.compose(ps.set(Math.sin(a) * d, 0.015, Math.cos(a) * d), q.setFromEuler(e.set(rnd() * 3, rnd() * 3, rnd() * 3)), sc.set(s2, s2 * 0.7, s2)); gm.setMatrixAt(i, m4); }
+        gm.userData.noPick = true;
+        g.add(gm);
+        return g;
+      };
+      const slope = Math.atan2(9, 32);
+      const onR = (x, z, r) => { const m = heap(rampG, x, F + RAMP_H(z), z, r, 3); m.rotation.x = slope; return m; };
+      onR(ACX - 6.6, 14.4, 1.15);                                                 // the limbs' salt, on the ramp's west half by its top
+      heap(mv, ACX - 4.3, F + 9, 6.9, 1.25, 5);                                   // on the altar's top, by its south edge
+      // strewn on the face, the length of the ramp: a scatter of small grains (one instanced mesh)
+      const gg = new SphereGeometry(0.035, 4, 3), N = 260, grains = new InstancedMesh(gg, SM, N), m4 = new Matrix4(), ps = new Vector3(), one = new Vector3(1, 1, 1), q0 = new Quaternion();
+      let seed = 7;
+      const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+      for (let i = 0; i < N; i++) { const z = 12 + rnd() * 30, x = ACX - 7.5 + rnd() * 15; m4.compose(ps.set(x, F + RAMP_H(z) + 0.02, z), q0, one); grains.setMatrixAt(i, m4); }
+      grains.userData.noPick = true;
+      rampG.add(grains);
+      const saltInfo = "**המלח** (מנחות כא:): ״נמצאת אתה אומר, בשלשה מקומות המלח נתונה: בלשכת המלח, ועל גבי הכבש, ובראשו של מזבח. בלשכת המלח – ששם מולחין עורות קדשים, על גבי הכבש – ששם מולחים את האברים, בראשו של מזבח – ששם מולחין הקומץ והלבונה והקטורת, ומנחת כהנים ומנחת כהן משיח ומנחת נסכים, ועולת העוף״; וכן ברמב״ם (איסורי המזבח ה, יג).\nועוד (עירובין קד.): ״בוזקין מלח על גבי כבש בשביל שלא יחליקו״ — ובגמרא: ״בהולכת עצים למערכה, דלאו עבודה היא״.\nבמודל: ערמת מלח על הכבש, בחציו המערבי סמוך לראשו; ערמה בראש המזבח, סמוך לשפתו הדרומית; ומעט מלח פזור על פני הכבש. גודל הערמות ומקומן — בחירת מודל.";
+      const saltRefs = [["מנחות כא:", { book: 131, index: 727 }], ["רמב״ם איסורי המזבח ה, יג", { book: 339, index: 80 }], ["עירובין קד.", { book: 105, index: 3801 }], ["עירובין קד. — בהולכת עצים", { book: 105, index: 3807 }]];
+      ctx2.labels.push({ text: "מלח — ״על גבי הכבש, ששם מולחים את האברים״ (מנחות כא:)", x: ACX - 6.6, y: F + RAMP_H(14.4) + 2.1, z: 14.4, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs },
+        { text: "מלח — ״ובראשו של מזבח״ (מנחות כא:)", x: ACX - 4.3, y: F + 10.9, z: 7.0, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs });
     }
     const RAMP_HEADS = { hair: 10.6, tosafot: 11.0, chaim: 11.75 };
     // 1.9.3 (the user, of the kuntres, point 10: "חריצין"): THE THREE ROVDIN - R. Hai Gaon (Beit Yosef OC 123; 3900 line 2000): "ובין כבש
@@ -709,8 +871,9 @@
         { text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: 47.5, y: TOP + 1.1, z: 5.4, size: 0.8, layer: "altarBody28" });
       const SHITIN_SEE = "השיתין — ״חלל שתחת המזבח כנגד מקום הנסכים״ (רש״י סוכה מט.)";   // apart from the yesod's "שני הנקבים... והן הנקראין שיתין" (SHITIN_LABEL, below: the Rambam's name for the yesod's two holes)
       // drawn on top (l.onTop): it stands in the hollow, and the stone round the glass would hide most of it
-      ctx2.labels.push({ text: SHITIN_SEE, x: 43.8, y: F - 5.6, z: 9.6, size: 0.62, layers: ["sfalimSee", "altarBody32"], moveWithAltar: true, onTop: true },
-        { text: SHITIN_SEE, x: 47.8, y: F - 5.6, z: 5.6, size: 0.62, layers: ["sfalimSee", "altarBody28"], moveWithAltar: true, onTop: true });
+      const SHI = { info: "השיתין — ״חלל שתחת המזבח כנגד מקום הנסכים״ (רש״י סוכה מט.). הפירוט בכרטיס ספלי הניסוך.", refs: [["רש״י סוכה מט.", { book: 2163, index: 2307 }]] };   // (the label's own source - it had none)
+      ctx2.labels.push(Object.assign({ text: SHITIN_SEE, x: 43.8, y: F - 5.6, z: 9.6, size: 0.62, layers: ["sfalimSee", "altarBody32"], moveWithAltar: true, onTop: true }, SHI),
+        Object.assign({ text: SHITIN_SEE, x: 47.8, y: F - 5.6, z: 5.6, size: 0.62, layers: ["sfalimSee", "altarBody28"], moveWithAltar: true, onTop: true }, SHI));
       // SFALIM_303: SFSEE - THE CORNER AS GLASS (ctx2.shared.features.sfalimSee; the place "ספלי הניסוך", 70-ui.js - on while it shows).
       // A box round the south-west corner, from under the shitin to over the horn (C, in sfG's frame: R. Yose's altar and the Tannaim's
       // places move it with the bowls). Every plain box of the altar and of the court's floor that meets it is drawn with a clone of its
@@ -1149,6 +1312,10 @@
         if (ctx2.shared.sfalimSee) ctx2.shared.sfalimSee.refresh();   // SFALIM_303: the glass corner with the bowls
         yoseFit(topG, y);
         yoseFit(ctx2.layers.tapuachRaavad, y);
+        // HORNS_A2 (the user's decision 49): the horn's height by the reading - five handbreadths in the Rambam's (2:8, and Kelim 17:10
+        // "אמות הקרן... בנות חמשה טפחים"); an amah of six in the others (the Mishnah's plain amah)
+        const hh = this.mode === "rambam" ? 5 / 6 : 1;
+        for (const h of buildBody.horns || []) h.scale.y = (hh + 0.1) / 1.1;
       } };
       ctx2.shared.features = ctx2.shared.features || {};
       // MEASURES_211: timed false - the frames stay as long as the place or the reading shows (they used to go after 15 seconds, in the
@@ -1208,6 +1375,69 @@
       mv.add(sp);
       smoke.push(sp);
     }
+    // SMOKE_COLUMN_A2 (fix-a2, 22.11.2026; the user: "לא פגש עשן עד היום" - the column of smoke of the great pyre; the incense's smoke
+    // is seen): the faint sprites below - a fifth opaque, grey on the pale sky, spread over the whole height - were not seen. Now THE
+    // COLUMN: a strip that turns to the eye about its own upright axis, its smoke drawn by a noise that rises, thick at the pyre and
+    // thinning upward, three amot wide and widening a little; the sprites rise thick over the pyre into it. Its shade follows the
+    // light of the sky (the fog's colour - dark at night), and at its foot the fire lights it. Straight: Yoma 21a (107:456) "ועשן
+    // המערכה, אפילו כל הרוחות שבעולם באות ומנשבות בו — אין מזיזות אותו ממקומו"; Avot 5:5 (78:84) "ולא נצחה הרוח את עמוד העשן"; and
+    // the smoke rises from the fire that men bring, Yoma 21b (107:465-466) "כי קא אמרינן — בדהדיוט". (״מתמר ועולה כמקל״ is said of the
+    // incense's smoke - Yoma 38a, 53a.) Its height, width and shade - model choices.
+    const SMK = { H: 220, W0: 3.2, W1: 11, OP: 0.9, DAYLUM: 0.84 };
+    const smokeColumn = (() => {
+      const geo = new PlaneGeometry(1, 1, 1, 40);
+      geo.translate(0.5, 0.5, 0);   // uv = position: x 0..1 across, y 0..1 up
+      const vs = [
+        "uniform float uH; uniform float uW0; uniform float uW1; varying vec2 vUv;",
+        "void main(){",
+        "  vUv = uv;",
+        "  vec4 base = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);",
+        "  vec3 toCam = cameraPosition - base.xyz; toCam.y = 0.0;",
+        "  float L = length(toCam);",
+        "  vec3 right = L > 1e-4 ? vec3(toCam.z, 0.0, -toCam.x) / L : vec3(1.0, 0.0, 0.0);",
+        "  float w = mix(uW0, uW1, pow(uv.y, 1.4));",
+        "  vec3 wp = base.xyz + right * (uv.x - 0.5) * w + vec3(0.0, uv.y * uH, 0.0);",
+        "  gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);",
+        "}"
+      ].join("\n");
+      const fs = [
+        "varying vec2 vUv; uniform float uTime; uniform float uOp; uniform float uDay; uniform float uFire;",
+        "float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }",
+        "float noise(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f);",
+        "  return mix(mix(hash(i), hash(i+vec2(1.0,0.0)), f.x), mix(hash(i+vec2(0.0,1.0)), hash(i+vec2(1.0,1.0)), f.x), f.y); }",
+        "float fbm(vec2 p){ return noise(p)*0.5 + noise(p*2.03)*0.25 + noise(p*4.1)*0.125 + noise(p*8.3)*0.0625; }",
+        "void main(){",
+        "  float x = vUv.x - 0.5, y = vUv.y;",
+        "  float n = fbm(vec2(x * 3.0 + 7.0, y * 24.0 - uTime * 0.5));",
+        "  float n2 = fbm(vec2(x * 7.0 + 1.3, y * 60.0 - uTime * 1.2));",
+        "  float xs = x + (n - 0.5) * 0.16;",
+        "  float a = exp(-xs * xs * 12.0) * (0.55 + 0.6 * n) * (0.8 + 0.4 * n2);",
+        "  a *= smoothstep(0.0, 0.02, y) * pow(1.0 - y, 1.1);",
+        "  vec3 col = vec3(0.30 + 0.24 * n) * mix(0.16, 1.0, uDay);",
+        "  col += vec3(1.0, 0.42, 0.10) * uFire * (1.0 - smoothstep(0.0, 0.05, y)) * (0.35 + 0.4 * (1.0 - uDay));",
+        "  gl_FragColor = vec4(col, clamp(a * uOp, 0.0, 1.0));",
+        "}"
+      ].join("\n");
+      const mat = new ShaderMaterial({
+        uniforms: { uTime: { value: 0 }, uOp: { value: SMK.OP }, uDay: { value: 1 }, uFire: { value: 1 }, uH: { value: SMK.H }, uW0: { value: SMK.W0 }, uW1: { value: SMK.W1 } },
+        vertexShader: vs, fragmentShader: fs, transparent: true, depthWrite: false, side: DoubleSide, fog: false
+      });
+      const m = new Mesh(geo, mat);
+      m.name = "smokeColumn";
+      m.frustumCulled = false;
+      m.castShadow = m.receiveShadow = false;
+      m.renderOrder = 2;
+      m.userData.noPick = true;
+      m.userData.noFade = true;
+      return m;
+    })();
+    const smokeDay = () => {   // 0 at night .. 1 by day: the fog's colour against the day's (55-tamid.js and the lots' demo darken it)
+      const f = (ctx2.scene || {}).fog;
+      if (!f || !f.color) return 1;
+      const c = f.color, lum = 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
+      return Math.max(0, Math.min(1, lum / SMK.DAYLUM));
+    };
+    mv.add(smokeColumn);
     // ===== 1.0.28: SPARKS rising from the great pyre (CPU particles, additive) + a soft orange GLOW over it.
     const PCX = (GP.x0 + GP.x1) / 2, SPARKS = 90;
     const sparkTex = (() => {
@@ -1616,185 +1846,319 @@
     const KPIT = ctx2.shared.KPIT || { x: KX, z: KZ, w: 6.4, d: 6.4 };
     {
       const bot = 10.3, top = F, wt = 0.5, iw = KPIT.w - 2 * wt;
-      H2.box(g, KPIT.w, 0.2, KPIT.d, M2.stoneSmooth, KX, bot - 0.2, KZ);
+      H2.box(g, KPIT.w, 0.2, KPIT.d, M2.stoneSmooth, KPIT.x, bot - 0.2, KPIT.z);
       for (const s2 of [-1, 1]) {
-        H2.box(g, KPIT.w, top - bot, wt, M2.stoneSmooth, KX, bot, KZ + s2 * (iw / 2 + wt / 2));
-        H2.box(g, wt, top - bot, iw, M2.stoneSmooth, KX + s2 * (iw / 2 + wt / 2), bot, KZ);
-        H2.box(g, KPIT.w + 0.6, 0.3, 0.3, M2.stoneSmooth, KX, top, KZ + s2 * (KPIT.d / 2 + 0.15));
-        H2.box(g, 0.3, 0.3, KPIT.d, M2.stoneSmooth, KX + s2 * (KPIT.w / 2 + 0.15), top, KZ);
+        H2.box(g, KPIT.w, top - bot, wt, M2.stoneSmooth, KPIT.x, bot, KPIT.z + s2 * (iw / 2 + wt / 2));
+        H2.box(g, wt, top - bot, iw, M2.stoneSmooth, KPIT.x + s2 * (iw / 2 + wt / 2), bot, KPIT.z);
+        H2.box(g, KPIT.w + 0.6, 0.3, 0.3, M2.stoneSmooth, KPIT.x, top, KPIT.z + s2 * (KPIT.d / 2 + 0.15));
+        H2.box(g, 0.3, 0.3, KPIT.d, M2.stoneSmooth, KPIT.x + s2 * (KPIT.w / 2 + 0.15), top, KPIT.z);
       }
       const wm = new MeshStandardMaterial({ color: 0x2f6f86, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.62, depthWrite: false });
       const surf = new Mesh(new BoxGeometry(iw, 0.04, iw), wm);
-      surf.position.set(KX, top - 0.8, KZ);
+      surf.position.set(KPIT.x, top - 0.8, KPIT.z);
       surf.renderOrder = 4;
       g.add(surf);
       const deep = new Mesh(new BoxGeometry(iw, top - 0.8 - bot, iw), new MeshStandardMaterial({ color: 0x163a48, roughness: 0.3, transparent: true, opacity: 0.35, depthWrite: false }));
-      deep.position.set(KX, (top - 0.8 + bot) / 2, KZ);
+      deep.position.set(KPIT.x, (top - 0.8 + bot) / 2, KPIT.z);
       g.add(deep);
     }
-    const kiyorG = new Group();   // the laver, its water and its twelve spouts - lowered and raised together
+    // ===== KIYOR_A2 (fix-a2, 22.11.2026; the user's decisions 40, 43, 57-60, 73, 81): THE LAVER, ITS BASE, THE WELL'S LID AND BEN KATIN'S
+    // MACHINE, as the booklet "חלמיש" draws them (the user: "כחוברת").
+    //  * The laver - "כמין דוד גדולה ולה דדים" (Rashi, Shemot 30:18): a great kettle, its belly round. Its size - a switch (decision 73;
+    //    ctx2.shared.kiyorSize): Tosafot Yom Tov, Yoma 3:10 (898:110): its round twelve (against the twelve spouts), across four - the
+    //    default (decision 81: "במקום הבור חסרו מן המעלות"); or round nine, across three; or as until now, across five and a quarter (a
+    //    model choice). The base, the well, the lid and the priests' spots follow the size.
+    //  * The twelve spouts (decision 60) as the Melechet Shlomo (1151:128): one upper spout and eleven under it; a small tap in each (a
+    //    model choice). The upper one toward the east.
+    //  * The base (decision 43) - the second answer of Tosafot, Zevachim 22a (1936:254): "כעין יורה כפוייה על פיה ונפחתו שוליה" (the Piskei Tosafot 2090:24: "כפויה על פיהו נפחתו"), as R.
+    //    Chaim Kanievsky explains it in the booklet: "כחבית על גבי חבית" - a cauldron upside down, its bottom cut away, the laver standing
+    //    on it. It stands BESIDE the well (decision 59).
+    //  * The well, covered by day with a lid and no fence round it (decision 40: "מכסה לבור, בלי גדר"; Rashi, Sukkah 48b: "שהיו משקעין
+    //    אותו מבערב בבור"). Its form (square, as it was) and the number of the ropes - "מה שיותר יפה": model choices.
+    //  * Ben Katin's machine (decision 57): a crane - a post, an arm that turns round it, the rope over two pulleys to a drum at the
+    //    post's foot - and on the drum a TOOTHED WHEEL with a tongue of wood that knocks on its teeth: "קול דפיקת שיני הגלגל" (Tiferet
+    //    Yisrael, Tamid 3, 818:330), "קול העץ שעשה בן קטין מוכני לכיור" (Tamid 1:4). The arm lifts the laver off its base, swings it over
+    //    the well and lowers it into the water in the evening; in the morning back onto the base (decision 59).
+    // ctx2.shared.mukhni = { demo(), stop(), pose(d, ph) } (d 0 .. 5.6: 0 the laver on its base, 5.6 in the well); ctx2.shared.kiyorSize =
+    // { mode, set("d4" | "d3" | "d525") }; ctx2.shared.kiyorInfo() -> { R, H, foot, spouts: [{ p: [x, y, z], a (its angle), upper }] }.
+    const PITX = KPIT.x, PITZ = KPIT.z, KZK = 54.7;   // the base's place: north of the well (the well moved south for it, 30-courts.js)
+    const KEN_H = 2.3, KR0 = 2.625;                  // the base's height (KIYOR_CHALAMISH_A2: 1.45 until then - tall, as drawn); the laver's own radius (across 5.25) - the size scales it
+    const kiyorG = new Group();   // the laver, its water and its twelve spouts - lifted, swung and lowered together
     g.add(kiyorG);
-    const KY = F + 0.6;           // the laver's foot when it hangs up
-    H2.lathe(kiyorG, [
-      [0.007, 0.0],
-      [1.125, 0.0],
-      [1.163, 0.105],
-      [0.788, 0.225],
-      [0.45, 0.413],
-      [0.39, 0.975],
-      [0.637, 1.2],
-      [1.425, 1.537],
-      [2.175, 1.95],
-      [2.565, 2.325],
-      [2.625, 2.625],
-      [2.565, 2.715],
-      [2.362, 2.588],
-      [2.287, 2.25],
-      [1.65, 1.838],
-      [0.675, 1.65],
-      [0.007, 1.612]
-    ], (() => { const m = M2.bronze.clone(); m.side = DoubleSide; return m; })(), KX, KY, KZ, 48);   // 1.5.0: both faces - as a one-sided lathe only the rim showed
+    const bowlG = new Group();    // the laver in its own frame (its foot at 0), scaled by the size
+    kiyorG.add(bowlG);
+    // KIYOR_CHALAMISH_A2 (the user, on picture 15: "נראה לא טוב" - to be as the booklet draws it, A-11 / B-02 / B-11 / B-22): a great
+    // copper barrel with FACES (twelve - one to each spout), not a round pot; a band of round ribs under the shoulder, a domed lid with a
+    // knob and a ring (the rope takes it there), the row of taps round it; it stands on a tall ribbed base - "חבית על גבי חבית". The
+    // colour, the faces, the lid and the ribs - as the booklet: model choices.
+    const HB = 1.5, LAVER_H = 2.62 * HB, LAVER_TOP = LAVER_H + 1.3;   // the body taller than its breadth, as drawn (HB); its height; the ring on the lid's knob (the rope's hook)
+    const copperM = new MeshStandardMaterial({ color: 0xb4602c, roughness: 0.36, metalness: 0.62 });
+    const copperD = new MeshStandardMaterial({ color: 0x8e4520, roughness: 0.45, metalness: 0.55 });
+    // a body of revolution whose round is shaped by rf(angle) (faces, ribs): prof [[r, y], ...], nU segments round
+    const revG = (prof, nU, rf) => {
+      const pos = [], uv = [], idx = [], nV = prof.length;
+      for (let v = 0; v < nV; v++) for (let u = 0; u <= nU; u++) {
+        const th = (u / nU) * Math.PI * 2, r = prof[v][0] * rf(th, v);
+        pos.push(Math.sin(th) * r, prof[v][1], Math.cos(th) * r); uv.push(u / nU, v / (nV - 1));
+      }
+      for (let v = 0; v < nV - 1; v++) for (let u = 0; u < nU; u++) { const a = v * (nU + 1) + u, b = a + nU + 1; idx.push(a, a + 1, b, a + 1, b + 1, b); }
+      const ge = new BufferGeometry(); ge.setAttribute("position", new Float32BufferAttribute(pos, 3)); ge.setAttribute("uv", new Float32BufferAttribute(uv, 2)); ge.setIndex(idx); ge.computeVertexNormals();
+      return ge;
+    };
+    const FACE12 = (th) => { const k = Math.PI / 6, d = ((th % k) + k) % k - k / 2; return Math.cos(k / 2) / Math.cos(d); };   // a twelve-sided round, a face toward each spout
     {
-      const water = new Mesh(
-        new CircleGeometry(2.2, 28),
-        new MeshStandardMaterial({ color: 3104873, roughness: 0.15, metalness: 0.1 })
-      );
-      water.rotation.x = -Math.PI / 2;
-      water.position.set(KX, KY + 2.22, KZ);
-      water.receiveShadow = true;
-      kiyorG.add(water);
+      const prof = [[0.01, 0], [1.9, 0], [2.18, 0.07], [2.42, 0.22], [2.54, 0.45], [2.6, 0.8], [2.62, 1.3], [2.6, 1.85], [2.52, 2.2], [2.36, 2.45], [2.22, 2.6], [2.2, 2.62]];   // nearly straight, rounded below and above (as drawn)
+      const body = new Mesh(revG(prof.map(([r, y]) => [r, y * HB]), 96, (th) => FACE12(th)), copperM); body.castShadow = body.receiveShadow = true; bowlG.add(body);
+      // the band under the lid: round ribs side by side (the booklet's "beads")
+      const gr = new SphereGeometry(1, 8, 6); gr.scale(0.11, 0.17, 0.08);
+      const ribs = new InstancedMesh(gr, copperD, 60), m4r = new Matrix4(), qr = new Quaternion(), er = new Euler(), pr = new Vector3(), sr = new Vector3(1, 1, 1);
+      for (let k = 0; k < 60; k++) { const a = (k * Math.PI * 2) / 60; er.set(0, a, 0); qr.setFromEuler(er); pr.set(Math.sin(a) * 2.25, LAVER_H + 0.15, Math.cos(a) * 2.25); m4r.compose(pr, qr, sr); ribs.setMatrixAt(k, m4r); }
+      bowlG.add(ribs);
+      const L0 = LAVER_H - 2.62;
+      bowlG.add(new Mesh(revG([[2.24, 2.6], [2.34, 2.62], [2.34, 2.66], [2.24, 2.68]].map(([r, y]) => [r, y + L0]), 48, () => 1), copperD));
+      bowlG.add(new Mesh(revG([[2.24, 2.86], [2.36, 2.88], [2.36, 2.94], [2.2, 2.96]].map(([r, y]) => [r, y + L0]), 48, () => 1), copperD));
+      // the lid: a low dome, a knob and its ring
+      const lid = new Mesh(revG([[2.22, 2.94], [2.05, 3.05], [1.7, 3.25], [1.15, 3.42], [0.55, 3.5], [0.3, 3.55], [0.26, 3.62], [0.4, 3.72], [0.36, 3.8], [0.01, 3.82]].map(([r, y]) => [r, y + L0]), 48, () => 1), copperM);
+      lid.castShadow = true; bowlG.add(lid);
+      const ring = new Mesh(new TorusGeometry(0.17, 0.045, 6, 14), copperD); ring.position.y = LAVER_H + 1.25; bowlG.add(ring);
+      // the belly's two dark seams, as drawn
+      for (const [y, r] of [[0.4 * HB, 2.53], [2.08 * HB, 2.58]]) bowlG.add(new Mesh(revG([[r, y - 0.03], [r + 0.03, y], [r, y + 0.03]], 96, (th) => FACE12(th)), copperD));
     }
+    // the spouts: eleven lower ones round the belly (y 1.0), the upper one above them toward the east (y 2.25), each in the middle of a
+    // face; a short pipe out and a little down, its tap a small handle across it (brass)
+    const SPOUTS = [];
     {
-      const geo = new CylinderGeometry(0.055, 0.08, 0.75, 8);
-      geo.rotateX(Math.PI / 2);
-      const inst = new InstancedMesh(geo, M2.bronze, 12);
-      const m42 = new Matrix4(), q = new Quaternion(), e = new Euler();
-      const p = new Vector3(), s = new Vector3(1, 1, 1);
+      const gs = new CylinderGeometry(0.06, 0.085, 0.5, 8); gs.rotateX(Math.PI / 2); gs.translate(0, 0, 0.25);
+      const gd = new CylinderGeometry(0.05, 0.06, 0.18, 8); gd.translate(0, -0.08, 0.48);
+      const gt = new CylinderGeometry(0.028, 0.028, 0.24, 6); gt.translate(0, 0.12, 0.3);
+      const gk = new BoxGeometry(0.24, 0.045, 0.045); gk.translate(0, 0.25, 0.3);
+      const geo = mergeGeometries([gs, gd, gt, gk].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const inst = new InstancedMesh(geo, new MeshStandardMaterial({ color: 0xc89a3c, roughness: 0.3, metalness: 0.85 }), 12);
+      const m42 = new Matrix4(), q = new Quaternion(), e = new Euler(), p = new Vector3(), s = new Vector3(1, 1, 1);
       for (let i = 0; i < 12; i++) {
-        const a = i / 12 * Math.PI * 2;
-        e.set(0.35, a, 0, "YXZ");
+        const upper = i === 0, a = upper ? Math.PI / 2 : Math.PI / 2 + (i * Math.PI * 2) / 12;   // the upper toward +x (east); the eleven in the other faces
+        const y = upper ? 2.25 * HB : 1.0 * HB, r = upper ? 2.42 : 2.5;
+        e.set(0.12, a, 0, "YXZ");
         q.setFromEuler(e);
-        p.set(KX + Math.sin(a) * 1.3, KY + 1.22, KZ + Math.cos(a) * 1.3);
+        p.set(Math.sin(a) * r, y, Math.cos(a) * r);
         m42.compose(p, q, s);
         inst.setMatrixAt(i, m42);
+        SPOUTS.push({ a, y, r, upper });
       }
       inst.castShadow = true;
-      kiyorG.add(inst);
+      bowlG.add(inst);
     }
     // MOCHANI_RAMBAM_211 (the user, 15.11.2026 23:45: "תוסיף את זה כמתג שיטה לכיור"): the Rambam's מוכני - "עשה כלי סביב לכיור, והיו בו
     // המים תמיד, והיו שותתין מאותו כלי לכיור כדי הצורך ראשון ראשון, ואותו הכלי היה נקרא מוכני" (his commentary on Yoma 3, quoted by the
     // Kesef Mishneh, Beit HaBechirah 3:18, 4260:166), "כלי על הכיור להיות מלא מים, והיה סביב לכיור" (on Tamid 1:4, 575:10), "ומוכני עשו לו
     // שיהיו בה המים תמיד, והיא חול" (Beit HaBechirah 3:18, 337:60); the Kesef Mishneh: "כלי עגול כגלגל סביבות הכיור, שהיה הכיור משוקע
-    // בתוכו". Here a round trough about the laver's bowl, open above, with its water, and one short pipe from it over the laver's rim (the
-    // water "שותתין... לכיור"). It is in kiyorG, so in the demonstration it goes down with the laver - the Even HaAzel (4466:45): "שהי' כלי
-    // סביב ושהיו משקעין אותו הכלי". Its form, size, height and material: model choice. Shown only when the row "המוכני של הכיור" stands on
-    // the Rambam (ctx.shared.mochani.set).
+    // בתוכו". A round trough about the laver's upper part, open above, with its water, and one short pipe from it over the laver's rim. It
+    // goes with the laver (the Even HaAzel, 4466:45: "שהי' כלי סביב ושהיו משקעין אותו הכלי"). Its form, size, height and material: model
+    // choice. Shown only when the row "המוכני של הכיור" stands on the Rambam (ctx.shared.mochani.set).
     const mochR = new Group();
     mochR.visible = false;
-    kiyorG.add(mochR);
+    bowlG.add(mochR);
     {
       const cm = new MeshStandardMaterial({ color: 0x8c5a3c, roughness: 0.45, metalness: 0.45, side: DoubleSide });
-      H2.lathe(mochR, [[2.72, 2.95], [2.72, 1.75], [3.35, 1.75], [3.35, 2.95], [3.25, 2.95], [3.25, 1.85], [2.82, 1.85], [2.82, 2.95], [2.72, 2.95]], cm, KX, KY, KZ, 48);
+      H2.lathe(mochR, [[2.72, 3.05], [2.72, 1.85], [3.35, 1.85], [3.35, 3.05], [3.25, 3.05], [3.25, 1.95], [2.82, 1.95], [2.82, 3.05], [2.72, 3.05]], cm, 0, 0, 0, 48);
       const ring = new Mesh(new RingGeometry(2.82, 3.25, 48), new MeshStandardMaterial({ color: 3104873, roughness: 0.15, metalness: 0.1, side: DoubleSide }));
       ring.rotation.x = -Math.PI / 2;
-      ring.position.set(KX, KY + 2.7, KZ);
+      ring.position.y = 2.8;
       mochR.add(ring);
-      const pipe = new Mesh(new CylinderGeometry(0.06, 0.06, 0.75, 10), cm);   // from the trough's inner wall over the laver's rim (west)
+      const pipe = new Mesh(new CylinderGeometry(0.06, 0.06, 0.75, 10), cm);
       pipe.rotation.z = Math.PI / 2;
-      pipe.position.set(KX - 2.47, KY + 2.88, KZ);
+      pipe.position.set(-2.47, 2.98, 0);
       mochR.add(pipe);
-      const noz = new Mesh(new CylinderGeometry(0.05, 0.075, 0.22, 10), cm);   // and its mouth turned down, into the laver
-      noz.position.set(KX - 2.12, KY + 2.77, KZ);
+      const noz = new Mesh(new CylinderGeometry(0.05, 0.075, 0.22, 10), cm);
+      noz.position.set(-2.12, 2.87, 0);
       mochR.add(noz);
     }
     ctx2.layers = ctx2.layers || {};
     ctx2.layers.mochaniRambam = mochR;
-    ctx2.labels.push({ text: "המוכני לרמב״ם — כלי סביב הכיור, ובו המים (בית הבחירה ג, יח)", x: KX - 1, y: KY + 4.6, z: KZ, size: 1.0, layer: "mochaniRambam" });
     ctx2.shared.mochani = {
       mode: "rashi",
       set(m) { this.mode = m === "rambam" ? "rambam" : "rashi"; mochR.visible = this.mode === "rambam"; return this.mode; }
     };
-    // the winch: posts east and west of the well, the axle along x at AY, the wheel on its east end, ropes to four points of the rim
-    const AY = F + 8.2, RIM = KY + 2.6;
-    const wheelG = new Group();
-    wheelG.position.set(KX + 4.3, AY, KZ);
-    g.add(wheelG);
+    // the base (KIYOR_CHALAMISH_A2): tall, ribbed and faced like a barrel - "חבית על גבי חבית" - its top holding the laver's foot; scaled
+    // with the laver in x and z
+    const kenG = new Group();
+    kenG.position.set(KX, F, KZK);
+    g.add(kenG);
     {
-      for (const dx of [-3.7, 3.7]) H2.box(g, 0.5, AY - F + 0.6, 0.5, M2.cedar, KX + dx, F, KZ);
-      const axle = H2.cyl(g, 0.22, 0.22, 9.4, M2.cedar, KX + 0.4, AY - 4.7, KZ);
-      axle.rotation.z = Math.PI / 2;
-      axle.position.set(KX + 0.4, AY, KZ);
-      const rim = new Mesh(new TorusGeometry(1.8, 0.18, 8, 26), M2.cedar);
-      rim.rotation.y = Math.PI / 2;
-      rim.castShadow = true;
-      wheelG.add(rim);
-      for (const rot of [0, Math.PI / 4, Math.PI / 2, Math.PI * 0.75]) {
-        const sp = new Mesh(new BoxGeometry(0.16, 3.5, 0.16), M2.cedar);
-        sp.rotation.x = rot;
-        sp.castShadow = true;
-        wheelG.add(sp);
+      const RIB = (th, v) => (v >= 4 && v <= 9 ? 1 + 0.06 * Math.pow(Math.abs(Math.cos(th * 12)), 0.6) : 1) * FACE12(th);   // twenty-four staves standing out
+      const prof = [[0.01, 0], [1.66, 0], [1.72, 0.1], [1.6, 0.2], [1.62, 0.3], [1.7, 0.65], [1.76, 1.05], [1.76, 1.45], [1.7, 1.8], [1.62, 2.04], [1.6, 2.1], [1.72, 2.16], [1.72, 2.26], [1.42, KEN_H], [0.01, KEN_H]];
+      const b = new Mesh(revG(prof, 192, RIB), copperM); b.castShadow = b.receiveShadow = true; kenG.add(b);
+      kenG.add(new Mesh(revG([[1.62, 0.22], [1.7, 0.25], [1.62, 0.28]], 48, () => FACE12(0.3)), copperD));
+    }
+    // the well's mouth and lid (KIYOR_CHALAMISH_A2, as drawn in B-02 / B-11): a stone slab over the curb with a round mouth, and a round
+    // lid of cedar boards with two battens and an iron ring; it slides off to the west in the evening (the demonstration)
+    const MOUTH = 2.85;
+    {
+      const sh = new Shape(); const hw = KPIT.w / 2 + 0.3, hd = KPIT.d / 2 + 0.3;
+      sh.moveTo(-hw, -hd); sh.lineTo(hw, -hd); sh.lineTo(hw, hd); sh.lineTo(-hw, hd); sh.lineTo(-hw, -hd);
+      const hole = new Path(); hole.absarc(0, 0, MOUTH, 0, Math.PI * 2, true); sh.holes.push(hole);
+      const sg = new ExtrudeGeometry(sh, { depth: 0.3, bevelEnabled: false, curveSegments: 40 }); sg.rotateX(-Math.PI / 2);
+      const slab = new Mesh(sg, M2.stoneSmooth); slab.position.set(PITX, F, PITZ); slab.castShadow = slab.receiveShadow = true; g.add(slab);
+    }
+    const lidG = new Group();
+    g.add(lidG);
+    {
+      const LR = MOUTH + 0.25;
+      const disk = new Mesh(new CylinderGeometry(LR, LR, 0.14, 40), M2.cedar); disk.position.y = 0.07; disk.castShadow = disk.receiveShadow = true; lidG.add(disk);
+      for (let i = -2; i <= 2; i++) { const sl = new Mesh(new BoxGeometry(0.03, 0.02, 2 * Math.sqrt(LR * LR - (i * LR / 3) ** 2) - 0.1), new MeshStandardMaterial({ color: 0x4a2e18, roughness: 1 })); sl.position.set(i * LR / 3 + LR / 6, 0.145, 0); lidG.add(sl); }   // the boards' joints
+      for (const dx of [-LR / 2.2, LR / 2.2]) { const c = new Mesh(new BoxGeometry(0.24, 0.07, 2 * Math.sqrt(LR * LR - dx * dx) - 0.3), M2.cedar); c.position.set(dx, 0.175, 0); lidG.add(c); }
+      const rg = new Mesh(new TorusGeometry(0.22, 0.035, 6, 16), M2.bronze); rg.rotation.x = Math.PI / 2; rg.position.set(0, 0.22, 0); lidG.add(rg);
+    }
+    const LID0 = new Vector3(PITX, F + 0.3, PITZ), LID1 = new Vector3(PITX - KPIT.w - 0.6, F, PITZ + 0.6);
+    lidG.position.copy(LID0);
+    // the crane (KIYOR_CHALAMISH_A2: "מסגרת עץ כמו גרדום, עם גלגלות, גלגלי שיניים וידית" - B-02, B-11, B-22): two cedar posts with a cap,
+    // on the line between the base and the well, west of them; the arm, with its brace, turns on the cap (decision 59) - a pulley at its
+    // root and one at its end; between the posts a windlass at the height of a man's hands - the drum with the rope wound on it, a
+    // TOOTHED WHEEL on its south end with a wooden tongue knocking on its teeth (decision 57: "קול דפיקת שיני הגלגל"), and a crank on its
+    // north end. Measures and the wheels' colour (as drawn) - model choices.
+    const AY = F + 9.4, PSX = KX - 4.6, PSZ = (KZK + PITZ) / 2;
+    const ARM = Math.hypot(KX - PSX, KZK - PSZ);
+    const angTo = (x, z) => Math.atan2(-(z - PSZ), x - PSX);
+    const TH_K = angTo(KX, KZK), TH_P = angTo(PITX, PITZ);
+    const pulMat = new MeshStandardMaterial({ color: 0x9c8cb0, roughness: 0.55 });
+    const WY = F + 2.7, PZ = 0.55;   // the windlass's axle (along z); the posts at PSZ +-PZ
+    {
+      for (const sz of [-1, 1]) {
+        H2.box(g, 0.4, AY - F - 0.2, 0.36, M2.cedar, PSX, F, PSZ + sz * PZ);
+        H2.box(g, 2.2, 0.32, 0.4, M2.cedar, PSX, F, PSZ + sz * PZ);                          // its foot
+        const st = new Mesh(new BoxGeometry(0.2, 1.3, 0.2), M2.cedar); st.position.set(PSX + 0.65, F + 0.5, PSZ + sz * PZ); st.rotation.z = 0.75; st.castShadow = true; g.add(st);
+        const st2 = st.clone(); st2.position.x = PSX - 0.65; st2.rotation.z = -0.75; g.add(st2);
       }
-      for (const dz of [-0.95, 0.95]) for (const dy of [-0.95, 0.95]) {   // the handles of the wheel
-        const hd = new Mesh(new CylinderGeometry(0.07, 0.07, 0.9, 6), M2.cedar);
-        hd.rotation.z = Math.PI / 2;
-        hd.position.set(0.45, dy * 1.27, dz * 1.27);
-        wheelG.add(hd);
+      H2.box(g, 0.5, 0.36, 2 * PZ + 0.7, M2.cedar, PSX, AY - 0.56, PSZ);                    // the cap
+      H2.box(g, 0.3, 0.26, 2 * PZ + 0.36, M2.cedar, PSX, WY + 1.25, PSZ);                   // a cross bar over the windlass
+      H2.box(g, 2.4, 0.3, 2.4, M2.stoneSmooth, PSX, F - 0.1, PSZ);
+    }
+    const armG = new Group();
+    armG.position.set(PSX, AY, PSZ);
+    g.add(armG);
+    {
+      const arm = new Mesh(new BoxGeometry(ARM + 0.9, 0.36, 0.32), M2.cedar); arm.position.set(ARM / 2 + 0.05, 0, 0); arm.castShadow = true; armG.add(arm);
+      const collar = new Mesh(new CylinderGeometry(0.34, 0.34, 0.5, 12), M2.cedar); collar.position.y = -0.38; armG.add(collar);
+      const br2 = new Mesh(new BoxGeometry(2.5, 0.22, 0.22), M2.cedar); br2.position.set(0.95, -0.85, 0); br2.rotation.z = 0.72; br2.castShadow = true; armG.add(br2);
+      for (const x of [0.25, ARM]) {
+        const pl = new Mesh(new CylinderGeometry(0.44, 0.44, 0.16, 20), pulMat); pl.rotation.x = Math.PI / 2; pl.position.set(x, 0.42, 0); armG.add(pl);
+        const hub = new Mesh(new CylinderGeometry(0.1, 0.1, 0.24, 10), M2.cedar); hub.rotation.x = Math.PI / 2; hub.position.set(x, 0.42, 0); armG.add(hub);
+        for (const sz of [-1, 1]) { const ch = new Mesh(new BoxGeometry(0.5, 0.5, 0.06), M2.cedar); ch.position.set(x, 0.3, sz * 0.13); armG.add(ch); }   // its cheeks
       }
     }
+    // the windlass: wheelG turns about the axle (z)
+    const drumG = new Group();
+    drumG.position.set(PSX, WY, PSZ);
+    g.add(drumG);
+    const wheelG = new Group();
+    drumG.add(wheelG);
+    {
+      const ax = new Mesh(new CylinderGeometry(0.07, 0.07, 2 * PZ + 1.3, 8), M2.cedar); ax.rotation.x = Math.PI / 2; wheelG.add(ax);
+      const drum = new Mesh(new CylinderGeometry(0.3, 0.3, 2 * PZ - 0.42, 14), M2.cedar); drum.rotation.x = Math.PI / 2; wheelG.add(drum);
+      const coilM = new MeshStandardMaterial({ color: 0x8a6a3e, roughness: 1 });
+      for (let k = 0; k < 7; k++) { const c = new Mesh(new TorusGeometry(0.34, 0.045, 6, 16), coilM); c.position.z = -PZ + 0.3 + k * ((2 * PZ - 0.6) / 6); wheelG.add(c); }   // the rope wound on it
+      // the toothed wheel (south, outside the post) and its teeth
+      const GZ = PZ + 0.38;
+      const gw = new Mesh(new CylinderGeometry(0.62, 0.62, 0.16, 28), pulMat); gw.rotation.x = Math.PI / 2; gw.position.z = GZ; wheelG.add(gw);
+      const tg = new BoxGeometry(0.14, 0.2, 0.16), ti = new InstancedMesh(tg, pulMat, 20), m4t = new Matrix4(), qt = new Quaternion(), et = new Euler(), pt = new Vector3(), st = new Vector3(1, 1, 1);
+      for (let k = 0; k < 20; k++) { const a = (k * Math.PI * 2) / 20; et.set(0, 0, a); qt.setFromEuler(et); pt.set(-Math.sin(a) * 0.7, Math.cos(a) * 0.7, GZ); m4t.compose(pt, qt, st); ti.setMatrixAt(k, m4t); }
+      wheelG.add(ti);
+      // the crank (north, outside the post): its arm and handle
+      const CZ = -PZ - 0.36;
+      const ca = new Mesh(new BoxGeometry(0.12, 0.75, 0.1), M2.cedar); ca.position.set(0, -0.33, CZ); wheelG.add(ca);
+      const ch = new Mesh(new CylinderGeometry(0.055, 0.055, 0.42, 8), new MeshStandardMaterial({ color: 0x3a2a20, roughness: 0.8 })); ch.rotation.x = Math.PI / 2; ch.position.set(0, -0.68, CZ - 0.2); wheelG.add(ch);
+    }
+    const tongue = new Group();   // pivoted on the post over the toothed wheel; its tip rides the teeth
+    tongue.position.set(PSX, WY + 1.08, PSZ + PZ + 0.38);
+    g.add(tongue);
+    { const t = new Mesh(new BoxGeometry(0.1, 0.42, 0.12), M2.cedar); t.position.y = -0.17; t.rotation.z = 0.25; tongue.add(t); const pv = new Mesh(new BoxGeometry(0.16, 0.16, 0.3), M2.cedar); pv.position.z = -0.12; tongue.add(pv); }
+    // the rope: up from the drum to the post's head, along the arm, and down from its end to the laver's four chains
     const ropeMat = new MeshStandardMaterial({ color: 0x8a6a3e, roughness: 1 });
-    const ropes = [];
-    for (const [dx, dz] of [[-2.2, 0], [2.2, 0], [0, -2.2], [0, 2.2]]) {
-      const r = new Mesh(new CylinderGeometry(0.05, 0.05, 1, 6), ropeMat);
-      r.userData.at = [KX + dx * 0.95, KZ + dz * 0.95];
-      g.add(r);
-      ropes.push(r);
-    }
+    const mkRope = (r) => { const m = new Mesh(new CylinderGeometry(r, r, 1, 6), ropeMat); g.add(m); return m; };
+    const ropeUp = mkRope(0.045), ropeArm = mkRope(0.045), ropeDown = mkRope(0.045), chains = [0, 1, 2, 3].map(() => mkRope(0.03));
     const UPV = new Vector3(0, 1, 0), pa = new Vector3(), pb = new Vector3();
-    const setDrop = (d) => {   // d >= 0: how far the laver is down; each rope from its point on the rim up to the axle
-      kiyorG.position.y = -d;
-      for (const r of ropes) {
-        pa.set(r.userData.at[0], RIM - d, r.userData.at[1]);
-        pb.set(r.userData.at[0], AY - 0.15, KZ);
-        const L = Math.max(0.05, pa.distanceTo(pb));
-        r.scale.set(1, L, 1);
-        r.position.copy(pa).add(pb).multiplyScalar(0.5);
-        r.quaternion.setFromUnitVectors(UPV, pb.clone().sub(pa).normalize());
+    const span = (m, a, b) => { const L = Math.max(0.05, a.distanceTo(b)); m.scale.set(1, L, 1); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UPV, pb.copy(b).sub(a).normalize()); };
+    // the size (decision 73 / 81)
+    const SIZES = { d4: 4, d3: 3, d525: 5.25 };
+    const K = { s: 4 / 5.25, th: TH_K, foot: F + KEN_H - 0.15, d: 0 };
+    const place = () => {
+      const x = PSX + Math.cos(K.th) * ARM, z = PSZ - Math.sin(K.th) * ARM;
+      kiyorG.position.set(0, 0, 0);
+      bowlG.position.set(x, K.foot, z);
+      bowlG.scale.setScalar(K.s);
+      armG.rotation.y = K.th;
+      // KIYOR_CHALAMISH_A2: the rope from the drum up between the posts to the root pulley, along the arm, over the end pulley and down
+      // to the ring on the lid's knob (one rope, as drawn; the four chains are gone)
+      const hook = K.foot + (LAVER_TOP + 0.1) * K.s, rx = PSX + Math.cos(K.th) * 0.25, rz = PSZ - Math.sin(K.th) * 0.25;
+      span(ropeUp, pa.set(PSX + 0.3, WY, PSZ), pb.set(rx + 0.3 * Math.cos(K.th + Math.PI / 2) * 0, AY + 0.42, rz).clone());
+      span(ropeArm, new Vector3(rx, AY + 0.86, rz), new Vector3(x, AY + 0.86, z));
+      span(ropeDown, new Vector3(x + Math.cos(K.th) * 0.44, AY + 0.42, z - Math.sin(K.th) * 0.44), new Vector3(x, hook, z));
+      chains.forEach((c) => { c.visible = false; });
+    };
+    ctx2.shared.kiyorSize = {
+      mode: "d4",
+      set(m) {
+        this.mode = SIZES[m] ? m : "d4";
+        K.s = SIZES[this.mode] / 5.25;
+        kenG.scale.set(K.s * 1.1, 1, K.s * 1.1);   // its mouth (1.36) holds the laver's foot (1.7 of the laver's own size)
+        place();
+        return this.mode;
       }
     };
+    ctx2.shared.kiyorInfo = () => {   // the laver as it stands ON ITS BASE (the priests' spots are by it there)
+      const c = { x: KX, z: KZK }, s = K.s, foot = F + KEN_H - 0.15;
+      return { R: KR0 * s, H: LAVER_H * s, foot, x: c.x, z: c.z, onBase: K.d < 0.01,
+        spouts: SPOUTS.map((o) => { const rr = (o.r + 0.6) * s; return { a: o.a, upper: o.upper, p: [c.x + Math.sin(o.a) * rr, foot + (o.y - 0.18) * s, c.z + Math.cos(o.a) * rr] }; }) };
+    };
+    // the way from the base to the well: u 0..1 - lift (0..0.15), swing (0.15..0.45), lower into the water (0.45..1)
+    const DROP = 5.6, LIFT = 1.2;
+    const setDrop = (d) => {
+      const u = Math.max(0, Math.min(1, d / DROP)), base = F + KEN_H - 0.15, sunk = F - 1.0 - (LAVER_H + 0.3) * K.s;
+      K.d = d;
+      if (u <= 0.15) { K.th = TH_K; K.foot = base + LIFT * (u / 0.15); }
+      else if (u <= 0.45) { const v = (u - 0.15) / 0.3, w = 0.5 - 0.5 * Math.cos(Math.PI * v); K.th = TH_K + (TH_P - TH_K) * w; K.foot = base + LIFT; }
+      else { const v = (u - 0.45) / 0.55; K.th = TH_P; K.foot = base + LIFT + (sunk - base - LIFT) * v; }
+      place();
+      // the wheel winds by the rope's length; the tongue knocks on each tooth
+      const ang = (K.foot - base) / 0.34;
+      wheelG.rotation.z = ang;
+      tongue.rotation.z = -0.16 * (((Math.abs(ang) * 20) / (Math.PI * 2)) % 1);
+      // the lid: off while the laver is not on its base
+      const lo = Math.min(1, u / 0.06);
+      lidG.position.lerpVectors(LID0, LID1, lo);
+      lidG.position.y = lo > 0 && lo < 1 ? F + 0.3 + 0.25 * Math.sin(Math.PI * lo) : lo >= 1 ? F + 0.02 : F + 0.3;
+    };
+    ctx2.shared.kiyorSize.set("d4");   // decision 81: across four - the default
     setDrop(0);
     // the demonstration's captions (layers mukhniEve / mukhniNight / mukhniMorning)
     const capG = { eve: new Group(), night: new Group(), morning: new Group() };
     for (const k of Object.keys(capG)) { capG[k].visible = false; g.add(capG[k]); }
-    ctx2.layers = ctx2.layers || {};
     ctx2.layers.mukhniEve = capG.eve; ctx2.layers.mukhniNight = capG.night; ctx2.layers.mukhniMorning = capG.morning;
     ctx2.labels.push(
-      { text: "בערב: הגלגל מסתובב והכיור יורד לבור — ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י)", x: KX, y: F + 10.2, z: KZ + 2, size: 1.3, layer: "mukhniEve" },
-      { text: "בלילה: מי הכיור מחוברים במי הבור", x: KX, y: F + 10.2, z: KZ + 2, size: 1.3, layer: "mukhniNight" },
-      { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד)", x: KX, y: F + 10.2, z: KZ + 2, size: 1.3, layer: "mukhniMorning" },
-      { text: "המוכני — הגלגל של בן קטין", x: KX + 4.3, y: AY + 3, z: KZ, size: 1.2 }
+      { text: "בערב: מסירים את המכסה, והזרוע מרימה את הכיור מן הכן ומשקיעה אותו בבור — ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י)", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniEve", info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["יומא ג, י", "Mishnah_Yoma.3.10"]] },
+      { text: "בלילה: מי הכיור מחוברים במי הבור", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniNight" },
+      { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד) — הכיור עולה וחוזר אל הכן", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniMorning", info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["תמיד א, ד", "Mishnah_Tamid.1.4"]] },
+      { text: "המוכני — גלגל השיניים ולשון העץ", x: PSX, y: F + 4.2, z: PSZ - 1.2, size: 1.1, info: "המוכני — ״גלגל שתלוי בו הכיור בחבל, ועל ידו משקעין הכיור להבאר שתחת הכיור״ (יכין תמיד פרק א, אות נז); ״וכשמעלין או מורידין אותו להבאר, היה קול דפיקת שיני הגלגל נשמע עד יריחו״ (יכין תמיד פרק ג, אות סא). הפירוט בכרטיס הכיור.", refs: [["יכין תמיד פרק א, אות נז", { book: 818, index: 116 }], ["יכין תמיד פרק ג, אות סא", { book: 818, index: 330 }]] },
+      { text: "הכן — ״כעין יורה כפוייה על פיה״ (תוספות זבחים כב.)", x: KX + 2.6, y: F + 1.0, z: KZK - 2.4, size: 0.9, info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["תוספות זבחים כב.", { book: 1936, index: 254 }]] },
+      { text: "הבור — ביום מכוסה, בלי גדר", x: PITX + 1.5, y: F + 1.0, z: PITZ + 2.2, size: 0.9, info: "הבור שתחת הכיור — ״להבאר שתחת הכיור״ (יכין תמיד פרק א, אות נז). המכסה, והיותו בלי גדר — בחירת מודל; הפירוט בכרטיס הכיור.", refs: [["יכין תמיד פרק א, אות נז", { book: 818, index: 116 }]] }
     );
-    const DROP = 5.6, T_DOWN = 5000, T_NIGHT = 2500, T_UP = 5000, T_PRE = 1500;
+    ctx2.labels.push({ text: "המוכני לרמב״ם — כלי סביב הכיור, ובו המים (בית הבחירה ג, יח)", x: KX - 1, y: F + 6.2, z: KZK, size: 1.0, layer: "mochaniRambam" });
+    const T_DOWN = 7000, T_NIGHT = 2500, T_UP = 7000, T_PRE = 1500;
     const M = ctx2.shared.mukhni = {
       t0: -1, drop: 0,
       demo() { this.t0 = performance.now(); },
-      // NOTE 14 (the function review, F1-10: "nine meshes of the altar's group" not back after the presentation - the wheel: its rim, four
-      // spokes and four handles): the wheel's turn follows the drop (drop / 1.8), so a stop in the middle puts it back too, and a still
-      // frame turns it to its drop
-      stop() { this.t0 = -1; setDrop(0); this.drop = 0; wheelG.rotation.x = 0; for (const k of Object.keys(capG)) capG[k].visible = false; },
-      pose(d, ph) { this.t0 = -1; setDrop(d); this.drop = d; wheelG.rotation.x = d / 1.8; for (const k of Object.keys(capG)) capG[k].visible = k === ph; }   // a still frame (checks, the tour)
+      stop() { this.t0 = -1; setDrop(0); this.drop = 0; for (const k of Object.keys(capG)) capG[k].visible = false; },
+      pose(d, ph) { this.t0 = -1; setDrop(d); this.drop = d; for (const k of Object.keys(capG)) capG[k].visible = k === ph; }   // a still frame (checks, the tour)
     };
     (ctx2.shared.demoStops || (ctx2.shared.demoStops = [])).push({ id: "alt-mukhni-demo", running: () => M.t0 >= 0, stop: () => M.stop() });   // 1.9.2
-    // 1.9.1 (the user: "כפתור על הכיור להדגמה וכן בכל מקום שיש הדגמה כפתור כמו בבית ראשון"; "זוהי הזווית להדגמת הכיור שיראו גם את הגלגל"):
-    // the demonstration's view - from the south-west and a little above, the two posts, the wheel and the well in the frame (the user's
-    // picture) - and a button on the model over the winch, as the base's in the First Temple plugin (its own flight, no "reveal")
     ctx2.shared.flyPoints = ctx2.shared.flyPoints || {};
-    ctx2.shared.flyPoints.mukhniDemo = { pos: [KX - 10, F + 13, KZ + 6.8], target: [KX + 1, F + 5, KZ - 1.8] };   // inside the court (its south wall 65..70)
+    ctx2.shared.flyPoints.mukhniDemo = { pos: [KX + 11, F + 12, KZK - 9], target: [KX - 1, F + 3.6, PSZ] };
     {
       const MB = Array.isArray(ctx2.shared.modelButtons) ? ctx2.shared.modelButtons : (ctx2.shared.modelButtons = []);
-      const anc = [KX, AY + 4.6, KZ];
+      const anc = [PSX, AY + 2.4, PSZ];
       MB.push({
         id: "alt-mukhni-demo", label: "הדגמה: הכיור יורד לבור ועולה", labelOn: "עצור את ההדגמה", maxDist: 120,
-        title: "המוכני של בן קטין: בערב הגלגל מסתובב והכיור יורד לבור, ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י); בבוקר הוא עולה. גודל הגלגל והבור — בחירת מודל.",
+        title: "המוכני של בן קטין: בערב מסירים את מכסה הבור, והזרוע מרימה את הכיור מן הכן ומשקיעה אותו בבור, ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י); בבוקר הוא עולה וחוזר אל הכן. צורת המכונה, הבור ומספר החבלים — בחירת מודל.",
         anchor: () => anc,
         get: () => M.t0 >= 0,
         set: (on) => {
@@ -1807,30 +2171,26 @@
     }
     ctx2.animated.push(() => {
       if (M.t0 < 0) return;
-      const e = (performance.now() - M.t0) / (ctx2.shared.demoSlow || 1.5);   // 1.9.2: every demonstration slower (50-heichal.js SLOW)
+      const e = (performance.now() - M.t0) / (ctx2.shared.demoSlow || 1.5);
       let d = 0, ph = "eve";
       if (e < T_PRE) { d = 0; ph = "eve"; }
-      else if (e < T_PRE + T_DOWN) { const u = (e - T_PRE) / T_DOWN; d = DROP * (0.5 - 0.5 * Math.cos(Math.PI * u)); ph = "eve"; }
+      else if (e < T_PRE + T_DOWN) { const u = (e - T_PRE) / T_DOWN; d = DROP * u; ph = "eve"; }
       else if (e < T_PRE + T_DOWN + T_NIGHT) { d = DROP; ph = "night"; }
-      else if (e < T_PRE + T_DOWN + T_NIGHT + T_UP) { const u = (e - T_PRE - T_DOWN - T_NIGHT) / T_UP; d = DROP * (0.5 + 0.5 * Math.cos(Math.PI * u)); ph = "morning"; }
+      else if (e < T_PRE + T_DOWN + T_NIGHT + T_UP) { const u = (e - T_PRE - T_DOWN - T_NIGHT) / T_UP; d = DROP * (1 - u); ph = "morning"; }
       else if (e < T_PRE + T_DOWN + T_NIGHT + T_UP + 3000) { d = 0; ph = "morning"; }
       else { M.stop(); return; }
-      // SOUNDS_300 (the user's item 9, 18.11.2026): Ben Katin's wooden wheel - "קול העץ שעשה בן קטין מוכני לכיור" (Tamid 1:4) - as each
-      // motion begins, for as long as it lasts (the evening's down, the morning's up: T_DOWN, T_UP at the demonstration's pace), and a
-      // short splash as the laver's foot goes into the well's water (0.8 under the floor) and as it comes out of it. On this clock, each
-      // once a run (a new t0 is a new run; a frame's step, not a jump). This demonstration has no pause of its own
+      // SOUNDS_300: Ben Katin's wooden wheel as each motion begins, and a splash as the laver goes into the water and comes out
       try {
-        const SH = ctx2.shared, slow = SH.demoSlow || 1.5, WET = KY - F + 0.8, TU = T_PRE + T_DOWN + T_NIGHT;
+        const SH = ctx2.shared, slow = SH.demoSlow || 1.5, TU = T_PRE + T_DOWN + T_NIGHT, wetD = DROP * (0.45 + 0.55 * ((F + KEN_H - 0.15 + LIFT) - (F - 0.8)) / ((F + KEN_H - 0.15 + LIFT) - (F - 1.1 - LAVER_H * K.s)));
         if (M.sndT0 !== M.t0) { M.sndT0 = M.t0; M.sndE = null; }
         const e0 = M.sndE;
         M.sndE = e;
         if (e0 != null && e > e0 && e - e0 < 1000 && typeof SH.sfx === "function") {
           if (e0 < T_PRE && e >= T_PRE) SH.sfx("wheel", { dur: T_DOWN * slow / 1000 });
           if (e0 < TU && e >= TU) SH.sfx("wheel", { dur: T_UP * slow / 1000 });
-          if ((M.drop < WET && d >= WET) || (M.drop > WET && d <= WET)) SH.sfx("water", { dur: 1.2 });
+          if ((M.drop < wetD && d >= wetD) || (M.drop > wetD && d <= wetD)) SH.sfx("water", { dur: 1.2 });
         }
       } catch (_) {}
-      wheelG.rotation.x += (d - M.drop) / 1.8;   // the rope winds on the axle as the wheel turns
       M.drop = d;
       setDrop(d);
       for (const k of Object.keys(capG)) capG[k].visible = k === ph;
@@ -2139,7 +2499,7 @@
     ctx2.labels.push(
       { text: "המזבח", x: ACX, y: F + 18, z: ACZ, size: 5 },
       { text: "הכבש", x: ACX, y: F + 11, z: 28, size: 3 },
-      { text: "הכיור", x: KX, y: F + 5.6, z: KZ, size: 2.2 },
+      { text: "הכיור", x: KX, y: F + 6.4, z: KZK, size: 2.2 },   // KIYOR_A2: over the laver on its base
       { text: "בית המטבחים", x: 52, y: F + 10, z: -50, size: 3.5, layers: ["slaughterLbl"] },   // 1.9.2: hidden while the hooks are lit
       { text: "הטבעות", x: 52, y: F + 4.5, z: -27, size: 2.5 }
     );
@@ -2222,13 +2582,19 @@
       fireLight.intensity = 33 + 6 * Math.sin(s * 9.7) + 3 * Math.sin(s * 22.3 + 1.3);
       emberLight.intensity = 5.5 + 1.4 * Math.sin(s * 7.3);
       // 1.0.28: the smoke is now a STRAIGHT column rising far into the sky (almost no sideways drift); it widens slowly and fades near the top.
+      // SMOKE_COLUMN_A2: the column above carries it up; the sprites rise thick over the pyre (the lowest 26 amot) into the column's foot
+      const sday = smokeDay(), sx = (FXP.x0 + FXP.x1) / 2, sy = TOP + FXP.top + 1.0;
+      smokeColumn.position.set(sx, sy, GP.cz);
+      { const u = smokeColumn.material.uniforms; u.uTime.value = s; u.uDay.value = sday; }
+      const sg = 0.33 + 0.25 * sday;
       for (let i = 0; i < smoke.length; i++) {
         const sp = smoke[i];
-        const p = (s * 0.02 + i / smoke.length) % 1;
-        sp.position.set((FXP.x0 + FXP.x1) / 2 + Math.sin(s * 0.7 + i * 1.7) * 0.15 * (0.4 + p), TOP + FXP.top + 1.4 + p * 260, GP.cz + Math.cos(s * 0.6 + i * 2.3) * 0.15 * (0.4 + p));
-        const sc2 = 3.2 + p * 5;
+        const p = (s * 0.09 + i / smoke.length) % 1;
+        sp.position.set(sx + Math.sin(s * 0.7 + i * 1.7) * 0.25 * (0.4 + p), sy + 0.4 + p * 26, GP.cz + Math.cos(s * 0.6 + i * 2.3) * 0.25 * (0.4 + p));
+        const sc2 = 2.2 + p * 3.4;
         sp.scale.set(sc2, sc2, 1);
-        sp.material.opacity = 0.2 * Math.min(1, p / 0.04) * Math.pow(1 - p, 0.7);
+        sp.material.color.setRGB(sg, sg, sg);
+        sp.material.opacity = 0.42 * Math.min(1, p / 0.06) * Math.pow(1 - p, 1.2);
       }
       const dt = lastT ? Math.min(0.1, s - lastT) : 0.016;
       lastT = s;

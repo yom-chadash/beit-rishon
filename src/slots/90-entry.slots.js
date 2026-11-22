@@ -157,11 +157,6 @@
 //@@end sounds.LEVEL
 //@@begin pluck
 //@@end pluck
-//@@begin trumpets
-        brass(a, t, 1.4, k);
-        for (let i = 0; i < 9; i++) brass(a, t + 1.8 + i * 0.16, 0.08, k);
-        brass(a, t + 3.4, 1.4, k);
-//@@end trumpets
 //@@begin sounds
 //@@end sounds
 //@@begin initModules

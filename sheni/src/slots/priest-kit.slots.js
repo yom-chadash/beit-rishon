@@ -8,11 +8,3 @@
 //@@begin ROWS
     const ROWS = 48, CUT = Math.round(ROWS * (WAIST - 0.1) / 1.8);   // (the hips' row: 24)
 //@@end ROWS
-//@@begin SY0
-    // ---------- the avnet: one band at the elbows' height, lying on the kutonet
-    // AVNET_211 (the user: "אבנט הכהנים רחב יותר"): broader, and its turns seen - three turns "כרך על גבי כרך" (8:19), each rounded
-    const SY0 = 1.312, SY1 = 1.462;
-    const gSash = surf(40, 12, (u, v, o) => {
-      const tv = (v * 3) % 1, e = Math.max(0, Math.sin(Math.PI * tv)) * (0.55 + 0.45 * Math.sin(Math.PI * v));
-      const y = SY0 + v * (SY1 - SY0), a = u * TAU + Math.PI, th = 0.004 + 0.017 * Math.pow(e, 0.35);
-//@@end SY0
