@@ -162,7 +162,9 @@
         parts.push(tint(plain(new CylinderGeometry(0.066, 0.078, 0.2, 14, 1, true).rotateX(0.2).translate(0, 2.88, 0.02)), COL.skin));   // the neck
         if (kind !== "HK") for (const s of [1, -1]) parts.push(tint(plain(new SphereGeometry(1, 10, 8).scale(0.016, 0.046, 0.03).rotateY(s * 0.35).translate(s * 0.162, 2.985, HZ - 0.012)), COL.skin));   // the ears (TAMID_FIG_207: none on HK)
         if (lev) parts.push(tint(plain(new SphereGeometry(1, 16, 8, 0, Math.PI * 2, 0, HP).scale(0.18, 0.17, 0.2).translate(0, 3.09, HZ)), COL.levCap));
-        else if (kind === "H" || kind === "HK") parts.push(tint(plain(new SphereGeometry(1, 18, 9, 0, Math.PI * 2, 0, 1.0).scale(0.166, 0.246, 0.194).translate(0, 3.0, HZ)), COL.hair));   // his hair, seen between the tzitz and the mitznefet
+        // his hair, seen between the tzitz and the mitznefet. MITZ_CLOTH_A2: on HK its own mesh, of the kit's hair (figure) - this smooth cap
+        // was seen above the tzitz as a part of a helmet
+        else if (kind === "H") parts.push(tint(plain(new SphereGeometry(1, 18, 9, 0, Math.PI * 2, 0, 1.0).scale(0.166, 0.246, 0.194).translate(0, 3.0, HZ)), COL.hair));
         // (the priests' migba'at - 55-tamid.js; not here)
         return mergeGeometries(parts);
       };
@@ -200,6 +202,125 @@
         ["נפך", "יהודה", 0xc8711f], ["ספיר", "דן", 0x2c52b4], ["יהלם", "נפתלי", 0xdce6ec],
         ["לשם", "גד", 0x8d5aa6], ["שבו", "אשר", 0x6d7176], ["אחלמה", "יששכר", 0x9a376a],
         ["תרשיש", "זבולן", 0x2a90b8], ["שהם", "יוסף", 0x2a3331], ["ישפה", "בנימין", 0x63a067]];
+      // MITZ_CLOTH_A2 (the user, via the coordinator, 22.11.2026: the mitznefet "נראית כקסדה, ולא מבד"; in both readings "מראה של בד פשתן
+      // לבן כרוך — קפלים ורצועות בד נראות, שוליים רכים ולא מעוגלים בצורה מושלמת, מרקם של אריג, צל בין הקפלים. לא משטח חלק ומבריק"):
+      // the mitznefet of linen wound - bands of cloth on a surface round the head (band), each bulging, its edges soft and tucked under
+      // the next, creased across, its line not a perfect round; a woven texture (a plain weave of fine threads, a few thicker - linen),
+      // rough, not shiny; darker at the bands' edges, in the creases and in the gaps between them (the shadow between the folds; a darker
+      // shell under the bands). Rashi's "כמין כפת כובע" - a low dome of one band wound up from the rim in a spiral, gathered at the top
+      // in folds; the Ramban's "צניף... מגלגל ומחזיר... כפל על כפל" - six turns round the head, each a little aslant the other way, one
+      // over another, and the top gathered. Until now a smooth half ball with a ring (Rashi) and five smooth rings (the Ramban). The
+      // number of the turns, their breadth, the folds and the texture's scale - model choices. Built once for the kit (mzCloth).
+      let MZC = null;
+      const mzCloth = () => {
+        if (MZC) return MZC;
+        const TILE = 0.085;   // amot to the texture's tile - 32 threads across it (a little coarser than linen, that the weave be seen)
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = 128;
+        const c2 = cv.getContext("2d"), img = c2.createImageData(128, 128), d = img.data;
+        let sd = 4711;
+        const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+        const slubW = Array.from({ length: 32 }, () => (rnd() < 0.15 ? 0.88 + rnd() * 0.08 : 1)), slubF = Array.from({ length: 32 }, () => (rnd() < 0.15 ? 0.88 + rnd() * 0.08 : 1));
+        for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+          const i = x >> 2, j = y >> 2, u = ((x & 3) + 0.5) / 4, w = ((y & 3) + 0.5) / 4;   // over and under: the warp (along y) or the weft (along x) on top
+          const sh = ((i + j) & 1 ? 0.7 + 0.3 * Math.sin(Math.PI * u) * slubW[i] : 0.7 + 0.3 * Math.sin(Math.PI * w) * slubF[j]) * (0.96 + 0.07 * rnd()), o = (y * 128 + x) * 4;
+          d[o] = Math.min(255, 262 * sh); d[o + 1] = Math.min(255, 259 * sh); d[o + 2] = Math.min(255, 250 * sh); d[o + 3] = 255;
+        }
+        c2.putImageData(img, 0, 0);
+        const tex = texOf(cv), bump = new CanvasTexture(cv);
+        bump.wrapS = bump.wrapT = RepeatWrapping;
+        bump.anisotropy = 8;
+        const mat = std(0xffffff, { vertexColors: true, map: tex, bumpMap: bump, bumpScale: 1.6, roughness: 0.97, metalness: 0 });   // one-sided: under a band's edge its inside is not seen
+        // a surface round the head (the frame hd): prof(v) -> [r, y], v from its lower edge up; ex, ez - its round drawn to an ellipse
+        const surf = (prof, ex, ez) => (v, th) => { const [r, y] = prof(v); return new Vector3(r * ex * Math.sin(th), y, r * ez * Math.cos(th)); };
+        const nrmOf = (S) => (v, th) => { const e = 1e-3, a = S(v, th + e).sub(S(v, th - e)), b = S(v + e, th).sub(S(v - e, th)); return a.cross(b).normalize(); };
+        // a band of the cloth wound on S, from th0 to th1 (a whole ring - closed): its middle at vc(th), half its breadth hw (in v, a little
+        // uneven), bulging t out of the surface (lift - its foot out, the later bands over the earlier), its edges tucked under, creased
+        // across and aslant (folds to a turn), its line not a perfect round; taper - a spiral's ends thinner. Its colour darker at its edges
+        // and in its creases. Lv, Rm: the surface's height and radius, for the texture's scale
+        const band = (S, o) => {
+          const N = nrmOf(S), th0 = o.th0 || 0, th1 = o.th1 == null ? Math.PI * 2 : o.th1, t = o.t, hw = o.hw, lift = o.lift || 0, folds = o.folds || 11;
+          const nU = o.nU || 96, nS = o.nS || 9, Lv = o.Lv || 0.3, Rm = o.Rm || 0.19, taper = o.taper || 0, sdd = o.seed || 1;
+          const closed = Math.abs(th1 - th0 - Math.PI * 2) < 1e-6, ph = [1.7, 2.9, 4.3, 5.1, 0.7, 3.3].map((q) => q * sdd);
+          const pos = [], col = [], uv = [], idx = [];
+          for (let i = 0; i <= nU; i++) {
+            const u = i / nU, th = th0 + (th1 - th0) * u;
+            const uneven = 0.022 * Math.sin(2 * th + ph[0]) + 0.013 * Math.sin(3 * th + ph[1]) + 0.007 * Math.sin(5 * th + ph[2]);
+            const h = hw * (1 + 0.13 * Math.sin(4 * th + ph[3]) + 0.06 * Math.sin(7 * th + ph[4]));
+            const end = taper ? Math.min(1, u / taper, (1 - u) / taper) : 1;
+            for (let j = 0; j <= nS; j++) {
+              const s = -1 + (2 * j) / nS, v = o.vc(th) + s * h * (0.55 + 0.45 * end), P = S(v, th), n = N(v, th), q = Math.sqrt(Math.max(0, 1 - s * s));
+              const crease = Math.sin(folds * th + 2.6 * s + ph[5]) * (0.55 + 0.45 * Math.sin(3 * th + ph[0] + s));
+              P.addScaledVector(n, lift + t * end * (q - 0.32 + 0.3 * crease * q) + Rm * uneven);
+              pos.push(P.x, P.y, P.z);
+              const ao = (1 - 0.36 * Math.pow(Math.abs(s), 2.4)) * (1 - 0.16 * Math.max(0, -crease)) * (0.84 + 0.16 * end);
+              col.push(ao, ao * 0.995, ao * 0.985);
+              uv.push(((th - th0) * Rm) / TILE, (s * h * Lv) / TILE);
+            }
+          }
+          for (let i = 0; i < nU; i++) for (let j = 0; j < nS; j++) { const a = i * (nS + 1) + j, b = a + nS + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+          const g = new BufferGeometry();
+          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          g.setAttribute("color", new Float32BufferAttribute(col, 3));
+          g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+          g.setIndex(idx);
+          g.computeVertexNormals();
+          if (closed) {   // the ring's seam: one normal
+            const nn = g.attributes.normal, w3 = new Vector3();
+            for (let j = 0; j <= nS; j++) { const a = j, b = nU * (nS + 1) + j; w3.set(nn.getX(a) + nn.getX(b), nn.getY(a) + nn.getY(b), nn.getZ(a) + nn.getZ(b)).normalize(); nn.setXYZ(a, w3.x, w3.y, w3.z); nn.setXYZ(b, w3.x, w3.y, w3.z); }
+          }
+          return g;
+        };
+        // the top, gathered: a low dome of cloth, its folds running in to the middle (the Ramban's)
+        const crown = (cy, R, ex, ez, dome, folds, sdd) => {
+          const nR = 8, nT = 72, pos = [], col = [], uv = [], idx = [];
+          for (let i = 0; i <= nR; i++) for (let k = 0; k <= nT; k++) {
+            const r0 = i / nR, th = (k / nT) * Math.PI * 2, f = Math.sin(folds * th + 2.4 * r0 + 0.8 * Math.sin(2 * th + sdd) + sdd) * (0.55 + 0.45 * Math.sin(3 * th + sdd * 1.7)) * r0 * (1 - r0) * 4 * 0.0065 + 0.003 * Math.sin(5 * th + sdd * 2) * r0;
+            const r = R * r0 * (1 + 0.03 * Math.sin(3 * th + sdd)), x = r * ex * Math.sin(th), z = r * ez * Math.cos(th);
+            pos.push(x, cy + dome * (1 - r0 * r0) + f, z);
+            const ao = (1 - 0.14 * Math.max(0, -f / 0.0065)) * (1 - 0.12 * Math.pow(r0, 4));
+            col.push(ao, ao * 0.995, ao * 0.985);
+            uv.push(x / TILE, z / TILE);
+          }
+          for (let i = 0; i < nR; i++) for (let k = 0; k < nT; k++) { const a = i * (nT + 1) + k, b = a + nT + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+          const g = new BufferGeometry();
+          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          g.setAttribute("color", new Float32BufferAttribute(col, 3));
+          g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+          g.setIndex(idx);
+          g.computeVertexNormals();
+          return g;
+        };
+        const SHADE = 0x8f887a;   // the shell under the bands - seen only in the gaps between them, as shadow (not below the lowest)
+        // Rashi: a low dome (its middle 0.125 over the head's, radius 0.19), one band from the rim up round and round to near the top,
+        // and the top gathered over it
+        const profR = (v) => { const a = (1 - Math.min(1, v)) * HP; return [0.19 * Math.sin(a), 0.125 + 0.18 * Math.cos(a)]; };
+        const SR = surf(profR, 1, 1);
+        const TURNS = 2.0, V0 = 0.2, V1 = 0.68;
+        // the cloth's edge turned in under the lowest band, to the hair (seen from below - not the band's inside)
+        const tuck = (r0, y0, r1, y1, ez) => { const pts = [new Vector2(r1, y1), new Vector2((r0 + r1) / 2, (y0 + y1) / 2 - 0.004), new Vector2(r0, y0)]; return [pts, pts.slice().reverse()].map((q) => tint(plain(new LatheGeometry(q, 48).scale(1, 1, ez)), 0x847e72)); };   // both faces
+        const rashiG = mergeGeometries([
+          tint(plain(new SphereGeometry(0.182, 28, 12, 0, Math.PI * 2, 0, HP - 0.05).scale(1, 0.95, 1).translate(0, 0.125, 0)), SHADE),
+          ...tuck(0.176, 0.1, 0.1, 0.135, 1),
+          band(SR, { vc: () => 0.02, hw: 0.15, t: 0.022, folds: 12, nU: 110, seed: 3.7 }),   // the lowest turn level all round (the cap's rim)
+          band(SR, { th0: Math.PI, th1: Math.PI + TURNS * Math.PI * 2, vc: (th) => V0 + (V1 - V0) * ((th - Math.PI) / (TURNS * Math.PI * 2)), hw: 0.15, t: 0.02, lift: 0.003, folds: 11, nU: 220, taper: 0.1, seed: 1 }),   // from behind, so that its ends are not seen
+          band(SR, { vc: () => 0.83, hw: 0.2, t: 0.012, lift: 0.004, folds: 9, nU: 96, seed: 2.3 })
+        ]);
+        // the Ramban: a band of turns round the head (its radius 0.18 .. 0.198, from 0.112 up 0.258), each aslant the other way, the
+        // later over the earlier, and the top gathered
+        const profB = (v) => [0.18 + 0.018 * v, 0.112 + 0.258 * v];
+        const SB = surf(profB, 1, 1.06);
+        const TURN6 = [[0.08, 0.02, 0.3, 10], [0.27, 0.11, 0.9, 12], [0.43, -0.11, -0.7, 9], [0.58, 0.1, 2.5, 13], [0.73, -0.09, -2.4, 11], [0.87, 0.05, 1.2, 10]];
+        const coreB = new LatheGeometry([...Array.from({ length: 12 }, (_, k) => { const [r, y] = profB(0.06 + (0.94 * k) / 11); return new Vector2(r * 0.985, y); }), new Vector2(0.0005, profB(1)[1])], 36).scale(1, 1, 1.06);
+        const rambanG = mergeGeometries([
+          tint(plain(coreB), SHADE),
+          ...tuck(0.172, 0.097, 0.1, 0.13, 1.06),
+          ...TURN6.map(([v, tl, ph, fo], i) => band(SB, { vc: (th) => v + tl * Math.cos(th - ph), hw: 0.135, t: 0.024, lift: 0.004 * i, folds: fo, nU: 120, Lv: 0.258, seed: i + 1 })),
+          crown(profB(1)[1] + 0.003, 0.2, 1, 1.06, 0.026, 8, 1.3)
+        ]);
+        MZC = { mat, rashiG, rambanG, SR, nR: nrmOf(SR) };
+        return MZC;
+      };
       const buildHP = (f) => {
         const L = f.lean, out = {}, TILE = 0.42;   // TILE: amot to the ephod's texture
         const T = new Group();   // his torso: all that lies on the tunic, flat as it (ZS)
@@ -264,7 +385,6 @@
             }
             return texOf(cv);
           })() }),
-          tefillin: std(0x141414, { roughness: 0.45 }),
           shoham: std(0x1f6450, { roughness: 0.14, metalness: 0.1 }),
           pom: std(0x86304a, { roughness: 0.8 })
         };
@@ -388,7 +508,7 @@
           for (const [t, y] of [["לה׳", 17], ["קדש", 48]]) { c.fillStyle = "rgba(90,60,10,0.8)"; c.fillText(t, w / 2 + 1, y + 1.5); c.fillStyle = "#fff3c0"; c.fillText(t, w / 2, y); }
         });
         mk(new CylinderGeometry(1, 1, 0.078, 36, 1, true, -HP, Math.PI).scale(0.174, 1, 0.194), std(0xffffff, { map: tz, metalness: 0.75, roughness: 0.3, side: DoubleSide }), 0, 3.085, HZ, L);
-        mk(new BoxGeometry(0.056, 0.056, 0.056), M.tefillin, 0, 3.172, 0.164 + HZ, L).rotation.x = -0.55;
+        // TEF_ONE_A2 (the coordinator: two boxes in one place): the head's tefillin are the kit's (figure: K.tefOn) - no box of its own here
         // the mitznefet sits back on the head (model choice: its frame hd tilted 0.3 back about the head's centre): its front edge above the
         // hair and the tefillin, its back over the nape; loc() = a point of the figure in that frame
         const TILT = -0.3, cT = Math.cos(TILT), sT = Math.sin(TILT);
@@ -403,21 +523,23 @@
         // HP_KIT_A2 (the user, via the coordinator: "פתילי התכלת בולטים וברורים"): the cords of techelet thicker (were 0.0075, the knot 0.011)
         const MZ_CORD = 0.0115, MZ_KNOT = 0.016;
         const tubeIn = (par, pts, r, mat) => { const tm = cord(pts, r * 0.7, mat); par.add(tm); return tm; };
-        // Rashi: "כמין כפת כובע", high on the head; his cords: the two at the ends tied behind the nape, the middle one over it
-        mk(mergeGeometries([tint(plain(new SphereGeometry(0.19, 18, 10, 0, Math.PI * 2, 0, HP).scale(1, 0.95, 1).translate(0, 0.125, 0)), COL.hat),
-          tint(plain(new TorusGeometry(0.186, 0.022, 6, 26).rotateX(HP).translate(0, 0.13, 0)), COL.hat2)]), MAT.fig, 0, 0, 0, rashi);
+        // Rashi: "כמין כפת כובע", high on the head; his cords: the two at the ends tied behind the nape, the middle one over it.
+        // MITZ_CLOTH_A2: of linen wound (mzCloth), not a smooth half ball
+        const MZ = mzCloth();
+        mk(MZ.rashiG, MZ.mat, 0, 0, 0, rashi);
         const nape = (k) => { const t = k / 12, p = headAt(HP + t * Math.PI, 0.366 - 0.58 * Math.sin(t * Math.PI), 0.027); return [p.x, p.y, p.z]; };
         tubeIn(rashiW, Array.from({ length: 13 }, (_, k) => nape(k)), MZ_CORD, M.techelet);
         const NP = nape(6);
         mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, NP[0], NP[1], NP[2] - 0.004, rashiW);
-        const mer = [0.3, 0.8, 1.35, 1.9, 2.45, 2.9].map((an) => [0, 0.125 + 0.1895 * Math.sin(an), 0.199 * Math.cos(an)]);
+        // the middle cord over the cloth, from before to behind (clear of its folds)
+        const over = (v, th) => { const q = MZ.SR(v, th).addScaledVector(MZ.nR(v, th), 0.034); return [q.x, q.y, q.z]; };
+        const mer = [[0.1, 0], [0.32, 0], [0.56, 0], [0.8, 0], [1, 0], [0.8, Math.PI], [0.56, Math.PI], [0.32, Math.PI], [0.1, Math.PI]].map(([v, th]) => over(v, th));
         tubeIn(rashi, [loc(0, 3.122, 0.196 + HZ), ...mer, loc(0, 3.03, HZ - 0.222), loc(NP[0], NP[1], NP[2])], MZ_CORD, M.techelet);
-        // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it
-        const turns = [[0.14, 0.19], [0.195, 0.198], [0.25, 0.2], [0.305, 0.196], [0.355, 0.185]].map(([y, R], i) => tint(plain(new TorusGeometry(R, 0.032, 6, 24).rotateX(HP).translate(0, y, 0)), i % 2 ? COL.hat2 : COL.hat));
-        mk(mergeGeometries([...turns, tint(plain(new CylinderGeometry(0.185, 0.185, 0.24, 20, 1, true).translate(0, 0.25, 0)), COL.hat2),
-          tint(plain(new SphereGeometry(0.185, 18, 6, 0, Math.PI * 2, 0, HP).scale(1, 0.3, 1).translate(0, 0.37, 0)), COL.hat)]), MAT.fig, 0, 0, 0, ramban);
-        tubeIn(ramban, [loc(0.174, 3.085, HZ), [0.214, 0.1, -0.08], [0.17, 0.165, -0.17], [0, 0.175, -0.235], [-0.17, 0.165, -0.17], [-0.214, 0.1, -0.08], loc(-0.174, 3.085, HZ)], MZ_CORD, M.techelet);
-        mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, 0, 0.175, -0.24, ramban);
+        // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it. MITZ_CLOTH_A2:
+        // six turns of linen (mzCloth), not five smooth rings
+        mk(MZ.rambanG, MZ.mat, 0, 0, 0, ramban);
+        tubeIn(ramban, [loc(0.174, 3.085, HZ), [0.222, 0.1, -0.08], [0.18, 0.165, -0.18], [0, 0.175, -0.25], [-0.18, 0.165, -0.18], [-0.222, 0.1, -0.08], loc(-0.174, 3.085, HZ)], MZ_CORD, M.techelet);
+        mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, 0, 0.175, -0.255, ramban);
         out.mitz = { rashi: [rashi, rashiW], ramban: [ramban] };
         return out;
       };
@@ -435,7 +557,7 @@
         upP: upper(AP.up), foP: fore(AP.fo), upH: upper(AH.up), foH: fore(AH.fo), hand: { 1: handW(1), "-1": handW(-1) }, foot: { 1: foot(1), "-1": foot(-1) },
         neck: K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0)
       };
-      let GHK = null;
+      let GHK = null, GHC = null;
       const arms = (par, A, hp) => {
         const arm = (side) => {   // side +1 = the left (+x), -1 = the right
           const sh = new Group();
@@ -474,6 +596,9 @@
         const body = new Mesh(GHK, MAT.fig);
         body.castShadow = true;
         lean.add(body);
+        // MITZ_CLOTH_A2: the hair over the crown, under the mitznefet and above the tzitz - of the kit's white hair (its strands), not smooth
+        if (!GHC) GHC = tint(new SphereGeometry(1, 24, 10, 0, Math.PI * 2, 0, 1.0).scale(0.166, 0.246, 0.194).translate(0, 3.0, HZ), 0xffffff);
+        lean.add(new Mesh(GHC, K.mBeards[0]));
         const belt = new Mesh(beltG, MAT.beltK);
         lean.add(belt);
         const hs = new Group();

@@ -258,14 +258,15 @@
     // the box at the start of the hair, the strap round the head (priest-kit.js gTefR, in fewer faces); their own instanced mesh in
     // the near level, black, hidden by night or on a festival: the reasons in ctx.shared.tefOff, the High Priest's Yom Kippur and the
     // night of the water-drawing (tefOK). The Levite's cap is set back for it (kippahBack).
-    const mTefP = new MeshStandardMaterial({ color: 0x111111, roughness: 0.42 });
+    const mTefP = new MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.92, envMapIntensity: 0.15 });   // TEF_MATTE_A2: black and matte (as priest-kit.js)
     const tefG = (HY) => {
       const TY = 0.1, TB = 0.04, zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
       const tilt = Math.atan2(n.y, n.z), place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; }, parts = [];
       parts.push(place(new BoxGeometry(TB * 1.25, TB * 1.25, 0.01), 0.007), place(new BoxGeometry(TB, TB, TB), 0.012 + TB / 2));
       const ring = [];   // TEFILLIN_PLACE_A2: over the ears to the knot at the top of the nape (as priest-kit.js)
       for (let i = 0; i < 24; i++) { const ph = (i / 24) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = -0.056 + (TY - TB * 0.45 + 0.056) * Math.pow(w, 0.35), r = headR(ph, y) + 0.005; ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r)); }
-      parts.push(new TubeGeometry(new CatmullRomCurve3(ring, true), 32, 0.0045, 3, true));
+      // TEF_STRAP_A2 (the user: "דקות, שחורות ושטוחות (רצועת עור), ולא חוט עגול"): a flat strap (tm_strap), its face on the head; until now a round cord
+      parts.push(tm_strap(ring, (p) => new Vector3(p.x / (HR[0] * HR[0]), p.y / (HR[1] * HR[1]), p.z / (HR[2] * HR[2])), 0.013, 0.0018, true, 40));
       return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); return q.translate(0, HY, 0); }));
     };
     const tefOK = () => { const S = ctx.shared || {}; return !(S.tefOff && S.tefOff.size) && !(S.ykEntry && S.ykEntry.on) && !(S.simchaShoeva && S.simchaShoeva.on); };

@@ -34,8 +34,10 @@
     { key: "mizrakotN", row: 0, name: "המזרקות של נחושת", label: "המזרקות (ז, מ; ז, מה)", verse: "מלכים א ז, מ; ז, מה; דברי הימים ב ד, יא", v: ["m", "mh", "dya"], metal: "נחושת",
       q: [["רש״י שמות כז, ג", "ומזרקתיו. לקבל בהם דם הזבחים", [3692, 1905]],
         ["מצודת ציון ז, מ", "המזרקות. הספלים המקבלים בו הדם לזריקה", [3449, 283]],
-        ["רלב״ג ז, מה", "הם כלים יקבלו בהם הדם להזות על המזבח", [3645, 299]]],
-      shape: "הצורה כציור הספר (בחירת מודל)." },
+        ["רלב״ג ז, מה", "הם כלים יקבלו בהם הדם להזות על המזבח", [3645, 299]],
+        ["פסחים ה, ה, בבזיכי הפסח", "ולא היו לבזיכין שולים, שמא יניחום ויקרש הדם", [53, 42]],
+        ["ברטנורא פסחים ה, ה", "רחבים היו מלמעלה ותחתיהם חדים, כדי שלא יוכלו לישב על הקרקע", [589, 239]]],
+      shape: "הצורה כציור הספר — חרוט ששוליו חדים, ומוט בצד השפה (בחירת מודל). הוא מונח על צדו, שאינו יכול לעמוד." },
     { key: "mazlegot", row: 0, name: "המזלגות", label: "המזלגות (דה״ב ד, טז)", verse: "דברי הימים ב ד, טז", v: ["dtz"], metal: "נחושת",
       q: [["רש״י דה״ב ד, טז", "וגם מודיענו מזלגות שלא הזכר למעלה", [3662, 155]],
         ["רש״י שמות כז, ג", "כמין אנקליות כפופים, ומכה בהם בבשר ונתחבים בו ומהפך בהן על גחלי המערכה שיהא ממהר שרפתן", [3692, 1906]]],
@@ -85,8 +87,10 @@
     { key: "mizrakotZ", row: 2, name: "המזרקות של זהב", label: "המזרקות (ז, נ)", verse: "מלכים א ז, נ; דברי הימים ב ד, כב", v: ["n", "dkb"], metal: "זהב",
       q: [["רש״י ז, נ", "והמזרקות. לקבל דם", [3673, 465]],
         ["רש״י דה״ב ד, כב", "והמזרקות. לזרוק בהם דם על המזבח", [3662, 168]],
-        ["רלב״ג ז, נ", "הם לקבל הדם ואחשוב שהיו משמשים לדם קדשים אשר יובא אל הקדש פנימה", [3645, 317]]],
-      shape: "הצורה כציור הספר (בחירת מודל)." },
+        ["רלב״ג ז, נ", "הם לקבל הדם ואחשוב שהיו משמשים לדם קדשים אשר יובא אל הקדש פנימה", [3645, 317]],
+        ["פסחים ה, ה, בבזיכי הפסח", "ולא היו לבזיכין שולים, שמא יניחום ויקרש הדם", [53, 42]],
+        ["ברטנורא פסחים ה, ה", "רחבים היו מלמעלה ותחתיהם חדים, כדי שלא יוכלו לישב על הקרקע", [589, 239]]],
+      shape: "הצורה כציור הספר — חרוט ששוליו חדים, ומוט בצד השפה (בחירת מודל). הוא מונח על צדו, שאינו יכול לעמוד." },
     { key: "kapot", row: 2, name: "הכפות", label: "הכפות (ז, נ)", verse: "מלכים א ז, נ; דברי הימים ב ד, כב", v: ["n", "dkb"], metal: "זהב",
       q: [["רש״י ז, נ", "והכפות. לבזיכי לבונה", [3673, 466]],
         ["מצודת ציון ז, נ", "והכפות. הבזיכין שבהם הלבונה", [3449, 300]],
@@ -202,14 +206,18 @@
     kel_rod(g, [-1.62, 0.32, -1.62], [-2.95, 1.75, -2.95], 0.13, mat, 0.1);
     return 1.9;
   }
-  // מזרק, as the book pp. מ, מד: a cone standing on its point with a rod at the rim
+  // מזרק, as the book pp. מ, מד: a cone with a rod at the rim. MIZRAK_A2 (the user: "הוא נראה כספל מאורך, רק מחודד בסופו"; and "המזרק
+  // לא יכול לעמוד על הרצפה"): the shared construction (shared/frag/mizrak.js) - higher than it is broad (1.3 times), the rod straight
+  // and thin, as long as the rim is broad; LAID ON ITS SIDE on the stand, its side on the stone, the mouth to the west and the rod toward
+  // the viewer - "ותחתיהם חדים, כדי שלא יוכלו לישב על הקרקע" (the Bartenura, Pesachim 5:5). Until now standing on its point, leaning.
   function kel_mizrak(g, mat) {
-    const t = new Group();
-    kel_lathe(t, [[0, 0], [1.38, 2.75], [1.48, 2.84], [1.42, 2.86], [1.26, 2.72], [0.03, 0.22], [0, 0.22]], mat, 56);
-    kel_rod(t, [-1.2, 2.72, 0.5], [-2.4, 3.9, 1.0], 0.1, mat, 0.075);
-    t.rotation.z = -0.2;   // leaning a little, as in the book's picture
-    g.add(t);
-    return 3.9;
+    //@@include mizrak
+    const R = 1.45, m = tm_mizrak(mat, { r: R, handleYaw: -Math.PI / 2, seg: 56 }), al = Math.atan(1 / 2.6);
+    m.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
+    m.rotation.z = Math.PI / 2 - al;   // its side (from the point to the rim) along the stone
+    m.position.set(2.0, R * 0.05, 0);    // the middle of its length over the item's place; the rim's lip just over the stone
+    g.add(m);
+    return 3.0;
   }
   // מזלג: II Chr 4:16; Rashi on Ex 27:3 "כמין אנקליות כפופים". Not in the book: a model choice - a long handle, three bent prongs
   function kel_mazleg(g, mat) {

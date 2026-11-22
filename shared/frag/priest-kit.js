@@ -393,7 +393,9 @@
     // In the head's frame (its middle at 0). Their size (a little over four fingers) and the straps' length - model choices.
     const TEF = { on: true, list: [] };
     const tefSet = (on) => { TEF.on = !!on; for (const m of TEF.list) m.visible = TEF.on; };
-    const mTef = mat(0x111111, { roughness: 0.42, metalness: 0.0 });
+    // TEF_MATTE_A2 (the coordinator: the box's base "מחזיר אור ונראה בהיר מקרוב"): black and matte, the box, its base and the straps alike -
+    // rough, and hardly any light of the sky on it (until now roughness 0.42: at a slant the flat base shone pale)
+    const mTef = mat(0x0b0b0b, { roughness: 0.92, metalness: 0.0, envMapIntensity: 0.15 });
     // TEFILLIN_PLACE_A2 (the user: "תעשה במקומם, גם מבחינת הרצועות שסביב הראש. אל תחרטט"; the box smaller): Shulchan Aruch OC 27:9
     // (382:236) "מהתחלת עיקרי השער ממצחו עד סוף המקום שמוחו של תינוק רופס" - the box's foot at the start of the hair (the hair's edge
     // here at y 0.079 over the head's middle), in the middle, over between the eyes; 27:10 (382:237) "צריך שיהיה הקשר מאחורי הראש למעלה
@@ -417,14 +419,19 @@
     };
     const gTefR = (() => {
       const parts = tefBox();
-      parts.push(new TubeGeometry(new CatmullRomCurve3(tefRing(48), true), 72, 0.0048, 4, true));
+      // TEF_STRAP_A2 (the user: "דקות, שחורות ושטוחות (רצועת עור), ולא חוט עגול"): flat straps of leather (tm_strap), their face on the
+      // head (the head's own normal there) and on the neck, the shoulders and the chest; until now round cords (tubes 0.0048 thick)
+      const TSW = 0.013, TST = 0.0018;   // the head's strap: its breadth and thickness (model choices)
+      parts.push(tm_strap(tefRing(48), (p) => new Vector3(p.x / (HR[0] * HR[0]), p.y / (HR[1] * HR[1]), p.z / (HR[2] * HR[2])), TSW, TST, true, 96));
       const kz = -(headR(Math.PI, -0.056) + 0.009);
       parts.push(at(new BoxGeometry(0.024, 0.02, 0.012), 0, -0.058, kz));                 // the knot, in the nape's middle
       for (const sd of [-1, 1]) {   // the two ends: behind the neck, over the shoulder by the neck, and down before him (sd -1 his right)
         const end = sd < 0 ? -0.93 : -0.8;
         const pts = [[0.008, -0.064, kz + 0.004], [0.05, -0.13, -0.118], [0.098, -0.19, -0.088], [0.13, -0.212, -0.02], [0.136, -0.235, 0.07], [0.134, -0.29, 0.122], [0.13, -0.36, 0.142],
           [0.127, -0.48, 0.146], [0.124, -0.6, 0.15], [0.122, -0.72, 0.17], [0.121, end, sd < 0 ? 0.142 : 0.168]].map(([x, y, z]) => new Vector3(sd * x, y, z));
-        parts.push(new TubeGeometry(new CatmullRomCurve3(pts), 40, 0.0046, 4, false));
+        // lying flat: on the nape and the neck its face out from the neck, over the shoulder up, down the chest forward
+        const endN = (p) => { const r = new Vector3(p.x * (p.z > 0.05 ? 0.45 : 1), 0, p.z + 0.01).normalize(), w = Math.exp(-Math.pow((p.y + 0.215) / 0.035, 2)) * Math.max(0, 1 - Math.abs(p.z) / 0.12); return r.multiplyScalar(1 - w).add(new Vector3(0, w, 0)); };
+        parts.push(tm_strap(pts, endN, TSW * 0.95, TST, false, 80));
       }
       return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); if (q.attributes.normal === undefined) q.computeVertexNormals(); return q; }));
     })();
@@ -452,19 +459,49 @@
         shoulder.add(bump);
         list.push(bump);
       }
-      if (wrist) {
-        // the strap out of the sleeve on the back of the hand, and round the palm (kit units in the hand's frame, scaled FS)
-        const a = sd * 0.95, ca = Math.cos(a), sa = Math.sin(a), th0 = Math.atan2(0.0165 * Math.sin(0.95), sd * 0.0335 * Math.cos(0.95));   // th0: the outer side
-        const wrap = [];
-        for (let i = 0; i <= 28; i++) {
-          const k = i / 28, th = th0 + k * 1.6 * TAU, y = -0.03 - k * 0.026;
-          const lx = Math.cos(th) * 0.0335, lz = Math.sin(th) * 0.0165;   // round the palm (its breadth, its thickness), then turned as the hand (handRaw)
-          wrap.push(new Vector3(lx * ca + lz * sa, y, -lx * sa + lz * ca));
+      // TEF_WRAP_A2 (the user's decision 119, via the coordinator - Shulchan Aruch OC 27:8, 382:235: "ותמתח על אצבע אמצעית ויכרוך ממנה על
+      // אצבעו שלשה כריכות ויקשור, ונוהגים העולם לכרוך על הזרוע ששה או שבעה כריכות"): seven turns round the forearm, under the sleeve
+      // (elbow: the forearm's group, 0 .. -fo along its -y; not seen but in a section), and from the wrist the strap comes out on the
+      // back of the hand to the middle finger, and three turns round it (wrist: the hand's own group - in the hand's frame, handRaw,
+      // its middle at -0.045, then scaled FS). Until now a turn and a half round the palm. TEF_STRAP_A2: a flat strap of leather (tm_strap),
+      // not a round cord. Its breadth, the turns' spacing and where on the finger - model choices.
+      const SW = 0.0105, ST = 0.0016;   // the strap on the arm, kit units: its breadth and thickness
+      if (elbow && fo > 0) {
+        const N7 = 7, per = 20, pts = [], rS = (y) => FS * (0.056 - 0.01 * (-y / fo));   // the sleeve's radius along the forearm (fore())
+        for (let k = 0; k <= N7 * per; k++) {
+          const u = k / (N7 * per), th = sd * u * N7 * TAU + 0.6, y = -fo * (0.22 + 0.74 * u), r = rS(y) * 0.8;
+          pts.push(new Vector3(Math.sin(th) * r, y, Math.cos(th) * r));
         }
-        const w0 = wrap[0];
-        const pts = [new Vector3(w0.x * 1.05, 0.03, w0.z * 1.05), new Vector3(w0.x * 1.12, 0.004, w0.z * 1.12), ...wrap];
-        const g = new TubeGeometry(new CatmullRomCurve3(pts), 90, 0.0042, 4, false);
-        g.translate(0, -0.012, 0);
+        const g = tm_strap(pts, (p) => new Vector3(p.x, 0, p.z), SW * FS, ST * FS, false, N7 * 48);
+        const m = new Mesh(g, mTef);
+        m.name = "tefillin-yad-arm";
+        elbow.add(m);
+        list.push(m);
+      }
+      if (wrist) {
+        // in the hand's own frame before it is turned (handRaw): the palm's middle at 0, the fingers down (-y), its back toward +z, the
+        // thumb at -sd x; the middle finger at x -sd 0.009 (its middle at y -0.062, half its length LM), turned by x 5 about z
+        const PA = 0.03, PB = 0.04, PC = 0.0125, XM = -sd * 0.009, LM = sd > 0 ? 0.0294 : 0.0286, FR = 0.0083, PHI = XM / 1.25 * 5;
+        const back = (x, y) => PC * Math.sqrt(Math.max(0, 1 - (x / PA) * (x / PA) - (y / PB) * (y / PB)));
+        const axisX = (y) => XM + Math.sin(PHI) * (-0.062 - y);   // the finger's axis, a little aslant
+        const fingR = (y) => FR * Math.sqrt(Math.max(0, 1 - ((y + 0.062) / LM) * ((y + 0.062) / LM)));
+        const lift = ST / 2 + 0.0007, pts = [];
+        // out of the sleeve on the little finger's side, aslant across the back of the hand to the middle finger's knuckle
+        for (const [x, y] of [[sd * 0.011, 0.064], [sd * 0.013, 0.046], [sd * 0.012, 0.033], [sd * 0.009, 0.018], [sd * 0.003, 0.0], [-sd * 0.004, -0.018], [XM * 0.9, -0.031]])
+          pts.push(new Vector3(x, y, Math.max(back(x, y), 0.0035) + lift));
+        // three turns round the middle finger, from its root down, starting on its back
+        const Y0 = -0.041, Y1 = -0.069, NT = 3, per = 24;
+        for (let k = 0; k <= NT * per; k++) {
+          const u = k / (NT * per), y = Y0 + (Y1 - Y0) * u, th = Math.PI / 2 + sd * u * NT * TAU, r = fingR(y) + lift;
+          pts.push(new Vector3(axisX(y) + Math.cos(th) * r, y, Math.sin(th) * r));
+        }
+        const nrm = (p) => {
+          if (p.y < Y0 + 0.003) return new Vector3(p.x - axisX(p.y), 0, p.z);   // round the finger: out from its axis
+          return new Vector3(0.25 * p.x / (PA * PA) * PC * PC, 0.15 * p.y / (PB * PB) * PC * PC, 1);   // the back of the hand
+        };
+        const g = tm_strap(pts, nrm, SW * 0.82, ST, false, 260);
+        g.rotateY(sd * 0.95);   // as handRaw
+        g.translate(0, -0.045, 0);
         g.scale(FS, FS, FS);
         const m = new Mesh(g, mTef);
         m.name = "tefillin-yad-hand";
