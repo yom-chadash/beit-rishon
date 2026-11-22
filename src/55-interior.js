@@ -3610,7 +3610,8 @@
           k = k === "west" ? "west" : "middle";
           const mv = ARK_REF.move;
           if (!mv) return this.current;
-          const x0 = ARK_X + mv.position.x, x1 = POS[k], dx = x1 - x0;
+          const M = ctx.shared.traksin && typeof ctx.shared.traksin.map === "function" ? ctx.shared.traksin.map : (x) => x;   // TRAKSIN_130_D
+          const x0 = ARK_X + mv.position.x, x1 = k === "west" ? M(XDW) + 1 : M(POS[k]), dx = x1 - x0;
           this.current = k;
           if (Math.abs(dx) < 1e-6) return k;
           mv.position.x += dx;
@@ -3630,6 +3631,171 @@
         }
       };
       ctx.shared.arkPlace.set("middle");   // the default - the Yerushalmi and Rashi
+    }
+    // TRAKSIN_130_D (fix-d, 22.11.2026 - the user's decision 130 א): THE AMAH TRAKSIN - TWO READINGS, the row "אמה טרקסין — נוספת או מתוך
+    // הששים" (ctx.shared.traksin.set("rashi" | "rambam")). The house is built as the Rambam's reading (Beit HaBechirah 4:2, book 337 line
+    // 63: "בבית ראשון היה כתל מבדיל בין הקודש ובין קודש הקדשים עביו אמה... נסתפק להם אם עבי הכתל היה ממדת הקודש או ממדת קודש הקדשים"):
+    // the amah inside the sixty, taken from the devir (19 clear; CO.xDevirW -63.5). "rashi" (the default) - Rashi on I Kings 6:20 (3673
+    // line 261) "ולפני הדביר. לפנים מאותה מחצה, חלל של עשרים ארך, ושל עשרים רחב" and 6:16 (246) "המפסקת בין ארבעים לעשרים"; Yoma 52a (107
+    // line 1327) "וחללא קא חשיב, כותלים לא קא חשיב": the devir twenty whole and the amah besides - the devir's west wall and everything
+    // west of it one amah west. Done on the built scene, in the house's own frame (the floor's slope off while it is done): a piecewise
+    // map of x - the devir's interior (x -63.5..-44.5) stretched to twenty (-64.5..-44.5), all west of it (to the chambers' outer wall,
+    // x -80.5, |z| <= 31) one amah west, the kodesh and the traksin unmoved. A thing small along x (<= 3 amot: a vessel, a figure, the ark
+    // with its cherubim and stone - ARK_REF.move) moves whole; a wall, a floor, a ceiling, a skin or a beam that crosses the line is
+    // stretched (its vertices); instanced pieces move or stretch one by one. The labels, the fly points and the places' cameras (given by
+    // the UI: placeItems / fallbacks) go with it, and the ark's two places are reckoned by the map. "rambam" undoes everything exactly.
+    {
+      const RX0 = CO.xHeiW - 0.3, RZ = 31, LX0 = CO.xHeiW - 2.6, SMALL = 3;
+      const fOf = (on) => (x) => (!on || x >= XDE ? x : x >= XDW ? XDE + (x - XDE) * (XDE - XDW + 1) / (XDE - XDW) : x - 1);
+      let undo = null, on = false;
+      const inR = (x, z, x0) => x < XDE && x >= (x0 == null ? RX0 : x0) && z >= -RZ && z <= RZ;
+      const T = ctx.shared.traksin = {
+        current: "rambam", keys: ["rashi", "rambam"],
+        placeItems: null,   // () => [items] - the UI's places (their array cameras)
+        fallbacks: null,    // () => {key: {pos, target}} - the UI's fallback fly points
+        map: (x) => x,
+        set(k) {
+          const want = k === "rashi";
+          this.current = want ? "rashi" : "rambam";
+          if (want === on) return this.current;
+          const slope = g.getObjectByName("houseSlope"), S0 = slope ? slope.matrix.clone() : null;
+          if (slope) { slope.matrix.identity(); slope.matrixWorldNeedsUpdate = true; }
+          ctx.root.updateMatrixWorld(true);
+          if (!want) {
+            for (let i = undo.length - 1; i >= 0; i--) undo[i]();
+            undo = null;
+          } else {
+            undo = [];
+            const f = fOf(true), labelsG = ctx.root.getObjectByName("labels");
+            const geoUse = new Map();
+            ctx.root.traverse((o) => { if (o.geometry) geoUse.set(o.geometry, (geoUse.get(o.geometry) || 0) + 1); });
+            const bbOf = new Map(), tb = new Box3(), tm = new Matrix4(), tv = new Vector3();
+            const boxOf = (o) => {
+              const b = new Box3();
+              if (o.isInstancedMesh) {
+                if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+                for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, tm); tm.premultiply(o.matrixWorld); b.union(tb.copy(o.geometry.boundingBox).applyMatrix4(tm)); }
+              } else if (o.geometry && o.geometry.attributes && o.geometry.attributes.position) {
+                if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+                b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+              } else if (o.isLight) b.expandByPoint(tv.setFromMatrixPosition(o.matrixWorld));
+              for (const c of o.children) { const cb = boxOf(c); if (!cb.isEmpty()) b.union(cb); }
+              bbOf.set(o, b);
+              return b;
+            };
+            boxOf(ctx.root);
+            const move = (o, dx) => {   // the whole object dx along the world's x
+              if (Math.abs(dx) < 1e-6 || !o.parent) return;
+              const inv = tm.copy(o.parent.matrixWorld).invert();
+              const a = new Vector3().setFromMatrixPosition(o.matrixWorld), b = a.clone();
+              b.x += dx; a.applyMatrix4(inv); b.applyMatrix4(inv);
+              const d = b.sub(a);
+              o.position.add(d);
+              if (!o.matrixAutoUpdate) o.updateMatrix();
+              undo.push(() => { o.position.sub(d); if (!o.matrixAutoUpdate) o.updateMatrix(); });
+            };
+            const RIGID = new Set([ARK_REF.move].filter(Boolean));
+            const deform = (o) => {   // every vertex in the region by the map
+              const geo = o.geometry, pos = geo && geo.attributes && geo.attributes.position;
+              if (!pos || pos.isInterleavedBufferAttribute) return;
+              const mw = o.matrixWorld, inv = new Matrix4().copy(mw).invert(), v = new Vector3();
+              let any = false;
+              const out = new Float32Array(pos.array.length);
+              out.set(pos.array);
+              for (let i = 0; i < pos.count; i++) {
+                v.fromBufferAttribute(pos, i).applyMatrix4(mw);
+                if (!inR(v.x, v.z)) continue;
+                v.x = f(v.x);
+                v.applyMatrix4(inv);
+                out[i * 3] = v.x; out[i * 3 + 1] = v.y; out[i * 3 + 2] = v.z;
+                any = true;
+              }
+              if (!any) return;
+              if ((geoUse.get(geo) || 0) > 1) {   // shared - this mesh gets its own copy
+                const own = geo.clone();
+                own.attributes.position.array.set(out);
+                own.attributes.position.needsUpdate = true;
+                own.computeBoundingBox(); own.computeBoundingSphere();
+                o.geometry = own;
+                undo.push(() => { o.geometry = geo; own.dispose(); });
+              } else {
+                const keep = pos.array.slice();
+                pos.array.set(out); pos.needsUpdate = true;
+                geo.computeBoundingBox(); geo.computeBoundingSphere();
+                undo.push(() => { pos.array.set(keep); pos.needsUpdate = true; geo.computeBoundingBox(); geo.computeBoundingSphere(); });
+              }
+            };
+            const instances = (o) => {   // one by one: a small one moves, a long one is stretched by its two ends
+              if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+              const keep = o.instanceMatrix.array.slice(), mw = o.matrixWorld, inv = new Matrix4().copy(mw).invert();
+              const m = new Matrix4(), w = new Matrix4(), b = new Box3(), st = new Matrix4();
+              let any = false;
+              for (let i = 0; i < o.count; i++) {
+                o.getMatrixAt(i, m);
+                w.multiplyMatrices(mw, m);
+                b.copy(o.geometry.boundingBox).applyMatrix4(w);
+                const cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2;
+                if (b.max.x < RX0 || b.min.x >= XDE || b.max.z < -RZ || b.min.z > RZ || !inR(Math.min(cx, XDE - 1e-6), cz)) continue;
+                const len = b.max.x - b.min.x;
+                let s = 1, x1 = f(cx);
+                if (len > SMALL) { const a0 = f(b.min.x), a1 = f(b.max.x); s = (a1 - a0) / len; x1 = (a0 + a1) / 2; }
+                st.makeTranslation(x1, 0, 0).multiply(new Matrix4().makeScale(s, 1, 1)).multiply(new Matrix4().makeTranslation(-cx, 0, 0));
+                m.copy(inv).multiply(st).multiply(w);
+                o.setMatrixAt(i, m);
+                any = true;
+              }
+              if (!any) return;
+              o.instanceMatrix.needsUpdate = true;
+              if (o.computeBoundingSphere) o.computeBoundingSphere();
+              undo.push(() => { o.instanceMatrix.array.set(keep); o.instanceMatrix.needsUpdate = true; if (o.computeBoundingSphere) o.computeBoundingSphere(); });
+            };
+            const visit = (o) => {
+              if (o === labelsG || o.isCamera) return;
+              const b = bbOf.get(o);
+              if (!b || b.isEmpty()) return;
+              if (b.min.x >= XDE || b.max.x < RX0 || b.max.z < -RZ || b.min.z > RZ) return;
+              const inside = b.min.x >= RX0 && b.max.x <= XDE && b.min.z >= -RZ && b.max.z <= RZ;
+              if (inside && (RIGID.has(o) || b.max.x - b.min.x <= SMALL)) { const cx = (b.min.x + b.max.x) / 2; move(o, f(cx) - cx); return; }
+              if (o.isInstancedMesh) { instances(o); return; }
+              if (o.isMesh || o.isLine || o.isPoints) deform(o);
+              for (const c of o.children.slice()) visit(c);
+            };
+            visit(ctx.root);
+            // the labels, the fly points (the modules' and the UI's fallbacks) and the places' cameras
+            const sh = (x) => (x >= LX0 && x < RX0 ? x - 1 : f(x));
+            for (const l of ctx.labels) {
+              if (!l || typeof l.x !== "number" || !inR(l.x, l.z || 0, LX0)) continue;
+              const dx = sh(l.x) - l.x;
+              const spr = labelsG ? labelsG.children.find((q) => q.userData && q.userData.label === l) : null;
+              l.x += dx; if (spr) spr.position.x += dx;
+              undo.push(() => { l.x -= dx; if (spr) spr.position.x -= dx; });
+            }
+            const pair = (pos, tg) => {
+              if (!Array.isArray(tg) || !inR(tg[0], tg[2], LX0)) return;
+              const dx = sh(tg[0]) - tg[0];
+              tg[0] += dx; if (Array.isArray(pos)) pos[0] += dx;
+              undo.push(() => { tg[0] -= dx; if (Array.isArray(pos)) pos[0] -= dx; });
+            };
+            const FPS = ctx.shared.flyPoints || {};
+            for (const kk of Object.keys(FPS)) if (FPS[kk]) pair(FPS[kk].pos, FPS[kk].target);
+            const FB = typeof this.fallbacks === "function" ? this.fallbacks() || {} : {};
+            for (const kk of Object.keys(FB)) if (FB[kk] && !FPS[kk]) pair(FB[kk].pos, FB[kk].target);
+            const PI = typeof this.placeItems === "function" ? this.placeItems() || [] : [];
+            for (const it of PI) if (it && !it.view && Array.isArray(it.tg)) pair(it.cam, it.tg);
+            if (ARK_REF.anchor) {   // the ark's pill goes with the ark (its group moved above)
+              const ax = ARK_REF.anchor[0], dx = f(ax) - ax;
+              ARK_REF.anchor[0] += dx;
+              undo.push(() => { ARK_REF.anchor[0] -= dx; });
+            }
+          }
+          on = want;
+          this.map = fOf(on);
+          if (slope) { slope.matrix.copy(S0); slope.matrixWorldNeedsUpdate = true; }
+          ctx.root.updateMatrixWorld(true);
+          if (ctx.requestRender) ctx.requestRender();
+          return this.current;
+        }
+      };
     }
     for (const m of cut) ctx.cutaway.push(m);
   }

@@ -677,7 +677,7 @@
         "ארון יהוידע אצל המזבח — לתקלין חדתין": ["yehoyadaChests"], "ארון יהוידע שבשער — לתקלין עתיקין": ["yehoyadaChests"],   // YEHOYADA_ONE_211
         "לשכת הגזית": ["sanhedrinRows"], "לשכת הגזית — מקורות מבית שני": ["sanhedrinRows"],   // 1.3.5
         "שתי הסנהדראות הקטנות": ["lesserPlace", "sanhedrinRows"],   // 1.3.7
-        "עליית קודש הקדשים — מעל הדביר": ["devirHeight"], "קודש הקדשים — הדביר": ["devirHeight"],   // 1.3.7
+        "עליית קודש הקדשים — מעל הדביר": ["devirHeight"], "קודש הקדשים — הדביר": ["devirHeight", "d6"], "אמה טרקסין": ["d6"],   // TRAKSIN_130_D: d6   // 1.3.7
         "שערי חצר הכהנים": ["eastSteps"],   // 1.3.7: the east gate's steps - two readings
         "בית יער הלבנון — שלוש שיטות (רש״י / מלבי״ם ורלב״ג / מצודת דוד)": ["forestHouse"],
         "הכבשים הקטנים — השלמה מן הגמרא": ["altarRamps"],   // 1.0.2 add-on
@@ -1114,8 +1114,8 @@
           { t: "אמה טרקסין", view: "traksinTop", // 1.0.1-H: the wall above the doorway, from the heichal (the user: "חסר אמה טרקסין מעל פתח הדביר")
             // 1.0.1-H review (sources): "אגב תקרה ומעזיבה" is on Bava Batra 3b, the height and "שית פושכי" on 3a (checked in the library);
             // 1.0.1-K (review Q2-1): Yoma 52a quoted with R. Natan and the Gemara's conclusion, not Rabina's rejected premise
-            info: "המחיצה בין ההיכל לדביר: 'ויבן את עשרים אמה מירכתי הבית בצלעות ארזים' (מלכים א ו, טז).\nאמה טרקסין — יומא נא:–נב.: 'אמה טרקסין, לא הכריעו בו חכמים אי כלפנים אי כלחוץ' (רבי נתן) — והספק בקדושתה, שלמסקנת הגמרא 'לא מהני עשרין ולא מהני ארבעין' (נב.). בבבא בתרא ג.: 'אמה טרקסין דהואי גבוה תלתין אמהתא ולא הוה פותיא אלא שית פושכי' — עובייה אמה וגובהה שלושים (וכן רש״י), ובג:: 'אגב תקרה ומעזיבה הוה קאי'. כולה מצופה זהב (רד״ק ו, כא) ומגולפת כשאר הקירות (ו, כט).\nבמודל: **שלושה חלקים מלאים** — שני העמודים שמצדי הפתח והחלק שמעל הפתח עד התקרה (מגובה 12 עד 30 מרצפת הבית) — והדוגמה נמשכת ביניהם. האמה נלקחה מן הדביר — בחירת מודל.\n\n**לא היה בבית השני** — ״במקדש שני כיון דלא הואי אמה טרקסין, ובמקדש ראשון הוא דהואי... ועבוד שתי פרוכת״ (יומא נא:)." + UI_BARAITA.c,
-            refs: [["יומא נא:", {"book": 107, "index": 1317}], ["מלכים א ו, טז", V(10, 6, 16)], ["ו, כא", V(10, 6, 21)], ["יומא נא:", P(107, "נא:")], ["יומא נב.", P(107, "נב.")], ["בבא בתרא ג.", P(124, "ג.")], ["בבא בתרא ג:", P(124, "ג:")]] },
+            info: "המחיצה בין ההיכל לדביר: 'ויבן את עשרים אמה מירכתי הבית בצלעות ארזים' (מלכים א ו, טז).\nאמה טרקסין — יומא נא:–נב.: 'אמה טרקסין, לא הכריעו בו חכמים אי כלפנים אי כלחוץ' (רבי נתן) — והספק בקדושתה, שלמסקנת הגמרא 'לא מהני עשרין ולא מהני ארבעין' (נב.). בבבא בתרא ג.: 'אמה טרקסין דהואי גבוה תלתין אמהתא ולא הוה פותיא אלא שית פושכי' — עובייה אמה וגובהה שלושים (וכן רש״י), ובג:: 'אגב תקרה ומעזיבה הוה קאי'. כולה מצופה זהב (רד״ק ו, כא) ומגולפת כשאר הקירות (ו, כט).\nבמודל: **שלושה חלקים מלאים** — שני העמודים שמצדי הפתח והחלק שמעל הפתח עד התקרה (מגובה 12 עד 30 מרצפת הבית) — והדוגמה נמשכת ביניהם.\n**מקום האמה — שתי שיטות** (המתג ״אמה טרקסין״): רש״י (מלכים א ו, כ): ״ולפני הדביר. לפנים מאותה מחצה, חלל של עשרים ארך, ושל עשרים רחב״; ובפסוק טז: ״מבית לדביר. לפנים ממחצת אמה טרקסין, המפסקת בין ארבעים לעשרים, ואותה מחצה קרויה דביר״. ובגמרא (יומא נב.): ״ודילמא לא מהני עשרין ולא מהני ארבעין, וחללא קא חשיב, כותלים לא קא חשיב״. — הדביר עשרים שלמות והאמה נוספת (**ברירת המחדל**). הרמב״ם (בית הבחירה ד, ב): ״בבית ראשון היה כתל מבדיל בין הקודש ובין קודש הקדשים עביו אמה. וכיון שבנו הבית שני נסתפק להם אם עבי הכתל היה ממדת הקודש או ממדת קודש הקדשים״ — האמה בתוך ששים אמות הבית; ובגמרא (יומא נב.): ״ולא ידעינן אמה טרקסין אי מהני עשרים, ואי מהני ארבעין״. — במודל נלקחה האמה מן הדביר, תשע עשרה חלל — בחירת מודל.\n\n**לא היה בבית השני** — ״במקדש שני כיון דלא הואי אמה טרקסין, ובמקדש ראשון הוא דהואי... ועבוד שתי פרוכת״ (יומא נא:)." + UI_BARAITA.c,
+            refs: [["יומא נא:", {"book": 107, "index": 1317}], ["מלכים א ו, טז", V(10, 6, 16)], ["ו, כא", V(10, 6, 21)], ["יומא נא:", P(107, "נא:")], ["יומא נב.", P(107, "נב.")], ["בבא בתרא ג.", P(124, "ג.")], ["בבא בתרא ג:", P(124, "ג:")], ["רש״י מלכים א ו, כ", { book: 3673, index: 261 }], ["רש״י ו, טז", { book: 3673, index: 246 }], ["יומא נב. (חללא קא חשיב)", { book: 107, index: 1327 }], ["רמב״ם בית הבחירה ד, ב", { book: 337, index: 63 }]] },
           // 1.2.0 (the user): the view centred on the doorway; the place hides the incense smoke for 15 s (it stood before the curtain) and, in
           // Rashi's first reading, lights the five sides of the posts and the lintel (ctx.shared.devirPentEdges) for those 15 s
           { t: "פתח הדביר (מזוזות חמישית) — שני ביאורי רש״י", view: "devirDoor", key: "devirDoor",
@@ -2473,6 +2473,20 @@
           onPick: (k) => { ctx.shared.goldAltarSize.set(k); },
           fly: () => flyView("incenseAltar")
         });
+        // TRAKSIN_130_D (fix-d, 22.11.2026 - the user's decision 130 א): the amah traksin - besides the twenty or inside the sixty -
+        // ctx.shared.traksin (55-interior.js); its default (Rashi) is set at the end of the panel's building (buildUI.after-tg)
+        if (ctx.shared.traksin) opRow({
+          id: "d6", short: "אמה טרקסין", cardFly: true, chips: { rashi: "נוספת — רש״י", rambam: "מתוך הששים — הרמב״ם" },
+          cap: "אמה טרקסין — נוספת על עשרים הדביר, או מתוך ששים אמות הבית",
+          refs: [["מלכים א ו, כ", V(10, 6, 20)], ["רש״י ו, כ", { book: 3673, index: 261 }], ["רש״י ו, טז", { book: 3673, index: 246 }], ["יומא נב.", { book: 107, index: 1326 }], ["יומא נב. (חללא קא חשיב)", { book: 107, index: 1327 }], ["רמב״ם בית הבחירה ד, ב", { book: 337, index: 63 }]],
+          options: [
+            ["rashi", "רש״י — הדביר עשרים שלמות, והאמה נוספת", "רש״י (מלכים א ו, כ): ״ולפני הדביר. לפנים מאותה מחצה, חלל של עשרים ארך, ושל עשרים רחב״; ובפסוק טז: ״מבית לדביר. לפנים ממחצת אמה טרקסין, המפסקת בין ארבעים לעשרים, ואותה מחצה קרויה דביר״. ובגמרא (יומא נב.): ״ודילמא לא מהני עשרין ולא מהני ארבעין, וחללא קא חשיב, כותלים לא קא חשיב״.\nבמודל (ברירת המחדל): ההיכל ארבעים, אמה טרקסין, והדביר עשרים שלמות — אורך הבית מבפנים שישים ואחת; כותל המערב וכל מה שממערב לדביר (התאים, הלולים, הגג והעליות) זזים אמה מערבה."],
+            ["rambam", "הרמב״ם — האמה מתוך ששים אמות הבית", "הרמב״ם (בית הבחירה ד, ב): ״בבית ראשון היה כתל מבדיל בין הקודש ובין קודש הקדשים עביו אמה. וכיון שבנו הבית שני נסתפק להם אם עבי הכתל היה ממדת הקודש או ממדת קודש הקדשים״ — האמה בתוך ששים אמות הבית; ובגמרא (יומא נב.): ״ולא ידעינן אמה טרקסין אי מהני עשרים, ואי מהני ארבעין״.\nבמודל: האמה נלקחה מן הדביר (תשע עשרה אמות חלל) — מאיזה משני החדרים נלקחה הוא ספק, והבחירה בדביר — בחירת מודל."]
+          ],
+          current: "rashi",   // set so at the end of the building (buildUI.after-tg)
+          onPick: (k) => { ctx.shared.traksin.set(k); },
+          fly: () => { try { setCutaway(false); ctx.shared.sectionFor("z", 0, 15000); } catch (_) {} fly([-48, 26, 62], [-48, 22, 0]); }
+        });
         // SLOPE2_D (fix-d, 22.11.2026 - the user's decision 145 א): the house's floor - ctx.shared.floorSlope (55-interior.js)
         if (ctx.shared.floorSlope) opRow({
           id: "d5", short: "רצפת ההיכל", cardFly: true, chips: { rashi: "משופעת — רש״י", rambam: "שטוחה — הרמב״ם" },
@@ -2695,7 +2709,7 @@
           ["הר הבית והחצרות", ["lesserPlace", "yehoyadaChests", "d1", "eastSteps", "sanhedrinRows", "slaughterLayout"]],
           ["המזבח וכלי הנחושת", ["altarPlace", "seaPlacement", "altarLook", "altarYose", "maarachot", "maarachotYK", "altarKarkov", "altarRTam", "rampGap", "altarRamps"]],
           ["הבית מבחוץ והיציע", ["ulamRambam", "aliyot", "pillarCapital", "ulamTables", "ulamCeiling", "yatziaShape"]],
-          ["הבית מבפנים", ["potot", "d2", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "d3", "cherubPose", "arkLayout", "d5"]],
+          ["הבית מבפנים", ["potot", "d2", "kodeshLayout", "kodeshOpinion", "breadShape", "d6", "devirDoor", "devirHeight", "d3", "cherubPose", "arkLayout", "d5"]],
           ["הכהנים", ["scaleFigure", "priestBelt", "priestGarments", "hpEphod", "hpMitz", "kidReading"]]
 //@@end buildUI.after-GROUPS
 //@@begin buildUI.after-note-code
@@ -2831,6 +2845,18 @@
         ctx.shared.__pillsFrame = frame;   // 1.3.3: for the nav box (walk mode, the live section), which is in another block
 //@@end buildUI.after-rr
 //@@begin buildUI.after-tg
+      // TRAKSIN_130_D (fix-d - the user's decision 130 א): the amah traksin's default, Rashi's - set here, when the modules, the labels and
+      // the places are all built (the switch moves them all); the places' cameras and the fallback fly points are given to it
+      try {
+        const TK = ctx.shared.traksin;
+        if (TK && typeof TK.set === "function") {
+          TK.placeItems = () => { const a = []; for (const g of PLACES) for (const it of g[1]) a.push(it); return a; };
+          TK.fallbacks = () => ui_FP;
+          TK.set("rashi");
+          const r6 = OPS.find((r) => r && r.id === "d6");
+          if (r6 && typeof r6.mark === "function") r6.mark("rashi");
+        }
+      } catch (e) { console.error("[ui.js] traksin", e); }
       // ===== 1.3.5 (the user's rule: every card mentions its disputes briefly, "בקצרה"; the comparison of the two houses, 10.11.2026: in
       // the Second Temple plugin every card with readings carries such a paragraph, here 29 cards with chips of readings had none): the
       // paragraph is made from the rows whose chips the card shows - each row's name and its readings' own names as the table writes
