@@ -206,8 +206,29 @@
 
     // --- four horns 1 x 1 x 1 at the corners (model choice after Ex 27:2; plan after Middot 3:1 "מקום הקרנות אמה מזה ואמה מזה";
     // height 1 a model choice after the altar baraita, Zevachim 54a) ---
+    // HORNS_A2 (fix-a2, 22.11.2026; the user's decisions 47, 49, 80): THE HORNS HOLLOW, a square opening at the top as the booklet
+    // draws it - the Rambam, Beit HaBechirah 2:8 (337:31), of the Second Temple's altar: "וְאַרְבַּע הַקְּרָנוֹת חֲלוּלוֹת הָיוּ מִתּוֹכָן" - in the First Temple too (the user, 00:21). Four walls (a sixth of an amah thick,
+    // a model choice) and the hollow dark within them, half the horn deep. A group whose origin is at the altar's top; height h
+    // over it (and 0.1 sunk into it).
+    const hornHollow = (parent, mat, x, y, z, h, inner) => {
+      const hg = new Group(), T = 0.16, W = 1, H = h + 0.1;
+      hg.position.set(x, y, z);
+      for (const [w, d, ox, oz] of [[W, T, 0, -(W - T) / 2], [W, T, 0, (W - T) / 2], [T, W - 2 * T, -(W - T) / 2, 0], [T, W - 2 * T, (W - T) / 2, 0]]) {
+        const m = new Mesh(new BoxGeometry(w, H, d), mat);
+        m.position.set(ox, H / 2 - 0.1, oz);
+        m.castShadow = m.receiveShadow = true;
+        hg.add(m);
+      }
+      const din = h * 0.55, lin = new Mesh(new BoxGeometry(W - 2 * T - 0.004, din, W - 2 * T - 0.004), inner);   // the hollow: its walls and floor dark (seen from within)
+      lin.material = inner.userData.back || (inner.userData.back = Object.assign(inner.clone(), { side: BackSide }));
+      lin.position.y = h - din / 2 - 0.004;
+      hg.add(lin);
+      parent.add(hg);
+      return hg;
+    };
+    const hornInner = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
     for (const sx of [-1, 1]) for (const sz of [-1, 1])
-      bodyParts.push(H2.box(defG, 1, 1, 1, BR, ACX + sx * (S / 2 - 0.5), TOP, ACZ + sz * (S / 2 - 0.5)));
+      (ctx.shared.__horns || (ctx.shared.__horns = [])).push(hornHollow(defG, BR, ACX + sx * (S / 2 - 0.5), TOP, ACZ + sz * (S / 2 - 0.5), 1, hornInner)), ctx.shared.__horns[ctx.shared.__horns.length - 1].traverse((o) => { if (o.isMesh && o.material === BR) bodyParts.push(o); });   // (__horns: tests)
 
     // (1.0.2 add-on: the band (כרכוב) that stood here at half the height, y 10.75..11.25, 0.2 out of the body, is now the sovev - see
     // "the profile" above; it would have been inside the wall below the sovev anyway.)

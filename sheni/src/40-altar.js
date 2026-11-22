@@ -83,6 +83,27 @@
         parent.add(b);
       }
     };
+    // HORNS_A2 (fix-a2, 22.11.2026; the user's decisions 47, 49, 80): THE HORNS HOLLOW, a square opening at the top as the booklet
+    // draws it - the Rambam, Beit HaBechirah 2:8 (337:31): "וְאַרְבַּע הַקְּרָנוֹת חֲלוּלוֹת הָיוּ מִתּוֹכָן". Four walls (a sixth of an amah thick,
+    // a model choice) and the hollow dark within them, half the horn deep. A group whose origin is at the altar's top; height h
+    // over it (and 0.1 sunk into it).
+    const hornHollow = (parent, mat, x, y, z, h, inner) => {
+      const hg = new Group(), T = 0.16, W = 1, H = h + 0.1;
+      hg.position.set(x, y, z);
+      for (const [w, d, ox, oz] of [[W, T, 0, -(W - T) / 2], [W, T, 0, (W - T) / 2], [T, W - 2 * T, -(W - T) / 2, 0], [T, W - 2 * T, (W - T) / 2, 0]]) {
+        const m = new Mesh(new BoxGeometry(w, H, d), mat);
+        m.position.set(ox, H / 2 - 0.1, oz);
+        m.castShadow = m.receiveShadow = true;
+        hg.add(m);
+      }
+      const din = h * 0.55, lin = new Mesh(new BoxGeometry(W - 2 * T - 0.004, din, W - 2 * T - 0.004), inner);   // the hollow: its walls and floor dark (seen from within)
+      lin.material = inner.userData.back || (inner.userData.back = Object.assign(inner.clone(), { side: BackSide }));
+      lin.position.y = h - din / 2 - 0.004;
+      hg.add(lin);
+      parent.add(hg);
+      return hg;
+    };
+    const hornInner = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
     const buildBody = (grp, W) => {
       const x0 = 71.5 - W, z1 = -19.5 + W, cx = 71.5 - W / 2, cz = -19.5 + W / 2;
       H2.box(grp, W, 1, 1, AS, cx, F, -19);                              // the yesod along the north
@@ -111,8 +132,9 @@
         (buildBody.karkov || (buildBody.karkov = [])).push(kg);
       }
       H2.box(grp, W - 4, 3.1, W - 4, AS, cx, F + 5.9, cz);
+      // HORNS_A2: hollow, and their height by the reading of the altar's measures (hornsFit, below)
       for (const hx of [x0 + 2.5, 69]) for (const hz of [-17, z1 - 2.5])
-        H2.box(grp, 1, 1.1, 1, AS, hx, F + 8.9, hz);
+        (buildBody.horns || (buildBody.horns = [])).push(hornHollow(grp, AS, hx, F + 9, hz, 1, hornInner));
       H2.box(grp, W - 1.76, 0.15, 0.12, sikra, cx, bandY, -18.53);
       H2.box(grp, W - 1.76, 0.15, 0.12, sikra, cx, bandY, z1 - 0.97);
       H2.box(grp, 0.12, 0.15, W - 1.8, sikra, x0 + 0.97, bandY, cz);
@@ -171,6 +193,7 @@
     mv.add(body28);
     buildBody(body32, 32);
     buildBody(body28, 28);
+    ctx2.shared.__horns = buildBody.horns;   // HORNS_A2 (tests)
     ctx2.layers = ctx2.layers || {};
     ctx2.layers.altarBody32 = body32;
     ctx2.layers.altarBody28 = body28;
@@ -1206,6 +1229,10 @@
         if (ctx2.shared.sfalimSee) ctx2.shared.sfalimSee.refresh();   // SFALIM_303: the glass corner with the bowls
         yoseFit(topG, y);
         yoseFit(ctx2.layers.tapuachRaavad, y);
+        // HORNS_A2 (the user's decision 49): the horn's height by the reading - five handbreadths in the Rambam's (2:8, and Kelim 17:10
+        // "אמות הקרן... בנות חמשה טפחים"); an amah of six in the others (the Mishnah's plain amah)
+        const hh = this.mode === "rambam" ? 5 / 6 : 1;
+        for (const h of buildBody.horns || []) h.scale.y = (hh + 0.1) / 1.1;
       } };
       ctx2.shared.features = ctx2.shared.features || {};
       // MEASURES_211: timed false - the frames stay as long as the place or the reading shows (they used to go after 15 seconds, in the
