@@ -1188,5 +1188,44 @@
         paused: () => { const w = walkEntry(); return !!(w && w.paused && w.paused()); }, restart: () => { stop(); start(); } });
       ctx.shared.shiloachDemo1 = { start, stop, T, get on() { return SHL.run; }, at: (t) => { buildSpring(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); }, ways: () => WAYS(), spring: () => buildSpring() };
     }
+
+    // ---------- 11. THE THIRTEEN SHOFAROT (item 22; the user's decision 112 ג, 22.11.2026 12:09: a switch of its own, off) ----------
+    // Mishnah Shekalim 6:5 (54:42) "שלשה עשר שופרות היו במקדש, וכתוב עליהם, תקלין חדתין ותקלין עתיקין, קנין וגוזלי עולה, עצים, ולבונה, זהב
+    // לכפרת. ששה, לנדבה" - said of the Second Temple. For the First Temple: the Malbim on II Kings 12:10 (3379:449) "וי"ל שרמז זה במ"ש ארון
+    // אחד... שכל הי"ג ארונות נקראו בשם ארון אחד שאחד מספרו י"ג"; the Yerushalmi Shekalim 6:4 (154:215) "על ידי שהנדבה מרובה ריבו לה שופרות
+    // הרבה. [שנאמר] וככלותם הביאו לפני המלך ויהוידע"; the Bartenura (2:1, 593:56) "כההיא דכתיב ביהוידע... והיו עומדים בעזרה". IN THIS
+    // HOUSE: in the inner court, by Jehoiada's inner chest (20-mount.js, MNT_ARON_IN [70, -8]) - "אצל המזבח מימין בבוא איש בית ה׳" (II Kings
+    // 12:10): north of the axis, on the right of him who comes in by the east gate; a row along z at x 80, their mouths to the west. The form
+    // as the Second Temple's (57-add208.js): "תבות צרות מלמעלה ורחבות מלמטה עקמות כעין שופר" (the Bartenura 6:1, 593:213). Their place, size
+    // and metal - model choices. A switch (a place with its feature and a pill on the model), off by default.
+    {
+      const shG = new Group();
+      shG.name = "shofarot13";
+      shG.visible = false;
+      g.add(shG);
+      ctx.layers.shofarot13 = shG;
+      const prof = [[0, 0], [0.52, 0], [0.56, 0.08], [0.52, 0.45], [0.44, 0.85], [0.33, 1.15], [0.24, 1.32], [0.2, 1.4], [0, 1.4]].map(([r, y]) => new Vector2(r, y));
+      const body = new LatheGeometry(prof, 20);
+      const neck = new TubeGeometry(new CatmullRomCurve3([new Vector3(0, 1.36, 0), new Vector3(0, 1.62, 0), new Vector3(0.12, 1.86, 0), new Vector3(0.38, 1.98, 0)]), 16, 0.15, 10, false);
+      const lip = new TorusGeometry(0.15, 0.04, 6, 16);
+      const X0 = 80, Z0 = -10.5, DZ = -2.1, tmp = new Group();
+      for (let i = 0; i < 13; i++) {
+        const b = new Group(); b.position.set(X0, AZ, Z0 + i * DZ); b.rotation.y = Math.PI;   // the curved mouths toward the court (west)
+        tmp.add(b);
+        b.add(new Mesh(body, M2.bronze), new Mesh(neck, M2.bronze));
+        const l = new Mesh(lip, M2.gold || M2.bronze); l.position.set(0.38, 1.98, 0); l.rotation.y = Math.PI / 2; b.add(l);
+      }
+      par_mergeInto(shG, tmp, { shadow: true, noPick: false });
+      ctx.labels.push({ text: "שלשה עשר שופרות (שקלים ו, ה; מלבי״ם מלכים ב יב, י)", x: X0, y: AZ + 4.2, z: Z0 + 6 * DZ, size: 1.6, layer: "shofarot13" });
+      const set13 = (on) => { shG.visible = !!on; return shG.visible; };
+      ctx.shared.shofarot13 = { get on() { return shG.visible; }, set: set13, at: [X0, AZ, Z0 + 6 * DZ] };
+      (ctx.shared.features = ctx.shared.features || {}).shofarot13 = { key: "shofarot13", timed: false, isOn: () => shG.visible, on: () => set13(true), off: () => set13(false) };
+      ctx.shared.modelButtons = ctx.shared.modelButtons || [];
+      ctx.shared.modelButtons.push({
+        id: "par-shofarot13", label: "הצג את שלושה עשר השופרות", labelOn: "הסתר את שלושה עשר השופרות",
+        title: "״שלשה עשר שופרות היו במקדש״ (שקלים ו, ה); בבית ראשון — כרמז המלבי״ם (מלכים ב יב, י): ״שכל הי\"ג ארונות נקראו בשם ארון אחד״. כבוי כברירת מחדל",
+        anchor: [X0, AZ + 3, Z0 + 6 * DZ], maxDist: 120, get: () => shG.visible, set: (on) => { set13(on); }
+      });
+    }
     ctx.shared.parallels = { watchers };
   }
