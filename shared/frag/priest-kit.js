@@ -404,39 +404,14 @@
     // the knot over the shoulders and down before him, the right to the navel, the left a little shorter (the user). Until now the box
     // was 0.052 and the ends stopped at the chest. Their thickness - a model choice.
     const TY = 0.1, TB = 0.04;   // the box's middle over the head's, and its side
-    const tefRing = (n) => {   // the strap round the head: from the box's foot (front) over the ears (y ~0.05) to the knot (y -0.056)
-      const ring = [], yF = TY - TB * 0.45, yB = -0.056;
-      for (let i = 0; i < n; i++) {
-        const ph = (i / n) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = yB + (yF - yB) * Math.pow(w, 0.35), r = headR(ph, y) + 0.005;
-        ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r));
-      }
-      return ring;
-    };
-    const tefBox = () => {
-      const zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
-      const tilt = Math.atan2(n.y, n.z), place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; };
-      return [place(new BoxGeometry(TB * 1.25, TB * 1.25, 0.01), 0.007), place(new BoxGeometry(TB, TB, TB), 0.012 + TB / 2)];   // the titura, the bayit
-    };
-    const gTefR = (() => {
-      const parts = tefBox();
-      // TEF_STRAP_A2 (the user: "דקות, שחורות ושטוחות (רצועת עור), ולא חוט עגול"): flat straps of leather (tm_strap), their face on the
-      // head (the head's own normal there) and on the neck, the shoulders and the chest; until now round cords (tubes 0.0048 thick)
-      const TSW = 0.013, TST = 0.0018;   // the head's strap: its breadth and thickness (model choices)
-      parts.push(tm_strap(tefRing(48), (p) => new Vector3(p.x / (HR[0] * HR[0]), p.y / (HR[1] * HR[1]), p.z / (HR[2] * HR[2])), TSW, TST, true, 96));
-      const kz = -(headR(Math.PI, -0.056) + 0.009);
-      parts.push(at(new BoxGeometry(0.024, 0.02, 0.012), 0, -0.058, kz));                 // the knot, in the nape's middle
-      for (const sd of [-1, 1]) {   // the two ends: behind the neck, over the shoulder by the neck, and down before him (sd -1 his right)
-        const end = sd < 0 ? -0.93 : -0.8;
-        const pts = [[0.008, -0.064, kz + 0.004], [0.05, -0.13, -0.118], [0.098, -0.19, -0.088], [0.13, -0.212, -0.02], [0.136, -0.235, 0.07], [0.134, -0.29, 0.122], [0.13, -0.36, 0.142],
-          [0.127, -0.48, 0.146], [0.124, -0.6, 0.15], [0.122, -0.72, 0.17], [0.121, end, sd < 0 ? 0.142 : 0.168]].map(([x, y, z]) => new Vector3(sd * x, y, z));
-        // lying flat: on the nape and the neck its face out from the neck, over the shoulder up, down the chest forward
-        const endN = (p) => { const r = new Vector3(p.x * (p.z > 0.05 ? 0.45 : 1), 0, p.z + 0.01).normalize(), w = Math.exp(-Math.pow((p.y + 0.215) / 0.035, 2)) * Math.max(0, 1 - Math.abs(p.z) / 0.12); return r.multiplyScalar(1 - w).add(new Vector3(0, w, 0)); };
-        parts.push(tm_strap(pts, endN, TSW * 0.95, TST, false, 80));
-      }
-      return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); if (q.attributes.normal === undefined) q.computeVertexNormals(); return q; }));
-    })();
+    // TEF_ROSH_A2 (the user: "החוט צריך להיות לפני הקציצה ולא לאחריה!"): the head's tefillin of shared/frag/strap.js (tm_tefRosh) -
+    // the strap out of the passage behind the box, round the head to the knot; nothing before the box. Until now a ring with the box on
+    // it, the strap going on before it over the forehead. One geometry per height of the box (o.TY - the high priest's: under the mitznefet)
+    const GTR = {};
+    const gTefRAt = (ty = TY) => GTR[ty] || (GTR[ty] = tm_tefRosh({ HR, headR, TY: ty, TB, ends: true }));
+    const gTefR = gTefRAt(TY);
     // the head's tefillin on a head made by headOn (its group): priests only - the figures that are priests ask for it
-    const tefOn = (hg) => { const m = new Mesh(gTefR, mTef); m.name = "tefillin-rosh"; m.visible = TEF.on; hg.add(m); TEF.list.push(m); return m; };
+    const tefOn = (hg, o) => { const m = new Mesh(o && o.TY != null ? gTefRAt(o.TY) : gTefR, mTef); m.name = "tefillin-rosh"; m.visible = TEF.on; hg.add(m); TEF.list.push(m); return m; };
     // TEFILLIN_A2: THE ARM'S, for the Levites (the user, 00:58: "תפילין גם ללויים" - no priestly garments, nothing between): on the left
     // arm's upper part. up / fo: the arm's two lengths in its own frame (the shoulder at 0, the elbow at -up; the forearm from the elbow,
     // 0 .. -fo); rU / rF: their radii.

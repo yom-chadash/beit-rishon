@@ -228,7 +228,7 @@
         const tex = texOf(cv), bump = new CanvasTexture(cv);
         bump.wrapS = bump.wrapT = RepeatWrapping;
         bump.anisotropy = 8;
-        const mat = std(0xffffff, { vertexColors: true, map: tex, bumpMap: bump, bumpScale: 1.3, roughness: 0.97, metalness: 0 });
+        const mat = std(0xffffff, { vertexColors: true, map: tex, bumpMap: bump, bumpScale: 1.3, roughness: 0.97, metalness: 0, side: DoubleSide });   // (the band's end lifts - its underside seen)
         // a piece made cloth: its texture's coordinates to the weave's scale (su, sv tiles), each point moved out along its normal by
         // dz(p) (the creases - small) and coloured lin * ao(p) (the shadow in them and between the pieces)
         const _n = new Vector3(), _p = new Vector3();
@@ -257,11 +257,13 @@
         // in the grooves, under the dome where it overhangs and where it meets the roll. Sizes and the grooves - model choices.
         const EZ = 1.09;
         // (measured on the picture: its breadth about 1.5 the head's, its height about two thirds of its breadth - about the face's
-        // height; its foot on the tzitz, the tefillin before it)
-        const KEY = [[0.15, 0.082], [0.172, 0.068], [0.2, 0.069], [0.216, 0.084], [0.221, 0.106], [0.215, 0.125], [0.205, 0.134],   // the roll: in, down, out and up
-          [0.222, 0.142], [0.245, 0.162], [0.258, 0.192], [0.262, 0.227], [0.256, 0.264], [0.237, 0.304], [0.202, 0.34], [0.148, 0.368], [0.08, 0.384], [0.0005, 0.389]];   // the dome: out over it, up and over to the top
+        // height). MITZ_HAIR_A2 (the coordinator, from the sources: "תנא: שערו היה נראה בין ציץ למצנפת" - Zevachim 19a, 130:741; Rashi on
+        // Shemot 28:37, 3692:2050; the Ramban, 3627:713 "היה מניח גם מקצת שער ראשו כנגד פניו לתפלין"; and so in the user's picture): its
+        // foot over the hairline, a band of hair seen between it and the tzitz, and the head's tefillin on that band (0.075 lower until now)
+        const KEY = [[0.12, 0.161], [0.152, 0.146], [0.19, 0.146], [0.212, 0.161], [0.221, 0.183], [0.215, 0.202], [0.205, 0.211],   // the roll: from the head (its foot close to the hair) down, out and up
+          [0.222, 0.219], [0.245, 0.239], [0.258, 0.269], [0.262, 0.304], [0.256, 0.341], [0.237, 0.381], [0.202, 0.417], [0.148, 0.445], [0.08, 0.461], [0.0005, 0.466]];   // the dome: out over it, up and over to the top
         const PROF = new CatmullRomCurve3(KEY.map(([r, y]) => new Vector3(r, y, 0)), false, "centripetal").getSpacedPoints(90);
-        const DOME0 = (() => { let k = 0; while (k < PROF.length - 1 && !(PROF[k].x > 0.218 && PROF[k].y > 0.137)) k++; return k; })();   // where the dome begins (over the roll)
+        const DOME0 = (() => { let k = 0; while (k < PROF.length - 1 && !(PROF[k].x > 0.218 && PROF[k].y > 0.214)) k++; return k; })();   // where the dome begins (over the roll)
         let LEN = 0;
         const ARC = PROF.map((q, k) => (k ? (LEN += q.distanceTo(PROF[k - 1])) : 0));
         const puffy = (grooves, depth, seed) => {
@@ -294,11 +296,56 @@
           for (let j = 0; j < nP; j++) { const a = j * (nT + 1), b = a + nT; w3.set(nn.getX(a) + nn.getX(b), nn.getY(a) + nn.getY(b), nn.getZ(a) + nn.getZ(b)).normalize(); nn.setXYZ(a, w3.x, w3.y, w3.z); nn.setXYZ(b, w3.x, w3.y, w3.z); }
           return g;
         };
-        const rashiG = puffy([0.34, 0.62], 0.008, 1.3);                 // Rashi: smoother - two faint lines
-        const rambanG = puffy([0.16, 0.33, 0.5, 0.66, 0.8], 0.03, 2.1);   // the Ramban: five turns, plain
+        // MITZ_WOUND_A2 (the user, on picture 46: "להראות את הכריכה של המצנפת" - one long band of cloth wound round the head, layer on
+        // layer, its end seen; the Rambam, Klei HaMikdash 8:2, 338:124 "כהן גדול צונף בה כמי שלופף על השבר", 8:19, 338:141 "המצנפת...
+        // ארכו שש עשרה אמות"): on that outline (the shell under it, darker - seen only where a layer's edge lifts) one band wound from the
+        // foot of the roll up to near the top, a little aslant, each turn over the one below it and its lower edge lying on it, the shadow
+        // under that edge; its end at the top, square and lifted a little - the band's end seen. Rashi's ("כמין כפת כובע") wound flatter
+        // and closer, the Ramban's ("כפל על כפל") its layers thicker. The turns' number and breadth - model choices.
+        const pt = (v) => {   // the outline at v (0 the roll's foot .. 1 the top), by length along it
+          const L = Math.max(0, Math.min(1, v)) * LEN;
+          let k = 1;
+          while (k < PROF.length - 1 && ARC[k] < L) k++;
+          const u = (L - ARC[k - 1]) / Math.max(1e-6, ARC[k] - ARC[k - 1]);
+          return [PROF[k - 1].x + (PROF[k].x - PROF[k - 1].x) * u, PROF[k - 1].y + (PROF[k].y - PROF[k - 1].y) * u];
+        };
+        const SO = (v, t) => { const [r, y] = pt(v); return new Vector3(r * Math.sin(t), y, r * EZ * Math.cos(t)); };
+        const NO = (v, t) => { const e = 2e-3, w = Math.max(0.004, Math.min(0.996, v)), a = SO(w, t + e).sub(SO(w, t - e)), b = SO(w + e, t).sub(SO(w - e, t)), n = a.cross(b); return n.lengthSq() > 1e-14 ? n.normalize() : new Vector3(0, 1, 0); };   // (at the ends, inside them - no zero normal)
+        const wound = (turns, t, seed) => {
+          const V0 = 0.03, V1 = 0.9, nU = Math.round(turns * 56), nS = 8, pitch = (V1 - V0) / turns, hw = pitch * 0.68, pos = [], col = [], uv = [], idx = [];
+          const ph = [1.7, 2.9, 4.3].map((q) => q * seed);
+          for (let i = 0; i <= nU; i++) {
+            const u = i / nU, tt = Math.PI + u * turns * Math.PI * 2, vc = V0 + (V1 - V0) * u + 0.012 * Math.sin(tt + ph[0]);   // a little aslant, and uneven
+            const st = Math.min(1, u / 0.03), en = 1 - u, endLift = en < 0.03 ? Math.pow((0.03 - en) / 0.03, 1.5) : 0;   // its start tucked under the roll's foot; its end lifted - the band's end seen
+            for (let j = 0; j <= nS; j++) {
+              const s = -1 + (2 * j) / nS, v = vc + s * hw * (0.6 + 0.4 * st), q = Math.sqrt(Math.max(0, 1 - s * s)), P = SO(v, tt), n = NO(v, tt);
+              const crease = Math.sin(13 * tt + 2.4 * s + ph[1]) * (0.5 + 0.5 * Math.sin(3 * tt + ph[2]));
+              // its own bulge, its lower edge lying on the turn below (lifted over it), its upper edge under the next turn (in); the later turns
+              // over the earlier
+              const lift = 0.0035 + t * 0.5 * u + t * (0.8 * q + 0.55 * Math.max(0, -s) - 0.45 * Math.max(0, s) + 0.16 * crease * q) + 0.012 * endLift * (1.2 + s);
+              P.addScaledVector(n, lift);
+              pos.push(P.x, P.y, P.z);
+              const ao = (1 - 0.58 * Math.pow(Math.max(0, s), 1.4)) * (1 - 0.1 * Math.pow(Math.max(0, -s), 8)) * (1 - 0.1 * Math.max(0, -crease)) * (1 - 0.25 * endLift);
+              col.push(ao, ao * 0.993, ao * 0.975);
+              uv.push((tt * 0.23) / TILE, (s * hw * LEN) / TILE);
+            }
+          }
+          for (let i = 0; i < nU; i++) for (let j = 0; j < nS; j++) { const a = i * (nS + 1) + j, b = a + nS + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+          const g = new BufferGeometry();
+          g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          g.setAttribute("color", new Float32BufferAttribute(col, 3));
+          g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+          g.setIndex(idx);
+          g.computeVertexNormals();
+          return g;
+        };
+        const shell = (seed) => { const g = puffy([], 0, seed), c = g.attributes.color; for (let i = 0; i < c.count; i++) c.setXYZ(i, c.getX(i) * 0.62, c.getY(i) * 0.62, c.getZ(i) * 0.62); return g; };
+        const RT = 0.011, BT = 0.017;   // the layers' thickness: Rashi's flatter, the Ramban's thicker
+        const rashiG = mergeGeometries([shell(1.3), wound(6, RT, 1.3)]);
+        const rambanG = mergeGeometries([shell(2.1), wound(5, BT, 2.1)]);
         // a point on its face (th 0 before, along +z), out along it by off - for the cords
         const at = (j, th, off) => { const q = PROF[Math.max(0, Math.min(PROF.length - 1, j))], r = q.x + off; return [r * Math.sin(th), q.y + off * 0.3, r * EZ * Math.cos(th)]; };
-        MZC = { mat, rashiG, rambanG, at, nP: PROF.length, dome0: DOME0 };
+        MZC = { mat, rashiG, rambanG, at, nP: PROF.length, dome0: DOME0, out: 0.0035 + RT * 1.8 };
         return MZC;
       };
       const buildHP = (f) => {
@@ -487,7 +534,9 @@
           c.font = "700 27px 'Frank Ruhl Libre', 'David', 'Times New Roman', serif";
           for (const [t, y] of [["לה׳", 17], ["קדש", 48]]) { c.fillStyle = "rgba(90,60,10,0.8)"; c.fillText(t, w / 2 + 1, y + 1.5); c.fillStyle = "#fff3c0"; c.fillText(t, w / 2, y); }
         });
-        mk(new CylinderGeometry(1, 1, 0.078, 36, 1, true, -HP, Math.PI).scale(0.174, 1, 0.194), std(0xffffff, { map: tz, metalness: 0.75, roughness: 0.3, side: DoubleSide }), 0, 3.085, HZ, L);
+        // MITZ_HAIR_A2: on the forehead, over the brows, its top at the hairline (3.085 until now); "רחב שתי אצבעות ומקיף מאזן לאזן" (Klei
+        // HaMikdash 9:1, 338:143): 0.078 high (two fingers of the model's amah: 2/24 = 0.083), half round the head - from ear to ear
+        mk(new CylinderGeometry(1, 1, 0.078, 36, 1, true, -HP, Math.PI).scale(0.174, 1, 0.194), std(0xffffff, { map: tz, metalness: 0.75, roughness: 0.3, side: DoubleSide }), 0, 3.079, HZ, L);
         // TEF_ONE_A2 (the coordinator: two boxes in one place): the head's tefillin are the kit's (figure: K.tefOn) - no box of its own here
         // the mitznefet sits back on the head (model choice: its frame hd tilted 0.3 back about the head's centre): its front edge above the
         // hair and the tefillin, its back over the nape; loc() = a point of the figure in that frame
@@ -500,9 +549,11 @@
         const rashi = new Group(), rashiW = new Group(), ramban = new Group();
         hd.add(rashi, ramban);
         L.add(rashiW);
-        // HP_KIT_A2 (the user, via the coordinator: "פתילי התכלת בולטים וברורים"): the cords of techelet thicker (were 0.0075, the knot 0.011)
-        const MZ_CORD = 0.0115, MZ_KNOT = 0.016;
-        const tubeIn = (par, pts, r, mat) => { const tm = cord(pts, r * 0.7, mat); par.add(tm); return tm; };
+        // the cords of techelet. MITZ_CORD_A2 (the user, 22.11.2026: "פתיל התכלת עבה מדי" - a thick twined rope; Rashi on Shemot 39:31,
+        // 3692:2684 "פתיל תכלת זה חוטין הן, לקשרו בהן במצנפת"): thin, as a thick thread or a lace - much thinner than the tefillin's
+        // strap - smooth, no plies (until now twined, 0.0115; before that 0.0075)
+        const MZ_CORD = 0.0032, MZ_KNOT = 0.0075;
+        const tubeIn = (par, pts, r, mat) => { const tm = new Mesh(new TubeGeometry(new CatmullRomCurve3(pts.map((q) => new Vector3(q[0], q[1], q[2]))), Math.max(24, pts.length * 10), r, 6, false), mat); tm.castShadow = true; par.add(tm); return tm; };
         // Rashi: "כמין כפת כובע", high on the head; his cords: the two at the ends tied behind the nape, the middle one over it.
         // MITZ_REF_A2: as the user's pictures - a roll round the head and a puffed dome over it, of cloth (mzCloth)
         const MZ = mzCloth();
@@ -513,14 +564,25 @@
         mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, NP[0], NP[1], NP[2] - 0.004, rashiW);
         // MITZ_REF_A2: the middle cord from the tzitz straight up the front of the mitznefet, over its top and down behind it to the nape
         // (as the user's pictures); the end cords as before, round the head under it
-        const N0 = MZ.nP - 1, D0 = MZ.dome0, OFF = 0.011;
+        const N0 = MZ.nP - 1, D0 = MZ.dome0, OFF = 0.011 + MZ.out;   // MITZ_WOUND_A2: over the wound layers
         const mer = [...[6, 10, D0, D0 + 8, D0 + 16, D0 + 24, D0 + 32, N0 - 6].map((j) => MZ.at(j, 0, OFF)), MZ.at(N0, 0, OFF), ...[N0 - 6, D0 + 32, D0 + 24, D0 + 16, D0 + 8, D0, 10].map((j) => MZ.at(j, Math.PI, OFF))];
-        tubeIn(rashi, [loc(0, 3.122, 0.196 + HZ), ...mer, loc(0, 3.03, HZ - 0.222), loc(NP[0], NP[1], NP[2])], MZ_CORD, M.techelet);
+        tubeIn(rashi, [loc(0, 3.116, 0.197 + HZ), loc(0, 3.165, 0.178 + HZ), ...mer, loc(0, 3.03, HZ - 0.222), loc(NP[0], NP[1], NP[2])], MZ_CORD, M.techelet);   // MITZ_HAIR_A2: up over the hair, behind the tefillin
         // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it, on the roll
         // (MITZ_REF_A2: the same outline as Rashi's, its turns plain)
-        mk(MZ.rambanG, MZ.mat, 0, 0, 0, ramban);
-        tubeIn(ramban, [loc(0.174, 3.085, HZ), [0.229, 0.088, -0.05], [0.19, 0.1, -0.19], [0, 0.102, -0.253], [-0.19, 0.1, -0.19], [-0.229, 0.088, -0.05], loc(-0.174, 3.085, HZ)], MZ_CORD, M.techelet);   // over the roll behind - "וקושר הציץ למעלה מן המצנפת" (10:3)
-        mk(new SphereGeometry(MZ_KNOT, 6, 5), M.techelet, 0, 0.102, -0.259, ramban);
+        // MITZ_RAMBAN_A2 (the user's answer to question 175 - a: the Ramban on Shemot 28:37, 3627:713 "והיתה הצניפה בגבה שבראש כנגד המוח
+        // האמצעי, והוא מכסה בה כל הראש כנגד אחוריו", "בשפוע", "אבל מאזן לאזן מאחוריו כנגד כל העורף תהיה המצנפת, והפתיל שנקשר בו יבא
+        // עליה"): the same outline sloped back (RB_TILT about the head's middle, and down RB_Y) - over the back of the head, its front over
+        // the band of hair; the one cord from the tzitz's ends round behind, tied on it there. How far back - a model choice
+        const RB_TILT = -0.27, RB_Y = -0.03, rbM = new Group();
+        rbM.rotation.x = RB_TILT;
+        rbM.position.y = RB_Y;
+        ramban.add(rbM);
+        mk(MZ.rambanG, MZ.mat, 0, 0, 0, rbM);
+        const rb = (x, y, z) => { const c = Math.cos(RB_TILT), sn = Math.sin(RB_TILT); return [x, y * c - z * sn + RB_Y, y * sn + z * c]; };   // a point of rbM in hd
+        const RO = MZ.out + 0.006;   // on the wound layers
+        tubeIn(ramban, [loc(0.174, 3.079, HZ), rb(0.236 + RO, 0.172, -0.07), rb(0.2, 0.18, -0.2 - RO), rb(0, 0.18, -0.243 - RO), rb(-0.2, 0.18, -0.2 - RO), rb(-0.236 - RO, 0.172, -0.07), loc(-0.174, 3.079, HZ)], MZ_CORD, M.techelet);
+        const KN = rb(0, 0.18, -0.248 - RO);
+        mk(new SphereGeometry(MZ_KNOT, 8, 6), M.techelet, KN[0], KN[1], KN[2], ramban);
         out.mitz = { rashi: [rashi, rashiW], ramban: [ramban] };
         return out;
       };
@@ -587,7 +649,7 @@
         hs.position.set(0, 3.0 - 1.3 * K.HEAD_Y, HZ);
         lean.add(hs);
         const hh = K.headOn(hs, K.HEAD_Y, K.mBeards[0], 1);
-        if (K.tefOn) K.tefOn(hh);   // TEFILLIN_A2: "שערו היה נראה בין ציץ למצנפת, ששם מניחין תפילין" (Zevachim 19a)
+        if (K.tefOn) K.tefOn(hh, { TY: 0.098 });   // TEFILLIN_A2: "שערו היה נראה בין ציץ למצנפת, ששם מניחין תפילין" (Zevachim 19a); MITZ_HAIR_A2: on the band of hair over the tzitz (the box a little lower than the priests')
         const [L, R] = arms(lean, AH, true), [fl, fr] = feet(g);
         const garb = buildHP({ lean });
         return { g, lean, A: AH, L, R, fl, fr, body, belt, garb };
