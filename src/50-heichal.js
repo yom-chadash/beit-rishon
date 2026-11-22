@@ -2676,6 +2676,7 @@
     // the section's own view sees it (1.0.1-L; the old place, behind the cut face, was hidden from that view)
     const ANCH_OFF = [X0 - 3, SY[1] + 6.5, ZT + 0.5], ANCH_ON = [X0 + 0.5, YRT + 0.8, TA_IN + 1.5];
     const ANCH_OFF_RB = [X0 - 3, SY[1] + 6.5, 42.6], ANCH_ON_RB = [X0 + 0.5, YRT + 0.8, 33.5];   // 1.3.4: outside the Rambam's galleries / over his cut
+    (ctx.shared.pillAnchors = ctx.shared.pillAnchors || []).push(ANCH_OFF, ANCH_ON, ANCH_OFF_RB, ANCH_ON_RB);   // TRAKSIN_130_D: the four, for the amah traksin's switch (55-interior.js)
     ctx.shared.modelButtons.push({
       id: "hei-yatzia-section",
       label: "הצג חתך של היציע",   // 1.3.4: both readings

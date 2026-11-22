@@ -2780,7 +2780,8 @@
           },
           anchor: () => {
             const rb = !!(ctx.shared.yatziaReading && ctx.shared.yatziaReading.mode === "rambam");
-            const a = anchorPt("yatziaSouth"), c = camP(), zf = rb ? 42.8 : Math.abs(a[2]), xw = rb ? xYW - 7.5 : xYW;
+            const TM = ctx.shared.traksin && typeof ctx.shared.traksin.map === "function" ? ctx.shared.traksin.map : (x) => x;   // TRAKSIN_130_D: the west face by the amah traksin
+            const a = anchorPt("yatziaSouth"), c = camP(), zf = rb ? 42.8 : Math.abs(a[2]), xw = TM(rb ? xYW - 7.5 : xYW);
             const side = c.z > zf - 1 ? 0 : c.z < -(zf - 1) ? 1 : c.x < xw + 1 ? 2 : -1;
             if (side < 0) return null;
             const p = yatziaPts[side];   // reused arrays: no allocation per frame

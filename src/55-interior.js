@@ -3606,6 +3606,7 @@
       const rise = (x) => { const S = ctx.shared.houseSlope; return S && typeof S.at === "function" ? S.at(x) : 0; };
       ctx.shared.arkPlace = {
         current: "west0", keys: ["middle", "west"],
+        labels: LBL, flyKeys: FP,   // TRAKSIN_130_D: what moves with the ark - the amah traksin's switch leaves them to this set()
         set(k) {
           k = k === "west" ? "west" : "middle";
           const mv = ARK_REF.move;
@@ -3639,13 +3640,15 @@
     // line 261) "ולפני הדביר. לפנים מאותה מחצה, חלל של עשרים ארך, ושל עשרים רחב" and 6:16 (246) "המפסקת בין ארבעים לעשרים"; Yoma 52a (107
     // line 1327) "וחללא קא חשיב, כותלים לא קא חשיב": the devir twenty whole and the amah besides - the devir's west wall and everything
     // west of it one amah west. Done on the built scene, in the house's own frame (the floor's slope off while it is done): a piecewise
-    // map of x - the devir's interior (x -63.5..-44.5) stretched to twenty (-64.5..-44.5), all west of it (to the chambers' outer wall,
-    // x -80.5, |z| <= 31) one amah west, the kodesh and the traksin unmoved. A thing small along x (<= 3 amot: a vessel, a figure, the ark
+    // map of x - the devir's interior (x -63.5..-44.5) stretched to twenty (-64.5..-44.5), all west of it (to the end of
+    // the house's structures in both readings of the chambers, x >= -89, |z| <= 44) one amah west, the kodesh and the traksin unmoved. A thing small along x (<= 3 amot: a vessel, a figure, the ark
     // with its cherubim and stone - ARK_REF.move) moves whole; a wall, a floor, a ceiling, a skin or a beam that crosses the line is
     // stretched (its vertices); instanced pieces move or stretch one by one. The labels, the fly points and the places' cameras (given by
     // the UI: placeItems / fallbacks) go with it, and the ark's two places are reckoned by the map. "rambam" undoes everything exactly.
     {
-      const RX0 = CO.xHeiW - 0.3, RZ = 31, LX0 = CO.xHeiW - 2.6, SMALL = 3;
+      // the region: the house in both readings of the chambers - the Rambam's galleries reach x -88 and z +-42.8, and so does the Rambam's
+      // ulam along the house's sides (50-heichal.js); nothing of the court lies there (checked vertex by vertex)
+      const RX0 = CO.xHeiW - 8.5, RZ = 44, LX0 = CO.xHeiW - 10.5, SMALL = 3;
       const fOf = (on) => (x) => (!on || x >= XDE ? x : x >= XDW ? XDE + (x - XDE) * (XDE - XDW + 1) / (XDE - XDW) : x - 1);
       let undo = null, on = false;
       const inR = (x, z, x0) => x < XDE && x >= (x0 == null ? RX0 : x0) && z >= -RZ && z <= RZ;
@@ -3689,12 +3692,15 @@
               const inv = tm.copy(o.parent.matrixWorld).invert();
               const a = new Vector3().setFromMatrixPosition(o.matrixWorld), b = a.clone();
               b.x += dx; a.applyMatrix4(inv); b.applyMatrix4(inv);
-              const d = b.sub(a);
+              const d = b.sub(a), o0 = o.position.clone();   // undone by the saved values (bit for bit, no remainder of the sums)
               o.position.add(d);
               if (!o.matrixAutoUpdate) o.updateMatrix();
-              undo.push(() => { o.position.sub(d); if (!o.matrixAutoUpdate) o.updateMatrix(); });
+              undo.push(() => { if (d.x) o.position.x = o0.x; if (d.y) o.position.y = o0.y; if (d.z) o.position.z = o0.z; if (!o.matrixAutoUpdate) o.updateMatrix(); });
             };
-            const RIGID = new Set([ARK_REF.move].filter(Boolean));
+            // the ark's group, its labels, its two views and its pill are the ark's place's (ctx.shared.arkPlace.set, called below): they go
+            // to the place by the map exactly, and back
+            const AP0 = ctx.shared.arkPlace, ARK_LBL = AP0 && AP0.labels ? AP0.labels : new Set(), ARK_FP = new Set(AP0 && AP0.flyKeys ? AP0.flyKeys : []);
+            const RIGID = new Set();
             const deform = (o) => {   // every vertex in the region by the map
               const geo = o.geometry, pos = geo && geo.attributes && geo.attributes.position;
               if (!pos || pos.isInterleavedBufferAttribute) return;
@@ -3750,7 +3756,7 @@
               undo.push(() => { o.instanceMatrix.array.set(keep); o.instanceMatrix.needsUpdate = true; if (o.computeBoundingSphere) o.computeBoundingSphere(); });
             };
             const visit = (o) => {
-              if (o === labelsG || o.isCamera) return;
+              if (o === labelsG || o.isCamera || o === ARK_REF.move) return;
               const b = bbOf.get(o);
               if (!b || b.isEmpty()) return;
               if (b.min.x >= XDE || b.max.x < RX0 || b.max.z < -RZ || b.min.z > RZ) return;
@@ -3764,34 +3770,56 @@
             // the labels, the fly points (the modules' and the UI's fallbacks) and the places' cameras
             const sh = (x) => (x >= LX0 && x < RX0 ? x - 1 : f(x));
             for (const l of ctx.labels) {
-              if (!l || typeof l.x !== "number" || !inR(l.x, l.z || 0, LX0)) continue;
-              const dx = sh(l.x) - l.x;
-              const spr = labelsG ? labelsG.children.find((q) => q.userData && q.userData.label === l) : null;
+              if (!l || typeof l.x !== "number" || ARK_LBL.has(l.text) || !inR(l.x, l.z || 0, LX0)) continue;
+              const dx = sh(l.x) - l.x, lx = l.x;
+              const sprOf = () => { const G = ctx.root.getObjectByName("labels"); return G ? G.children.find((q) => q.userData && q.userData.label === l) : null; };
+              const spr = sprOf(), sx = spr ? spr.position.x : 0;
               l.x += dx; if (spr) spr.position.x += dx;
-              undo.push(() => { l.x -= dx; if (spr) spr.position.x -= dx; });
+              undo.push(() => {   // the label's sprite looked up again: it may have been made after the switch (it then stands at l.x)
+                const s2 = sprOf();
+                if (s2) { if (s2 === spr) s2.position.x = sx; else s2.position.x += lx - l.x; }
+                l.x = lx;
+              });
             }
             const pair = (pos, tg) => {
               if (!Array.isArray(tg) || !inR(tg[0], tg[2], LX0)) return;
-              const dx = sh(tg[0]) - tg[0];
+              const dx = sh(tg[0]) - tg[0], t0 = tg[0], p0 = Array.isArray(pos) ? pos[0] : 0;
               tg[0] += dx; if (Array.isArray(pos)) pos[0] += dx;
-              undo.push(() => { tg[0] -= dx; if (Array.isArray(pos)) pos[0] -= dx; });
+              undo.push(() => { tg[0] = t0; if (Array.isArray(pos)) pos[0] = p0; });
             };
             const FPS = ctx.shared.flyPoints || {};
-            for (const kk of Object.keys(FPS)) if (FPS[kk]) pair(FPS[kk].pos, FPS[kk].target);
+            for (const kk of Object.keys(FPS)) if (FPS[kk] && !ARK_FP.has(kk)) pair(FPS[kk].pos, FPS[kk].target);
             const FB = typeof this.fallbacks === "function" ? this.fallbacks() || {} : {};
             for (const kk of Object.keys(FB)) if (FB[kk] && !FPS[kk]) pair(FB[kk].pos, FB[kk].target);
             const PI = typeof this.placeItems === "function" ? this.placeItems() || [] : [];
             for (const it of PI) if (it && !it.view && Array.isArray(it.tg)) pair(it.cam, it.tg);
-            if (ARK_REF.anchor) {   // the ark's pill goes with the ark (its group moved above)
-              const ax = ARK_REF.anchor[0], dx = f(ax) - ax;
-              ARK_REF.anchor[0] += dx;
-              undo.push(() => { ARK_REF.anchor[0] -= dx; });
+            // the pills' anchors on the model (the review: "אמה היא הפרש שרואים"): an anchor array in the region - its own, or the one an
+            // anchor function returns now - and the arrays a module lists for its function's other branches (ctx.shared.pillAnchors)
+            const seenA = new Set();
+            const anch = (a) => {
+              if (!Array.isArray(a) || seenA.has(a) || a.length < 3 || !inR(a[0], a[2], LX0)) return;
+              seenA.add(a);
+              const dx = sh(a[0]) - a[0], a0 = a[0];
+              a[0] += dx;
+              undo.push(() => { a[0] = a0; });
+            };
+            if (ARK_REF.anchor) seenA.add(ARK_REF.anchor);   // the ark's pill: the ark's place's
+            for (const b of ctx.shared.modelButtons || []) {
+              if (!b) continue;
+              if (Array.isArray(b.anchor)) anch(b.anchor);
+              else if (typeof b.anchor === "function") { try { anch(b.anchor()); } catch (_) {} }
             }
+            for (const a of ctx.shared.pillAnchors || []) anch(a);
+            const AN = ctx.shared.anchors || {};   // the modules' anchor points (the UI's pills read them: the chambers' south face ...)
+            for (const kk of Object.keys(AN)) if (Array.isArray(AN[kk])) anch(AN[kk]);
           }
           on = want;
           this.map = fOf(on);
           if (slope) { slope.matrix.copy(S0); slope.matrixWorldNeedsUpdate = true; }
           ctx.root.updateMatrixWorld(true);
+          // the ark, its labels, views and pill to its place by the map (absolute: the Yerushalmi's middle, or one amah from the west wall)
+          const AP = ctx.shared.arkPlace;
+          if (AP && (AP.current === "middle" || AP.current === "west")) AP.set(AP.current);
           if (ctx.requestRender) ctx.requestRender();
           return this.current;
         }
