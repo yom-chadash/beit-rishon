@@ -1353,8 +1353,14 @@
       // z 352.5..672.5, its top -10) and lower than it, on a ridge that goes down southward; the Gihon below it ("כלם ירדו מציון עיר דוד שהיה
       // שם בגבוה העיר אל גיחון שהיה בשפל ההר", Abarbanel I Kings 1:38, 3574:116; "אך בת־פרעה עלתה מעיר דוד", 9:24). IR_C: its north edge
       // (N, from W to E), its southern tip (tip - a parameter: by the spring, when the spring's place is decided - 156 ב), the ridge's
-      // heights (hN at the north, hT at the tip). Its size, the ridge's form and the wall's line - model choices.
-      const IR_C = { N: 690, W: 0, E: 210, tip: [105, 1010], hN: -14, hT: -31, houses: 200 };
+      // heights (GR below). Its size, the ridge's form and the wall's line - model choices.
+      const IR_C = { N: 690, W: 0, E: 210, tip: [105, 1010], houses: 750 };
+      // THE GROUND (the coordinator's note, 22.11.2026 ~16:40, on the sources' 1.3 and 62 - "עלתה מעיר דוד", "בגבוה העיר אל גיחון שהיה בשפל
+      // ההר"): a ridge high in the north (by the palace's terrace, -10 - the crest a little under it, the fortress at the top) going down
+      // southward (drop); terraces across it (NT steps of RS amot up from the wall to the crest - the lanes and the houses on them follow the
+      // heights); the wall on the brow, and outside it a steep slope down to the valleys' ground (Dk amot out for each amah of height, at
+      // least D0); at the south-western corner the ground goes down to the pool's level (the spring and the pool below). Model choices.
+      const GR = { crestN: -11.0, C: 5.5, Cs: 3.0, NT: 4, RS: 11, drop: 9, minRel: 2.5, minRelS: 0.8, D0: 6, Dk: 2.0 };   // C at the north, Cs at the tip
       const MILLO_C = { x: 16, z: 722, w: 28, d: 44 };   // inside the city's west wall, at its north end - the nearest to Pharaoh's daughter's house (model choice)
       const ML = { form: "plaza", time: "after", fortress: "sep", built: false, parts: null,
         fort: { x0: 92, x1: 160, z0: 704, z1: 762 },   // the fortress of Zion: in the city's upper part (model choice)
@@ -1367,7 +1373,13 @@
       const inPoly = (x, z) => { let c = false; for (let i = 0, j = POLY.length - 1; i < POLY.length; j = i++) { const [xi, zi] = POLY[i], [xj, zj] = POLY[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
       const edgeDist = (x, z) => { let d = Infinity; for (let i = 0, j = POLY.length - 1; i < POLY.length; j = i++) { const [ax, az] = POLY[j], [bx, bz] = POLY[i], vx = bx - ax, vz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / (vx * vx + vz * vz))); d = Math.min(d, Math.hypot(x - ax - vx * t, z - az - vz * t)); } return d; };
       const segDist = (x, z, A, B) => { const vx = B[0] - A[0], vz = B[1] - A[1], t = Math.max(0, Math.min(1, ((x - A[0]) * vx + (z - A[1]) * vz) / (vx * vx + vz * vz))); return Math.hypot(x - A[0] - vx * t, z - A[1] - vz * t); };
-      const MILLO_Y = () => TH(MILLO_C.x, MILLO_C.z) + 28.5 + IR_C.hN - 2;
+      const edgeNear = (x, z) => { let d = Infinity, ex = x, ez = z; for (let i = 0, j = POLY.length - 1; i < POLY.length; j = i++) { const [ax, az] = POLY[j], [bx, bz] = POLY[i], vx = bx - ax, vz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / (vx * vx + vz * vz))), qx = ax + vx * t, qz = az + vz * t, dd = Math.hypot(x - qx, z - qz); if (dd < d) { d = dd; ex = qx; ez = qz; } } return { d, ex, ez }; };
+      const sstep = (u) => { const v = Math.max(0, Math.min(1, u)); return v * v * (3 - 2 * v); };
+      // the brow's height (at the wall) - down southward, never under the valley's ground + minRel; the terraces up from it to the crest
+      const kz = (z) => Math.max(0, Math.min(1, (z - IR_C.N) / (IR_C.tip[1] - IR_C.N))), Cz = (z) => GR.C + (GR.Cs - GR.C) * kz(z);
+      const brow = (x, z) => { const k = kz(z); return Math.max(GR.crestN - GR.C - GR.drop * k, TH(x, z) + GR.minRel + (GR.minRelS - GR.minRel) * k); };
+      const terr = (d, z) => { const t = Math.max(0, Math.min(GR.NT, (d - 2) / GR.RS)), f = Math.floor(t), r = t - f; return Cz(z) * (Math.min(GR.NT, f + sstep((r - 0.72) / 0.28))) / GR.NT; };
+      const MILLO_Y = () => padOf("millo").y;
       // the pool of the Shiloach (within the wall, at the south-western corner - section 10's SPRING_C.poolAt), the king's garden by it
       // (decision 161), David's tombs (162) and the stairs down from the city to the pool (Nehemiah 3:15)
       const POOL_AT = (ctx.shared.shiloach1 && ctx.shared.shiloach1.place && ctx.shared.shiloach1.place.poolAt) || [50, 930];
@@ -1375,25 +1387,72 @@
       // Beit HaBechira 7:14 (5308:135): "והלא קברי בית דוד וקבר חולדה אינם בתוך ירושלים... וקברי בית דוד וקבר חולדה סמוכות היו"; no tunnel
       // (5308:130: "תדע שהרי קברי מלכות בית דוד לא מצינו שיהיה להם מחילות"). On the south-western wall (POLY[7] -> POLY[6]), six tenths
       // along it (clear of the spring's channel), the rock against the wall's outer face, the cave's opening outward. The place along the wall - a model choice.
+      const TOMB_FX = 6.0;   // the rock face, this far out from the wall's line (the bank before it hewn steep)
       const TOMBS = (() => {
         const A = POLY[7], B = POLY[6], u = 0.6, ex = A[0] + (B[0] - A[0]) * u, ez = A[1] + (B[1] - A[1]) * u, L = Math.hypot(B[0] - A[0], B[1] - A[1]);
         let nx = (B[1] - A[1]) / L, nz = -(B[0] - A[0]) / L;
         if (nx * ((IR_C.W + IR_C.E) / 2 - ex) + nz * ((IR_C.N + IR_C.tip[1]) / 2 - ez) > 0) { nx = -nx; nz = -nz; }   // outward, away from the city
-        return { at: [ex + nx * 5.8, ez + nz * 5.8], n: [nx, nz] };
+        return { e: [ex, ez], at: [ex + nx * (TOMB_FX + 2), ez + nz * (TOMB_FX + 2)], n: [nx, nz] };   // e: on the wall's line; at: before the opening
       })();
       const GARDEN_C = { x: 76, z: 946, w: 22, d: 15 }, TOMBS_AT = TOMBS.at, STAIR_C = { a: [84, 892], b: [58, 920] };
-      const ridgeH = (x, z) => {
-        const C = MILLO_C; if (Math.abs(x - C.x) < C.w / 2 + 2 && Math.abs(z - C.z) < C.d / 2 + 2) return MILLO_Y();
-        if (!inPoly(x, z)) return TH(x, z) - 12;
+      // the low corner: the pool and the king's garden by it, at the pool's level (or a little over the valley's ground)
+      const GARDEN_P = [GARDEN_C.x, GARDEN_C.z];
+      const lowK = (x, z) => 1 - sstep((segDist(x, z, POOL_AT, GARDEN_P) - 13) / 16);
+      const lowLevel = (x, z) => Math.max(TH(POOL_AT[0], POOL_AT[1]) - 0.5, TH(x, z) + 0.2);
+      // level pads: the Millo, the fortress (the city's upper part) and David's house with the ark's tent - each at its own middle's height
+      const PADS = [{ id: "millo", x0: MILLO_C.x - MILLO_C.w / 2 - 2, x1: MILLO_C.x + MILLO_C.w / 2 + 2, z0: MILLO_C.z - MILLO_C.d / 2 - 2, z1: MILLO_C.z + MILLO_C.d / 2 + 2 },
+        { id: "fort", x0: ML.fort.x0 - 5, x1: ML.fort.x1 + 5, z0: ML.fort.z0 - 5, z1: ML.fort.z1 + 5 },
+        { id: "david", x0: ML.davidAt[0] - 13, x1: ML.davidAt[0] + 30, z0: ML.davidAt[1] - 9, z1: ML.davidAt[1] + 9 }];
+      const plateau = (x, z, d) => brow(x, z) + terr(d, z);
+      const padOf = (id) => { const P = PADS.find((q) => q.id === id); if (P.y == null) { const cx = (P.x0 + P.x1) / 2, cz = (P.z0 + P.z1) / 2; P.y = plateau(cx, cz, edgeDist(cx, cz)); } return P; };
+      const inside = (x, z, d) => {
         if (Math.hypot(x - POOL_AT[0], z - POOL_AT[1]) < 11) return TH(POOL_AT[0], POOL_AT[1]) - 0.5;   // the pool's ground
-        const k = Math.max(0, Math.min(1, (z - IR_C.N) / (IR_C.tip[1] - IR_C.N))), hA = IR_C.hN + (IR_C.hT - IR_C.hN) * k, e = Math.min(1, edgeDist(x, z) / 26), sm = e * e * (3 - 2 * e);
-        return TH(x, z) - 0.5 + (hA + 28.5) * sm;   // over the ground: the ridge's height (hA over the old level -28.5)
+        let h = plateau(x, z, d);
+        for (const P0 of PADS) { const P = padOf(P0.id), bx = Math.max(P.x0 - x, 0, x - P.x1), bz = Math.max(P.z0 - z, 0, z - P.z1), k = 1 - sstep(Math.hypot(bx, bz) / 6); if (k > 0) h += (P.y - h) * k; }
+        const lk = lowK(x, z); if (lk > 0) h += (lowLevel(x, z) - h) * lk;
+        return Math.max(h, TH(x, z) + 0.2);
       };
+      // the ground of the layer: inside the wall - the plateau; outside - the slope from the brow down to the valley (under the ground beyond)
+      const ridgeH = (x, z) => {
+        if (inPoly(x, z)) return inside(x, z, edgeDist(x, z));
+        const E = edgeNear(x, z), he = inside(E.ex, E.ez, 0), rel = he - TH(E.ex, E.ez);
+        if (rel <= 0.3) return TH(x, z) - 12;
+        let D = Math.max(GR.D0, GR.Dk * rel);
+        { const [nx, nz] = TOMBS.n, px = x - TOMBS.e[0], pz = z - TOMBS.e[1], ta = Math.abs(-px * nz + pz * nx), tp = px * nx + pz * nz;   // by David's tombs: a hewn bank, steep
+          if (ta < 16 && tp > -2 && tp < 30) D += (Math.min(D, TOMB_FX - 0.4) - D) * (1 - sstep((ta - 9) / 7)); }
+        if (E.d >= D) return TH(x, z) - 12;
+        return Math.max(TH(x, z) - 0.05, TH(x, z) + rel * (1 - sstep(E.d / D)));
+      };
+      const groundAt = (x, z) => Math.max(TH(x, z), ridgeH(x, z));
       const gyAt = (x, z) => ridgeH(x, z);
       const instBoxes = (parent, list, mat, name) => {   // list [[x, y, z, sx, sy, sz, ry]] - one InstancedMesh (a unit box from its floor up)
         const geo = new BoxGeometry(1, 1, 1).translate(0, 0.5, 0), im = new InstancedMesh(geo, mat, list.length), m4 = new Matrix4(), qq = new Quaternion(), e = new Euler(), v = new Vector3(), sc = new Vector3();
         list.forEach((b, i) => { qq.setFromEuler(e.set(0, b[6] || 0, 0)); m4.compose(v.set(b[0], b[1], b[2]), qq, sc.set(b[3], b[4], b[5])); im.setMatrixAt(i, m4); });
         im.castShadow = im.receiveShadow = true; im.name = name || "irBoxes"; im.userData.noPick = true; parent.add(im); return im;
+      };
+      const instBoxesC = (parent, list, cols, name) => {   // as instBoxes, each box its own colour (cols: hex per box) - a white material
+        const im = instBoxes(parent, list, new MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 }), name), col = new Color();
+        list.forEach((b, i) => im.setColorAt(i, col.setHex(cols[i % cols.length] != null ? cols[i] : 0xd9ccb2)));
+        if (im.instanceColor) im.instanceColor.needsUpdate = true; return im;
+      };
+      // an outline moved inward by d (the outline is convex): the outline clipped by each edge's half-plane moved in by d (edges that vanish
+      // on the way drop out by themselves); null when nothing is left
+      const inset = (d) => {
+        const n = POLY.length, cx = (IR_C.W + IR_C.E) / 2, cz = (IR_C.N + IR_C.tip[1]) / 2;
+        let poly = POLY.map((p2) => p2.slice());
+        for (let i = 0; i < n && poly.length >= 3; i++) {
+          const [ax, az] = POLY[i], [bx, bz] = POLY[(i + 1) % n], l = Math.hypot(bx - ax, bz - az);
+          let nx = -(bz - az) / l, nz = (bx - ax) / l; if (nx * (cx - ax) + nz * (cz - az) < 0) { nx = -nx; nz = -nz; }
+          const f = (p2) => (p2[0] - ax) * nx + (p2[1] - az) * nz - d, out = [];
+          for (let j = 0; j < poly.length; j++) {
+            const P = poly[j], Q = poly[(j + 1) % poly.length], fp = f(P), fq = f(Q);
+            if (fp >= 0) out.push(P);
+            if ((fp >= 0) !== (fq >= 0)) { const t = fp / (fp - fq); out.push([P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t]); }
+          }
+          poly = out;
+        }
+        poly = poly.filter((p2, j) => Math.hypot(p2[0] - poly[(j + 1) % poly.length][0], p2[1] - poly[(j + 1) % poly.length][1]) > 0.5);
+        return poly.length >= 3 ? poly : null;
       };
       const houses = (parent, pts, name) => {   // simple houses: walls 5 x 3.6 x 5 and a flat roof - two InstancedMeshes
         instBoxes(parent, pts.map((p) => [p[0], p[1], p[2], p[3] || 5, 3.6, p[4] || 5, p[5] || 0]), plasterM, name);
@@ -1410,14 +1469,15 @@
         // Rashi's mound: the low wall round it and the earth within, high in the middle and falling to every side
         const LW = 2.0, LT = 0.9;
         for (const [sx, sz, lx, lz] of [[0, -1, C.w, LT], [0, 1, C.w, LT], [-1, 0, LT, C.d], [1, 0, LT, C.d]]) H2.box(T, lx, LW, lz, stoneM, C.x + sx * (hx - LT / 2), gy, C.z + sz * (hz - LT / 2));
-        const moundH = (lx, lz) => { const m = Math.max(Math.abs(lx) / (hx - LT), Math.abs(lz) / (hz - LT)); return LW - 0.2 + 4.2 * (1 - Math.min(1, m) * Math.min(1, m)); };
+        // Rashi (II Samuel 5:9, 3688:113): "וגבה התל באמצע, ומשפע והולך לכל רוח" - a rounded hill, high in its middle, falling to every side (the coordinator's note)
+        const moundH = (lx, lz) => { const m = Math.min(1, Math.hypot(lx / (hx - LT), lz / (hz - LT))); return LW - 0.2 + 7.5 * (0.5 + 0.5 * Math.cos(Math.PI * m)); };
         {
           const geo = new PlaneGeometry(C.w - 2 * LT, C.d - 2 * LT, 28, 44).rotateX(-Math.PI / 2), ps = geo.attributes.position;
           for (let i = 0; i < ps.count; i++) ps.setY(i, moundH(ps.getX(i), ps.getZ(i)));
           geo.computeVertexNormals();
           const mm = new Mesh(geo, earthM); mm.position.set(C.x, gy, C.z); mm.receiveShadow = true; mm.userData.noPick = true; T.add(mm);
         }
-        const yT = (x, z) => gy + moundH(x - C.x, z - C.z);
+        const yT = (x, z) => gy + moundH(x - C.x, z - C.z), yTmin = (x, z, w) => Math.min(yT(x - w / 2, z - w / 2), yT(x + w / 2, z - w / 2), yT(x - w / 2, z + w / 2), yT(x + w / 2, z + w / 2));
         // the pilgrims' tents (before Solomon): four-sided, of cloth
         const tent = (parent, x, y, z, i) => { const t = new Mesh(new ConeGeometry(1.7, 2.4, 4, 1, true).rotateY(Math.PI / 4).translate(0, 1.2, 0), tentMs[i % tentMs.length]); t.position.set(x, y, z); t.rotation.y = (i * 0.7) % 1.5; t.castShadow = true; t.userData.noPick = true; parent.add(t); };
         let k = 0;
@@ -1438,9 +1498,9 @@
         const FT = 0.7, FH = 3.2, GW = 5;   // the fence round the square: a gate in the east (toward her house)
         for (const [sx, sz, lx, lz] of [[0, -1, C.w, FT], [0, 1, C.w, FT], [-1, 0, FT, C.d]]) H2.box(fence, lx, FH, lz, stoneM, C.x + sx * (hx - FT / 2), gy, C.z + sz * (hz - FT / 2));
         for (const sz of [-1, 1]) H2.box(fence, FT, FH, (C.d - GW) / 2, stoneM, C.x + hx - FT / 2, gy, C.z + sz * (GW / 2 + (C.d - GW) / 4));
-        const ht = []; for (const lx of [-6.5, 0.5, 7]) for (const lz of [-12, -2, 9]) ht.push([C.x + lx, yT(C.x + lx, C.z + lz) - 0.2, C.z + lz, 4.6, 4.6, 0]);
+        const ht = []; for (const lx of [-6.5, 0.5, 7]) for (const lz of [-12, -2, 9]) ht.push([C.x + lx, yTmin(C.x + lx, C.z + lz, 4.6) - 0.2, C.z + lz, 4.6, 4.6, 0]);
         houses(housesT, ht, "milloHousesT");
-        const hd = []; for (const [lx, lz] of [[-3, -1], [4, 3], [-1, 12], [2, -13]]) hd.push([C.x + lx, yT(C.x + lx, C.z + lz) - 0.2, C.z + lz, 5, 5, 0.3]);
+        const hd = []; for (const [lx, lz] of [[-2.8, -1.5], [3.2, 2.8], [0.5, 8.5], [-0.8, -9]]) hd.push([C.x + lx, yTmin(C.x + lx, C.z + lz, 5) - 0.2, C.z + lz, 5, 5, 0.3]);   // David's houses on the hill ("ועליו בנה דוד בתים")
         houses(davidT, hd, "milloHousesDavid");
         // Rashi (Sanhedrin 101b): the tower for Pharaoh's daughter - at the city's wall's side (the west, for now), its foot in the low wall
         H2.box(tower, 7, 16, 7, stoneM, C.x - hx + 3.5, gy, C.z);
@@ -1470,25 +1530,73 @@
         ML.city = true;
         const CG = new Group(); CG.name = "irDavidCity"; IR.add(CG);
         let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; for (const [x, z] of POLY) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
-        x0 -= 6; x1 += 6; z0 -= 6; z1 += 6;
+        x0 -= 26; x1 += 26; z0 -= 26; z1 += 26;   // the slopes outside the wall
         // the ridge: a grid over the outline, its outside sunk under the ground
         {
           const nx = Math.round((x1 - x0) / 4), nz = Math.round((z1 - z0) / 4), geo = new PlaneGeometry(x1 - x0, z1 - z0, nx, nz).rotateX(-Math.PI / 2), ps = geo.attributes.position;
-          for (let i = 0; i < ps.count; i++) { const x = ps.getX(i) + (x0 + x1) / 2, z = ps.getZ(i) + (z0 + z1) / 2; ps.setY(i, ridgeH(x, z)); }
-          geo.computeVertexNormals();
-          const rm = new Mesh(geo, new MeshStandardMaterial({ color: 0xb8a37a, roughness: 1 })); rm.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); rm.receiveShadow = true; rm.userData.noPick = true; CG.add(rm);
+          // two meshes on the one grid (vertex colours do not survive the plugin's shared shader patch): the city's ground, light, and under it
+          // the slopes outside the wall, rock-brown - each sunk a little under the other where it is not its own
+          const hts = new Float32Array(ps.count), ins = new Uint8Array(ps.count);
+          for (let i = 0; i < ps.count; i++) { const x = ps.getX(i) + (x0 + x1) / 2, z = ps.getZ(i) + (z0 + z1) / 2; hts[i] = ridgeH(x, z); ins[i] = inPoly(x, z) ? 1 : 0; }
+          const geoS = geo.clone(), psS = geoS.attributes.position;
+          for (let i = 0; i < ps.count; i++) { ps.setY(i, ins[i] ? hts[i] : hts[i] - 0.6); psS.setY(i, ins[i] ? hts[i] - 0.25 : hts[i]); }
+          geo.computeVertexNormals(); geoS.computeVertexNormals();
+          const sm2 = new Mesh(geoS, new MeshStandardMaterial({ color: 0x8c7653, roughness: 1 })); sm2.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); sm2.receiveShadow = true; sm2.userData.noPick = true; sm2.name = "irDavidSlopes"; CG.add(sm2);
+          const rm = new Mesh(geo, new MeshStandardMaterial({ color: 0xcdb88f, roughness: 1 })); rm.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); rm.receiveShadow = true; rm.userData.noPick = true; CG.add(rm);
         }
         // the houses: in the city, clear of the Millo, the fortress, the stairs and David's house
         const FZ = ML.fort, clear = (x, z) => !(Math.abs(x - MILLO_C.x) < MILLO_C.w / 2 + 5 && Math.abs(z - MILLO_C.z) < MILLO_C.d / 2 + 5) && !(x > FZ.x0 - 6 && x < FZ.x1 + 6 && z > FZ.z0 - 6 && z < FZ.z1 + 6) && !(Math.abs(x - ML.davidAt[0]) < 14 && Math.abs(z - ML.davidAt[1]) < 12) && Math.hypot(x - POOL_AT[0], z - POOL_AT[1]) > 15 && !(Math.abs(x - GARDEN_C.x) < GARDEN_C.w / 2 + 4 && Math.abs(z - GARDEN_C.z) < GARDEN_C.d / 2 + 4) && Math.hypot(x - TOMBS_AT[0], z - TOMBS_AT[1]) > 10 && segDist(x, z, STAIR_C.a, STAIR_C.b) > 7;
         let q = 5303; const rr = () => (q = (q * 1664525 + 1013904223) >>> 0) / 4294967296;
-        const pts = [];
-        for (let z = z0 + 8; z < z1 - 6 && pts.length < IR_C.houses; z += 10.5) for (let x = x0 + 8; x < x1 - 6 && pts.length < IR_C.houses; x += 10.5) {
-          if (rr() < 0.22) continue;
-          const xx = x + (rr() - 0.5) * 3, zz = z + (rr() - 0.5) * 3;
-          if (!inPoly(xx, zz) || edgeDist(xx, zz) < 7 || !clear(xx, zz)) continue;
-          pts.push([xx, ridgeH(xx, zz) - 0.4, zz, 5 + rr() * 3, 5 + rr() * 3, (rr() - 0.5) * 0.3]);
+        // the houses on the terraces (the coordinator's note): rows along the heights - each terrace a lane on its lower side and a row of
+        // houses of different sizes (one or two storeys, flat roofs of earth and plaster), here and there a small court, a gap for an alley
+        const WALLC = [0xd9ccb2, 0xcfbf9f, 0xe2d6bd, 0xc8b590, 0xd4c3a2], ROOFC = [0x9c8664, 0xa89170, 0x8f7a5a, 0xb09a74, 0x947e5c];
+        const hs = [], hsC = [], rf = [], rfC = [], courts = [], rw = [];
+        const foot = (x, z, w, d, ry) => { const c = Math.cos(ry), n = Math.sin(ry); let lo = Infinity, hi = -Infinity; for (const [u, v] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2], [0, 0]]) { const y = ridgeH(x + u * c + v * n, z - u * n + v * c); lo = Math.min(lo, y); hi = Math.max(hi, y); } return [lo, hi]; };
+        for (let k = 0; k < 11 && hs.length < IR_C.houses; k++) {
+          const dk = 2 + k * GR.RS, ring = inset(dk + 5.6);
+          if (!ring) break;
+          for (let i = 0; i < ring.length && hs.length < IR_C.houses; i++) {
+            const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length], Le = Math.hypot(bx - ax, bz - az), vx = (bx - ax) / Le, vz = (bz - az) / Le, ry = -Math.atan2(vz, vx);
+            let sPos = 3, run = 0;
+            while (sPos < Le - 3 && hs.length < IR_C.houses) {
+              const court = rr() < 0.12, w = court ? 6.5 : 4 + rr() * 4.2, dd = court ? 5.6 : 4.2 + rr() * 1.6;
+              if (sPos + w > Le - 2.5) break;
+              const cx = ax + vx * (sPos + w / 2), cz = az + vz * (sPos + w / 2);
+              sPos += w + 0.5 + rr() * 1.0; run++;
+              if (run > 4 + rr() * 4) { sPos += 3.2; run = 0; }   // an alley across the rows
+              if (!inPoly(cx, cz) || !clear(cx, cz) || lowK(cx, cz) > 0.2 || rr() < 0.08) continue;
+              const [lo, hi] = foot(cx, cz, w, dd, ry);
+              if (court) {   // a small court: a low wall on three sides, its open side to the lane
+                const nx2 = -vz, nz2 = vx, back = (dd / 2) * ((nx2 * ((IR_C.W + IR_C.E) / 2 - cx) + nz2 * ((IR_C.N + IR_C.tip[1]) / 2 - cz)) > 0 ? 1 : -1);
+                courts.push([cx + nx2 * back, lo - 0.3, cz + nz2 * back, w, hi - lo + 2.0, 0.5, ry]);
+                for (const sd of [-1, 1]) courts.push([cx + vx * sd * (w / 2 - 0.25), lo - 0.3, cz + vz * sd * (w / 2 - 0.25), 0.5, hi - lo + 2.0, dd, ry]);
+                continue;
+              }
+              const two = rr() < 0.28, top = hi + (two ? 6.0 : 3.3), ci = Math.floor(rr() * 5);
+              hs.push([cx, lo - 0.35, cz, w, top - lo + 0.35, dd, ry]); hsC.push(WALLC[ci]);
+              rf.push([cx, top, cz, w + 0.3, 0.3, dd + 0.3, ry]); rfC.push(ROOFC[(ci + Math.floor(rr() * 3)) % 5]);
+            }
+          }
         }
-        houses(CG, pts, "irDavidHouses");
+        // the terraces' retaining walls: at the foot of each rise, from the lower terrace to a little over the upper (in pieces along the heights)
+        for (let k = 0; k < GR.NT; k++) {
+          const ring = inset(2 + (k + 0.72) * GR.RS + 0.2);
+          if (!ring) break;
+          for (let i = 0; i < ring.length; i++) {
+            const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length], Le = Math.hypot(bx - ax, bz - az), np = Math.max(1, Math.round(Le / 12)), ry = -Math.atan2(bz - az, bx - ax);
+            for (let j = 0; j < np; j++) {
+              const u = (j + 0.5) / np, x = ax + (bx - ax) * u, z = az + (bz - az) * u;
+              if (!inPoly(x, z) || !clear(x, z) || lowK(x, z) > 0.05) continue;
+              const b0 = brow(x, z), cz2 = Cz(z), lo = b0 + cz2 * k / GR.NT, up = b0 + cz2 * (k + 1) / GR.NT;
+              rw.push([x, lo - 0.6, z, Le / np + 0.3, up - lo + 1.1, 0.7, ry]);
+            }
+          }
+        }
+        const pts = hs;
+        instBoxesC(CG, hs, hsC, "irDavidHouses"); instBoxesC(CG, rf, rfC, "irDavidHousesRoof");
+        if (courts.length) instBoxes(CG, courts, M2.stoneLight || M2.stone, "irDavidCourts");
+        if (rw.length) instBoxes(CG, rw, M2.stone, "irDavidTerraces");
+        ML.terraceCount = rw.length; ML.courtCount = courts.length / 3;
         ML.cityCount = pts.length;
         // the wall round the city (stone, 9 high on the outline); before Solomon a breach by the Millo (the user: "פרצה בחומה"; Rashi I Kings
         // 11:27 "שהיה הפרץ אחורי המלוא"); Hezekiah - another wall outside it by the Millo, and the pool between the two walls
@@ -1498,9 +1606,10 @@
         const cxm = (IR_C.W + IR_C.E) / 2, czm = (IR_C.N + IR_C.tip[1]) / 2;
         const seg = (parent, ax, az, bx, bz, h, t, out) => {
           const L = Math.hypot(bx - ax, bz - az); let nx = -(bz - az) / L, nz = (bx - ax) / L; if (nx * (cxm - (ax + bx) / 2) + nz * (czm - (az + bz) / 2) < 0) { nx = -nx; nz = -nz; }
-          const g0 = Math.min(TH(ax, az), TH(bx, bz), TH((ax + bx) / 2, (az + bz) / 2)), g1 = Math.max(TH(ax, az), TH(bx, bz), TH((ax + bx) / 2, (az + bz) / 2));
-          let hi = g1; if (!out) for (const u of [0.1, 0.3, 0.5, 0.7, 0.9]) for (const d of [5, 10]) hi = Math.max(hi, ridgeH(ax + (bx - ax) * u + nx * d, az + (bz - az) * u + nz * d));
-          const yb = g0 - 1.5, top = Math.max(g1 + h, hi + 5.5);
+          const g0 = Math.min(TH(ax, az), TH(bx, bz), TH((ax + bx) / 2, (az + bz) / 2));
+          let hi = -Infinity;
+          for (const u of [0, 0.15, 0.3, 0.5, 0.7, 0.85, 1]) { const x = ax + (bx - ax) * u, z = az + (bz - az) * u; hi = Math.max(hi, out ? groundAt(x, z) : ridgeH(x + nx * 1.6, z + nz * 1.6)); }   // on the brow: the plateau just inside
+          const yb = g0 - 1.5, top = hi + (out ? h : 6.5);
           const m = H2.box(parent, L + t * 0.6, top - yb, t, wallM, (ax + bx) / 2, yb, (az + bz) / 2); m.rotation.y = -Math.atan2(bz - az, bx - ax); return m;
         };
         for (let i = 0; i < POLY.length; i++) {
@@ -1522,18 +1631,18 @@
           seg(outer, ax - off, az, bx - off, bz - 8, WH - 1, WT, true); seg(outer, cx2 - off, cz2, ax - off, az, WH - 1, WT, true);
           seg(outer, bx - off, bz - 8, bx + 30, bz - 8, WH - 1, WT, true);
           const pz = MILLO_C.z + 14, px = ax + (bx - ax) * (pz - az) / (bz - az) - off / 2;   // midway between the two walls
-          const pool = new Mesh(new BoxGeometry(9, 0.3, 22), new MeshStandardMaterial({ color: 0x3f7fb5, roughness: 0.15, metalness: 0.1 })); pool.position.set(px, TH(px, pz) + 0.25, pz); pool.userData.noPick = true; outer.add(pool);
-          for (const [dx, dz, lx, lz] of [[-5, 0, 0.8, 23.6], [5, 0, 0.8, 23.6], [0, -11.4, 10.6, 0.8], [0, 11.4, 10.6, 0.8]]) H2.box(outer, lx, 1.2, lz, M2.stoneLight || M2.stone, px + dx, TH(px, pz) - 0.6, pz + dz);
+          const pool = new Mesh(new BoxGeometry(9, 0.3, 22), new MeshStandardMaterial({ color: 0x3f7fb5, roughness: 0.15, metalness: 0.1 })); const pgy = Math.max(groundAt(px - 5, pz), groundAt(px + 5, pz), groundAt(px, pz)); pool.position.set(px, pgy + 0.25, pz); pool.userData.noPick = true; outer.add(pool);
+          for (const [dx, dz, lx, lz] of [[-5, 0, 0.8, 23.6], [5, 0, 0.8, 23.6], [0, -11.4, 10.6, 0.8], [0, 11.4, 10.6, 0.8]]) H2.box(outer, lx, 4.2, lz, M2.stoneLight || M2.stone, px + dx, pgy - 3.6, pz + dz);
           ML.poolAt = [px, pz];
         }
         // towers on the wall (in Rashi's reading - the whole city a fortress, Rashi II Sam 5:6 "מצודת ציון נקראה יבוס")
-        const tl = []; for (const [ax, az, bx, bz] of segs) for (const u of [0, 0.5]) { const x = ax + (bx - ax) * u, z = az + (bz - az) * u; const L2 = Math.hypot(cxm - x, czm - z) || 1, hiT = Math.max(TH(x, z), ridgeH(x + (cxm - x) / L2 * 5, z + (czm - z) / L2 * 5), ridgeH(x + (cxm - x) / L2 * 10, z + (czm - z) / L2 * 10)); tl.push([x, TH(x, z) - 2, z, 6.5, Math.max(TH(x, z) + WH, hiT + 5.5) + 4 - (TH(x, z) - 2), 6.5, -Math.atan2(bz - az, bx - ax)]); }
+        const tl = []; for (const [ax, az, bx, bz] of segs) for (const u of [0, 0.5]) { const x = ax + (bx - ax) * u, z = az + (bz - az) * u; const L2 = Math.hypot(cxm - x, czm - z) || 1, hiT = Math.max(ridgeH(x + (cxm - x) / L2 * 1.6, z + (czm - z) / L2 * 1.6), ridgeH(x + (cxm - x) / L2 * 4, z + (czm - z) / L2 * 4)); tl.push([x, TH(x, z) - 2, z, 6.5, hiT + 6.5 + 4 - (TH(x, z) - 2), 6.5, -Math.atan2(bz - az, bx - ax)]); }
         instBoxes(towers, tl, wallM, "irDavidTowers");
         // the fortress of Zion (the default reading - Metzudat David II Sam 5:7, 3329:252 "שם מבצר חזק, סמוך למקום יבוס"; Abarbanel 3577:125;
         // the Malbim 3390:198): a walled fort in the city's upper part, its gate to the south; its tower - "מגדל דוד, הוא מצודת ציון" (Rashi Song
         // 4:4, 3659:208), high, seen from afar (Metzudat David 3316:122), shields hung on its walls ("לתלות המגינים על כתלי המגדל", 3316:123)
         const fortG = new Group(); CG.add(fortG);
-        { const F = ML.fort, FH = 13, FT2 = 3, fy = ridgeH((F.x0 + F.x1) / 2, (F.z0 + F.z1) / 2) - 1, w = F.x1 - F.x0, d = F.z1 - F.z0, gw = 6;
+        { const F = ML.fort, FH = 15, FT2 = 3, fy = padOf("fort").y - 3, w = F.x1 - F.x0, d = F.z1 - F.z0, gw = 6;
           H2.box(fortG, w, FH, FT2, wallM, (F.x0 + F.x1) / 2, fy, F.z0 + FT2 / 2);
           H2.box(fortG, FT2, FH, d, wallM, F.x0 + FT2 / 2, fy, (F.z0 + F.z1) / 2); H2.box(fortG, FT2, FH, d, wallM, F.x1 - FT2 / 2, fy, (F.z0 + F.z1) / 2);
           for (const sd of [-1, 1]) H2.box(fortG, (w - gw) / 2, FH, FT2, wallM, (F.x0 + F.x1) / 2 + sd * (gw / 2 + (w - gw) / 4), fy, F.z1 - FT2 / 2);
@@ -1554,20 +1663,29 @@
         // the king's garden by the pool (decision 161): walled, a court of the king's own within the city - a few trees and bushes, no orchard
         // ("ברכת השלח לגן־המלך", Nehemiah 3:15; the Malbim 3370:85 "והגן והברכה היו תוך חומת העיר")
         const gardenG = new Group(); CG.add(gardenG);
-        { const G2 = GARDEN_C, gy2 = (x, z) => ridgeH(x, z), wt = 0.8, wh = 2.8, cx4 = G2.x, cz4 = G2.z, hx4 = G2.w / 2, hz4 = G2.d / 2;
+        { const G2 = GARDEN_C, gy2 = (x, z) => ridgeH(x, z), wt = 0.7, wh = 1.9, cx4 = G2.x, cz4 = G2.z, hx4 = G2.w / 2, hz4 = G2.d / 2;
           for (const [sx, sz, lx, lz] of [[0, -1, G2.w, wt], [0, 1, G2.w, wt], [-1, 0, wt, G2.d - 4], [1, 0, wt, G2.d]]) H2.box(gardenG, lx, wh + 2, lz, M2.stoneLight || M2.stone, cx4 + sx * (hx4 - wt / 2), gy2(cx4 + sx * hx4, cz4 + sz * hz4) - 2, cz4 + sz * (hz4 - wt / 2) + (sx === -1 ? 2 : 0));
           const trunkM = new MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.9 }), leafM2 = [0x4f7f3a, 0x3f6f30, 0x5a8a40].map((c) => new MeshStandardMaterial({ color: c, roughness: 0.85 }));
           let q2 = 1610; const r2 = () => (q2 = (q2 * 1664525 + 1013904223) >>> 0) / 4294967296;
-          for (let i = 0; i < 5; i++) { const x = cx4 + (r2() - 0.5) * (G2.w - 6), z = cz4 + (r2() - 0.5) * (G2.d - 5), y = gy2(x, z); const tr = new Mesh(new CylinderGeometry(0.2, 0.28, 3, 6).translate(0, 1.5, 0), trunkM); tr.position.set(x, y, z); gardenG.add(tr); const cn = new Mesh(new SphereGeometry(1.6, 10, 8), leafM2[i % 3]); cn.position.set(x, y + 3.8, z); cn.scale.set(1, 0.85, 1); cn.castShadow = true; gardenG.add(cn); }
-          for (let i = 0; i < 8; i++) { const x = cx4 + (r2() - 0.5) * (G2.w - 3), z = cz4 + (r2() - 0.5) * (G2.d - 3), y = gy2(x, z); const b2 = new Mesh(new SphereGeometry(0.8, 8, 6), leafM2[(i + 1) % 3]); b2.position.set(x, y + 0.5, z); b2.scale.set(1.2, 0.7, 1.1); gardenG.add(b2); } }
-        // David's tombs (decisions 162, 167 b): an opening of a cave in a rock, outside the wall and close by it, near the pool
-        // ("עד־נגד קברי דויד ועד־הברכה", Nehemiah 3:16; the Radbaz) - no tunnel. The group's local +x is the wall's outward side.
+          for (let i = 0; i < 7; i++) { const x = cx4 + (r2() - 0.5) * (G2.w - 5), z = cz4 + (r2() - 0.5) * (G2.d - 4.5), y = gy2(x, z); const tr = new Mesh(new CylinderGeometry(0.2, 0.28, 3, 6).translate(0, 1.5, 0), trunkM); tr.position.set(x, y, z); gardenG.add(tr); const cn = new Mesh(new SphereGeometry(1.6, 10, 8), leafM2[i % 3]); cn.position.set(x, y + 3.8, z); cn.scale.set(1, 0.85, 1); cn.castShadow = true; gardenG.add(cn); }
+          for (let i = 0; i < 12; i++) { const x = cx4 + (r2() - 0.5) * (G2.w - 3), z = cz4 + (r2() - 0.5) * (G2.d - 3), y = gy2(x, z); const b2 = new Mesh(new SphereGeometry(0.8, 8, 6), leafM2[(i + 1) % 3]); b2.position.set(x, y + 0.5, z); b2.scale.set(1.2, 0.7, 1.1); gardenG.add(b2); } }
+        // David's tombs (decisions 162, 167 b; the coordinator's note): an opening hewn in the rock - a vertical rock face cut in the slope
+        // outside the wall (the slope from the brow down to the valley), a dark rectangular opening with a lintel, a rolling stone beside it
+        // ("עד־נגד קברי דויד ועד־הברכה", Nehemiah 3:16; the Radbaz) - no tunnel. The group's frame: its origin on the wall's line, +x outward.
         const tombG = new Group(); CG.add(tombG);
-        { const [tx5, tz5] = TOMBS_AT, [nx5, nz5] = TOMBS.n, ty5 = TH(tx5, tz5) - 1, rockM2 = new MeshStandardMaterial({ color: 0xa8957a, roughness: 0.95 });
-          tombG.position.set(tx5, ty5, tz5); tombG.rotation.y = Math.atan2(-nz5, nx5);
-          for (const [dx, dz, sx, sy, sz] of [[0, 0, 5.5, 4.2, 4.5], [-3.2, 2.8, 3.8, 3.2, 3.6], [-2.0, -3.4, 3.6, 2.8, 3.2]]) { const r = new Mesh(new IcosahedronGeometry(1, 1), rockM2); r.position.set(dx, sy * 0.5, dz); r.scale.set(sx, sy, sz); r.castShadow = true; tombG.add(r); }
-          const door = new Mesh(new PlaneGeometry(1.8, 2.2), new MeshStandardMaterial({ color: 0x1a1410, roughness: 1, side: DoubleSide })); door.position.set(5.32, 2.0, 0); door.rotation.y = Math.PI / 2; tombG.add(door);
-          ML.tombDoor = [tx5 + nx5 * 5.4, ty5 + 2, tz5 + nz5 * 5.4]; }
+        { const [ex5, ez5] = TOMBS.e, [nx5, nz5] = TOMBS.n, FX = TOMB_FX, ty5 = TH(ex5 + nx5 * FX, ez5 + nz5 * FX), slopeAt = (d) => groundAt(ex5 + nx5 * d, ez5 + nz5 * d);
+          const rockM2 = new MeshStandardMaterial({ color: 0x9c8868, roughness: 0.95 }), darkM = new MeshStandardMaterial({ color: 0x15100c, roughness: 1 }), lintM = new MeshStandardMaterial({ color: 0xb3a07e, roughness: 0.9 });
+          tombG.position.set(ex5, ty5, ez5); tombG.rotation.y = Math.atan2(-nz5, nx5);
+          const back = 1.5, faceTop = Math.max(3.6, slopeAt(back + 0.2) - ty5), W5 = 11;
+          const blk = new Mesh(new BoxGeometry(FX - back, faceTop + 0.8, W5).translate(0, (faceTop + 0.8) / 2, 0), rockM2); blk.position.set((FX + back) / 2, -0.8, 0); blk.castShadow = blk.receiveShadow = true; tombG.add(blk);
+          for (const sd of [-1, 1]) { const ch = new Mesh(new BoxGeometry(3.2, faceTop * 0.7, 1.6).translate(0, faceTop * 0.35, 0), rockM2); ch.position.set(FX + 0.6, -0.4, sd * (W5 / 2 - 0.4)); ch.rotation.y = sd * 0.25; ch.castShadow = true; tombG.add(ch); }   // the cut's cheeks
+          const dw = 1.5, dh = 2.1, door = new Mesh(new BoxGeometry(0.6, dh, dw).translate(0, dh / 2, 0), darkM); door.position.set(FX - 0.25, 0, 0); tombG.add(door);
+          const lint = new Mesh(new BoxGeometry(0.5, 0.5, dw + 1.0), lintM); lint.position.set(FX + 0.12, dh + 0.25, 0); lint.castShadow = true; tombG.add(lint);
+          for (const sd of [-1, 1]) { const jb = new Mesh(new BoxGeometry(0.35, dh, 0.35), lintM); jb.position.set(FX + 0.08, dh / 2, sd * (dw / 2 + 0.18)); tombG.add(jb); }
+          const golel = new Mesh(new CylinderGeometry(1.05, 1.05, 0.45, 20).rotateZ(Math.PI / 2), lintM); golel.position.set(FX + 0.3, 1.05, dw / 2 + 1.5); golel.castShadow = true; tombG.add(golel);   // the rolling stone, rolled aside
+          const yard = new Mesh(new BoxGeometry(4.5, 0.2, W5 - 1).translate(0, 0.1, 0), new MeshStandardMaterial({ color: 0xb5a17c, roughness: 1 })); yard.position.set(FX + 2.25, -0.12, 0); yard.receiveShadow = true; tombG.add(yard);
+          tombG.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+          ML.tombDoor = [ex5 + nx5 * FX, ty5 + 1, ez5 + nz5 * FX]; }
         // David's house (Nehemiah 12:37 "מעל לבית דויד"), and the tent he pitched for the ark until it went up to the Temple ("להעלות את־ארון
         // ברית־יהוה מעיר דוד", I Kings 8:1) - the tent only before Solomon's house of God
         const davidG = new Group(), arkTent = new Group(); CG.add(davidG, arkTent);
@@ -1577,7 +1695,7 @@
         ML.cityParts = { wallG, breachFill, outer, towers, fortG, towerG, stairG, davidG, arkTent };
         applyMillo();
       };
-      const ensure = () => { if (!IR.visible) return; if (!ML.parts && !ML.failed) { try { buildMillo(); applyMillo(); } catch (e) { console.warn("[parallels] millo", e && e.message); ML.err = String(e && e.stack || e).slice(0, 300); ML.parts = null; ML.failed = true; } } if (!ML.city) { try { buildCity(); } catch (e) { console.warn("[parallels] ir david", e && e.message); ML.errC = String(e && e.stack || e).slice(0, 300); } } };
+      const ensure = () => { if (!IR.visible) return; if (!ML.parts && !ML.failed) { try { buildMillo(); applyMillo(); } catch (e) { console.warn("[parallels] millo", e && e.message); ML.err = String(e && e.stack || e).slice(0, 300); ML.parts = null; ML.failed = true; } } if (!ML.city) { try { const t0 = performance.now(); buildCity(); ML.buildMs = Math.round(performance.now() - t0); } catch (e) { console.warn("[parallels] ir david", e && e.message); ML.errC = String(e && e.stack || e).slice(0, 300); } } };
       ctx.animated.push(() => { if (IR.visible && ((!ML.parts && !ML.failed) || !ML.city) && fnc(ctx.shared.floorY)) ensure(); });
       const setLayer = (on) => {
         IR.visible = !!on;
@@ -1588,7 +1706,7 @@
         }
         return IR.visible;
       };
-      ctx.shared.irDavid = { get on() { return IR.visible; }, set: setLayer, millo: MILLO_C, poly: () => IR_C.poly, stats: () => ({ houses: ML.cityCount || 0, millo: !!ML.parts, err: ML.err, errC: ML.errC }) };
+      ctx.shared.irDavid = { get on() { return IR.visible; }, set: setLayer, millo: MILLO_C, ground: (x, z) => ridgeH(x, z), poly: () => IR_C.poly, stats: () => ({ houses: ML.cityCount || 0, terraces: ML.terraceCount || 0, courts: ML.courtCount || 0, millo: !!ML.parts, err: ML.err, errC: ML.errC, buildMs: ML.buildMs }) };
       ctx.shared.millo = {
         get form() { return ML.form; }, get time() { return ML.time; },
         setForm(f) { ML.form = f === "tel" ? "tel" : "plaza"; applyMillo(); return ML.form; },
@@ -1609,7 +1727,7 @@
       ctx.labels.push({ text: "מגדל דוד — ״הוא מצודת ציון״ (רש״י שיר השירים ד, ד); מגינים על כתליו", x: ML.towerAt[0], y: 27, z: ML.towerAt[1], size: 1.8, layers: ["irDavid"] });
       ctx.labels.push({ text: "״המעלות היורדות מעיר דויד״ (נחמיה ג, טו)", x: (STAIR_C.a[0] + STAIR_C.b[0]) / 2 + 6, y: -12, z: (STAIR_C.a[1] + STAIR_C.b[1]) / 2, size: 1.8, layers: ["irDavid"] });
       ctx.labels.push({ text: "גן המלך — ״ברכת השלח לגן־המלך״ (נחמיה ג, טו)", x: GARDEN_C.x, y: -14, z: GARDEN_C.z, size: 1.8, layers: ["irDavid"] });
-      ctx.labels.push({ text: "קברי בית דוד — מחוץ לחומה, סמוכים לה (רדב״ז); ״עד־נגד קברי דויד ועד־הברכה״ (נחמיה ג, טז)", x: TOMBS_AT[0], y: -12, z: TOMBS_AT[1], size: 1.8, layers: ["irDavid"] });
+      ctx.labels.push({ text: "קברי בית דוד — מחוץ לחומה, סמוכים לה (רדב״ז); ״עד־נגד קברי דויד ועד־הברכה״ (נחמיה ג, טז)", x: TOMBS_AT[0], y: -15, z: TOMBS_AT[1], size: 1.8, layers: ["irDavid"] });
       ctx.labels.push({ text: "ברכת השלח — בתוך החומה (מלבי״ם נחמיה ג)", x: POOL_AT[0], y: -20, z: POOL_AT[1], size: 1.8, layers: ["irDavid"] });
       ctx.labels.push({ text: "המשנה — לשיטת ״יש שפותרים״ ברש״י (מלכים ב כב, יד): ״בין שתי החומות, שהיא משנה לעיר״", x: -17, y: -14, z: 800, size: 1.6, layers: ["irDavid", "irHezekiah"] });
       ctx.labels.push({ text: "בית דוד", x: ML.davidAt[0], y: -2, z: ML.davidAt[1], size: 2, layers: ["irDavid"] });
