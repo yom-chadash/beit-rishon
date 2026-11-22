@@ -251,6 +251,7 @@
       const rim = sm(1500, 2500, Math.hypot(x - CX, z - CZ)) * 260;
       return GROUND_Y + ramp * Math.max(h * 0.2, -5) + rim * 0.15 * ramp - sm(35, 100, d) * valley(x, z);
     };
+    ctx.shared.terrainH = terrainH;   // CITY_C (fix-c, 22.11.2026): the ground's height, for the City of David's ridge (59-parallels.js)
     try {
       const SIZE = 5200, SEG = 220;
       const geo = new PlaneGeometry(SIZE, SIZE, SEG, SEG);
