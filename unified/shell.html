@@ -69,6 +69,22 @@
   #rights:hover,#rights:focus-visible{background:var(--tm-card-hover);outline:none}
   #lic{position:absolute;z-index:6;top:18px;left:50%;transform:translateX(-50%);width:min(52em,calc(100% - 28px));max-height:calc(100% - 36px);display:flex;flex-direction:column;overflow:hidden;background:var(--tm-card-note);border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);box-shadow:0 14px 40px var(--tm-shade-note);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:16px 22px 14px;color:var(--tm-ink-note);font-family:var(--font-main);font-size:min(0.95rem,3.2vh,4vw);line-height:1.65}
   #lic[hidden]{display:none}
+  header.topbar .tb-l{display:flex;align-items:center;gap:10px}
+  #news-btn{font-family:var(--font-ui);font-size:0.82rem;font-weight:600;padding:4px 14px;border-radius:var(--radius-pill);cursor:pointer;background:var(--color-primary);color:var(--color-on-primary);border:0;white-space:nowrap}
+  #news-btn:hover,#news-btn:focus-visible{filter:brightness(1.12);outline:none}
+  #news{position:absolute;z-index:6;top:18px;left:50%;transform:translateX(-50%);width:min(52em,calc(100% - 28px));max-height:calc(100% - 36px);display:flex;flex-direction:column;overflow:hidden;background:var(--tm-card-note);border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);box-shadow:0 14px 40px var(--tm-shade-note);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:16px 22px 14px;color:var(--tm-ink-note);font-family:var(--font-ui);font-size:min(0.9rem,3.1vh,3.9vw);line-height:1.6}
+  #news[hidden]{display:none}
+  #news > h2{flex:0 0 auto;font-family:var(--font-main);font-size:1.55em;line-height:1.3;color:var(--tm-gold);margin:0 0 8px}
+  #news .body{flex:1 1 auto;min-height:0;overflow:auto;padding-inline-end:6px}
+  #news .big{font-family:var(--font-main);font-size:1.6em;font-weight:800;color:var(--tm-gold);text-align:center;border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);padding:8px 12px;margin:2px 0 12px}
+  #news h3{font-family:var(--font-main);font-size:1.2em;color:var(--tm-gold);margin:14px 0 6px}
+  #news ul{list-style:disc;padding-inline-start:20px;margin:0 0 6px}
+  #news ul ul{list-style:circle;margin:4px 0 2px}
+  #news li{margin:0 0 5px}
+  #news b{color:var(--tm-gold)}
+  #news .foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+  #news .foot span{font-size:0.85em;color:var(--tm-ink-dim)}
+  #news .foot button{font-family:var(--font-ui);font-size:0.95em;font-weight:600;padding:7px 22px;border-radius:var(--radius-pill);cursor:pointer;background:var(--color-primary);color:var(--color-on-primary);border:0;white-space:nowrap}
   #lic .body{flex:1 1 auto;min-height:0;overflow:auto;padding-inline-end:6px}
   #lic h2{font-size:1.5em;line-height:1.3;color:var(--tm-gold);margin:4px 0 10px}
   #lic h3{font-size:1.15em;color:var(--tm-gold);margin:14px 0 6px}
@@ -191,7 +207,7 @@
 </head>
 <body>
 <div id="home">
-  <header class="topbar"><div class="title">בית המקדש</div><span id="version">v__PLUGIN_VERSION__</span></header>
+  <header class="topbar"><div class="title">בית המקדש</div><div class="tb-l"><button type="button" id="news-btn" aria-haspopup="dialog" aria-controls="news">מה חדש בגרסה __PLUGIN_VERSION__</button><span id="version">v__PLUGIN_VERSION__</span></div></header>
   <div id="scene">
 __BACKGROUND_SVG__
     <div id="uni-note" role="dialog" aria-labelledby="uni-note-t" hidden>
@@ -204,6 +220,11 @@ __BACKGROUND_SVG__
         <li>שאר החידושים — בחלון <b>״מה חדש״</b> שנפתח בכל בית.</li>
       </ul>
       <div class="foot"><span>ההודעה הזאת מוצגת פעם אחת.</span><button type="button" id="uni-note-ok">הבנתי</button></div>
+    </div>
+    <div id="news" role="dialog" aria-modal="true" aria-label="מה חדש בגרסה __PLUGIN_VERSION__" hidden>
+      <h2>מה חדש בגרסה __PLUGIN_VERSION__</h2>
+      <div class="body">__UNIFIED_NEWS_HTML__</div>
+      <div class="foot"><span>אפשר לפתוח שוב בכפתור ״מה חדש״ שבסרגל העליון.</span><button type="button" id="news-close">סגירה</button></div>
     </div>
     <div id="lic" role="dialog" aria-modal="true" aria-label="רישיון ותנאי שימוש" hidden>
       <div class="body">__LICENSE_HTML__</div>
@@ -608,6 +629,7 @@ __BACKGROUND_SVG__
       var b = document.getElementById("pick-" + (HOUSES.filter(function (h) { return frames[h]; })[0] || "rishon"));
       try { b && b.focus({ preventScroll: true }); } catch (_) {}
       if (noteMaybe) noteMaybe();
+      if (newsMaybe) setTimeout(newsMaybe, 400);
     } else {
       frameFor(to);
       lastHouse = to;
@@ -643,6 +665,39 @@ __BACKGROUND_SVG__
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
     document.addEventListener("pointerdown", function (e) { if (!dlg.hidden && !dlg.contains(e.target) && e.target !== btn && !btn.contains(e.target)) close(); });
   })();
+  // ---------- the unified plugin's "מה חדש" on the choice screen (the user, 22.11.2026: "את המה חדש של המאוחד שים במסך הבחירה") ----------
+  // Opened by the top bar's button; and once per version by itself, on the choice screen, when the one-time note is not showing.
+  var newsMaybe = null;
+  (function () {
+    var KEY = "tm.unified.news.seen", VER = "__PLUGIN_VERSION__";
+    var dlg = document.getElementById("news"), btn = document.getElementById("news-btn"), x = document.getElementById("news-close");
+    if (!dlg || !btn || !x) return;
+    var seenLs = function () { try { return localStorage.getItem(KEY) === VER; } catch (_) { return false; } };
+    var mark = function () {
+      try { localStorage.setItem(KEY, VER); } catch (_) {}
+      if (OTZ) { try { Promise.resolve(window.Otzaria.call("storage.set", { key: KEY, value: VER })).catch(function () {}); } catch (_) {} }
+    };
+    var show = function () { dlg.hidden = false; var b = dlg.querySelector(".body"); if (b) b.scrollTop = 0; try { x.focus({ preventScroll: true }); } catch (_) {} };
+    var close = function () { if (dlg.hidden) return; dlg.hidden = true; mark(); };
+    btn.addEventListener("click", function () { if (dlg.hidden) show(); else close(); });
+    x.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    Array.prototype.forEach.call(document.querySelectorAll(".house"), function (b) { b.addEventListener("click", close); });
+    var allowed = false;
+    newsMaybe = function () {
+      var note = document.getElementById("uni-note");
+      if (!allowed || seenLs() || current !== "home" || !dlg.hidden || (note && !note.hidden)) return;
+      show();
+    };
+    if (seenLs()) return;
+    var done = false;
+    var decide = function (v) { if (done) return; done = true; if (v === VER) { try { localStorage.setItem(KEY, VER); } catch (_) {} } else { allowed = true; setTimeout(function () { if (newsMaybe) newsMaybe(); }, 300); } };
+    if (!OTZ) { decide(null); return; }
+    try {
+      Promise.resolve(window.Otzaria.call("storage.get", { key: KEY })).then(function (r) { decide(r && r.success !== false ? r.data : null); }, function () { decide(null); });
+    } catch (_) { decide(null); }
+    setTimeout(function () { decide(null); }, 1200);
+  })();
   // ---------- 2.0.2: the one-time note about the unified plugin ----------
   // Shown on the choice screen until it is closed ("הבנתי") or a house is chosen while it shows; remembered in Otzaria's plugin
   // storage (storage.get / storage.set) and in localStorage (the only store outside Otzaria) - either one saying "seen" is enough.
@@ -667,7 +722,7 @@ __BACKGROUND_SVG__
       try { okBtn.focus({ preventScroll: true }); } catch (_) {}
     };
     noteMaybe = open;   // the plugin may open straight into a house (a book's button): the note waits for the choice screen
-    var dismiss = function () { if (note.hidden) return; noteClosedAt = Date.now(); close(); };
+    var dismiss = function () { if (note.hidden) return; noteClosedAt = Date.now(); close(); if (newsMaybe) setTimeout(newsMaybe, 300); };
     okBtn.addEventListener("click", dismiss);
     note.addEventListener("keydown", function (e) { if (e.key === "Escape" || e.key === "Esc" || e.key === "Enter") { e.stopPropagation(); dismiss(); } });
     Array.prototype.forEach.call(document.querySelectorAll(".house"), function (b) { b.addEventListener("click", close); });
