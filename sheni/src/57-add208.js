@@ -772,7 +772,9 @@
       const mWater = new MeshStandardMaterial({ color: 0x3e7fb8, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.86 });
       const mStream = new MeshStandardMaterial({ color: 0x8fc3ec, roughness: 0.1, transparent: true, opacity: 0.85 });
       const mPath = new MeshStandardMaterial({ color: 0xcbbd9a, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-      const PATH = [[0, 366], [2, 392], [7, 425], [14, 460], [21, 495], [26, 522], [29, 538]];   // from the foot of the western Chulda stairs
+      // CHULDA_RAMPS_B2 (decision 103): from the foot of the western gate of Chulda's ramp (20-mount.js, ctx2.shared.chuldaRamp)
+      const RP = SH.chuldaRamp || { z0: 335, zf: 364.5, yf: -28, yAt: (z) => -28 * Math.min(1, Math.max(0, (z - 335) / 29.5)) };
+      const PATH = [[0, RP.zf + 1]].concat([[2, 392], [7, 425], [14, 460], [21, 495], [26, 522], [29, 538]].filter((q) => q[1] > RP.zf + 6));
       const streamTo = (yb) => { const SP = SHL.SP; if (!SP.st) return; const h = Math.max(0.05, SP.y - yb); SP.st.position.set(SP.x, yb + h / 2, SP.zT); SP.st.scale.y = h; };
       const buildPool = () => {
         if (built) return;
@@ -803,7 +805,7 @@
         SP.gy = gy;
         SP.y = gy + Math.max(1.15, offF.y + 0.34);   // the spout's tip
         box(2.6, SP.y - gy + 1.15, 1.6, new MeshStandardMaterial({ color: 0xb4703a, roughness: 0.95 }), SP.x, gy - 0.4, SP.z + 0.8);   // SHILOACH_CHALAMISH_B2: the mouth's block - part of the rock face
-        const spout = new Mesh(new CylinderGeometry(0.075, 0.095, 0.48, 12), mStone);
+        const spout = new Mesh(new CylinderGeometry(0.045, 0.07, 0.48, 10), new MeshStandardMaterial({ color: 0x7a4626, roughness: 0.95 }));   // SPRING_ROAR_B2: a small opening in the rock ("כאיסר")
         spout.rotation.x = Math.PI / 2;
         spout.position.set(SP.x, SP.y + 0.03, SP.z - 0.24);
         spout.castShadow = true;
@@ -843,7 +845,25 @@
           for (const [dx, dz] of [[-1.7, -0.6], [1.8, -0.5], [-2.4, 0.4], [2.5, 0.6]]) add2(rockGeo(40 + dx), bould, SP.x + dx, gy + 0.2, SP.zT + dz, 0.8, 0.55, 0.7, dx);
           // the block of the mouth wrapped in rock: on its two sides and over the spout
           for (const sx of [-1, 1]) add2(rockGeo(60 + sx), cliffM, SP.x + sx * 1.75, gy + 1.1, SP.z + 0.75, 1.0, 1.9, 1.05, sx);
-          add2(rockGeo(63), cliffM, SP.x, SP.y + 1.05, SP.z + 0.95, 1.7, 0.95, 1.05, 0.4);
+          add2(rockGeo(63), cliffM, SP.x, SP.y + 1.85, SP.z + 1.05, 1.7, 0.95, 1.05, 0.4);
+          // SPRING_ROAR_B2 (the user's decision 101, 22.11.2026 09:00: "תעשה שהמים נובעים בקול גדול, ורק בסוף יוצא כאיסר"): over the small
+          // opening, a dark hollow in the rock face and in it a whirlpool of water turning (the sound - a loud stream, while they are at the
+          // spring); the water comes out only by the opening, a thin stream (the Yerushalmi, Sukkah 5:6: "שילוח היה מוציא מים כאיסר").
+          // The hollow's size and the whirlpool's look - model choices
+          {
+            const NY = SP.y + 0.62, NZ = SP.z - 0.05, NG = new Group(); NG.position.set(SP.x, NY, NZ); NG.rotation.y = Math.PI; SG.add(NG);
+            const hole = new Mesh(new CircleGeometry(0.5, 32), new MeshBasicMaterial({ color: 0x0a141c })); NG.add(hole);
+            const rimM = new Mesh(new TorusGeometry(0.52, 0.11, 8, 32), cliffM); rimM.castShadow = true; NG.add(rimM);
+            const cv = document.createElement("canvas"); cv.width = cv.height = 128;
+            const c2 = cv.getContext("2d"); c2.fillStyle = "rgba(20,60,90,1)"; c2.beginPath(); c2.arc(64, 64, 64, 0, Math.PI * 2); c2.fill();
+            for (let k = 0; k < 5; k++) { c2.strokeStyle = k % 2 ? "rgba(170,215,240,0.9)" : "rgba(90,160,205,0.85)"; c2.lineWidth = 5 - k * 0.6; c2.beginPath();
+              for (let a = 0; a < Math.PI * 5; a += 0.08) { const r = 4 + a * 3.6 + k * 2.2, x = 64 + Math.cos(a + k * 1.25) * r, y = 64 + Math.sin(a + k * 1.25) * r; if (r > 60) break; if (a === 0) c2.moveTo(x, y); else c2.lineTo(x, y); } c2.stroke(); }
+            const wtex = new CanvasTexture(cv);
+            const whirl = new Mesh(new CircleGeometry(0.42, 32), new MeshBasicMaterial({ map: wtex, transparent: true, opacity: 0.95 }));
+            whirl.position.z = 0.01; NG.add(whirl);
+            NG.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+            if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (SHL.run || SHL.whirlAlways) whirl.rotation.z -= 0.09; });
+          }
           // ferns: clumps of long narrow fronds
           const frond = new PlaneGeometry(0.22, 1.3, 1, 3).translate(0, 0.65, 0);
           const clump = (x, y, z, s2) => { for (let k = 0; k < 7; k++) { const f = new Mesh(frond, fernM); f.position.set(x, y, z); f.rotation.set(-0.5 - rr() * 0.5, k * 0.9 + rr() * 0.4, 0, "YXZ"); f.scale.setScalar(s2 * (0.8 + rr() * 0.4)); f.userData.noPick = true; SG.add(f); } };
@@ -1075,8 +1095,11 @@
       // SHILOACH_CHALAMISH_B2 (the user, 22.11.2026: "את הדגמת השילוח תעשה בדיוק כמו בחלמיש", without its stories; Chalamish pp. 10-14,
       // 27-28): the opening - two priests blow at the Nikanor gate (walk0), go down and walk to the eastern gate blowing (out1), turn west
       // there (decl1) - Sukkah 5:4; then (unseen) to the gate of Chulda, torches, down the southern stairs.
-      const T = { walk0: 4.0, out1: 9.6, decl1: 12.4, gate1: 16.4, stairs1: 19.6, path1: 25.4, rim1: 26.6, fill0: 27.4, fill1: 30.4, back0: 31.4,
-        back1: 38.0, wg0: 40.2, wg1: 43.6, blow0: 43.8, blow1: 48.0, in1: 52.0, ramp1: 56.4, top1: 59.2, pour0: 59.8, pour1: 63.4, end: 66.0 };
+      // SHILOACH_SHUSHAN_B2 (the user's decision 104, 22.11.2026 09:00: "הופכים פניהם בשער עזרת נשים, ויוצאים בשער שושן, כבחלמיש (עמ' 10)"):
+      // from the turn at the women's court's gate (decl1) across the mount, out by the Shushan gate (shu1); then, unseen, to the southern
+      // ramp, down it (gate1 - stairs1). Back up the same ramp (backR - back1) to the Water Gate.
+      const T = { walk0: 4.0, out1: 9.6, decl1: 12.4, shu1: 17.4, gate1: 20.0, stairs1: 25.0, path1: 29.8, rim1: 31.0, fill0: 31.8, fill1: 34.8, back0: 35.8,
+        backR: 40.4, back1: 44.8, wg0: 47.0, wg1: 50.4, blow0: 50.6, blow1: 54.8, in1: 58.8, ramp1: 63.2, top1: 66.0, pour0: 66.6, pour1: 70.2, end: 72.8 };
       // the flask: upright in the world, its neck in his hand; tilted forward to pour. Its mouth - where the streams begin and end
       const FILL_LEAN = 0.1, POUR_LEAN = 0.08, TILT = 1.62;
       const QG = new Quaternion(), QT = new Quaternion(), AX = new Vector3(), NECK = new Vector3(0, -0.21, 0), MOUTH = new Vector3(0, 0.3, 0), V1 = new Vector3();
@@ -1113,13 +1136,15 @@
           // SHILOACH_WAY_B2: from Israel's court through the Nikanor gate, down the steps, across the women's court, out of its eastern gate
           { pts: [[92.4, 0], [92.5, 0]], t: [0, 0.1], near: 13.5, endYaw: Math.PI / 2 },   // in the gate, behind the two with trumpets
           { pts: [[92.5, 0], [97, 0], [105, 0], [213, 0]], t: [T.walk0 + 0.5, T.out1 + 0.5], near: 13.5, endYaw: -Math.PI / 2 },   // his face to the west there
-          { pts: [[213, 0], [236, 0], [240, 60], [150, 250], [0, 318], [0, 335.5]], t: [T.decl1, T.gate1], near: 1, hide: true },   // (not seen: across the mount, the gate of Chulda)
-          { pts: [[0, 335.5], [0, 364.5]], t: [T.gate1, T.stairs1], stairs: [0.2, -28] },
+          // SHILOACH_SHUSHAN_B2: out of the women's court's gate, across the mount, out by the Shushan gate (its sill, x 350..356, y 0)
+          { pts: [[213, 0], [236, 0], [300, 0], [358, 0]], t: [T.decl1 + 0.2, T.shu1], near: 1, proc: true },
+          { pts: [[358, 0], [362, 0], [362, 340], [0, 340], [0, 335.2]], t: [T.shu1, T.gate1], near: 1, hide: true },   // (not seen: from the Shushan gate to the southern ramp - a question for the user)
+          { pts: [[0, 335.2], [0, RP.zf]], t: [T.gate1, T.stairs1], stairs: [0, RP.yf] },   // down the southern ramp (CHULDA_RAMPS_B2)
           { pts: PATH.slice(), t: [T.stairs1, T.path1], terrain: true },
           { pts: [PATH[PATH.length - 1], standF()], t: [T.path1, T.rim1], terrain: true, endYaw: 0 },   // his face to the spout
-          { pts: [standF()].concat(PATH.slice().reverse()), t: [T.back0, T.back0 + 4.6], terrain: true },
-          { pts: [[0, 364.5], [0, 335.5]], t: [T.back0 + 4.6, T.back1], stairs: [-28, 0.2] },
-          { pts: [[0, 335.5], [0, 305], [-12, 150], [-18, 84], [-18, 78], [3.6, 77.4]], t: [T.back1 + 0.1, T.wg0], near: 1, hide: true },
+          { pts: [standF()].concat(PATH.slice().reverse()), t: [T.back0, T.backR], terrain: true },
+          { pts: [[0, RP.zf], [0, 335.2]], t: [T.backR, T.back1], stairs: [RP.yf, 0] },   // up the southern ramp, in by the gate of Chulda
+          { pts: [[0, 335.2], [0, 305], [-12, 150], [-18, 84], [-18, 78], [3.6, 77.4]], t: [T.back1 + 0.1, T.wg0], near: 1, hide: true },
           { pts: [[3.6, 77.4], FOOT, TOPS, [-16.6, 72.6], G_OUT], t: [T.wg0, T.wg1], near: 16, endYaw: Math.PI },   // up to the gate, his face to it
           // in the court: north of the chambers along its south wall (from z 54) and of the laver (x 22, z 57), to the ramp's foot (z 54)
           { pts: [G_OUT, [-18, 64], [-18, 59], [-8, 54.5], [30, 53.2], [46, 53.2], AW(57.4, 41.2)], t: [T.blow1, T.in1], near: 16 },
@@ -1192,17 +1217,19 @@
             f.lean.children[f.lean.children.length - 1].visible = blowK > 0.3 || t < T.out1;
           }
         }
-        // ALTAR_BLOW_B2 (fix-b2, 22.11.2026 - the user's decision 65): the same two on the altar's top while he pours - the Rambam, Kelei
-        // HaMikdash 7:6 (338:107): "וכן תוקעין שלש למלוי המים שמנסכין בחג... ותוקעין שלש על גבי המזבח בשעה שמנסכין המים". Behind him, to
-        // the north, their faces to him (their places - a model choice)
+        // TABLE_BLOW_B2 (the user's decision 102, 22.11.2026 09:00, correcting 65): the same two stand ON THE TABLE OF THE FATS while he pours
+        // - Tamid 7:3 (88:40): "ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו"; the user: that is what the
+        // Rambam means (Kelei HaMikdash 7:6, 338:107: "ותוקעין שלש על גבי המזבח בשעה שמנסכין המים"). The marble table west of the ramp
+        // (40-altar.js, ctx2.shared.rampTables, its top 1.5 over the floor); their faces to the bowls
         const tAlt = t >= T.top1 - 1.2 && t < T.end;
         if (tAlt) {
           const blowA = smooth(clamp((t - T.pour0 + 0.4) / 0.5, 0, 1)) * (1 - smooth(clamp((t - T.pour1) / 0.5, 0, 1)));
-          for (const [f, lx] of [[D2.t1, 44.6], [D2.t2, 47.8]]) {
-            const [x, z] = AW(lx, 4.2);
+          const RT = SH.rampTables, yo = SH.altarMeasures && SH.altarMeasures.mode === "yose", MBx = (RT ? RT.marble[0] : 40) + (yo ? 2 : 0), MBz = (RT ? RT.marble[1] : 16) + (yo ? -4 : 0);
+          for (const [f, dz2] of [[D2.t1, -0.38], [D2.t2, 0.38]]) {
+            const [x, z] = AW(MBx, MBz + dz2);
             f.g.visible = true;
-            f.g.position.set(x, yAt(D2, x, z, 25), z);
-            f.g.rotation.y = lx < 46 ? 0.25 : -0.25;
+            f.g.position.set(x, LV.KOH + (RT ? RT.top : 1.5) + 0.01, z);
+            f.g.rotation.y = Math.atan2(43.5 - MBx, 9.4 - (MBz + dz2));
             setArm(f.R, ARM.rest.map((v, i) => lerp(v, ARM.tR[i], blowA)), -1);
             setArm(f.L, ARM.rest.map((v, i) => lerp(v, ARM.tL[i], blowA)), 1);
             f.lean.children[f.lean.children.length - 1].visible = blowA > 0.3;
@@ -1239,11 +1266,11 @@
         // the procession: each a little behind him on his way, on its two sides (a lane each side, so that he goes between them)
         const fl = 0.85 + 0.15 * Math.sin(t * 17);
         const wp = wayAt(WS, t), wi = wp ? WS.indexOf(wp) : -1;
-        const outside = !!wp && !wp.hide && t >= T.gate1 && t < T.back1 + 0.3 && (wp.stairs || wp.terrain);
+        const outside = !!wp && !wp.hide && ((t >= T.gate1 && t < T.back1 + 0.3 && (wp.stairs || wp.terrain)) || (wp.proc && t >= T.decl1 + 1.2));
         const Sp = wp ? clamp((t - wp.t[0]) / Math.max(1e-3, wp.t[1] - wp.t[0]), 0, 1) * plen(wp.pts) : 0;
         for (const F of D2.fol) {
           let w = wp, S = Sp - F.d, L = wp ? plen(wp.pts) : 0;
-          if (outside && S < 0 && wi > 0 && !WS[wi - 1].hide && (WS[wi - 1].stairs || WS[wi - 1].terrain)) { w = WS[wi - 1]; L = plen(w.pts); S = Math.max(0, L + S); }
+          if (outside && S < 0 && wi > 0 && !WS[wi - 1].hide && (WS[wi - 1].stairs || WS[wi - 1].terrain || WS[wi - 1].proc)) { w = WS[wi - 1]; L = plen(w.pts); S = Math.max(0, L + S); }
           S = clamp(S, 0, Math.max(0, L - 1.6 - F.rank));
           F.G.visible = outside;
           if (!outside) continue;
@@ -1313,14 +1340,17 @@
           // SHILOACH_CHALAMISH_B2: the two at the Nikanor gate (from the women's court), their walk to the eastern gate, their turn to the west
           [0, [113, 21, 22], [96, 15.5, 0]], [3.4, [114, 20.5, 20], [97, 15, 0]], [T.walk0 + 1.6, [150, 24, 30], [122, 9, 0]], [T.out1 - 1.2, [190, 22, 26], [214, 9, 0]],
           [T.out1 + 0.8, [234, 19, 12], [212, 10, 0]], [T.decl1, [232, 21, 14], [212, 10, 0]],
-          // over the mount (above the roof of the royal stoa, 37.5) to the outside of the gate of Chulda
-          [T.decl1 + 1.6, [10, 95, 200], [6, 0, 360]], [T.gate1 - 1.0, [24, 40, 384], [2, -4, 338]],
-          [T.gate1, [22, 10, 352], [0, -6, 340]], [T.gate1 + 1.4, [11, -4, 357], [0, -12, 347]], [T.stairs1 - 0.4, [12, -16, 371], [0, -23, 359]],   // (closer, with him: the people on the stairs)
-          [T.stairs1 + 1.6, [19, -13, 432], [3, -26, 412]],
+          // SHILOACH_SHUSHAN_B2: across the mount with them, and out by the Shushan gate
+          [T.decl1 + 1.4, [266, 12, 24], [246, 2, 0]], [T.shu1 - 1.4, [340, 10, 22], [312, 2, 0]], [T.shu1, [334, 11, 20], [356, 4, 0]],
+          // over the mount (above the roof of the royal stoa, 37.5) to the southern ramp (CHULDA_RAMPS_B2), and down it with them
+          [T.shu1 + 1.2, [200, 95, 250], [30, 0, 350]], [T.gate1 - 0.6, [24, 34, 372], [2, -4, 340]],
+          [T.gate1, [16, 9, 350], [0, -3, 339]], [T.gate1 + 1.6, [13, RP.yAt(354) + 6, 364], [0, RP.yAt(350), 350]],
+          [T.stairs1 - 0.5, [14, RP.yAt(RP.zf - 12) + 5, RP.zf + 2], [0, RP.yAt(RP.zf - 22), RP.zf - 18]],   // (close, with him: the people on the ramp)
+          [T.stairs1 + 1.6, [19, RP.yf + 13, RP.zf + 22], [3, RP.yf, RP.zf + 2]],
           [T.path1 - 2.2, [44, wy + 22, 470], [20, wy + 4, 515]],
           [T.rim1, [sf[0] - 5.2, sy + 2.9, sf[1] - 2.0], [sf[0] + 0.3, sy + 1.3, sf[1] + 0.8]], [T.fill1, [sf[0] - 4.8, sy + 2.7, sf[1] - 1.6], [sf[0] + 0.3, sy + 1.25, sf[1] + 0.85]],
-          [T.back0 + 1.0, [sf[0] - 6, sy + 10, sf[1] - 6], [sf[0] + 4, sy - 2, sf[1] - 30]], [T.back0 + 2.6, [40, wy + 34, 600], [12, -24, 420]],
-          [T.back1 - 0.6, [22, 4, 384], [0, -6, 345]],
+          [T.back0 + 1.0, [sf[0] - 6, sy + 10, sf[1] - 6], [sf[0] + 4, sy - 2, sf[1] - 30]], [T.back0 + 2.6, [40, wy + 34, 600], [12, RP.yf, RP.zf + 10]],
+          [T.back1 - 0.6, [22, RP.yAt(360) + 10, RP.zf - 5], [0, -6, 345]],
           // up over the wall and the mount again, to the Water Gate
           [T.back1 + 0.5, [22, 42, 372], [0, 0, 330]], [T.back1 + 1.4, [10, 48, 220], [-10, 0, 100]],
           [T.wg0 + 0.2, [10, 16, 96], [-4, 6, 74]], [T.wg1 - 0.4, [-30, 18, 86], [-17, 15.2, 73]], [T.blow1, [-32, 17.6, 84], [-17, 15.3, 73.2]],
@@ -1335,15 +1365,15 @@
         [1.2, "״ועמדו שני כהנים בשער העליון שיורד מעזרת ישראל לעזרת נשים, ושתי חצוצרות בידיהן... תקעו והריעו ותקעו״ (סוכה ה, ד)"],
         [T.walk0 + 0.4, "״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח״ (סוכה ה, ד)"],
         [T.out1 + 0.4, "״הגיעו לשער היוצא ממזרח, הפכו פניהן למערב, ואמרו... ואנו ליה עינינו״ (סוכה ה, ד)"],
-        [T.decl1 + 0.2, "ביציאה מהר הבית מחלקים לפידים, והתהלוכה יורדת בכבש הדרומי לכוון מעין השילוח — כפי שהובא בחלמיש; הדרך — בחירת מודל"],
-        [T.gate1 - 0.8, "״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״ (מידות א, ג)"],
+        [T.decl1 + 0.2, "ויוצאים מהר הבית בשער המזרחי — שער שושן; ביציאה מהר הבית מחלקים לפידים — כפי שהובא בחלמיש"],
+        [T.gate1 - 0.4, "״התהלוכה יורדת בכבש הדרומי של הר הבית, לכוון מעין השילוח״ — כפי שהובא בחלמיש; הדרך — בחירת מודל"],
         [T.stairs1, "אל השילוח — הדרך ומקום המעיין בחירת מודל: אין מקור שמתאר אותם"],
-        [T.rim1 - 0.4, "״היה ממלא מן השלוח״ (סוכה ד, ט); ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו)"],
-        [T.back0 + 0.6, "בחזרה — עולים בכבש הדרומי, בשערי חלדה, אל שער המים"],
+        [T.rim1 - 0.4, "המים נובעים בתוך הסלע בקול גדול, ויוצאים בפתח קטן — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו); ״היה ממלא מן השלוח״ (סוכה ד, ט)"],
+        [T.back0 + 0.6, "״בעוד השחר עומד לעלות, שבה התהלוכה ועולה בכבש הדרומי של הר הבית״ — כפי שהובא בחלמיש; ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״ (מידות א, ג)"],
         [T.wg0, "״הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט). ״ולמה נקרא שמו שער המים. שבו מכניסין צלוחית של מים של נסוך בחג״ (מידות ב, ו)"],
         [T.in1 - 0.4, "״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם״ (סוכה ד, ט)"],
         [T.top1 - 0.6, "״הסגן עומד על הקרן והסודרים בידו״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם)"],
-        [T.pour0 - 0.3, "״מערבי של מים, מזרחי של יין״; ״ולמנסך אומרים לו, הגבה ידך״ (סוכה ד, ט); ״ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״ (רמב״ם)"],
+        [T.pour0 - 0.3, "״מערבי של מים, מזרחי של יין״; ״ולמנסך אומרים לו, הגבה ידך״ (סוכה ד, ט); ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם״ (תמיד ז, ג)"],
         [T.pour0 + 2.0, "״והניף הסגן בסודרין... ודברו הלוים בשיר״ (תמיד ז, ג); ״ובשמונת ימי החג... החליל מכה לפני המזבח״ (ערכין ב, ג); היין והמים יורדים בנקבים אל השיתין"]
       ];
       const finish = () => {
@@ -1388,6 +1418,8 @@
         try { apply(t); } catch (e) { console.warn("[shiloach]", e && e.message); }
         try {
           if (sndT >= 0 && t > sndT && fnc(SH.sfx)) {
+            if (sndT < 0.8 && t >= 0.8) SH.sfx("trumpets");   // the opening, at the Nikanor gate
+            for (const ts of [T.path1 - 1.2, T.rim1 + 1.5, T.fill0 + 2.5]) if (sndT < ts && t >= ts) SH.sfx("water", { dur: 4.5, gain: 3.2 });   // SPRING_ROAR_B2: "נובעים בקול גדול"
             if (sndT < T.fill0 + 0.4 && t >= T.fill0 + 0.4) SH.sfx("water", { dur: 2.2, gain: 0.7 });
             if (sndT < T.blow0 && t >= T.blow0) SH.sfx("trumpets");
             if (sndT < T.pour0 + 0.5 && t >= T.pour0 + 0.5) SH.sfx("water", { dur: 2.0, gain: 0.6 });
@@ -1404,14 +1436,14 @@
         "**שער המים** (מידות ב, ו): ״ולמה נקרא שמו שער המים. שבו מכניסין צלוחית של מים של נסוך בחג. רבי אליעזר בן יעקב אומר, ובו המים מפכים, ועתידין להיות יוצאין מתחת מפתן הבית״; וכן בתוספתא (סוכה ג, ג).\n" +
         "**שערי חולדה** (מידות א, ג): ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״.\n" +
         "**השילוח** — תני, רבן שמעון בן גמליאל אומר: ״שילוח היה מוציא מים כאיסר. אמרו: נרחיבנו וירבו מימיו. הרחיבוהו ונתמעטו מימיו. חזרו וגדרוהו וחזר לכמות שהיה״ (ירושלמי סוכה ה, ו).\n" +
-        "**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. הבריכה מצוירת בתחתית העמק שבדרום ההר, כמאתיים ועשרים אמה מחומתו, והשביל אליה יוצא משער חולדה המערבי — בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): יוצאים בשער המזרחי — דרך שער ניקנור וחמש עשרה המעלות, ובשער עזרת נשים — ״התהלוכה יורדת בכבש הדרומי של הר הבית, לכוון מעין השילוח״, ובחזרה ״עולה בכבש הדרומי של הר הבית״ אל שער המים; במשנה נאמר רק ״הגיעו לשער המים״ — בחירת מודל. **שלוש תקיעות על גבי המזבח** — הרמב״ם (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״; בהדגמה שני הכהנים התוקעים עומדים על המזבח, מאחורי המנסך, ותוקעים בשעת הניסוך. צורת הבריכה, מוצא המעיין (אבן עם צינור שהמים יורדים ממנו), צורת הצלוחית, ושני התוקעים ומקומם — בחירות מודל. בהדגמה הכהן ממלא את הצלוחית מתחת לזרם היוצא מן המעיין, ומנסך ביד מורמת לתוך הספל המערבי. ההליכה בהדגמה מואצת, ובשני מקומות היא מדולגת (בדרך על פני הר הבית).";
-      const REFS = [["סוכה ד, ט", { book: 56, index: 48 }], ["סוכה ד, י", { book: 56, index: 49 }], ["מידות ב, ו", "Mishnah_Middot.2.6"], ["מידות א, ג", "Mishnah_Middot.1.3"], ["רמב״ם כלי המקדש ז, ו", { book: 338, index: 107 }]];
+        "**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. הבריכה מצוירת בתחתית העמק שבדרום ההר, כמאתיים ועשרים אמה מחומתו, והשביל אליה יוצא מרגלי הכבש שלפני שער חולדה המערבי — בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): בפתיחה שני כהנים תוקעים בשער ניקנור, יורדים במעלות ותוקעים בהליכה עד שער עזרת נשים, ושם הופכים פניהם למערב (סוכה ה, ד); יוצאים מהר הבית בשער המזרחי — שער שושן — ובלפידים; ״התהלוכה יורדת בכבש הדרומי של הר הבית, לכוון מעין השילוח״, ובחזרה, עם עלות השחר, ״עולה בכבש הדרומי של הר הבית״ ונכנסת בשער חולדה אל שער המים. במשנה נאמר רק ״הגיעו לשער המים״ — הדרך בחירת מודל; בין שער שושן לכבש הדרומי ההליכה אינה נראית. **הכבש הדרומי**: לפני שני שערי חולדה כבש משופע (במקום מדרגות) — כפי שהוא נקרא בחלמיש; שיפועו ורוחבו — בחירת מודל. **המעין**: המים נובעים בתוך הסלע בקול גדול, ורואים בו מערבולת, ויוצאים בפתח קטן, בזרם דק — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו). **התוקעים בשעת הניסוך** — לשון המשנה (תמיד ז, ג): ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו״; **הרמב״ם** (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״. במודל — על שלחן החלבים. **הסגן והסודר** — ״הסגן עומד על הקרן והסודרים בידו״, ״והניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם). צורת הבריכה והסלע, הפתח, צורת הכד, מספר ההולכים והלפידים, ומקומות התוקעים והסגן — בחירות מודל. בהדגמה הכהן ממלא את הכד מתחת לזרם, ומנסך ביד מורמת לתוך הספל המערבי, וכהן היין בספל המזרחי. ההליכה בהדגמה מואצת, ובשני מקומות היא מדולגת.";
+      const REFS = [["סוכה ד, ט", { book: 56, index: 48 }], ["סוכה ד, י", { book: 56, index: 49 }], ["מידות ב, ו", "Mishnah_Middot.2.6"], ["מידות א, ג", "Mishnah_Middot.1.3"], ["רמב״ם כלי המקדש ז, ו", { book: 338, index: 107 }], ["תמיד ז, ג", { book: 88, index: 40 }], ["סוכה ה, ד", { book: 56, index: 54 }]];
       SH.shiloach = { demo: start, stop, T, info: INFO, refs: REFS, POOL: SHL.POOL, at: (t) => { buildPool(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); return { Y0 }; },
         leave: () => { if (SHL.D) SHL.D.DG.visible = false; }, dbg: () => ({ offF: SHL.offF, offP: SHL.offP, SP: { x: SHL.SP.x, y: SHL.SP.y, gy: SHL.SP.gy, zT: SHL.SP.zT }, standF: standF(), standP: standP(), bowl: BOWL(), bowlY: bowlY() }) };
       SH.modelButtons = SH.modelButtons || [];
       SH.modelButtons.push({
         id: "shiloachDemo", label: "הדגמה: ניסוך המים — מן השילוח", labelOn: "עצור את ההדגמה", maxDist: 140,
-        title: "״צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט). ההדגמה: כהן יוצא בשער המזרח ויורד בכבש הדרומי, ממלא מן השילוח, חוזר בשער המים, ומנסך בספל המערבי, ושני כהנים תוקעים על גבי המזבח.",
+        title: "״צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט). ההדגמה: כהן יוצא בשער שושן ויורד בכבש הדרומי, ממלא מן השילוח, חוזר בשער חולדה ובשער המים, ומנסך בספל המערבי, ושני כהנים תוקעים על שלחן החלבים.",
         anchor: () => [SHL.POOL[0], Y0 + 9, SHL.POOL[1]],
         get: () => SHL.run,
         set: (on) => { if (on) start(); else stop(); }
@@ -2407,9 +2439,9 @@
     // women's court and the Shushan gate), west along its north, and out by the Tadi gate. The way between the courts and the walls, its
     // pace - model choices.
     {
-      const EY = 3.2, Y = LV.HAR + EY;
-      const KEYS = [
-        [0, [0, -28 + EY, 396], [0, -20, 360]], [5, [0, -12 + EY, 352], [0, -2 + EY, 332]], [8.5, [0, Y, 334], [0, Y, 300]],
+      const EY = 3.2, Y = LV.HAR + EY, RPw = SH.chuldaRamp || { zf: 364.5, yf: -28, yAt: (z) => -28 * Math.min(1, Math.max(0, (z - 335) / 29.5)) };
+      const KEYS = [   // (up the ramp before the gate - CHULDA_RAMPS_B2)
+        [0, [0, RPw.yf + EY, RPw.zf + 8], [0, RPw.yAt(RPw.zf - 24) + EY, RPw.zf - 24]], [6, [0, RPw.yAt(352) + EY, 352], [0, EY, 330]], [9, [0, Y, 334], [0, Y, 300]],
         [12, [0, Y, 296], [0, Y, 272]], [15, [14, Y, 270], [80, Y, 270]], [22, [140, Y, 270], [220, Y, 262]],
         [28, [262, Y, 250], [298, Y, 196]], [34, [298, Y, 150], [298, Y, 60]], [40, [298, Y, 40], [290, Y, -10]],
         [46, [298, Y, -70], [292, Y, -120]], [52, [262, Y, -126], [180, Y, -126]], [59, [130, Y, -126], [60, Y, -132]],
@@ -2417,7 +2449,7 @@
       ];
       const CAPS = [
         [0, "״כל הנכנסין להר הבית נכנסין דרך ימין ומקיפין ויוצאין דרך שמאל״ (מידות ב, ב)"],
-        [6, "״כגון הנכנסים דרך שערי חלדה שהן מן הימין, מקיפין דרך שער הטדי״ (ברטנורא שם)"],
+        [5, "״כגון הנכנסים דרך שערי חלדה שהן מן הימין, מקיפין דרך שער הטדי״ (ברטנורא שם)"],
         [13, "נכנסים בשער חולדה ופונים לימין — מזרחה"],
         [30, "צפונה, לאורך המזרח — מול עזרת נשים ושער שושן"],
         [44, "״חוץ ממי שאירעו דבר, שהוא מקיף לשמאל. מה לך מקיף לשמאל — שאני אבל: השוכן בבית הזה ינחמך״ (מידות ב, ב)"],
@@ -2433,8 +2465,8 @@
         let lg = null; try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {}
         PW.saved = { lg, labels: lg ? lg.visible : true, view: SH.viewLimits ? SH.viewLimits.get() : null };
         if (lg) lg.visible = false;
-        if (SH.viewLimits) SH.viewLimits.include([0, -30, 400]);
-        PW.camLow0 = SH.camLow; SH.camLow = -30;
+        if (SH.viewLimits) SH.viewLimits.include([0, RPw.yf - 2, RPw.zf + 12]);
+        PW.camLow0 = SH.camLow; SH.camLow = RPw.yf - 3;
         PW.run = true;
         Wk.run(KEYS, CAPS, finish);
         return true;

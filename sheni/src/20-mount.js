@@ -306,8 +306,35 @@
     gateTrim({ axis: "x", gx: 110, gz: CO.harS, inward: -1, wl: wallS });
     gateTrim({ axis: "z", gx: CO.harW, gz: 0, inward: -1, wl: wallW });
     const RUN = 36 * 0.8;
-    H2.stairs(g, { width: 16, totalRise: 28, steps: 36, dir: "N", x: 0, y: GROUND_Y, z: CO.harS + T / 2 + RUN, tread: 0.8 });
-    H2.stairs(g, { width: 16, totalRise: 28, steps: 36, dir: "N", x: 110, y: GROUND_Y, z: CO.harS + T / 2 + RUN, tread: 0.8 });
+    // CHULDA_RAMPS_B2 (fix-b2, 22.11.2026 - the user's decision 103: "שערי חולדה — כבש משופע תמיד, במקום מדרגות"; Chalamish, "אלחנן וחיים
+    // שמחים בירושלים" pp. 12, 14: "התהלוכה יורדת בכבש הדרומי של הר הבית"): before each gate of Chulda a sloping ramp, 16 wide, from the
+    // gate's sill (y 0, the wall's outer face) down at one in two to where it meets the ground (found on the terrain; the ground falls
+    // away toward the valley); a solid body of stone under it and a low parapet on both its sides. Until 22.11.2026: 36 steps with
+    // railings. The slope, the width and the parapet - model choices. ctx2.shared.chuldaRamp = { xs, z0, zf, yf, w, yAt(z) }
+    {
+      const Z0 = CO.harS + T / 2, SL = 0.5, RW = 16;
+      let zf = Z0 + 40;
+      for (let z = Z0 + 10; z < Z0 + 160; z += 0.5) { const yr = -(z - Z0) * SL; if (yr <= Math.max(terrainH(0, z), terrainH(110, z)) + 0.05) { zf = z; break; } }
+      const yf = -(zf - Z0) * SL, L = zf - Z0;
+      const M = new Matrix4();
+      const body = (x0, prof, w, xc) => {   // a profile in (along, y) extruded across x, w wide, centred on xc
+        const sh = new Shape(); prof.forEach(([a, y], i) => (i ? sh.lineTo(a, y) : sh.moveTo(a, y))); sh.closePath();
+        const geo = new ExtrudeGeometry(sh, { depth: w, bevelEnabled: false });
+        M.set(0, 0, -1, xc + w / 2, 0, 1, 0, 0, 1, 0, 0, Z0, 0, 0, 0, 1);
+        geo.applyMatrix4(M);
+        return geo;
+      };
+      const yb = yf - 12;
+      for (const x0 of [0, 110]) {
+        const rb = new Mesh(body(x0, [[0, 0], [L, yf], [L, yb], [0, yb]], RW, x0), M2.pave || M2.stoneLight);
+        rb.castShadow = rb.receiveShadow = true; rb.name = "chuldaRamp"; g.add(rb);
+        for (const sd of [-1, 1]) {
+          const pk = new Mesh(body(x0, [[0, 0], [L, yf], [L, yf + 1.2], [0, 1.2]], 0.5, x0 + sd * (RW / 2 - 0.25)), M2.stoneLight);
+          pk.castShadow = true; g.add(pk);
+        }
+      }
+      ctx2.shared.chuldaRamp = { xs: [0, 110], z0: Z0, zf, yf, w: RW, yAt: (z) => -(Math.min(zf, Math.max(Z0, z)) - Z0) * SL };
+    }
     // (1.9.5: no steps at the Shushan gate - the ramp of the Parah, below)
     H2.stairs(g, { width: 12, totalRise: 28, steps: 36, dir: "S", x: 55, y: GROUND_Y, z: CO.harN - T / 2 - RUN, tread: 0.8 });
     H2.stairs(g, { width: 12, totalRise: 28, steps: 36, dir: "E", x: CO.harW - T / 2 - RUN, y: GROUND_Y, z: 0, tread: 0.8 });
@@ -334,8 +361,6 @@
         g.add(grp);
         H2.instancify(grp);   // 1.9.2: the posts - one draw per railing (they were 110 pieces)
       };
-      rail(16, "N", 0, CO.harS + T / 2 + RUN);
-      rail(16, "N", 110, CO.harS + T / 2 + RUN);
       rail(12, "S", 55, CO.harN - T / 2 - RUN);
       rail(12, "E", CO.harW - T / 2 - RUN, 0);
     }
