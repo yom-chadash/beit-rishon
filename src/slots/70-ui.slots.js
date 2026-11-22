@@ -1844,6 +1844,9 @@
         // labels whose text starts with these words (the long labels of the layers and of the forest house)
         const LABEL_PREFIX = [
           ["העליות", { v: "aliyot" }],
+          // release (the merge, 22.11.2026): the two labels of Rashi's reading of Jehoiada's chest - the cards of its two places, which give it
+          ["ארון יהוידע — ״ויתנהו", { p: "ארון יהוידע שבשער — לתקלין עתיקין" }],
+          ["ארון יהוידע — ״אצל המזבח", { p: "ארון יהוידע אצל המזבח — לתקלין חדתין" }],
           // 1.3.4: the hooks' words (the button "האונקליות") and the courts' zones (1.3.3) - their places' cards
           ["״ואנקליות של ברזל", { p: "בית המטבחים — מקרוב" }],
           ["החצר הפנימית — חצר הכהנים (", { p: "החצר הפנימית — חצר הכהנים" }],
