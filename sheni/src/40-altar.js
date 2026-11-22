@@ -1787,7 +1787,7 @@
     //    model choice). The base, the well, the lid and the priests' spots follow the size.
     //  * The twelve spouts (decision 60) as the Melechet Shlomo (1151:128): one upper spout and eleven under it; a small tap in each (a
     //    model choice). The upper one toward the east.
-    //  * The base (decision 43) - the second answer of Tosafot, Zevachim 22a (1936:254): "כעין יורה כפויה על פיהו נפחתו שוליה", as R.
+    //  * The base (decision 43) - the second answer of Tosafot, Zevachim 22a (1936:254): "כעין יורה כפוייה על פיה ונפחתו שוליה" (the Piskei Tosafot 2090:24: "כפויה על פיהו נפחתו"), as R.
     //    Chaim Kanievsky explains it in the booklet: "כחבית על גבי חבית" - a cauldron upside down, its bottom cut away, the laver standing
     //    on it. It stands BESIDE the well (decision 59).
     //  * The well, covered by day with a lid and no fence round it (decision 40: "מכסה לבור, בלי גדר"; Rashi, Sukkah 48b: "שהיו משקעין
@@ -1992,7 +1992,7 @@
       { text: "בלילה: מי הכיור מחוברים במי הבור", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniNight" },
       { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד) — הכיור עולה וחוזר אל הכן", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniMorning" },
       { text: "המוכני — גלגל השיניים ולשון העץ", x: PSX, y: F + 4.2, z: PSZ - 1.2, size: 1.1 },
-      { text: "הכן — ״כעין יורה כפויה על פיהו״ (תוספות זבחים כב.)", x: KX + 2.6, y: F + 1.0, z: KZK - 2.4, size: 0.9 },
+      { text: "הכן — ״כעין יורה כפוייה על פיה״ (תוספות זבחים כב.)", x: KX + 2.6, y: F + 1.0, z: KZK - 2.4, size: 0.9 },
       { text: "הבור — ביום מכוסה, בלי גדר", x: PITX + 1.5, y: F + 1.0, z: PITZ + 2.2, size: 0.9 }
     );
     ctx2.labels.push({ text: "המוכני לרמב״ם — כלי סביב הכיור, ובו המים (בית הבחירה ג, יח)", x: KX - 1, y: F + 6.2, z: KZK, size: 1.0, layer: "mochaniRambam" });
