@@ -1453,14 +1453,67 @@
     const NZ = CO.harS + 2.5;
     const STEPS_N = 20, RISE_N = LV.HAR - Y, NW = 16, LIP = 0.06;   // 20 steps x 0.5 = 10
     H.box(g, NW, 20, TZ0 - NZ, M.stone, X, -30, (TZ0 + NZ) / 2);                       // causeway y -30..-10
-    H.stairs(g, { width: NW, totalRise: RISE_N, steps: STEPS_N, dir: "N", x: X, y: Y, z: TZ0, tread: 0.5 }); // z 352.5 -> 342.5
+    // ASCENT2_D (fix-d, 22.11.2026 - the user's decision 142 א): TWO READINGS of the ascent, the row "העלייה מבית המלך אל בית ה׳"
+    // (ctx.shared.palaceAscent.set("stairs" | "almug")). "stairs" (the default, as until now) - Rashi on II Chr 9:11 (book 3662 line 335)
+    // "מסלות. מדרגות; ובמלכים (מלכים א י:יב) כתיב ״מסעד״, כדרך שעושין לעולין בדרך מעלות ומדרגות", and 9:4 (3662 line 328) "מסלות עליותיו אשר יעלה
+    // עליהם מביתו לבית ה'": the stone stair and the landing. "almug" - the Ralbag on I Kings 10:12 (3645 line 443) "שבעליה אשר יעלה בה בית
+    // ה' מבית המלך עשה כדמות מעקה מעצי האלמוגים שיסמך האדם בהם במסלתו בזאת העליה... כי לא היו בהם מעלות", the Malbim on 10:11 (3394
+    // line 612) "לפי שהיתה כולה מעצי אלמגים", the Abarbanel (3574 lines 224, 555) "העלייה אשר עשה מביתו אל בית השם מעצי אלמוגים": a
+    // sloped ascent with no steps, all of almug wood, with a railing on both sides, from the palace's terrace to a short landing at the
+    // gate. The almug's colour (a reddish wood), the slope and the railing - model choices.
+    const stairsG = new Group(), almugG = new Group();
+    stairsG.name = "ascentStairs"; almugG.name = "ascentAlmug"; almugG.visible = false;
+    g.add(stairsG, almugG);
+    H.stairs(stairsG, { width: NW, totalRise: RISE_N, steps: STEPS_N, dir: "N", x: X, y: Y, z: TZ0, tread: 0.5 }); // z 352.5 -> 342.5
     const landZ0 = NZ, landZ1 = TZ0 - STEPS_N * 0.5;   // 335..342.5
     const PAVE_T = 0.1;   // 1.0.1: the paving slab of the landing (model choice); the top stays at LV.HAR + LIP, under the gate's threshold (0.18)
-    H.box(g, NW, RISE_N + LIP - PAVE_T, landZ1 - landZ0, M.stoneSmooth, X, Y, (landZ0 + landZ1) / 2);  // the landing's stone body, y -10..-0.04, against the Temple wall
-    H.box(g, NW, PAVE_T, landZ1 - landZ0, M.pave, X, LV.HAR + LIP - PAVE_T, (landZ0 + landZ1) / 2);    // the stone-paved way, top at y 0.06 (the hair, see the NOTE), the terrace's paving
+    H.box(stairsG, NW, RISE_N + LIP - PAVE_T, landZ1 - landZ0, M.stoneSmooth, X, Y, (landZ0 + landZ1) / 2);  // the landing's stone body, y -10..-0.04, against the Temple wall
+    H.box(stairsG, NW, PAVE_T, landZ1 - landZ0, M.pave, X, LV.HAR + LIP - PAVE_T, (landZ0 + landZ1) / 2);    // the stone-paved way, top at y 0.06 (the hair, see the NOTE), the terrace's paving
     // 1.0.1: the label names the way (FIXES E.3); size 6 so it shows from the palace overview camera (about 530 away: the UI shows a
     // size-6 label up to 700 amot, see the label note above); y 8 keeps it under 20-mount's "השער הדרומי" (y 28)
     lbl("המעלות מבית המלך אל בית ה׳ (מלכים א י, ה)", X, 8, (landZ0 + TZ0) / 2, 6);   // x 103, z 343.75: over the landing and the stair top
+    palLabels[palLabels.length - 1].layers = ["palace", "ascentStairs"];
+    delete palLabels[palLabels.length - 1].layer;
+    {
+      // the almug ascent: a solid wedge of almug from the terrace (z 352.5, y -10) to a landing of one amah at the gate (z 336..335, y 0.06),
+      // its top planked across; posts every two amot on both sides and a sloped handrail ("כדמות מעקה... שיסמך האדם בהם")
+      const almug = M.cedar.clone();
+      almug.color.set(0x9a4a32);
+      const zA = TZ0, zB = NZ + 1, yA = Y, yB = LV.HAR + LIP, run = zA - zB, rise = yB - yA;
+      const sh = new Shape();
+      sh.moveTo(0, 0); sh.lineTo(run, 0); sh.lineTo(run, rise); sh.closePath();   // x = distance north of the terrace's edge, y = height over it
+      const wg = new ExtrudeGeometry(sh, { depth: NW, bevelEnabled: false });
+      wg.rotateY(Math.PI / 2);                 // the shape's x -> -z; the extrusion (z) -> +x
+      const wedge = new Mesh(wg, almug);
+      wedge.position.set(X - NW / 2, yA, zA);
+      wedge.castShadow = wedge.receiveShadow = true;
+      almugG.add(wedge);
+      H.box(almugG, NW, rise, zB - NZ, almug, X, yA, (zB + NZ) / 2);   // the short landing at the gate, top at y 0.06
+      const slope = rise / run, ang = Math.atan(slope), len = Math.hypot(run, rise);
+      for (const sx of [-1, 1]) {
+        const xr = X + sx * (NW / 2 - 0.2);
+        for (let d = 0.5; d <= run - 0.2; d += 2) H.box(almugG, 0.2, 1.6, 0.2, almug, xr, yA + rise * d / run, zA - d);   // the posts
+        const hrail = new Mesh(new BoxGeometry(0.22, 0.18, len), almug);
+        hrail.position.set(xr, yA + rise / 2 + 1.6, zA - run / 2);
+        hrail.rotation.x = ang;                 // rising toward -z (north): the +z (south) end goes down
+        hrail.castShadow = true;
+        almugG.add(hrail);
+      }
+      lbl("העלייה מבית המלך — מעצי אלמוגים, בלי מעלות, ובה מעקה (רלב״ג, מלבי״ם, אברבנאל)", X, 8, (landZ0 + TZ0) / 2, 5);
+      palLabels[palLabels.length - 1].layers = ["palace", "ascentAlmug"];
+      delete palLabels[palLabels.length - 1].layer;
+    }
+    ctx.layers.ascentStairs = stairsG; ctx.layers.ascentAlmug = almugG;
+    ctx.shared.palaceAscent = {
+      current: "stairs", keys: ["stairs", "almug"],
+      set(k) {
+        this.current = k === "almug" ? "almug" : "stairs";
+        stairsG.visible = this.current === "stairs";
+        almugG.visible = this.current === "almug";
+        if (ctx.requestRender) ctx.requestRender();
+        return this.current;
+      }
+    };
 
     // ===== shared building parts =====
     const grooves = new Map();   // parent Group -> joints of its big foundation stones (instanced per group at the end; 1.0.1 H.5: the

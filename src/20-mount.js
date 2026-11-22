@@ -1,6 +1,6 @@
   // ===== 20-mount.js: the mount, the great court (החצר הגדולה) and the outer court (החצר החיצונה) =====
   // Builds: terrain, the 500 x 500 platform with its foundation walls, the great court wall (bands of 3 stone courses + 1 cedar
-  // course) with four gates, bronze doors and exterior steps, and the outer court east of the inner court with its uses (1.0.1):
+  // course) with four gates (plain wooden doors - DOORS_WOOD_D) and exterior steps, and the outer court east of the inner court with its uses (1.0.1):
   // chambers (לשכות), the king's "עמוד" and the donation chest.
   // Sources used in this file:
   //   The outer court itself is only IMPLIED by the sources: Rashi on I Kings 6:36 "החצר הפנימית - קורא אותה פנימית לפי שהיתה לפנים
@@ -11,7 +11,7 @@
   //   "החומה עשויה שלשה נדבכין של אבנים ונדבך של עץ עליהם" and Metzudat David on 7:12 "וכמו כן עד כלות גובה הכתלים" describe that pattern;
   //   the outer court wall here repeats it BY ANALOGY ("באותו דגם", model choice - the user's decision sheet item 8), not as a verse citation.
   //   II Chr 4:9  "ויעש חצר הכהנים והעזרה הגדולה ודלתות לעזרה ודלתותיהם צפה נחשת" - Rashi there [141]: "והעזרה הגדולה - זו עזרת ישראל", i.e.
-  //   the bronze doors are the inner court's; the outer court's bronze doors repeat them by analogy (model choice).
+  //   the bronze doors are the inner court's alone (DOORS_WOOD_D, the user's decision 140 א: the great court's doors are plain wood).
   //   II Chr 20:5 "לפני החצר החדשה" is NOT used for the outer court: Rashi (Pesachim 92a [4454], Zevachim 32b [1559]) identifies
   //   "החצר החדשה" with הר הבית. The outer court rests on Rashi on I Kings 6:36 alone (Rashi's own term for it is "עזרת נשים"); its name
   //   in the model is "החצר החיצונה" (1.0.1, the user's correction; the key "newCourt" is kept for the consumers).
@@ -188,9 +188,6 @@
     const CZ = (CO2.harN + CO2.harS) / 2; // 82.5: z -167.5..332.5 (most open space on the south, Middot 2:1)
     const T = MNT_WALL_T, WH = MNT_WALL_H, GROUND_Y = MNT_GROUND_Y;
     const stoneC = mnt_courseStone(M2);
-    const bronzeDoor = M2.bronze.clone();
-    bronzeDoor.roughness = 0.42; // bronze-overlaid doors after II Chr 4:9 "ודלתותיהם צפה נחשת" - said of the inner court (Rashi there: "העזרה הגדולה - זו עזרת ישראל");
-                                 // repeated for the outer court's gates by analogy (model choice; big bronze surface, roughness .3-.5)
     const lbl = (text, x, y, z, size) => ctx.labels.push({ text, x, y, z, size });
 
     // ---------- terrain (copied from the Second Temple model 1.0.19): flat at GROUND_Y around the platform, hills further out ----------
@@ -291,7 +288,11 @@
     // ---------- the four gates: square opening 10 x 20 with a flat stone lintel (model choice, as 1.0.19 / Middot 2:3); ----------
     // doors of cedar overlaid with bronze after II Chr 4:9 "ודלתות לעזרה ודלתותיהם צפה נחשת" - per Rashi there "העזרה הגדולה - זו עזרת ישראל",
     // so the verse speaks of the inner court's doors (30-courts.js); here the same doors by analogy (model choice); door height = the opening (model choice)
-    const portal = { T, openW: MNT_GATE_W, openH: MNT_GATE_H, doorH: MNT_GATE_H, doorMat: bronzeDoor, M: M2, H: H2, y: LV2.HAR };
+    // DOORS_WOOD_D (fix-d, 22.11.2026 - the user's decision 140 א): the great court's gates have PLAIN DOORS of wood (model choice); the
+    // bronze-overlaid doors are the inner court's alone (30-courts.js) - II Chr 4:9 "והעזרה הגדולה ודלתות לעזרה ודלתותיהם צפה נחשת":
+    // Rashi there (book 3662 line 141) "והעזרה הגדולה. זו עזרת ישראל", the Ralbag (3639:78), the Metzudat David (3318:183), the Radak
+    // (3522:96); Rashi on I Kings 6:36 (3673:307) "החצר הפנימית. היא עזרת הכהנים ועזרת ישראל". (Until now bronze here too, by analogy.)
+    const portal = { T, openW: MNT_GATE_W, openH: MNT_GATE_H, doorH: MNT_GATE_H, doorMat: M2.cedar, M: M2, H: H2, y: LV2.HAR };
     mnt_gatePortal(g, Object.assign({ axis: "z", gx: gE.x, gz: gE.z, inward: 1, fadeWith: wallE.stone }, portal));
     mnt_gatePortal(g, Object.assign({ axis: "x", gx: gN.x, gz: gN.z, inward: 1, fadeWith: wallN.stone }, portal));
     mnt_gatePortal(g, Object.assign({ axis: "x", gx: gS.x, gz: gS.z, inward: -1, fadeWith: wallS.stone }, portal));
@@ -419,15 +420,41 @@
     //    and a capital, at x 106, z 8: just east of the inner court's east gate steps (x 98.5..101.5, z +-6), which stay clear.
     try {
       const A = MNT_AMUD;
-      H2.cyl(g, A.r, A.r, A.h, M2.stoneLight, A.x, WC.y, A.z, 40);                                           // platform r 2, 1 high (y 3..4)
-      H2.cyl(g, A.pr + 0.3, A.pr + 0.4, 0.3, M2.stoneSmooth, A.x, WC.y + A.h, A.z, 24);                       // base of the pillar 0.3 high (y 4..4.3), r 0.9 / 1.0
-      H2.cyl(g, A.pr, A.pr, A.ph, M2.stoneSmooth, A.x, WC.y + A.h + 0.3, A.z, 24);                            // the pillar r 0.6, 3 high (y 4.3..7.3)
-      H2.cyl(g, A.pr + 0.4, A.pr + 0.1, 0.35, M2.stoneSmooth, A.x, WC.y + A.h + 0.3 + A.ph, A.z, 24);         // capital 0.35 high (y 7.3..7.65), r 1.0 / 0.7
+      // AMUD2_D (fix-d, 22.11.2026 - the user's decision 132): TWO READINGS, a row of the opinions table (ctx.shared.amudKing.set("bima" |
+      // "side")). "bima" (the default, as until now) - Rashi on II Chr 23:13 (book 3662 line 709) "עומד המלך או הדוכוס במקום גבוה כדי שיוכלו
+      // לראותו", Rashi on II Kings 11:14 (3680 line 418) "הוא מעמד המלך בבית ה'", Metzudat David there (3335 line 722) "על מקום מיוחד למלך
+      // לעמוד שם", the Targum "אסטונא": the platform with the short pillar on it. "side" - the Radak on II Kings 11:14 (3542 line 573) "פי'
+      // סמוך לעמוד", the Ralbag there (3644 line 366) "ר"ל אצל העמוד", the Radak on II Chr 34:31 (3522 line 541) "שעמד על רגליו סמוך לעמוד":
+      // a free-standing pillar on the court's floor, the king standing by it; its form and height (six amot, r 0.75) - model choices.
+      const gB = new Group(), gS = new Group();
+      gB.name = "amudBima"; gS.name = "amudSide"; gS.visible = false;
+      g.add(gB, gS);
+      H2.cyl(gB, A.r, A.r, A.h, M2.stoneLight, A.x, WC.y, A.z, 40);                                           // platform r 2, 1 high (y 3..4)
+      H2.cyl(gB, A.pr + 0.3, A.pr + 0.4, 0.3, M2.stoneSmooth, A.x, WC.y + A.h, A.z, 24);                       // base of the pillar 0.3 high (y 4..4.3), r 0.9 / 1.0
+      H2.cyl(gB, A.pr, A.pr, A.ph, M2.stoneSmooth, A.x, WC.y + A.h + 0.3, A.z, 24);                            // the pillar r 0.6, 3 high (y 4.3..7.3)
+      H2.cyl(gB, A.pr + 0.4, A.pr + 0.1, 0.35, M2.stoneSmooth, A.x, WC.y + A.h + 0.3 + A.ph, A.z, 24);         // capital 0.35 high (y 7.3..7.65), r 1.0 / 0.7
       // 2 steps on the east side, dir W, flight width 2; total rise 0.98 (= 1 less eps, so the top tread never shares the platform's top plane);
       // bottom at x 108.6: the flight x 107.6..108.6 runs 0.4 into the platform's round edge (x 108 at z 8), so there is no gap at its corners
-      H2.stairs(g, { width: 2, totalRise: A.h - 0.02, steps: 2, dir: "W", x: A.x + A.r + 0.6, y: WC.y, z: A.z, tread: MNT_STEP });
+      H2.stairs(gB, { width: 2, totalRise: A.h - 0.02, steps: 2, dir: "W", x: A.x + A.r + 0.6, y: WC.y, z: A.z, tread: MNT_STEP });
+      // the "side" reading: a plinth, the shaft and a capital (six amot in all)
+      H2.box(gS, 2.2, 0.5, 2.2, M2.stoneLight, A.x, WC.y, A.z);                                              // plinth 0.5 (y 3..3.5)
+      H2.cyl(gS, 1.0, 1.05, 0.4, M2.stoneSmooth, A.x, WC.y + 0.5, A.z, 24);                                  // base 0.4
+      H2.cyl(gS, 0.75, 0.75, 4.6, M2.stoneSmooth, A.x, WC.y + 0.9, A.z, 24);                                 // the shaft 4.6
+      H2.cyl(gS, 1.15, 0.8, 0.5, M2.stoneSmooth, A.x, WC.y + 5.5, A.z, 24);                                  // capital 0.5 (top y 9)
+      ctx.layers = ctx.layers || {};
+      ctx.layers.amudBima = gB; ctx.layers.amudSide = gS;
       lbl("העמוד (מלכים ב יא, יד)", A.x, WC.y + 11, A.z, 3);
       ocItem("amud", "העמוד (מלכים ב יא, יד)", A.x, WC.y + A.h + 1.5, A.z, [124, 13, 24]); // cam from the east-south-east, the inner court's east gate behind
+      ctx.shared.amudKing = {
+        current: "bima", keys: ["bima", "side"],
+        set(k) {
+          this.current = k === "side" ? "side" : "bima";
+          gB.visible = this.current === "bima";
+          gS.visible = this.current === "side";
+          if (ctx.requestRender) ctx.requestRender();
+          return this.current;
+        }
+      };
     } catch (e) {
       console.warn("[mount] outer court amud skipped:", e);
     }

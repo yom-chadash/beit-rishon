@@ -634,35 +634,33 @@
     const SHX = ACX - YO / 2, SHZ = ACZ + YO / 2;      // the south-west corner of the yesod: x 37.5, z 12
     const shitinG = new Group();   // 1.3.2: R. Yose's altar moves them to its own corner (2 west, 2 south)
     g.add(shitinG);
+    // PIT_D (fix-d, 22.11.2026 - the user's decision 139 א, with the coordinator's answer א): IN SOLOMON'S DAYS ONE OPEN PIT - Rashi on
+    // Zevachim 61b (book 2191 line 2950): "ובימי שלמה היה כמין בור כרוי אצל המזבח באותה זוית לירד הנסכים בתוכו ויורדין מן המזבח ולרצפה
+    // ושותתין שם והם קלטו אותו הבור לתוך המזבח ועשו נקבים כנגדן בראש המזבח". One round pit, open, in the court's floor against the
+    // yesod's south-west corner; the libations run down off the altar to the floor and into it. The two openings, the marble slab
+    // with its ring (Middot 3:3) and the silver bowls on the top (Sukkah 4:9) are the Second Temple's ("והם קלטו אותו הבור לתוך המזבח")
+    // and are gone from here. The pit's size (r 0.6, a wet trail from the corner) - model choices.
     {
+      const PR = 0.6, PX = SHX - PR + 0.05, PZ = SHZ + PR - 0.05, PD = 1.6;
       const holeMat = new MeshBasicMaterial({ color: 0x0b0907, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-      const hole = (x, z, alongX) => {
-        const geo = new CircleGeometry(1, 28);
-        geo.rotateX(-Math.PI / 2);
-        geo.scale(alongX ? 0.24 : 0.13, 1, alongX ? 0.13 : 0.24);   // 0.48 x 0.26 amah, the long side along the face (model choice)
-        const m = new Mesh(geo, holeMat);
-        m.position.set(x, F + 0.012, z);
-        m.receiveShadow = true;
-        m.name = "shitinHole";
-        shitinG.add(m);
-      };
-      hole(SHX - 0.3, SHZ - 0.6, false);              // by the yesod's west face, 0.6 north of the corner
-      hole(SHX + 1.1, SHZ + 0.3, true);               // by its south face, 1.1 east of the corner (the small ramps start at x 39)
-      // the slab: x 37.1..38.1, z 12.6..13.6, a dark joint 0.05 round it, 0.04 above the floor (model choice, so that it reads)
-      const SCX = SHX + 0.1, SCZ = SHZ + 1.1;
-      const joint = new MeshBasicMaterial({ color: 0x2a2520 });
-      H2.box(shitinG, 1.1, 0.012, 1.1, joint, SCX, F, SCZ).castShadow = false;
-      const slabMat = M2.marble.clone();
-      slabMat.color.set(0xf4efe4);
-      const slab = H2.box(shitinG, 1, 0.04, 1, slabMat, SCX, F, SCZ);   // "מקום היה שם אמה על אמה, וטבלא של שיש" (Middot 3:3)
-      slab.name = "shitinSlab";
-      // "וטבעת היתה קבועה בה": a ring lying flat on the slab, held by a small staple at its north side (model choice)
-      const ring = new Mesh(new TorusGeometry(0.15, 0.025, 8, 28), M2.bronze);
-      ring.rotation.x = Math.PI / 2;
-      ring.position.set(SCX, F + 0.04 + 0.025, SCZ + 0.05);
-      ring.castShadow = true;
-      shitinG.add(ring);
-      H2.box(shitinG, 0.1, 0.05, 0.06, M2.bronze, SCX, F + 0.04, SCZ - 0.1);
+      const disc = new Mesh(new CircleGeometry(PR, 32).rotateX(-Math.PI / 2), holeMat);
+      disc.position.set(PX, F + 0.012, PZ);
+      disc.name = "pitMouth";
+      shitinG.add(disc);
+      const wallM = M2.stone.clone();
+      wallM.side = BackSide;
+      wallM.color.multiplyScalar(0.45);
+      const wall = new Mesh(new CylinderGeometry(PR, PR, PD, 32, 1, true), wallM);   // the pit's wall, seen down its mouth
+      wall.position.set(PX, F - PD / 2 + 0.01, PZ);
+      shitinG.add(wall);
+      const rim = new Mesh(new TorusGeometry(PR + 0.04, 0.05, 6, 32).rotateX(Math.PI / 2), M2.stoneSmooth);   // a low stone lip round the mouth
+      rim.position.set(PX, F + 0.02, PZ);
+      shitinG.add(rim);
+      const wet = new MeshBasicMaterial({ color: 0x3a2a1c, transparent: true, opacity: 0.45, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+      const trail = new Mesh(new PlaneGeometry(0.35, 1).rotateX(-Math.PI / 2), wet);   // "ויורדין מן המזבח ולרצפה ושותתין שם" - the wet trail into it
+      trail.position.set(SHX + 0.1, F + 0.008, SHZ - 0.05);
+      trail.rotation.y = Math.PI / 4;
+      shitinG.add(trail);
     }
     // 1.3.3 (the user: "ספלים — להוסיף בשיטות"): THE TWO BOWLS OF THE LIBATIONS - a completion from the Mishnah, as the shitin beside them
     // (Sukkah 4:9 "עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם... ומנקבין כמין שני חטמין דקין, אחד מעבה ואחד דק... מערבי של מים, מזרחי
@@ -673,31 +671,8 @@
     // לשיתין" - a spout out of each bowl and a hole in the top before it; "tosafot" - Tosafot there (1903, 504): "דלמא הוא דמנקב הספלים
     // יורדין לשיתין כמין שני נקבי החוטם ולא שהיה בולט כמין חוטם" - the holes in the bowls' bottoms. In shitinG, so that R. Yose's altar takes
     // them to its own corner. Sizes and the exact spot (1.4 in from the south edge, beside the horn, off the ramp) - model choices.
-    const SFX = [ACX - S / 2 + 1.3, ACX - S / 2 + 2.2], SFZ = ACZ + S / 2 - 1.4;
-    {
-      const bowlPts = [[0.02, 0], [0.22, 0], [0.3, 0.1], [0.34, 0.28], [0.3, 0.36]];
-      const sil = new MeshStandardMaterial({ color: 0xe8e8ec, metalness: 0.8, roughness: 0.3, envMapIntensity: 1.2 });
-      for (const x of SFX) H2.lathe(shitinG, bowlPts, sil, x, TOP + 0.05, SFZ, 16);
-      const sfR = new Group(), sfT = new Group();
-      sfR.name = "sfalimRashi"; sfT.name = "sfalimTosafot";
-      shitinG.add(sfR, sfT);
-      sfT.visible = false;
-      const dark = new MeshBasicMaterial({ color: 0x120e08 });
-      SFX.forEach((x, i) => {
-        const sp = H2.cyl(sfR, i ? 0.045 : 0.03, i ? 0.045 : 0.03, 0.3, sil, x, TOP + 0.2, SFZ + 0.42, 8);   // the spout, over the south rim (the wine's thicker)
-        sp.rotation.x = Math.PI / 2;
-        H2.cyl(sfR, 0.06, 0.06, 0.02, dark, x, TOP + 0.01, SFZ + 0.75, 8);                                    // the hole in the top the libation runs to
-        H2.cyl(sfT, i ? 0.05 : 0.035, i ? 0.05 : 0.035, 0.02, dark, x, TOP + 0.06, SFZ, 8);                   // the hole in the bowl's bottom
-      });
-      ctx.shared.sfalim = {
-        current: "rashi", keys: ["rashi", "tosafot"],
-        names: { rashi: "רש״י וברטנורא — חוטם ונקב בגג המזבח", tosafot: "תוספות — נקב בתחתית הספל" },
-        get() { return this.current; },
-        set(k) { if (k !== "rashi" && k !== "tosafot") return false; this.current = k; sfR.visible = k === "rashi"; sfT.visible = k === "tosafot"; return true; }
-      };
-      for (const [dx, dz, L] of [[0, 0, "altarDefG"], [-2, 2, "altarYoseG"]])
-        ctx.labels.push({ text: "ספלי הניסוך — מים (מערבי) ויין (מזרחי)", x: (SFX[0] + SFX[1]) / 2 + dx, y: TOP + 1.2, z: SFZ + dz, size: 0.8, layer: L });
-    }
+    // PIT_D: the bowls of the libations (built here from 1.3.3, ctx.shared.sfalim) are gone - in Solomon's days there were no holes in the top;
+    // the libations ran down to the pit at the yesod's corner (above). (Their row and their place in the UI leave with ctx.shared.sfalim.)
 
     // --- the fire: three pyres (מערכות) of cedar logs (model choice as in the Second Temple model, after Yoma 45a; the First Temple
     // verses only mention the burnt offerings on the altar: I Kings 8:64, 9:25; II Chr 7:1 "והאש ירדה מהשמים") ---
@@ -1000,7 +975,7 @@
 
     // --- 1.0.2: השיתין - the text, the sources (book id + line index, each line read in the Otzaria DB), the label and the fly point ---
     {
-      const SHITIN_INFO = "לשון המשנה: 'ובקרן מערבית דרומית היו שני נקבים, כמין שני חטמין דקין' — הדם יורד בהם ויוצא לנחל קדרון (מדות ג, ב; רמב״ם בית הבחירה ב, יא). ועוד: 'למטה ברצפה באותה הקרן, מקום היה שם אמה על אמה, וטבלא של שיש, וטבעת היתה קבועה בה, שבו יורדין לשית ומנקין אותו' (מדות ג, ג).\nבבית ראשון: המשנה מתארת את מזבח הבית השני, אבל השיתין היו כבר בבית ראשון — 'שיתין מששת ימי בראשית נבראו' (סוכה מט.), ו'בשעה שכרה דוד שיתין' (סוכה נג.).\nרש״י: בימי שלמה היה 'כמין בור כרוי אצל המזבח באותה זוית', וכשעלו בני הגולה 'קלטו אותו הבור לתוך המזבח ועשו נקבים כנגדן בראש המזבח' (רש״י זבחים סא:).\nבמודל: פי הבור מסומן בשני פתחים ברצפה, לרגלי היסוד שבקרן — אחד במערב ואחד בדרום (בחירת מודל).";
+      const SHITIN_INFO = "לשון המשנה: 'ובקרן מערבית דרומית היו שני נקבים, כמין שני חטמין דקין' — הדם יורד בהם ויוצא לנחל קדרון (מדות ג, ב; רמב״ם בית הבחירה ב, יא). ועוד: 'למטה ברצפה באותה הקרן, מקום היה שם אמה על אמה, וטבלא של שיש, וטבעת היתה קבועה בה, שבו יורדין לשית ומנקין אותו' (מדות ג, ג).\nבבית ראשון: המשנה מתארת את מזבח הבית השני, אבל השיתין היו כבר בבית ראשון — 'שיתין מששת ימי בראשית נבראו' (סוכה מט.), ו'בשעה שכרה דוד שיתין' (סוכה נג.).\nרש״י (זבחים סא:): 'ובימי שלמה היה כמין בור כרוי אצל המזבח באותה זוית לירד הנסכים בתוכו ויורדין מן המזבח ולרצפה ושותתין שם והם קלטו אותו הבור לתוך המזבח ועשו נקבים כנגדן בראש המזבח לירד הנסכים שם' — הנקבים שבראש המזבח עשו בני הגולה.\nבמודל, כרש״י: **בור אחד עגול ופתוח ברצפה, צמוד ליסוד בקרן הדרומית־מערבית**, והנסכים יורדים מן המזבח לרצפה ושותתים לתוכו. הנקבים, ספלי הניסוך שבראש המזבח (סוכה ד, ט) וטבלת השיש (מדות ג, ג) — של בית שני, ואינם מצוירים כאן. גודל הבור — בחירת מודל.";
       // 1.0.2 (fix, the review): the text no longer derives the two openings from Rashi - he has one pit beside the altar (book 2191, line 2955)
       // and the holes only in the Second Temple ("וכשעלו בני הגולה", Zevachim 61b, book 130, line 2096); the two openings are the model's mark of it
       const SHITIN_REFS = [
@@ -1010,7 +985,7 @@
         ["ב, יב", { book: 337, index: 35 }],
         ["סוכה מט.", { book: 108, index: 1261 }],
         ["סוכה נג.", { book: 108, index: 1371 }],
-        ["רש״י זבחים סא:", { book: 2191, index: 2955 }]
+        ["רש״י זבחים סא:", { book: 2191, index: 2950 }]   // PIT_D: 2955 was Zevachim 62a
       ];
       // the label west of the west face, north of the corner, 2.6 out so that the sprite does not cut into the altar and does not hide
       // the openings or the slab (checked in a render)

@@ -9,7 +9,7 @@
   //   Metzudat David on I Kings 6:36 [509]  "שלשה שורות זה על גב זה, בנה באבני גזית, ועליהם שורה הרביעית, בנה מארזים... וכסדר הזה בנה אותו עד כלות גבהי הכתלים"
   //     (the explicit source for repeating the 3 + 1 band up to the crest);  Rashi on I Kings 7:12 "החומה עשויה שלשה נדבכין של אבנים, ונדבך של עץ עליהם"
   //   II Chr 4:9  "ויעש חצר הכהנים והעזרה הגדולה ודלתות לעזרה ודלתותיהם צפה נחשת";  Rashi there [141]: "והעזרה הגדולה. זו עזרת ישראל" (so the
-  //     bronze doors are THIS court's; the outer court in 20-mount.js repeats them by analogy)
+  //     bronze doors are THIS court's alone - the great court's are plain wood since DOORS_WOOD_D, the user's decision 140 א)
   //   Middot 5:1  (187 x 135 - user decision "כמדות");  Middot 1:4  (seven gates: 3 north, 3 south, 1 east - convention accepted by the user)
   //   Middot 2:3  (gate openings 20 x 10 with a flat lintel; steps 0.5 / 0.5 - applied as a convention)
   // The gate names are not in the First Temple sources; they are labelled by side and letter. No דוכן, no court split.
@@ -158,7 +158,11 @@
   // 1.3.2: every x of the slaughter place follows the altar (CO.ALTAR_DX - it stands "opposite the whole altar", the numbers are the 1.3.1 ones)
   var CRT_DX = CO.ALTAR_DX || 0;
   var CRT_SLAUGHTER_ROW = { z: -50, cols: [40.75, 43.25, 45.75, 48.25, 50.75, 53.25, 55.75, 58.25].map((x) => x + CRT_DX), tableExtraX: 59.5 + CRT_DX, tableW: 1, tableD: 2 };
-  var CRT_SLAUGHTER_BEAM = { pillarH: 3.4, beamH: 0.6, beamW: 0.6, hooksPerSpan: 3 };
+  // MEIRI_LOW_D (fix-d, 22.11.2026 - the user's decision 143 א): the Meiri's stone pillar LOW, far under a man's height, as the Bartenura's
+  // (1.4) - the Yachin on Middot 3:5 (book 819 line 421): "שמנה עמודים ננסין ר"ל עמודי אבן שנמוכין כננסין, הרבה פחות מקומת איש המפשיט";
+  // Rabbenu Shemaya there (645 line 106): "ח' עמודים ננסים קצרים ולא גבוהים" - the beams from pillar to pillar on them, with their hooks
+  // on both sides and under them, as the reading says ("כעין קורות קצרות באים מעמוד לעמוד"). Until now the stone was 3.4 high.
+  var CRT_SLAUGHTER_BEAM = { pillarH: 1.4, beamH: 0.6, beamW: 0.6, hooksPerSpan: 3 };
   var CRT_SLAUGHTER = {
     x0: 39.5 + CRT_DX, x1: 59.5 + CRT_DX, ringsZ0: -18, ringsZ1: -42, tablesZ: -46,
     ringRows: [-20, -24, -28, -32, -36, -40], ringCols: [43.5, 47.5, 51.5, 55.5].map((x) => x + CRT_DX), ringR: 0.55, ringTube: 0.07,

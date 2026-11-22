@@ -2050,7 +2050,7 @@
     const ALT_W = 1, ALT_TOP = 2, ALT_HORN_H = INT_TEF, ALT_H = ALT_TOP - ALT_HORN_H, ALT_HORN = 0.18, ALT_CEDAR = 0.12, ALT_GOLD = 0.03;
     const ALT_CUT = 0.3;                    // 1.0.1-L: the layers' cut (K.4: 0.65 of 2) - below it the south half keeps its gold, as the book (p07R)
     const buildIncenseAltar = (parent, ax, az) => {
-      const out = { plain: [], layers: [] };
+      const out = { plain: [], layers: [], all: [], ax, az };   // ALTAR2_D: all - every mesh, for the 2 x 2 reading (ctx.shared.goldAltarSize)
       const hw = ALT_W / 2, hp = hw - ALT_HORN / 2, ci = hw - ALT_GOLD, si = ci - ALT_CEDAR, ct = ALT_H - ALT_GOLD, st = ct - ALT_CEDAR;
       const A = { gAlways: [], gPlain: [], gCut: [], cedar: [], stone: [], fAlways: [], fPlain: [] };
       const box = (arr, w, h, d, x, y, z) => { const b = uvWorldBox(new BoxGeometry(w, h, d), w, h, d); b.translate(ax + x, FL + y + h / 2, az + z); arr.push(b); };
@@ -2089,6 +2089,7 @@
         m.castShadow = m.receiveShadow = shadow;
         parent.add(m);
         if (list) list.push(m);
+        out.all.push(m);
         return m;
       };
       mesh(A.gAlways, goldAltar, null);
@@ -2298,6 +2299,26 @@
       }
     };
     ctx.shared.incenseAltar = { layers: altarLayers };
+    // ALTAR2_D (fix-d, 22.11.2026 - the user's decision 141 ב): TWO READINGS of the golden altar's width (the row "מזבח הזהב — רוחבו"):
+    // "rambam" (the default) - "מזבח הקטרת היה מרבע אמה על אמה" (Beit HaBechirah 3:17); "gra" - the Gra as the Har HaMoriah quotes him
+    // there (book 5474 line 167): "והגר"א כתב שם שהוסיף עוד אמה... וא"כ היה ב' אמות ארכו (ורחבו איני יודע כמה ולכאורה מראייתו שהביא
+    // דהמקדש היה כפול ממשכן משמע דהיה ב' על ב' וצ"ע)" - two by two (the width uncertain, as he says). Two amot high in both (Ex 30:2).
+    // The whole altar (its horns and crown too) is widened twice about its own middle, in every layout of the vessels; the coals and the
+    // smoke stay. The Gra's commentary on Kings itself is not in the library.
+    ctx.shared.goldAltarSize = {
+      current: "rambam", keys: ["rambam", "gra"],
+      set(k) {
+        this.current = k === "gra" ? "gra" : "rambam";
+        const f = this.current === "gra" ? 2 : 1;
+        for (const key in layouts) {
+          const P = layouts[key].altarParts;
+          if (!P || !P.all) continue;
+          for (const m of P.all) { m.scale.set(f, 1, f); m.position.set((1 - f) * P.ax, 0, (1 - f) * P.az); }
+        }
+        if (ctx.requestRender) ctx.requestRender();
+        return this.current;
+      }
+    };
 
     // labels of the vessels follow the layout (the UI makes one sprite per label; we move ours when the layout changes)
     const altarAt = (k, dx, y, dz) => { const a = layouts[k].altar; return [a.x + dx, FL + y, a.z + dz]; };   // 1.0.1-L (L.69): from the layouts' specs
@@ -2513,6 +2534,7 @@
         b.rotation.x = Math.PI / 2;
         b.position.set(bx, y, (z1 + z2) / 2);
         b.castShadow = true;
+        b.name = "devirChainBar";   // SLOPE2_D: lowered with the doorway when the floor is level
         g.add(b);
         let k = 0;
         for (let z = z1 + 0.2; z <= z2 - 0.2 + 1e-6; z += 0.36, k++)
@@ -2521,7 +2543,7 @@
       const hz = INT_DEVIR_HOLE / 2 + 0.2;
       for (const y of [F + DOOR_UP + 2, F + DOOR_UP + 8]) { bar(y, -HW, -hz); bar(y, hz, HW); }   // 1.3.7: counted from the floor at the wall
       for (const y of [F + DOOR_UP + 14, F + DOOR_UP + 20]) bar(y, -HW, HW);
-      int_inst(g, linkG, M.gold, links, false);
+      int_inst(g, linkG, M.gold, links, false).name = "devirChainLinks";   // SLOPE2_D
     } catch (e) { console.warn("[interior] chains", e); }
 
     // ---- אמה טרקסין (Rashi on 6:16, 6:19; Yoma 51b-52a; Bava Batra 3a: 30 high and "שית פושכי" = 1 thick; 3b: it stood only "אגב תקרה
@@ -2544,16 +2566,17 @@
     }
     // the two piers of the traksin beside the doorway, for a hole `holeW` wide, and the band above the doorway with a hole `bandHoleW` wide
     // (0: solid) - one merged mesh per reading of the doorway
-    const trkPiers = (parent, holeW, bandHoleW) => {
-      const pg = [], y1 = F + DOOR_UP + INT_DEVIR_DOOR_H, y2 = y1 + TRK_BAND;
+    const trkPiers = (parent, holeW, bandHoleW, up) => {
+      if (up == null) up = DOOR_UP;                                  // SLOPE2_D: up 0 - the same pieces for the level floor (Rambam)
+      const pg = [], y1 = F + up + INT_DEVIR_DOOR_H, y2 = y1 + TRK_BAND;
       int_uvBox(pg, XDE, XW, F, y1, -HW, -holeW / 2, trkUV);
       int_uvBox(pg, XDE, XW, F, y1, holeW / 2, HW, trkUV);
-      int_uvBox(pg, XDE, XW, F, F + DOOR_UP - 0.02, -holeW / 2, holeW / 2, trkUV);   // 1.3.7: the wall under the doorway's foot (the sloping floor covers it)
+      if (up > 0) int_uvBox(pg, XDE, XW, F, F + up - 0.02, -holeW / 2, holeW / 2, trkUV);   // 1.3.7: the wall under the doorway's foot (the sloping floor covers it)
       if (bandHoleW > 0) {
         int_uvBox(pg, XDE, XW, y1, y2, -HW, -bandHoleW / 2, trkUV);
         int_uvBox(pg, XDE, XW, y1, y2, bandHoleW / 2, HW, trkUV);
       } else int_uvBox(pg, XDE, XW, y1, y2, -HW, HW, trkUV);
-      mergedMesh(pg, goldCarvedEnd, parent);
+      return mergedMesh(pg, goldCarvedEnd, parent);
     };
 
     // ---- פתח הדביר (I Kings 6:31-32): 6 wide x 12 high (model choice; it must be wider than the ark's staffs - Rashi 6:23, Menachot 98b) ----
@@ -2577,7 +2600,7 @@
       const pent = key === "pent";
       const parts = devParts[key] = { hinges: [], curtain: [], pivZ: 0 };
       const holeW = pent ? INT_DEVIR_HOLE : INT_DEVIR_CLEAR + 2;      // 9.08 (the pentagons stand in the hole) / 8 (square posts 1 thick)
-      trkPiers(vg, holeW, pent ? INT_DEVIR_HOLE : 0);                // 1.0.1-L (L.32): Rashi's reading - the lintel fills the band's hole
+      trkPiers(vg, holeW, pent ? INT_DEVIR_HOLE : 0).name = "devir-piers";   // 1.0.1-L (L.32): Rashi's reading - the lintel fills the band's hole
       const fixed = vg.children.slice();                             // 1.3.7: the wall's own pieces - all that is added after them goes up DOOR_UP (below)
       if (pent) {
         const pentShape = (zJamb, s) => {
@@ -2730,6 +2753,12 @@
         o.position.y += DOOR_UP;
         if (o.name === "devir-pent-edges") for (const ln of o.children) if (fixed.indexOf(ln.userData.src) >= 0) ln.position.y -= DOOR_UP;   // the edges of the wall's pieces stay with them
       }
+      // SLOPE2_D: the wall's pieces for the level floor - from the floor up to the doorway that stands DOOR_UP lower (floorSlope lowers
+      // the whole group DOOR_UP, so these are built DOOR_UP higher; the sloping floor's pieces would reach under the floor)
+      const pf = trkPiers(vg, holeW, pent ? INT_DEVIR_HOLE : 0, 0);
+      pf.name = "devir-piers-flat";
+      pf.position.y = DOOR_UP;
+      pf.visible = false;
       devVar[key] = vg;
       return vg;
     };
@@ -2816,6 +2845,7 @@
       }
     }
 
+    const ARK_REF = { move: null, anchor: null };   // ARK_PLACE_D: the ark's moving group and its pill's anchor (set inside the devir's block)
     // ---- הדביר / קודש הקדשים: 20 x 20 x 20 (I Kings 6:20), everything gold (6:20-22, 6:30; II Chr 3:8 "לככרים שש מאות") ----
     {
       const L = XDE - XDW;               // 19 clear (+ the traksin = 20, 6:20)
@@ -2873,11 +2903,24 @@
       rockShape.closePath();
       const rockGeo = new ExtrudeGeometry(rockShape, { depth: ROCK_H, bevelEnabled: false });
       rockGeo.rotateX(-Math.PI / 2);     // extrusion -> +y (0..ROCK_H)
+      // ARK_PLACE_D (fix-d, 22.11.2026 - the user's decisions 131 ג and 137): THE ARK'S PLACE IN THE DEVIR - two readings, the row "מקום
+      // הארון בקודש הקדשים" (ctx.shared.arkPlace.set("middle" | "west")). "middle" (the default) - the Yerushalmi, Bava Batra 6:2 (book 172
+      // line 187): "ארון עומד באמצע וחולק הבית עשר אמות לכל רוח"; Rashi Yoma 21a (2157 line 711): "כשניתן באמצע בית הכפורת". "west" - the
+      // Rambam, Beit HaBechirah 4:1 "אבן היתה בקדש הקדשים במערבו שעליה היה הארון מנח", as the Rashbam, Bava Batra 99a (1959 line 3439):
+      // "ולפניו כ' עד הדביר" - the ark against the west wall, its stone touching it. The ark moves with the stone, the kaporet, the rings,
+      // what is in it and beside it, and the great cherubim with their wings - "ויסכו הכרבים על הארון ועל בדיו מלמעלה" (I Kings 8:7; the
+      // coordinator's answer, א); the wings span wall to wall north-south in both. The staffs stay - from the west wall to the parochet in
+      // both (they pass through the rings wherever the ark stands). Everything here is built on the old ark line ARK_X (-58.5) and moved by
+      // arkMove.position.x. (The Ritzba - "הי' במזרח בית קד"ק", Ma'asei LaMelech 4304 line 303 - only in the card.)
+      const arkMove = new Group();
+      arkMove.name = "arkMove";
+      g.add(arkMove);
+      ARK_REF.move = arkMove;
       const rock = new Mesh(rockGeo, rockMat);
       rock.name = "even-shetiya";
       rock.position.set(ARK_X, F, 0);
       rock.castShadow = rock.receiveShadow = true;
-      g.add(rock);
+      arkMove.add(rock);
       // the ark (Ex 25:10: 2.5 x 1.5 x 1.5) on it, on the ark line x -58.5 (Rambam 4:1: the stone "במערבו"; 5 from the west wall: model choice),
       // its long axis north-south (Rashi on I Kings 6:23 "שהארון היה נתון ארכו לרחבו של בית"), its staffs east-west at the ends of its length (Rashi there;
       // Menachot 98b: 2.5 between the staffs so that two Levites walk between them; Yoma 54a; I Kings 8:8)
@@ -2885,17 +2928,17 @@
       // 1.0.1-L (L.85): hollow, its walls half a tefach - Bava Batra 14a "צא מהן טפח – חציו לכותל זה וחציו לכותל זה" (the floor the same: model
       // choice). The crown round its top: Ex 25:11 "ועשית עליו זר זהב סביב" (a band under the kaporet; its teeth with the open ark, as the book draws them)
       const ARK_T = 1 / 12;
-      ARK_PARTS.body.push(H.box(g, ARK_W, ARK_T, ARK_L, vesselGold, ARK_X, ay, 0));
+      ARK_PARTS.body.push(H.box(arkMove, ARK_W, ARK_T, ARK_L, vesselGold, ARK_X, ay, 0));
       for (const sd of [-1, 1]) {
-        ARK_PARTS.body.push(H.box(g, ARK_T, ARK_H - ARK_T, ARK_L, vesselGold, ARK_X + sd * (ARK_W - ARK_T) / 2, ay + ARK_T, 0));
-        ARK_PARTS.body.push(H.box(g, ARK_W - 2 * ARK_T, ARK_H - ARK_T, ARK_T, vesselGold, ARK_X, ay + ARK_T, sd * (ARK_L - ARK_T) / 2));
-        ARK_PARTS.body.push(H.box(g, 0.03, 0.12, ARK_L + 0.06, vesselGold, ARK_X + sd * (ARK_W / 2 + 0.015), ay + ARK_H - 0.12, 0));
-        ARK_PARTS.body.push(H.box(g, ARK_W, 0.12, 0.03, vesselGold, ARK_X, ay + ARK_H - 0.12, sd * (ARK_L / 2 + 0.015)));
+        ARK_PARTS.body.push(H.box(arkMove, ARK_T, ARK_H - ARK_T, ARK_L, vesselGold, ARK_X + sd * (ARK_W - ARK_T) / 2, ay + ARK_T, 0));
+        ARK_PARTS.body.push(H.box(arkMove, ARK_W - 2 * ARK_T, ARK_H - ARK_T, ARK_T, vesselGold, ARK_X, ay + ARK_T, sd * (ARK_L - ARK_T) / 2));
+        ARK_PARTS.body.push(H.box(arkMove, 0.03, 0.12, ARK_L + 0.06, vesselGold, ARK_X + sd * (ARK_W / 2 + 0.015), ay + ARK_H - 0.12, 0));
+        ARK_PARTS.body.push(H.box(arkMove, ARK_W, 0.12, 0.03, vesselGold, ARK_X, ay + ARK_H - 0.12, sd * (ARK_L / 2 + 0.015)));
       }
       ARK_PARTS.staffMat = vesselGold;
       const arkLid = new Group();                                       // the kaporet with its cherubim: lifted off by the pill "arkInside" (L.85)
       arkLid.name = "ark-kaporet";
-      g.add(arkLid);
+      arkMove.add(arkLid);
       ARK_PARTS.body.push(arkLid);
       ctx.layers.arkLid = arkLid;                                       // gates the labels "הארון ובדיו" and "אבן השתייה" (with the ark open they cover what is shown)
       H.box(arkLid, ARK_W + 0.1, 0.17, ARK_L + 0.1, vesselGold, ARK_X, ay + ARK_H, 0);    // kaporet (Ex 25:17), a tefach thick (Sukkah 5a)
@@ -2915,7 +2958,7 @@
           const rg = new Mesh(new TorusGeometry(0.18, 0.04, 6, 12), vesselGold);
           rg.rotation.y = Math.PI / 2;
           rg.position.set(ARK_X + dx, STAFF_Y, s * (ARK_L / 2 + 0.03));
-          g.add(rg);
+          arkMove.add(rg);
           ARK_PARTS.body.push(rg);
         }
       }
@@ -3042,7 +3085,7 @@
       };
       const cherubHeads = [];
       for (const s of [-1, 1]) {
-        cherubHeads.push({ s, head: figure("cherub-" + (s < 0 ? "north" : "south"), ARK_X, FL, s * CH_Z, 1, 0) });
+        cherubHeads.push({ s, head: figure("cherub-" + (s < 0 ? "north" : "south"), ARK_X, FL, s * CH_Z, 1, 0, arkMove) });   // ARK_PLACE_D: with the ark
         greatWing(s, s, HW - SKIN - CH_Z + 0.01);                         // the outer wing, into the wall's gold skin by 0.01 (the skin's face at |z| 9.8)
         greatWing(s, -s, CH_Z);                                           // the inner wing, to the middle of the house (z 0)
         // the kaporet's cherub at this end, facing the other (rotation: +x -> toward z 0), head bowed toward the kaporet
@@ -3050,7 +3093,7 @@
         kh.rotation.z = -0.42;
         for (const sx of [-1, 1]) kaporetWing(s, sx);
       }
-      mergedMesh(wingsGreat, vesselGold, g).name = "cherub-wings";
+      mergedMesh(wingsGreat, vesselGold, arkMove).name = "cherub-wings";   // ARK_PLACE_D
       mergedMesh(wingsKaporet, vesselGold, arkLid).name = "kaporet-cherub-wings";
       const CHERUB_POSES = {
         rashi: (s) => [0, s * 0.55, -0.32],   // Euler XYZ: the bow (about z) first, then the turn (about y) toward the other cherub (z 0)
@@ -3087,7 +3130,7 @@
         const open = new Group();
         open.name = "arkInside";
         open.visible = false;
-        g.add(open);
+        arkMove.add(open);   // ARK_PLACE_D
         ctx.layers.arkInside = open;
         const TF = 1 / 6, yf = ay + ARK_T;                               // a tefach; the ark's inner floor
         const zN = -ARK_L / 2 + ARK_T;                                   // the inner face of the north wall: -1.1667
@@ -3168,7 +3211,7 @@
           sc2.position.set(ARK_X - ARK_W / 2 - 0.62, F + ROCK_H + 0.55 + 0.17, 0);
           argaz.add(sc2);
           argaz.visible = false;
-          g.add(argaz);
+          arkMove.add(argaz);   // ARK_PLACE_D
           const LAYOUT = {
             current: "meir",
             keys: ["meir", "yehuda"],
@@ -3301,6 +3344,7 @@
           }
         };
         const arkInsideAnchor = [ARK_X + ARK_W / 2 + 0.1, ay + ARK_H * 0.5, 0];
+        ARK_REF.anchor = arkInsideAnchor;   // ARK_PLACE_D: moved with the ark
         ctx.shared.modelButtons.push({
           id: "arkInside",
           label: "הצג מה שבתוך הארון",
@@ -3325,11 +3369,14 @@
         const bx = new Box3();
         const find = () => {
           found = true;
-          for (const o of g.children.concat(ctx.shared.houseSlope && ctx.shared.houseSlope.group ? ctx.shared.houseSlope.group.children : [])) {   // 1.3.5: the sloping floor's group too
-            if (o === rock || o.name === "even-shetiya" || o.isLight || o.name === "houseSlope" || o.name === "houseSlopeWedge") continue;
+          // ARK_PLACE_D: the ark's parts are in arkMove now (it may stand elsewhere) - its children are searched, round the ark's line of
+          // this moment; the great cherubim and their wings stay, as the stone
+          const cur = ARK_X + arkMove.position.x;
+          for (const o of g.children.concat(ctx.shared.houseSlope && ctx.shared.houseSlope.group ? ctx.shared.houseSlope.group.children : [], arkMove.children)) {   // 1.3.5: the sloping floor's group too
+            if (o === rock || o === arkMove || o.name === "even-shetiya" || o.isLight || o.name === "houseSlope" || o.name === "houseSlopeWedge" || /^cherub-/.test(o.name || "")) continue;
             try { bx.setFromObject(o); } catch (_) { continue; }
             if (bx.isEmpty()) continue;
-            if (bx.min.x > ARK_X - 1.6 && bx.max.x < ARK_X + 1.6 && bx.min.z > -1.9 && bx.max.z < 1.9 && bx.min.y > F - 0.05 && bx.max.y < F + 8) parts.push(o);
+            if (bx.min.x > cur - 1.6 && bx.max.x < cur + 1.6 && bx.min.z > -1.9 && bx.max.z < 1.9 && bx.min.y > F - 0.05 && bx.max.y < F + 9) parts.push(o);
           }
         };
         ctx.shared.arkLift = {
@@ -3351,7 +3398,9 @@
     kodeshLight.position.set((XE + XW) / 2, F + KH - 4, 0);
     g.add(kodeshLight);
     ctx.shared.devirCenter = { x: DEVIR_CX, y: F + DH / 2, z: 0 };     // {-54, 22, 0}: used by the UI's cloud
-    ctx.shared.arkX = ARK_X;                                            // -58.5: the ark / even shetiya / cherubim line (70-ui.js place targets)
+    // ARK_PLACE_D: the ark / even shetiya / cherubim line of this moment (70-ui.js place targets; 58-ark.js's demonstration)
+    Object.defineProperty(ctx.shared, "arkX", { get: () => ARK_X + (ARK_REF.move ? ARK_REF.move.position.x : 0), enumerable: true, configurable: true });
+    Object.defineProperty(ARK_PARTS, "x", { get: () => ARK_X + (ARK_REF.move ? ARK_REF.move.position.x : 0), enumerable: true, configurable: true });
 
     // ---- labels, fly points, cutaway ----
     ctx.labels.push(
@@ -3470,7 +3519,7 @@
           if (o.name !== "goldKey" || o.userData.slopeUp) return;
           for (let p = o.parent; p; p = p.parent) if (/^devir-door-/.test(p.name || "")) return;   // 1.3.7: the devir's doors went up themselves (DOOR_UP), their key with them
           o.getWorldPosition(wp);
-          if (wp.x <= SL.x0 && wp.x >= SL.x1 && Math.abs(wp.z) <= HW) { o.position.y += hr(wp.x); o.userData.slopeUp = true; }
+          if (wp.x <= SL.x0 && wp.x >= SL.x1 && Math.abs(wp.z) <= HW) { const dy = hr(wp.x); o.position.y += dy; o.userData.slopeUp = true; o.userData.slopeDy = dy; }   // SLOPE2_D: kept, for the level floor
         });
       }
       const sh = new Shape();
@@ -3488,6 +3537,293 @@
         if (l.x <= SL.x0 && l.x >= SL.x1 && Math.abs(l.z || 0) <= HW && l.y <= F + 13) { l.y += hr(l.x); l.__slope = true; }
       }
       ctx.shared.houseSlope = { rise: SL.rise, x0: SL.x0, x1: SL.x1, hw: HW, floor: F, at: hr, group: slopeG, moved: moved.map((m) => [m[0].name || m[0].type, m[1], m[2], m[3], m[4]]) };
+      // SLOPE2_D (fix-d, 22.11.2026 - the user's decision 145 א): TWO READINGS of the house's floor, the row "רצפת ההיכל — משופעת או
+      // שטוחה" (ctx.shared.floorSlope.set("rashi" | "rambam")). "rashi" (the default in this house) - Rashi Menachot 99a (book 2186 line
+      // 4703) "דבית המקדש היה משופע ולצד מערב מגביה יותר": the shear above. "rambam" - the Rambam, Beit HaBechirah 6:4 (337 line 97)
+      // "והאולם וההיכל כלו בשוה"; the Kaftor vaFerach (7576 line 244) "והאולם וההיכל הכל שוה ובמישור"; the Torat HaOlah (3167 line 298)
+      // "עד שהגיעו לאולם שהיה עם ההיכל בשוה במישור ההר": the floor level - the sloping group's matrix is the identity, the cypress wedge
+      // hidden, the devir's doorway with its parts, its curtain and the gold chains DOOR_UP lower (a strip of the traksin's carved gold fills
+      // the wall over the lowered band), the keys and the names that rose with the floor go down again. ctx.shared.houseSlope.at follows.
+      {
+        const SH = slopeG.matrix.clone(), ID = new Matrix4();
+        const fill = [];
+        int_uvBox(fill, XDE, XW, F + INT_DEVIR_DOOR_H + TRK_BAND, F + DOOR_UP + INT_DEVIR_DOOR_H + TRK_BAND, -HW, HW, trkUV);
+        const fillM = mergedMesh(fill, goldCarvedEnd, g);
+        fillM.name = "traksinFill"; fillM.visible = false;
+        const lblDoor = new Set(["רתוקות הזהב", "אמה טרקסין", "פתח הדביר (מזוזות חמישית)"]);
+        const HS = ctx.shared.houseSlope;
+        let level = false;
+        HS.at = (x) => (level ? 0 : hr(x));
+        ctx.shared.floorSlope = {
+          current: "rashi", keys: ["rashi", "rambam"],
+          set(k) {
+            const lv = k === "rambam";
+            this.current = lv ? "rambam" : "rashi";
+            if (lv === level) return this.current;
+            level = lv;
+            slopeG.matrix.copy(lv ? ID : SH);
+            slopeG.matrixWorldNeedsUpdate = true;
+            wedge.visible = !lv;
+            fillM.visible = lv;
+            for (const k2 in devVar) {
+              const vg = devVar[k2];
+              vg.position.y = lv ? -DOOR_UP : 0;
+              for (const o of vg.children) {   // the piers of each floor (above, buildDevirDoorway) and the glowing edges of the sloping one
+                if (o.name === "devir-piers") o.visible = !lv;
+                else if (o.name === "devir-piers-flat") o.visible = lv;
+                else if (o.name === "devir-pent-edges") for (const ln of o.children) if (ln.userData.src && ln.userData.src.name === "devir-piers") ln.visible = !lv;
+              }
+            }
+            g.traverse((o) => {
+              if (o.name === "devirChainBar" || o.name === "devirChainLinks") o.position.y += lv ? -DOOR_UP : DOOR_UP;
+              else if (o.name === "goldKey" && o.userData.slopeDy) o.position.y += lv ? -o.userData.slopeDy : o.userData.slopeDy;
+            });
+            const grp = ctx.root && ctx.root.getObjectByName ? ctx.root.getObjectByName("labels") : null;
+            for (const l of ctx.labels) {
+              if (!l || typeof l.y !== "number") continue;
+              let dy = 0;
+              if (l.__slope) dy = (lv ? -1 : 1) * hr(l.x);
+              else if (lblDoor.has(l.text)) dy = lv ? -DOOR_UP : DOOR_UP;
+              if (!dy) continue;
+              l.y += dy;
+              const spr = grp ? grp.children.find((q) => q.userData && q.userData.label === l) : null;
+              if (spr) spr.position.y += dy;
+            }
+            if (ctx.requestRender) ctx.requestRender();
+            return this.current;
+          }
+        };
+      }
+    }
+    // ARK_PLACE_D (fix-d, 22.11.2026 - the user's decisions 131 ג and 137): the switch. "middle" - the ark's middle at the devir's middle
+    // (DEVIR_CX); "west" - the stone against the west wall (the ark's middle 1 amah from it: the stone is two amot east-west). It moves
+    // arkMove (inside the floor's sloping group: the shear lifts it by the floor at its new place), the labels of the ark, its stone, its
+    // cherubim and what is in it (their heights by the floor's rise), the pill "arkInside" and the views of the cherubim and of the open ark.
+    {
+      const POS = { middle: DEVIR_CX, west: XDW + 1 };
+      const LBL = new Set(["הכרובים", "הארון ובדיו", "אבן השתייה", "שני לחות האבנים (ח, ט)", "תחתיהם: שברי הלוחות (מנחות צט.)", "השם וכל כינויו (בבא בתרא יד:)", "ספר התורה (בבא בתרא יד.)", "הארגז (שמואל א ו, ח)"]);
+      const FP = ["cherubim", "arkInside"];
+      const rise = (x) => { const S = ctx.shared.houseSlope; return S && typeof S.at === "function" ? S.at(x) : 0; };
+      ctx.shared.arkPlace = {
+        current: "west0", keys: ["middle", "west"],
+        labels: LBL, flyKeys: FP,   // TRAKSIN_130_D: what moves with the ark - the amah traksin's switch leaves them to this set()
+        set(k) {
+          k = k === "west" ? "west" : "middle";
+          const mv = ARK_REF.move;
+          if (!mv) return this.current;
+          const M = ctx.shared.traksin && typeof ctx.shared.traksin.map === "function" ? ctx.shared.traksin.map : (x) => x;   // TRAKSIN_130_D
+          const x0 = ARK_X + mv.position.x, x1 = k === "west" ? M(XDW) + 1 : M(POS[k]), dx = x1 - x0;
+          this.current = k;
+          if (Math.abs(dx) < 1e-6) return k;
+          mv.position.x += dx;
+          mv.updateMatrixWorld(true);
+          if (ARK_REF.anchor) ARK_REF.anchor[0] += dx;
+          for (const n of FP) { const f = ctx.shared.flyPoints && ctx.shared.flyPoints[n]; if (f) { if (f.pos) f.pos[0] += dx; if (f.target) f.target[0] += dx; } }
+          const grp = ctx.root && ctx.root.getObjectByName ? ctx.root.getObjectByName("labels") : null;
+          for (const l of ctx.labels) {
+            if (!l || !LBL.has(l.text) || typeof l.x !== "number") continue;
+            const dy = l.__slope ? rise(l.x + dx) - rise(l.x) : 0;
+            l.x += dx; l.y += dy;
+            const spr = grp ? grp.children.find((q) => q.userData && q.userData.label === l) : null;
+            if (spr) { spr.position.x += dx; spr.position.y += dy; }
+          }
+          if (ctx.requestRender) ctx.requestRender();
+          return k;
+        }
+      };
+      ctx.shared.arkPlace.set("middle");   // the default - the Yerushalmi and Rashi
+    }
+    // TRAKSIN_130_D (fix-d, 22.11.2026 - the user's decision 130 א): THE AMAH TRAKSIN - TWO READINGS, the row "אמה טרקסין — נוספת או מתוך
+    // הששים" (ctx.shared.traksin.set("rashi" | "rambam")). The house is built as the Rambam's reading (Beit HaBechirah 4:2, book 337 line
+    // 63: "בבית ראשון היה כתל מבדיל בין הקודש ובין קודש הקדשים עביו אמה... נסתפק להם אם עבי הכתל היה ממדת הקודש או ממדת קודש הקדשים"):
+    // the amah inside the sixty, taken from the devir (19 clear; CO.xDevirW -63.5). "rashi" (the default) - Rashi on I Kings 6:20 (3673
+    // line 261) "ולפני הדביר. לפנים מאותה מחצה, חלל של עשרים ארך, ושל עשרים רחב" and 6:16 (246) "המפסקת בין ארבעים לעשרים"; Yoma 52a (107
+    // line 1327) "וחללא קא חשיב, כותלים לא קא חשיב": the devir twenty whole and the amah besides - the devir's west wall and everything
+    // west of it one amah west. Done on the built scene, in the house's own frame (the floor's slope off while it is done): a piecewise
+    // map of x - the devir's interior (x -63.5..-44.5) stretched to twenty (-64.5..-44.5), all west of it (to the end of
+    // the house's structures in both readings of the chambers, x >= -89, |z| <= 44) one amah west, the kodesh and the traksin unmoved. A thing small along x (<= 3 amot: a vessel, a figure, the ark
+    // with its cherubim and stone - ARK_REF.move) moves whole; a wall, a floor, a ceiling, a skin or a beam that crosses the line is
+    // stretched (its vertices); instanced pieces move or stretch one by one. The labels, the fly points and the places' cameras (given by
+    // the UI: placeItems / fallbacks) go with it, and the ark's two places are reckoned by the map. "rambam" undoes everything exactly.
+    {
+      // the region: the house in both readings of the chambers - the Rambam's galleries reach x -88 and z +-42.8, and so does the Rambam's
+      // ulam along the house's sides (50-heichal.js); nothing of the court lies there (checked vertex by vertex)
+      const RX0 = CO.xHeiW - 8.5, RZ = 44, LX0 = CO.xHeiW - 10.5, SMALL = 3;
+      const fOf = (on) => (x) => (!on || x >= XDE ? x : x >= XDW ? XDE + (x - XDE) * (XDE - XDW + 1) / (XDE - XDW) : x - 1);
+      let undo = null, on = false;
+      const inR = (x, z, x0) => x < XDE && x >= (x0 == null ? RX0 : x0) && z >= -RZ && z <= RZ;
+      const T = ctx.shared.traksin = {
+        current: "rambam", keys: ["rashi", "rambam"],
+        placeItems: null,   // () => [items] - the UI's places (their array cameras)
+        fallbacks: null,    // () => {key: {pos, target}} - the UI's fallback fly points
+        map: (x) => x,
+        set(k) {
+          const want = k === "rashi";
+          this.current = want ? "rashi" : "rambam";
+          if (want === on) return this.current;
+          const slope = g.getObjectByName("houseSlope"), S0 = slope ? slope.matrix.clone() : null;
+          if (slope) { slope.matrix.identity(); slope.matrixWorldNeedsUpdate = true; }
+          ctx.root.updateMatrixWorld(true);
+          if (!want) {
+            for (let i = undo.length - 1; i >= 0; i--) undo[i]();
+            undo = null;
+          } else {
+            undo = [];
+            const f = fOf(true), labelsG = ctx.root.getObjectByName("labels");
+            const geoUse = new Map();
+            ctx.root.traverse((o) => { if (o.geometry) geoUse.set(o.geometry, (geoUse.get(o.geometry) || 0) + 1); });
+            const bbOf = new Map(), tb = new Box3(), tm = new Matrix4(), tv = new Vector3();
+            const boxOf = (o) => {
+              const b = new Box3();
+              if (o.isInstancedMesh) {
+                if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+                for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, tm); tm.premultiply(o.matrixWorld); b.union(tb.copy(o.geometry.boundingBox).applyMatrix4(tm)); }
+              } else if (o.geometry && o.geometry.attributes && o.geometry.attributes.position) {
+                if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+                b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+              } else if (o.isLight) b.expandByPoint(tv.setFromMatrixPosition(o.matrixWorld));
+              for (const c of o.children) { const cb = boxOf(c); if (!cb.isEmpty()) b.union(cb); }
+              bbOf.set(o, b);
+              return b;
+            };
+            boxOf(ctx.root);
+            const move = (o, dx) => {   // the whole object dx along the world's x
+              if (Math.abs(dx) < 1e-6 || !o.parent) return;
+              const inv = tm.copy(o.parent.matrixWorld).invert();
+              const a = new Vector3().setFromMatrixPosition(o.matrixWorld), b = a.clone();
+              b.x += dx; a.applyMatrix4(inv); b.applyMatrix4(inv);
+              const d = b.sub(a), o0 = o.position.clone();   // undone by the saved values (bit for bit, no remainder of the sums)
+              o.position.add(d);
+              if (!o.matrixAutoUpdate) o.updateMatrix();
+              undo.push(() => { if (d.x) o.position.x = o0.x; if (d.y) o.position.y = o0.y; if (d.z) o.position.z = o0.z; if (!o.matrixAutoUpdate) o.updateMatrix(); });
+            };
+            // the ark's group, its labels, its two views and its pill are the ark's place's (ctx.shared.arkPlace.set, called below): they go
+            // to the place by the map exactly, and back
+            const AP0 = ctx.shared.arkPlace, ARK_LBL = AP0 && AP0.labels ? AP0.labels : new Set(), ARK_FP = new Set(AP0 && AP0.flyKeys ? AP0.flyKeys : []);
+            const RIGID = new Set();
+            const deform = (o) => {   // every vertex in the region by the map
+              const geo = o.geometry, pos = geo && geo.attributes && geo.attributes.position;
+              if (!pos || pos.isInterleavedBufferAttribute) return;
+              const mw = o.matrixWorld, inv = new Matrix4().copy(mw).invert(), v = new Vector3();
+              let any = false;
+              const out = new Float32Array(pos.array.length);
+              out.set(pos.array);
+              for (let i = 0; i < pos.count; i++) {
+                v.fromBufferAttribute(pos, i).applyMatrix4(mw);
+                if (!inR(v.x, v.z)) continue;
+                v.x = f(v.x);
+                v.applyMatrix4(inv);
+                out[i * 3] = v.x; out[i * 3 + 1] = v.y; out[i * 3 + 2] = v.z;
+                any = true;
+              }
+              if (!any) return;
+              if ((geoUse.get(geo) || 0) > 1) {   // shared - this mesh gets its own copy
+                const own = geo.clone();
+                own.attributes.position.array.set(out);
+                own.attributes.position.needsUpdate = true;
+                own.computeBoundingBox(); own.computeBoundingSphere();
+                o.geometry = own;
+                undo.push(() => { o.geometry = geo; own.dispose(); });
+              } else {
+                const keep = pos.array.slice();
+                pos.array.set(out); pos.needsUpdate = true;
+                geo.computeBoundingBox(); geo.computeBoundingSphere();
+                undo.push(() => { pos.array.set(keep); pos.needsUpdate = true; geo.computeBoundingBox(); geo.computeBoundingSphere(); });
+              }
+            };
+            const instances = (o) => {   // one by one: a small one moves, a long one is stretched by its two ends
+              if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+              const keep = o.instanceMatrix.array.slice(), mw = o.matrixWorld, inv = new Matrix4().copy(mw).invert();
+              const m = new Matrix4(), w = new Matrix4(), b = new Box3(), st = new Matrix4();
+              let any = false;
+              for (let i = 0; i < o.count; i++) {
+                o.getMatrixAt(i, m);
+                w.multiplyMatrices(mw, m);
+                b.copy(o.geometry.boundingBox).applyMatrix4(w);
+                const cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2;
+                if (b.max.x < RX0 || b.min.x >= XDE || b.max.z < -RZ || b.min.z > RZ || !inR(Math.min(cx, XDE - 1e-6), cz)) continue;
+                const len = b.max.x - b.min.x;
+                let s = 1, x1 = f(cx);
+                if (len > SMALL) { const a0 = f(b.min.x), a1 = f(b.max.x); s = (a1 - a0) / len; x1 = (a0 + a1) / 2; }
+                st.makeTranslation(x1, 0, 0).multiply(new Matrix4().makeScale(s, 1, 1)).multiply(new Matrix4().makeTranslation(-cx, 0, 0));
+                m.copy(inv).multiply(st).multiply(w);
+                o.setMatrixAt(i, m);
+                any = true;
+              }
+              if (!any) return;
+              o.instanceMatrix.needsUpdate = true;
+              if (o.computeBoundingSphere) o.computeBoundingSphere();
+              undo.push(() => { o.instanceMatrix.array.set(keep); o.instanceMatrix.needsUpdate = true; if (o.computeBoundingSphere) o.computeBoundingSphere(); });
+            };
+            const visit = (o) => {
+              if (o === labelsG || o.isCamera || o === ARK_REF.move) return;
+              const b = bbOf.get(o);
+              if (!b || b.isEmpty()) return;
+              if (b.min.x >= XDE || b.max.x < RX0 || b.max.z < -RZ || b.min.z > RZ) return;
+              const inside = b.min.x >= RX0 && b.max.x <= XDE && b.min.z >= -RZ && b.max.z <= RZ;
+              if (inside && (RIGID.has(o) || b.max.x - b.min.x <= SMALL)) { const cx = (b.min.x + b.max.x) / 2; move(o, f(cx) - cx); return; }
+              if (o.isInstancedMesh) { instances(o); return; }
+              if (o.isMesh || o.isLine || o.isPoints) deform(o);
+              for (const c of o.children.slice()) visit(c);
+            };
+            visit(ctx.root);
+            // the labels, the fly points (the modules' and the UI's fallbacks) and the places' cameras
+            const sh = (x) => (x >= LX0 && x < RX0 ? x - 1 : f(x));
+            for (const l of ctx.labels) {
+              if (!l || typeof l.x !== "number" || ARK_LBL.has(l.text) || !inR(l.x, l.z || 0, LX0)) continue;
+              const dx = sh(l.x) - l.x, lx = l.x;
+              const sprOf = () => { const G = ctx.root.getObjectByName("labels"); return G ? G.children.find((q) => q.userData && q.userData.label === l) : null; };
+              const spr = sprOf(), sx = spr ? spr.position.x : 0;
+              l.x += dx; if (spr) spr.position.x += dx;
+              undo.push(() => {   // the label's sprite looked up again: it may have been made after the switch (it then stands at l.x)
+                const s2 = sprOf();
+                if (s2) { if (s2 === spr) s2.position.x = sx; else s2.position.x += lx - l.x; }
+                l.x = lx;
+              });
+            }
+            const pair = (pos, tg) => {
+              if (!Array.isArray(tg) || !inR(tg[0], tg[2], LX0)) return;
+              const dx = sh(tg[0]) - tg[0], t0 = tg[0], p0 = Array.isArray(pos) ? pos[0] : 0;
+              tg[0] += dx; if (Array.isArray(pos)) pos[0] += dx;
+              undo.push(() => { tg[0] = t0; if (Array.isArray(pos)) pos[0] = p0; });
+            };
+            const FPS = ctx.shared.flyPoints || {};
+            for (const kk of Object.keys(FPS)) if (FPS[kk] && !ARK_FP.has(kk)) pair(FPS[kk].pos, FPS[kk].target);
+            const FB = typeof this.fallbacks === "function" ? this.fallbacks() || {} : {};
+            for (const kk of Object.keys(FB)) if (FB[kk] && !FPS[kk]) pair(FB[kk].pos, FB[kk].target);
+            const PI = typeof this.placeItems === "function" ? this.placeItems() || [] : [];
+            for (const it of PI) if (it && !it.view && Array.isArray(it.tg)) pair(it.cam, it.tg);
+            // the pills' anchors on the model (the review: "אמה היא הפרש שרואים"): an anchor array in the region - its own, or the one an
+            // anchor function returns now - and the arrays a module lists for its function's other branches (ctx.shared.pillAnchors)
+            const seenA = new Set();
+            const anch = (a) => {
+              if (!Array.isArray(a) || seenA.has(a) || a.length < 3 || !inR(a[0], a[2], LX0)) return;
+              seenA.add(a);
+              const dx = sh(a[0]) - a[0], a0 = a[0];
+              a[0] += dx;
+              undo.push(() => { a[0] = a0; });
+            };
+            if (ARK_REF.anchor) seenA.add(ARK_REF.anchor);   // the ark's pill: the ark's place's
+            for (const b of ctx.shared.modelButtons || []) {
+              if (!b) continue;
+              if (Array.isArray(b.anchor)) anch(b.anchor);
+              else if (typeof b.anchor === "function") { try { anch(b.anchor()); } catch (_) {} }
+            }
+            for (const a of ctx.shared.pillAnchors || []) anch(a);
+            const AN = ctx.shared.anchors || {};   // the modules' anchor points (the UI's pills read them: the chambers' south face ...)
+            for (const kk of Object.keys(AN)) if (Array.isArray(AN[kk])) anch(AN[kk]);
+          }
+          on = want;
+          this.map = fOf(on);
+          if (slope) { slope.matrix.copy(S0); slope.matrixWorldNeedsUpdate = true; }
+          ctx.root.updateMatrixWorld(true);
+          // the ark, its labels, views and pill to its place by the map (absolute: the Yerushalmi's middle, or one amah from the west wall)
+          const AP = ctx.shared.arkPlace;
+          if (AP && (AP.current === "middle" || AP.current === "west")) AP.set(AP.current);
+          if (ctx.requestRender) ctx.requestRender();
+          return this.current;
+        }
+      };
     }
     for (const m of cut) ctx.cutaway.push(m);
   }
