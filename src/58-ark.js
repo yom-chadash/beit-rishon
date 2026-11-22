@@ -12,7 +12,7 @@
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
       BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, footGeo, mat, mRobe, mSkin, mHat, mFace, mEye, mSashDyed, mSashWhite,
-      mBeards, texHair });
+      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef });   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
   }
   // ARK_FIG_208: the kit's arms in amot (as the Second Temple's 55-tamid.js makeFigKit): the sleeve from the shoulder to the elbow, the
   // forearm, the open hand; the feet; the neck

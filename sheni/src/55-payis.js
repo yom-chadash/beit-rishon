@@ -33,7 +33,17 @@
     //@@include priest-kit
     SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, handRaw, footGeo,
       WAIST, gRobeLow, gRobeUp, bZ, spl,
-      mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards };
+      mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards,
+      MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef };   // MIGBAAT_A2, TEFILLIN_A2
+    // TEFILLIN_A2 (fix-a2; the user, 22.11.2026 01:04: "תפילין — אין לאף אחד בשבת, ביום טוב... ובחול המועד", nor by night): the
+    // priests' tefillin (the kit's, and the morning service's - 55-tamid.js) are hidden while any reason in SH.tefOff stands - this
+    // demonstration's night (until the dawn), the morning service's night (55-tamid.js applySky), and the High Priest's entry on
+    // Yom Kippur (50-heichal.js ykEntry); by day they are seen
+    SH.tefOff = SH.tefOff || new Set();
+    ctx2.animated.push(() => {
+      const off = SH.tefOff.size > 0 || !!(SH.ykEntry && SH.ykEntry.on);
+      if (TEF.on === off) tefSet(!off);
+    });
     const figure = (robe, sash, beard) => {
       const f = new Group(), n = beard || 0;
       const body = new Mesh(gRobe, robe);
@@ -45,6 +55,7 @@
       const yaw = (rnd() - 0.5) * 0.5;
       const hg = headOn(f, HEAD_Y, mBeards[n % mBeards.length], n);
       hg.rotation.set((rnd() - 0.5) * 0.1, yaw, (rnd() - 0.5) * 0.07);
+      tefOn(hg);   // TEFILLIN_A2
       const hat = new Group();
       hat.add(new Mesh(gHat, mHat));
       hat.position.y = HAT_Y;
@@ -103,7 +114,7 @@
       const st = new Mesh(new BoxGeometry(0.8, 0.42, 0.8), M2.cedar);
       st.position.y = 0.21;
       ELDER.add(st);
-      headOn(ELDER, 1.645, mBeardOld);
+      tefOn(headOn(ELDER, 1.645, mBeardOld));   // TEFILLIN_A2 (an elder of the priests)
       const cap = new Mesh(gCap, mElder);
       cap.position.y = 1.645;
       ELDER.add(cap);
@@ -763,6 +774,7 @@
       g.visible = true;
       NIGHT.begin();
       NIGHT.set("night");
+      SH.tefOff.add("payis");   // TEFILLIN_A2: by night none (the step below gives them back with the dawn)
       try { if (typeof SH.navRepaint === "function") SH.navRepaint(); } catch (_) {}
     }
     function stop() {
@@ -776,6 +788,7 @@
       caption("");
       stopShow(false);
       NIGHT.end();
+      SH.tefOff.delete("payis");   // TEFILLIN_A2
       for (const [b, a] of R.pills || []) b.anchor = a;
       gatesNight(false);
       if (R.slaughter && SH.slaughterLayout) SH.slaughterLayout.set(R.slaughter);   // SLAUGHTER_HOLD_211
@@ -867,6 +880,7 @@
         const a = K2[i], b = K2[i + 1];
         if (!b || a[1] === a[2]) NIGHT.set(a[1]);
         else NIGHT.set(a[1], a[2], (t - a[0]) / Math.max(0.01, b[0] - a[0]));
+        if (a[1] === "night") SH.tefOff.add("payis"); else SH.tefOff.delete("payis");   // TEFILLIN_A2: from the dawn on
       }
       // the camera
       {

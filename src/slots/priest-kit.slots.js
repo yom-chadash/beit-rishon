@@ -7,9 +7,3 @@
 //@@begin ROWS
     const ROWS = 48, CUT = Math.round(ROWS * (WAIST - 0.1) / 1.8);
 //@@end ROWS
-//@@begin SY0
-    // ---------- the avnet: one band at the elbows' height, lying on the kutonet
-    const SY0 = 1.337, SY1 = 1.437;
-    const gSash = surf(40, 6, (u, v, o) => {
-      const y = SY0 + v * (SY1 - SY0), a = u * TAU + Math.PI, e = Math.sin(Math.PI * v), th = 0.003 + 0.011 * Math.pow(e, 0.35);
-//@@end SY0

@@ -704,7 +704,8 @@
           hs.scale.setScalar(1.3);
           hs.position.set(0, 3.0 - 1.3 * K.HEAD_Y, HZ);
           lean.add(hs);
-          K.headOn(hs, K.HEAD_Y, K.mBeards[0], 1);
+          const hh = K.headOn(hs, K.HEAD_Y, K.mBeards[0], 1);
+          if (K.tefOn) K.tefOn(hh);   // TEFILLIN_A2: "שערו היה נראה בין ציץ למצנפת, ששם מניחין תפילין" (Zevachim 19a)
         } else {
           const S = new Group();
           S.scale.setScalar(FS);
@@ -732,8 +733,10 @@
           if (!lev) { belt = new Mesh(K.gSash, TM.belt === "white" ? K.mSashWhite : K.mSashDyed); belt.userData.kit = true; U.add(belt); }
           const hg = K.headOn(NK, K.HEAD_Y - NKY, K.mBeards[n % K.mBeards.length], n);
           hg.rotation.set(0, (((n * 0.618) % 1) - 0.5) * 0.4, 0);   // every man a little different (a fixed turn, no chance)
-          if (lev) { const cap = new Mesh(K.gCap, KG.mLevCap); cap.position.y = K.HEAD_Y - NKY; NK.add(cap); }
+          // TEFILLIN_A2: the head's tefillin on every priest and Levite (the Levite's cap set back, that they be seen before it)
+          if (lev) { const cap = new Mesh(K.gCap, KG.mLevCap); cap.position.y = K.HEAD_Y - NKY; cap.rotation.x = -0.52; NK.add(cap); }
           else { const hat = new Mesh(K.gHat, K.mHat); hat.position.y = K.HAT_Y - NKY; hat.rotation.y = hg.rotation.y + (((n * 0.37) % 1) - 0.5) * 0.9; NK.add(hat); }
+          if (K.tefOn) K.tefOn(hg);
         }
         const A = hp ? KG.H : KG.P, armMat = lev ? KG.mLev : K.mRobe;
         const arm = (side) => {   // side +1 = the left (+x), -1 = the right
@@ -753,6 +756,8 @@
           return { sh, el, grip };
         };
         const L = arm(1), R = arm(-1);
+        // TEFILLIN_A2 (the user, 00:58: "תפילין גם ללויים... של ראש ושל יד"): the Levite's arm tefillin, on his left arm (L)
+        if (lev && K.tefArm) K.tefArm(L.sh, L.el, A.up, A.fo, 0.07 * FS, 0.056 * FS);
         const fl = new Mesh(KG.foot[1], K.mSkin), fr = new Mesh(KG.foot[-1], K.mSkin);
         fl.position.x = 0.1 * FS;
         fr.position.x = -0.1 * FS;
@@ -2944,6 +2949,8 @@
     let saved = null;
     const applySky = (s) => {
       const K = SH.sky;
+      // TEFILLIN_A2 (the user's decision 67: "חוץ מבתחילת הבוקר לפני שעלה עמוד השחר"): the tefillin from the dawn ("alot", s 0.6) on
+      if (SH.tefOff) { if (TM.active && s < 0.6) SH.tefOff.add("tamid"); else SH.tefOff.delete("tamid"); }
       if (!K || !saved) return;
       // TAMID_NIGHT_207: the lotteries' night (55-payis.js NIGHT) - the phase by the demonstration's clock of the sky
       const NK = SH.nightKit;
@@ -3004,6 +3011,7 @@
     };
     const leaveWorld = () => {
       W.group.visible = false;
+      if (SH.tefOff) SH.tefOff.delete("tamid");   // TEFILLIN_A2
       stopSounds();
       if (saved && saved.slaughter && SH.slaughterLayout) { SH.slaughterLayout.set(saved.slaughter); saved.slaughter = null; }   // SLAUGHTER_HOLD_211
       if (saved && saved.night && SH.nightKit) SH.nightKit.end();   // TAMID_NIGHT_207 (the lines below give the day back as well)
