@@ -12,7 +12,7 @@
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
       BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, footGeo, mat, mRobe, mSkin, mHat, mFace, mEye, mSashDyed, mSashWhite,
-      mBeards, texHair });
+      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs });   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
   }
   // ARK_FIG_208: the kit's arms in amot (as the Second Temple's 55-tamid.js makeFigKit): the sleeve from the shoulder to the elbow, the
   // forearm, the open hand; the feet; the neck
@@ -25,7 +25,8 @@
     const hand = (side, fo) => sc(K.at(K.handRaw(side), 0, -(fo / FS + 0.045), 0), FS);
     const foot = (side) => sc(K.footGeo(side).translate(-side * 0.1, 0, 0), FS);
     const P = { sx: K.SH_X * FS, sy: K.SH_Y * FS, up: K.UP * FS, fo: K.FORE * FS };
-    return (ark_kitArms.kg = { P, upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, foot: { 1: foot(1), "-1": foot(-1) },
+    const handW = (side) => sc(K.at(K.handRaw(side), 0, -0.045, 0), FS);   // KIDDUSH_FLAT_A2: the hand in its own wrist frame (as 55-tamid.js KG.handW)
+    return (ark_kitArms.kg = { P, upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, handW: { 1: handW(1), "-1": handW(-1) }, foot: { 1: foot(1), "-1": foot(-1) },
       neck: K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0),
       // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin
       thigh: W1(new CylinderGeometry(0.084 * FS, 0.1 * FS, 1, 12, 1, true).translate(0, 0.5, 0)),
@@ -38,7 +39,8 @@
   function ark_setArm(A, v, side) { A.sh.rotation.x = v[0]; A.sh.rotation.z = side * v[1]; A.el.rotation.x = v[2]; }
   // a priest (the lotteries' priest): white kutonet, the avnet of colours, the migba'at; n - which of the beards
   // waist (KIDDUSH_BEND_212): the robe in two at K.WAIST, all above it in `bend` (turned there: the legs stay upright)
-  function ark_priestFig(n, waist) {
+  // TEFILLIN_A2: noTef - no tefillin (the ark is brought in on the festival, I Kings 8:2 "בחג"); every other priest has the head's
+  function ark_priestFig(n, waist, noTef) {
     const K = ark_kit(), KG = ark_kitArms(), FS = K.FS;
     const g = new Group(), lean = new Group();
     g.name = "arkPriest";
@@ -64,6 +66,7 @@
     U.add(new Mesh(K.gSash, K.mSashDyed));
     const hg = K.headOn(U, K.HEAD_Y, K.mBeards[[3, 1, 6, 4][n % 4]], n);
     hg.rotation.set(0, (((n * 0.618) % 1) - 0.5) * 0.3, 0);
+    if (!noTef && K.tefOn) K.tefOn(hg);   // TEFILLIN_A2
     const hat = new Mesh(K.gHat, K.mHat);
     hat.position.y = K.HAT_Y;
     hat.rotation.y = hg.rotation.y + (((n * 0.37) % 1) - 0.5) * 0.9;
@@ -81,6 +84,8 @@
       const fo = new Mesh(KG.foP, K.mRobe);
       fo.castShadow = true;
       el.add(fo);
+      // KIDDUSH_FLAT_A2: with a waist (the washing priest) the hand on its own wrist (wr), which turns for the palm on the foot
+      if (waist) { const wr = new Group(); wr.position.y = -KG.P.fo; el.add(wr); wr.add(new Mesh(KG.handW[side], K.mSkin)); return { sh, el, wr }; }
       el.add(new Mesh(KG.handP[side], K.mSkin));
       return { sh, el };
     };
@@ -104,7 +109,17 @@
         legs[side] = { g: lg, th, kn, sn, ft };
       }
     }
-    return { g, lean, bend, legs, L, R, fl, fr };
+    return { g, lean, bend, legs, L, R, fl, fr, hat, hg, S: U, A: KG.P };   // (HP_RISHON_A2: hat, hg, S; KIDDUSH_FLAT_A2: A - the arm, for the kit's kidHands)
+  }
+  // HP_KIT_A2 (the user via the coordinator, 22.11.2026: "בבית ראשון להשתמש באותה בנייה עצמה, ולא בבנייה נפרדת"): THE HIGH PRIEST IN
+  // HIS EIGHT AND THE PRIEST IN HIS FOUR - the Second Temple's construction itself (shared/frag/hp-kit.js; until now its 55-tamid.js
+  // buildHP), on this kit: the robe, the ephod by Rashi or by the Rambam, its shoulders of the ephod's work (the user's decision 105),
+  // the breastplate, the tzitz, the mitznefet of shesh tilted back with its cords of techelet by Rashi or by the Ramban. (Until 1.4.x
+  // here a construction of its own - ark_hpFig - which the user did not accept: "האפוד... לא נכון".) Built once, lazily.
+  function ark_hpKit() {
+    if (ark_hpKit.k) return ark_hpKit.k;
+    //@@include hp-kit
+    return (ark_hpKit.k = hpKit(ark_kit()));
   }
   // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "הקידוש צריך להיות יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר! בכל ההדגמות!"),
   // as the Second Temple's 55-tamid.js: the leg in the figure's frame (kit units; side +1 the left) - the hip; the knee and the ankle
@@ -167,31 +182,23 @@
       lg.ft.position.set(A[0], A[1] - (ay * c - az * sn), A[2] - (ay * sn + az * c));
     }
   }
-  // KIDDUSH_BEND_212: a priest with a waist (ark_priestFig(n, true)) at kiddush - the legs upright, bent at the waist by kb, each hand on
-  // the front of its leg as low as it reaches (as the Second Temple's 55-tamid.js kidReach): "מניח ידו הימנית על גבי רגלו הימנית, וידו
-  // השמאלית על גבי רגלו השמאלית, ומקדש" (Zevachim 19b)
-  function ark_kiddush(w, kb) {
-    const K = ark_kit(), KG = ark_kitArms(), FS = K.FS, P = KG.P, WY = w.bend.position.y, cb = Math.cos(kb), sb = Math.sin(kb);
-    const cl = (v, a, b) => (v < a ? a : v > b ? b : v), a = P.up, b = P.fo + 0.06 * FS;
-    const toBend = (x, y, z) => { const dy = y - WY; return [x, dy * cb + z * sb, -dy * sb + z * cb]; };
-    const reach = (sp, tp, side) => {
-      const vx = tp[0] - sp[0], vy = tp[1] - sp[1], vz = tp[2] - sp[2], D3 = Math.hypot(vx, vy, vz) || 1e-6;
-      const al = Math.asin(cl(vx / D3, -0.9, 0.9)), ca = Math.cos(al);
-      const Dp = Math.min(Math.hypot(vy, vz), (a + b) * ca - 1e-4), a2 = a * ca, b2 = b * ca;
-      const be = Math.acos(cl((a2 * a2 + Dp * Dp - b2 * b2) / (2 * a2 * Dp), -1, 1)), ga = Math.acos(cl((a2 * a2 + b2 * b2 - Dp * Dp) / (2 * a2 * b2), -1, 1));
-      return [Math.atan2(-vz, -vy) + be, side * al, -(Math.PI - ga)];
-    };
-    w.lean.rotation.x = 0.03;
-    w.bend.rotation.x = kb;
-    for (const side of [1, -1]) {
-      const sp = [side * P.sx, P.sy - WY, 0];
-      let best = null;
-      for (let y = 0.18; y <= 1.2; y += 0.02) {
-        const tp = toBend(side * 0.1 * FS, y * FS, (K.spl(K.bZ, y) + 0.05) * FS);
-        if (Math.hypot(tp[0] - sp[0], tp[1] - sp[1], tp[2] - sp[2]) <= (a + b) * 0.985) { best = tp; break; }
-      }
-      ark_setArm(side > 0 ? w.L : w.R, reach(sp, best || toBend(side * 0.1 * FS, 0.9 * FS, 0.25 * FS), side), side);
-    }
+  // KIDDUSH_FLAT_A2 (the user via the coordinator, 22.11.2026: "כף היד על כף הרגל, וכך שניהם בו זמנית"): a priest with a waist
+  // (ark_priestFig(n, true)) at kiddush - "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש" (Zevachim 19b):
+  // the feet together, he bows, each palm flat on the back of its foot, at once (the kit's kidHands - the same in the Second Temple's
+  // 55-tamid.js); u 0..1 - how far into it. Until now (KIDDUSH_BEND_212) the legs upright, bent at the waist by kb, each hand on the
+  // front of its leg as low as it reached.
+  function ark_kiddush(w, u, mode = "tk") {
+    const K = ark_kit(), FS = K.FS;
+    // KIDDUSH_RYOSE_A2: mode "ryose" - Rabbi Yose b. R. Yehuda: the right foot on the left, the hands one on the other above (the kit's)
+    const H = K.kidHands(w, ark_setArm, mode), mix = (q, v) => [q[0] + (v[0] - q[0]) * u, q[1] + (v[1] - q[1]) * u, q[2] + (v[2] - q[2]) * u];
+    w.lean.rotation.x = 0;
+    w.bend.rotation.set(H.th * u, 0, 0);
+    ark_setArm(w.L, mix(ARK_POSE.stand, H.arm[1]), 1);
+    ark_setArm(w.R, mix(ARK_POSE.stand, H.arm[-1]), -1);
+    const qI = ark_kiddush.qI || (ark_kiddush.qI = new Quaternion());
+    for (const [A2, sd] of [[w.L, 1], [w.R, -1]]) if (A2.wr) A2.wr.quaternion.slerpQuaternions(qI, H.wq[sd], u);
+    K.kidLegs(w, H, u);   // the feet (and in "ryose" the right leg laid on the left)
+    return H;
   }
   // KING_211: the king's cloths - his robe of tekhelet, his mantle of argaman bordered with gold, his dark hair - made once, for the
   // kneeling king of "דבקו שערים" (below) and for the king who climbs his throne (60-palace.js pal_kingFig)
@@ -392,6 +399,87 @@
   const ark_kiyorY = (LV) => (LV.HAR || 0) + (typeof MNT_WC_Y === "number" ? MNT_WC_Y : 3);
   async function buildArk(ctx) {
     const M2 = ctx.M, LV = ctx.LV;
+    // SCALE_FIG_A2 (fix-a2, 22.11.2026; the user's decision 23, both houses): A FIGURE FOR SCALE - one priest, 170 cm tall in an amah of
+    // 48 cm = 3.54 amot to the top of his head (the user's numbers - a model choice), in his garments, with the head's tefillin (a
+    // weekday, by day). He stands on the floor a little to the right of what one looks at (a fifth of the view's distance, 1.5 to 12
+    // amot), facing the eye, and goes with the view. Built when first asked. ctx.shared.scaleFigure = { on, set(on) } - the row "דמות
+    // לקנה מידה" (70-ui.js). Where he stands - a model choice.
+    {
+      const SF = { on: false, w: null, at: new Vector3(Infinity, 0, 0), tg: new Vector3(Infinity, 0, 0) };
+      const place = () => {
+        const cam = ctx.camera, oc = ctx.controls;
+        if (!cam || !oc || !SF.w) return;
+        if (SF.at.distanceToSquared(cam.position) < 1e-6 && SF.tg.distanceToSquared(oc.target) < 1e-6) return;
+        SF.at.copy(cam.position); SF.tg.copy(oc.target);
+        const dx = oc.target.x - cam.position.x, dz = oc.target.z - cam.position.z, L = Math.hypot(dx, dz) || 1;
+        const off = Math.max(1.5, Math.min(12, cam.position.distanceTo(oc.target) * 0.2));
+        const x = oc.target.x - (dz / L) * off, z = oc.target.z + (dx / L) * off;
+        const fy = typeof ctx.shared.floorY === "function" ? ctx.shared.floorY(x, oc.target.y + 2.5, z) : -Infinity;
+        SF.w.g.position.set(x, isFinite(fy) ? fy : oc.target.y, z);
+        SF.w.g.rotation.y = Math.atan2(cam.position.x - x, cam.position.z - z);
+      };
+      ctx.shared.scaleFigure = {
+        get on() { return SF.on; },
+        set(on) {
+          SF.on = !!on;
+          if (SF.on && !SF.w) {
+            const K = ark_kit(), w = ark_priestFig(2);
+            w.g.scale.setScalar(3.54 / ((K.HEAD_Y + K.HR[1]) * K.FS));
+            w.g.name = "scaleFigure";
+            w.g.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+            ctx.root.add(w.g);
+            SF.w = w;
+          }
+          if (SF.w) { SF.w.g.visible = SF.on; SF.at.set(Infinity, 0, 0); place(); }
+          return SF.on;
+        }
+      };
+      ctx.animated.push(() => { if (SF.on) place(); });
+    }
+    // HP_RISHON_A2 (the user's decision 70 b): "בגדי הכהנים" - a priest in his four garments and the high priest in his eight, side by
+    // side between the ulam and the altar, facing east; built when first asked. HP_KIT_A2: the pair of both houses (hpKit pair - the
+    // Second Temple has the same, 55-payis.js), its readings - the common priest's avnet (Yoma 12b), the ephod and the mitznefet - from
+    // the opinions table. ctx.shared.priestGarments = { on, set(on), reading(o), state }.
+    {
+      const PG = new Group();
+      PG.name = "priestGarments";
+      PG.visible = false;
+      ctx.root.add(PG);
+      ctx.layers.priestGarments = PG;
+      const X = 37, Y = 6, Z = 14;
+      let P = null;
+      const want = { belt: "kilayim", ephod: "rashi", mitz: "rashi" };
+      // (LABEL_NEAR_A2: each caption over its own figure, at a height of its own, and it keeps shrinking as the eye comes near - kMin)
+      const PGI = { info: "בגדי הכהנים — הפירוט בתפריט, תחת ״הכהנים״: ״בגדי הכהנים — כהן הדיוט וכהן גדול״.", refs: [["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }]] };
+      ctx.labels.push(Object.assign({ text: "כהן הדיוט — ארבעה בגדים", x: X, y: Y + 3.9, z: Z - 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI),
+        Object.assign({ text: "כהן גדול — שמונה בגדים", x: X, y: Y + 4.35, z: Z + 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI));
+      // AVNET_ONE_A2 (the user's decision, via the coordinator: one switch "אבנט כהן הדיוט: כלאים / בוץ" for all the priests and the pair
+      // together - as the Second Temple's row "אבנטו של כהן הדיוט"): the kit's dyed avnet takes the white weave (every priest of the kit
+      // wears that one material), the pair's priest too, and the crowds' (people-kit, ctx.shared.peopleAvnet). The high priest's - always of
+      // wool and linen (his own material). ctx.shared.priestBelt = { mode, set("kilayim" | "butz") }
+      ctx.shared.priestBelt = {
+        mode: "kilayim",
+        set(m) {
+          this.mode = m === "butz" ? "butz" : "kilayim";
+          const K = ark_kit(), D = K.mSashDyed;
+          if (!D.userData.dyedMap) D.userData.dyedMap = D.map;
+          D.map = this.mode === "butz" ? K.mSashWhite.map : D.userData.dyedMap; D.needsUpdate = true;
+          want.belt = this.mode; if (P) P.set(want);
+          const PA = ctx.shared.peopleAvnet; if (PA && typeof PA.set === "function") PA.set(this.mode === "butz" ? "butz" : "rambam");
+          return this.mode;
+        }
+      };
+      ctx.shared.priestGarments = {
+        get on() { return PG.visible; },
+        get state() { return Object.assign({}, want); },
+        reading(o) { Object.assign(want, o || {}); if (P) P.set(want); return Object.assign({}, want); },
+        set(on) {
+          if (on && !P) { P = ark_hpKit().pair(); P.g.position.set(X, Y, Z); PG.add(P.g); P.set(want); }
+          PG.visible = !!on;
+          return PG.visible;
+        }
+      };
+    }
     const g = new Group();
     g.name = "arkGates";
     g.visible = false;
@@ -427,7 +515,7 @@
       pv.add(ark);
       let n = 0;
       for (const dx of [-1.6, 1.6]) for (const s of [-1, 1]) {
-        const p = ark_priestFig(n++);
+        const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
         p.g.position.set(X + dx, Y, s * 1.1);
         p.g.rotation.y = -Math.PI / 2;
         ark_setArm(s > 0 ? p.L : p.R, ARK_POSE.staff, s > 0 ? 1 : -1);
@@ -484,7 +572,7 @@
       const P = [];
       let n = 0;
       for (const front of [true, false]) for (const s of [-1, 1]) {
-        const p = ark_priestFig(n++);
+        const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
         p.front = front;
         p.s = s;
         p.staffArm = s > 0 ? p.L : p.R;

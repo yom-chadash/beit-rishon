@@ -138,10 +138,20 @@
     });
     // the face's skin: shade about the eyes and by the nose, colour in the cheeks, the lines at the eyes' corners (the face's
     // front is at a quarter of the width); a patch of the lips' colour (the lips' own piece takes it)
-    const SKIN = "#cfa07a";
+    // FACE_A2 (fix-a2; the user, 22.11.2026: "הפרצוף עצמו קצת נראה כבובה" - more real, within this kit, no AI): a skin of a man who
+    // works in the sun - less orange, its tone uneven (a fine mottling, the forehead lighter, the temples, the sockets of the eyes and
+    // the hollows under the cheekbones darker, the nose and the cheeks a little redder, the folds from the nose to the mouth); the eye
+    // brown, its white not white but warm, its glint small, the eye a little smaller and set in (HEAD_Y's line). Model choices.
+    const SKIN = "#c39a7c";
     const texFace = cnv(512, 256, 1, 1, (c) => {
       c.fillStyle = SKIN;
       c.fillRect(0, 0, 512, 256);
+      { const img = c.getImageData(0, 0, 512, 256), d = img.data;   // FACE_A2: the mottling, two sizes
+        for (let y = 0; y < 256; y++) for (let x = 0; x < 512; x++) {
+          const k = (y * 512 + x) * 4, h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453, n = (h - Math.floor(h) - 0.5) * 9 + 5 * Math.sin(x * 0.11 + Math.sin(y * 0.09) * 2) * Math.sin(y * 0.13 + x * 0.02);   // (its own noise: the figures' fixed sequence untouched)
+          d[k] = Math.max(0, Math.min(255, d[k] + n)); d[k + 1] = Math.max(0, Math.min(255, d[k + 1] + n * 0.85)); d[k + 2] = Math.max(0, Math.min(255, d[k + 2] + n * 0.7));
+        }
+        c.putImageData(img, 0, 0); }
       const cx = 128, ey = 121;
       const blob = (x, y, rx, ry, col) => {
         const gr = c.createRadialGradient(0, 0, 0, 0, 0, 1);
@@ -149,10 +159,16 @@
         gr.addColorStop(1, col.replace(/[\d.]+\)$/, "0)"));
         c.save(); c.translate(x, y); c.scale(rx, ry); c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 1, 0, TAU); c.fill(); c.restore();
       };
-      blob(cx, 104, 58, 20, "rgba(232,190,150,0.5)");
+      blob(cx, 100, 58, 22, "rgba(222,186,152,0.45)");
+      // FACE_REAL_A2: fine lines - three across the forehead, and a soft line under each eye
+      c.strokeStyle = "rgba(104,64,44,0.28)"; c.lineWidth = 1.4;
+      for (const [y, w] of [[88, 34], [96, 40], [104, 36]]) { c.beginPath(); c.moveTo(cx - w, y + 2); c.quadraticCurveTo(cx, y - 3, cx + w, y + 2); c.stroke(); }
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(cx + sd * 18, ey + 9); c.quadraticCurveTo(cx + sd * 29, ey + 13, cx + sd * 40, ey + 9); c.stroke(); }
       for (const sd of [-1, 1]) {
-        blob(cx + sd * 29, ey, 24, 13, "rgba(110,62,38,0.16)");
-        blob(cx + sd * 40, 152, 27, 22, "rgba(200,100,82,0.34)");
+        blob(cx + sd * 29, ey, 25, 15, "rgba(92,52,34,0.26)");     // FACE_A2: the sockets deeper
+        blob(cx + sd * 60, 112, 16, 26, "rgba(96,58,40,0.18)");    // the temples
+        blob(cx + sd * 44, 162, 22, 18, "rgba(96,58,40,0.16)");    // under the cheekbones
+        blob(cx + sd * 38, 146, 24, 16, "rgba(196,104,84,0.22)");  // the cheeks' colour, softer
         c.strokeStyle = "rgba(110,70,48,0.4)";
         c.lineWidth = 1.3;
         for (const k of [-1, 0, 1]) { c.beginPath(); c.moveTo(cx + sd * 45, ey + k * 2.5); c.lineTo(cx + sd * 54, ey + k * 6 - 1); c.stroke(); }
@@ -160,18 +176,26 @@
         c.lineWidth = 5;
         c.beginPath(); c.moveTo(cx + sd * 10, ey + 2); c.lineTo(cx + sd * 12, 152); c.stroke();
       }
-      c.fillStyle = "#9c5347";
+      blob(cx, 150, 9, 10, "rgba(186,96,80,0.22)");                // FACE_A2: the nose a little redder
+      c.strokeStyle = "rgba(92,54,38,0.22)";                         // and the folds from its wings down to the mouth
+      c.lineWidth = 3;
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(cx + sd * 13, 156); c.quadraticCurveTo(cx + sd * 22, 170, cx + sd * 20, 186); c.stroke(); }
+      c.fillStyle = "#8f5a4e";
       c.fillRect(372, 190, 40, 30);
     });
     // the eye: the white, the iris, the pupil and a glint (its front is at a quarter of the width)
     const texEye = cnv(128, 64, 1, 1, (c) => {
-      c.fillStyle = "#f7f3ec";
+      // FACE_A2: the white warm and shaded toward its corners, the iris brown (a darker ring, lighter flecks), the glint small
+      c.fillStyle = "#e3d8c8";
       c.fillRect(0, 0, 128, 64);
-      c.fillStyle = "#2d4057"; c.beginPath(); c.arc(32, 32, 11, 0, TAU); c.fill();
-      c.fillStyle = "#58789c"; c.beginPath(); c.arc(32, 32, 9.4, 0, TAU); c.fill();
-      c.fillStyle = "#120d0a"; c.beginPath(); c.arc(32, 32, 4.4, 0, TAU); c.fill();
-      c.fillStyle = "#ffffff"; c.beginPath(); c.arc(28.6, 28.4, 2.3, 0, TAU); c.fill();
-      c.beginPath(); c.arc(35.5, 35, 1, 0, TAU); c.fill();
+      const sh = c.createRadialGradient(32, 33, 8, 32, 33, 34);
+      sh.addColorStop(0, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(88,60,44,0.45)");
+      c.fillStyle = sh; c.fillRect(0, 0, 128, 64);
+      c.fillStyle = "#2a1a10"; c.beginPath(); c.arc(32, 32, 11.6, 0, TAU); c.fill();
+      c.fillStyle = "#5a3a22"; c.beginPath(); c.arc(32, 32, 10, 0, TAU); c.fill();
+      for (let k = 0; k < 18; k++) { const q = (j) => { const h = Math.sin((k * 3 + j) * 91.17 + 7.3) * 43758.5453; return h - Math.floor(h); }, a = q(0) * TAU, r = 5 + q(1) * 4.5; c.fillStyle = "rgba(150,108,62,0.5)"; c.beginPath(); c.arc(32 + Math.cos(a) * r, 32 + Math.sin(a) * r, 0.9 + q(2), 0, TAU); c.fill(); }
+      c.fillStyle = "#0e0907"; c.beginPath(); c.arc(32, 32, 4.2, 0, TAU); c.fill();
+      c.fillStyle = "rgba(255,250,240,0.85)"; c.beginPath(); c.arc(29.4, 29.2, 1.25, 0, TAU); c.fill();
     });
     const mRobe = mat(0xffffff, { map: texRobe, vertexColors: true, roughness: 0.92 });   // PAYIS_WHITE: one white for every priest
     const mHat = mat(0xffffff, { vertexColors: true, roughness: 0.93 });
@@ -184,7 +208,7 @@
     const SASHES = [];   // every avnet's mesh: dyed in the Rambam's reading, white in "של בוץ"
     // ---------- the head (its middle at HEAD_Y): an egg, narrower at the chin; the nose with its wings, the lids, the lips and the
     // ears are pieces of its skin
-    const HEAD_Y = 2.075, HR = [0.128, 0.16, 0.14], EYE = [0.047, 0.014, 0.1095], ER = 0.0222, HS = 1.045;
+    const HEAD_Y = 2.075, HR = [0.128, 0.16, 0.14], EYE = [0.044, 0.014, 0.1155], ER = 0.0158, HS = 1.045;   // FACE_REAL_A2 (the user: "פרצופים אמיתיים יותר" - not a doll's): the eyes smaller (0.0206 until now), a little closer, set in to the skin   // FACE_A2: the eyes 0.0206 (0.0222), set in 0.002
     // (the skull's distance from its axis at the angle ph - 0 is the front - and the height y)
     const headR = (ph, y) => {
       const yn = Math.max(-0.999, Math.min(0.999, y / HR[1])), j = yn < 0 ? yn * yn : 0;
@@ -198,14 +222,14 @@
       }
       k.computeVertexNormals();
       const skin = (q) => flatUV(q, 0.75, 0.3), parts = [k];
-      parts.push(skin(at(sph(0.013, 0.034, 0.02, 8, 6), 0, -0.012, 0.133)));                 // the nose: its bridge,
-      parts.push(skin(at(sph(0.019, 0.017, 0.022, 10, 8), 0, -0.041, 0.146)));               // its tip,
+      parts.push(skin(at(sph(0.0105, 0.032, 0.017, 8, 6), 0, -0.014, 0.131)));                // the nose (FACE_REAL_A2: of a natural size): its bridge,
+      parts.push(skin(at(sph(0.0135, 0.0125, 0.016, 10, 8), 0, -0.04, 0.1405)));             // its tip,
       for (const sd of [-1, 1]) {
-        parts.push(skin(at(sph(0.011, 0.01, 0.012, 6, 5), sd * 0.017, -0.047, 0.134)));      // its wings
+        parts.push(skin(at(sph(0.0085, 0.008, 0.009, 6, 5), sd * 0.0135, -0.045, 0.1325)));  // its wings
         parts.push(skin(at(sph(0.012, 0.03, 0.02, 6, 6), sd * 0.126, 0, -0.004)));           // the ear
         // the lids: the upper one over the top of the iris, the lower one under it
-        parts.push(skin(at(rot(sph(ER * 1.07, ER * 1.07, ER * 1.07, 12, 6, 0, TAU, 0, 0.74), 0.5), sd * EYE[0], EYE[1], EYE[2])));
-        parts.push(skin(at(rot(sph(ER * 1.06, ER * 1.06, ER * 1.06, 12, 5, 0, TAU, 0, 0.6), Math.PI - 0.42), sd * EYE[0], EYE[1], EYE[2])));
+        parts.push(skin(at(rot(sph(ER * 1.08, ER * 1.08, ER * 1.08, 12, 6, 0, TAU, 0, 0.74), 0.5), sd * EYE[0], EYE[1], EYE[2])));
+        parts.push(skin(at(rot(sph(ER * 1.07, ER * 1.07, ER * 1.07, 12, 5, 0, TAU, 0, 0.6), Math.PI - 0.42), sd * EYE[0], EYE[1], EYE[2])));
       }
       parts.push(flatUV(at(sph(0.021, 0.0052, 0.01, 10, 6), 0, -0.0865, 0.1215), 0.766, 0.2));   // the lips
       return mergeGeometries(parts);
@@ -238,7 +262,7 @@
         o.tv = v;
       }, true));
       for (const sd of [-1, 1]) {
-        parts.push(white(at(rot(sph(0.031, 0.0078, 0.011, 8, 5), 0, 0, -sd * 0.04), sd * EYE[0], 0.0545, 0.1255)));   // the brow
+        parts.push(white(at(rot(sph(0.026, 0.0062, 0.01, 8, 5), 0, 0, -sd * 0.04), sd * EYE[0], 0.05, 0.1262)));   // the brow (FACE_REAL_A2: finer)
         parts.push(white(at(rot(sph(0.037, 0.0125, 0.016, 10, 6), 0, 0, -sd * 0.4), sd * 0.027, -0.066, 0.127)));     // the moustache
       }
       parts.push(white(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 20, 6, 0, TAU, 0, 1.08)));
@@ -319,28 +343,237 @@
     // (the right arm moves: it hangs, and at "הצביעו" it is stretched forward, one finger out)
     const gSleeve = sleeveGeo(), gHandOpen = handOpen(-1), gHandPoint = handPoint();
     const ARM_DOWN = [-0.04, -0.17], ARM_OUT = [-1.15, -0.05];
-    //@@slot SY0
+    // ---------- the avnet: one band at the elbows' height, lying on the kutonet
+    // AVNET_211 (the user: "אבנט הכהנים רחב יותר"): broader, and its turns seen - three turns "כרך על גבי כרך" (8:19), each rounded
+    const SY0 = 1.312, SY1 = 1.462;
+    const gSash = surf(40, 12, (u, v, o) => {
+      const tv = (v * 3) % 1, e = Math.max(0, Math.sin(Math.PI * tv)) * (0.55 + 0.45 * Math.sin(Math.PI * v));
+      const y = SY0 + v * (SY1 - SY0), a = u * TAU + Math.PI, th = 0.004 + 0.017 * Math.pow(e, 0.35);
       o.x = (spl(bX, y) + th) * Math.sin(a);
       o.y = y;
       o.z = (spl(bZ, y) + th) * Math.cos(a);
       o.c = 0.88 + 0.12 * e;
     });
-    // ---------- the migba'at (the site's drawing 452; its origin: its lower edge, over the forehead): a smooth egg, rounded at its
-    // head; a band round the forehead, and above it broad bands of the cloth going up aslant, each lying on the one before it -
-    // in low relief, the edge of each casting a soft shade (the user: not "כדור גלידה")
-    // PAYIS_FIGURE4D: it joins the head - the lower band close on it, down to just above the ears at the sides and behind
+    // ---------- the migba'at. MIGBAAT_A2 (fix-a2, 22.11.2026; the user: "המגבעות — לשנות את כולן כמו בחוברת", tall, a cone wound with
+    // bands; and "להזיז את המגבעות קצת לאחור על הראש, כך שהתפילין ייראו מלפנים"): as the priests of the booklet "אלחנן וחיים שמחים
+    // בירושלים" draw it - a tall cone, narrowing a little to a round head, the cloth wound round it in bands, one above another; it sits
+    // on the head from the start of the hair up (its lower edge at the hairline all round, a little back), so the head's tefillin are
+    // seen before it (gTefR). The Rambam, Klei HaMikdash 8:2 (338:124): "ומצנפת האמורה באהרן היא המגבעת האמורה בבניו. אלא שכהן גדול צונף
+    // בה כמי שלופף על השבר. ובניו צונפין בה ככובע ולפיכך נקראת מגבעת". Until now (PAYIS_FIGURE4D, the site's drawing 452): an egg, its
+    // bands aslant, down to the forehead. Its height, the narrowing and the bands' number - model choices. Its origin stays HAT_Y (the
+    // figures place it there); the lower edge is MIG.y0 over it.
     const HAT_H = 0.335, HAT_Y = HEAD_Y + 0.06, ARROW_Y = 2.75;
-    const hatLow = [[0, 0.136], [0.03, 0.143], [0.1, 0.149], [0.22, 0.161], [0.36, 0.171]];
-    const gHat = surf(56, 30, (u, v, o) => {
-      const a = u * TAU + Math.PI, R = v < 0.36 ? spl(hatLow, v) : 0.171 * Math.sqrt(Math.max(0, 1 - Math.pow((v - 0.36) / 0.64, 2.3)));
-      const on = sstep(0.13, 0.17, v) * (1 - sstep(0.9, 0.99, v)), f = ((4 * (u - 1.15 * v)) % 1 + 1) % 1;
-      const edge = Math.exp(-(1 - f) / 0.09), line = Math.exp(-Math.pow((v - 0.14) / 0.012, 2)), saw = f < 0.9 ? 0.5 - f / 0.9 : (f - 0.9) / 0.1 - 0.5;
-      const r = R + on * 0.0075 * saw - 0.003 * line;
-      o.x = r * Math.sin(a);
-      o.y = v * HAT_H - 0.034 * sstep(0.15, 0.6, 0.5 - 0.5 * Math.cos(a)) * Math.pow(1 - v, 3);
-      o.z = r * Math.cos(a) * 1.06;
-      o.c = (1 - on * (0.3 * edge + 0.05 * f)) * (1 - 0.22 * line);
-    });
+    // MIGBAAT_CHALAMISH_A2 (the user, on pictures 07-08: "נוראיות, וממש לא דומות לזו שבחלמיש" - A-10, A-11, B-03, B-07, B-22): as the
+    // booklet draws it - a tall white cylinder, hardly narrowing, about half as high again as the head, its head a low round dome; the
+    // cloth wound round it in bands that run ASLANT (three bands going round together), a soft fold between them; it sits back on the
+    // crown, a little tilted back, its lower edge from just over the ears round the back of the head, and in front it rises over the
+    // head's tefillin - the box and the strap lie on the hair, the hat above and behind them, nothing between (the user, after
+    // Shulchan Aruch OC 27:4, 382:231: "לא יהא דבר חוצץ בין תפילין לבשרו"; "גם רצועה לא עוברת מעל" - the strap round the head under its
+    // edge). Its measures, the tilt and the bands - model choices. Until now: a cone of six level bands, its edge round the head at
+    // one height. Its origin stays HAT_Y (the figures place it there).
+    const MIG = { y0: 0.012, H: 0.41, rx: 0.122, rz: 0.132, top: 0.58, back: -0.014, bands: 5.5, starts: 2, lift: 0.06, tilt: 0.12 };
+    const hatSurf = (P, bandsOn) => (u, v, o) => {
+      const a = u * TAU + Math.PI, body = 0.86, k = v < body ? v / body : 1, fr = Math.pow(Math.max(0, Math.cos(a)), 2);
+      let R = 1 - (1 - P.top) * Math.pow(k, 0.95), y = P.y0 + P.lift * fr * Math.pow(1 - k, 1.4) + v * P.H;   // MIGBAAT_CONE_A2: a cone narrowing upward
+      if (v > body) { const w = (v - body) / (1 - body); R = P.top * Math.sqrt(Math.max(0, 1 - w * w)); y = P.y0 + body * P.H + w * P.top * P.rz * 1.0; }
+      const t = (((v / body) * P.bands + u * P.starts) % 1 + 1) % 1, on = bandsOn ? (v < body ? sstep(0.0, 0.04, v) : 1 - sstep(body, 0.97, v)) : 0;
+      const r = R * (1 + on * (0.045 * (1 - t) * (1 - t) - 0.01));
+      const x = r * P.rx * Math.sin(a), z = r * P.rz * Math.cos(a) + P.back, c = Math.cos(P.tilt), sn = Math.sin(P.tilt);
+      o.x = x;
+      o.y = y * c + z * sn;            // tilted back: the front up, the top back
+      o.z = -y * sn + z * c;
+      o.c = 1 - on * (Math.exp(-t / 0.07) * 0.36 + 0.06 * Math.pow(t, 3));
+    };
+    const gHat = surf(48, 44, hatSurf(MIG, true));
+    // TEFILLIN_A2 (fix-a2; the user's decision 67, 22.11.2026): THE HEAD'S TEFILLIN on every priest - Zevachim 19a (130:737-743):
+    // "כֹּהֲנִים בַּעֲבוֹדָתָן... פְּטוּרִין מִן הַתְּפִלָּה וּמִן הַתְּפִילִּין"; "הָא דְּיָד, הָא דְּרֹאשׁ" (the arm's comes between, the head's does
+    // not); "שְׂעָרוֹ הָיָה נִרְאֶה בֵּין צִיץ לְמִצְנֶפֶת, שֶׁשָּׁם מַנִּיחִין תְּפִילִּין". At the start of the hair (the user: "בתחילת צמיחת השער"):
+    // the box (bayit) on its base (titura), the strap round the head to the knot behind, and its two ends down before the shoulders.
+    // Not by night, nor on Shabbat, a festival or its middle days (the user, 01:04) - the houses' demonstrations hide them (tefSet).
+    // In the head's frame (its middle at 0). Their size (a little over four fingers) and the straps' length - model choices.
+    const TEF = { on: true, list: [] };
+    const tefSet = (on) => { TEF.on = !!on; for (const m of TEF.list) m.visible = TEF.on; };
+    const mTef = mat(0x111111, { roughness: 0.42, metalness: 0.0 });
+    // TEFILLIN_PLACE_A2 (the user: "תעשה במקומם, גם מבחינת הרצועות שסביב הראש. אל תחרטט"; the box smaller): Shulchan Aruch OC 27:9
+    // (382:236) "מהתחלת עיקרי השער ממצחו עד סוף המקום שמוחו של תינוק רופס" - the box's foot at the start of the hair (the hair's edge
+    // here at y 0.079 over the head's middle), in the middle, over between the eyes; 27:10 (382:237) "צריך שיהיה הקשר מאחורי הראש למעלה
+    // בעורף... באמצע העורף ולא יטה לכאן או לכאן" - the strap from the box round the head, over the ears, to the knot behind, at the top of
+    // the nape, in its middle; 27:11 (382:238) "ישלשל הרצועות שיהיו תלוים לפניו ויגיעו עד הטבור או למעלה ממנו מעט" - the two ends from
+    // the knot over the shoulders and down before him, the right to the navel, the left a little shorter (the user). Until now the box
+    // was 0.052 and the ends stopped at the chest. Their thickness - a model choice.
+    const TY = 0.1, TB = 0.04;   // the box's middle over the head's, and its side
+    const tefRing = (n) => {   // the strap round the head: from the box's foot (front) over the ears (y ~0.05) to the knot (y -0.056)
+      const ring = [], yF = TY - TB * 0.45, yB = -0.056;
+      for (let i = 0; i < n; i++) {
+        const ph = (i / n) * TAU, w = 0.5 + 0.5 * Math.cos(ph), y = yB + (yF - yB) * Math.pow(w, 0.35), r = headR(ph, y) + 0.005;
+        ring.push(new Vector3(Math.sin(ph) * r, y, Math.cos(ph) * r));
+      }
+      return ring;
+    };
+    const tefBox = () => {
+      const zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
+      const tilt = Math.atan2(n.y, n.z), place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; };
+      return [place(new BoxGeometry(TB * 1.25, TB * 1.25, 0.01), 0.007), place(new BoxGeometry(TB, TB, TB), 0.012 + TB / 2)];   // the titura, the bayit
+    };
+    const gTefR = (() => {
+      const parts = tefBox();
+      parts.push(new TubeGeometry(new CatmullRomCurve3(tefRing(48), true), 72, 0.0048, 4, true));
+      const kz = -(headR(Math.PI, -0.056) + 0.009);
+      parts.push(at(new BoxGeometry(0.024, 0.02, 0.012), 0, -0.058, kz));                 // the knot, in the nape's middle
+      for (const sd of [-1, 1]) {   // the two ends: behind the neck, over the shoulder by the neck, and down before him (sd -1 his right)
+        const end = sd < 0 ? -0.93 : -0.8;
+        const pts = [[0.008, -0.064, kz + 0.004], [0.05, -0.13, -0.118], [0.098, -0.19, -0.088], [0.13, -0.212, -0.02], [0.136, -0.235, 0.07], [0.134, -0.29, 0.122], [0.13, -0.36, 0.142],
+          [0.127, -0.48, 0.146], [0.124, -0.6, 0.15], [0.122, -0.72, 0.17], [0.121, end, sd < 0 ? 0.142 : 0.168]].map(([x, y, z]) => new Vector3(sd * x, y, z));
+        parts.push(new TubeGeometry(new CatmullRomCurve3(pts), 40, 0.0046, 4, false));
+      }
+      return mergeGeometries(parts.map((q) => { q.deleteAttribute("uv"); if (q.attributes.normal === undefined) q.computeVertexNormals(); return q; }));
+    })();
+    // the head's tefillin on a head made by headOn (its group): priests only - the figures that are priests ask for it
+    const tefOn = (hg) => { const m = new Mesh(gTefR, mTef); m.name = "tefillin-rosh"; m.visible = TEF.on; hg.add(m); TEF.list.push(m); return m; };
+    // TEFILLIN_A2: THE ARM'S, for the Levites (the user, 00:58: "תפילין גם ללויים" - no priestly garments, nothing between): on the left
+    // arm's upper part. up / fo: the arm's two lengths in its own frame (the shoulder at 0, the elbow at -up; the forearm from the elbow,
+    // 0 .. -fo); rU / rF: their radii.
+    // LEVITE_SLEEVE_A2 (the user's decision 96, corrected): the sleeve is NOT rolled up - the box lies on the flesh under the sleeve
+    // ("בזרוע שמאל, בבשר התופח שבעצם שבין הקובד"ו ובית השחי, ויטה התפלה מעט לצד הגוף", Shulchan Aruch OC 27:1 - 382:228), seen only as a
+    // bulge in the garment over it (sleeveMat: the sleeve's own material); the strap wound round the arm under the sleeve, seen only where
+    // it comes out by the hand (wrist: the hand's own group - a turn round the palm below the sleeve's end; sd: the arm's side)
+    const tefArm = (shoulder, elbow, up, fo, rU, rF, sleeveMat, wrist, sd = 1) => {
+      const list = [];
+      if (sleeveMat) {
+        const dir = new Vector3(Math.sin(-0.6), 0, Math.cos(-0.6)), rs = rU * 0.915 - 0.004;
+        // a rounded cube under the cloth (the box and its titura), not a ball
+        const bg = sph(1, 1, 1, 16, 12), bp = bg.attributes.position;
+        for (let i = 0; i < bp.count; i++) { const x = bp.getX(i), y = bp.getY(i), z = bp.getZ(i), f = (u) => Math.sign(u) * Math.pow(Math.abs(u), 0.45); bp.setXYZ(i, f(x) * TB * 0.82, f(y) * TB * 0.8, f(z) * TB * 0.5); }
+        bg.computeVertexNormals();
+        const bump = new Mesh(white(bg), sleeveMat);
+        bump.name = "tefillin-bulge";
+        bump.position.set(dir.x * rs, -up * 0.5, dir.z * rs);
+        bump.rotation.y = -0.6;
+        shoulder.add(bump);
+        list.push(bump);
+      }
+      if (wrist) {
+        // the strap out of the sleeve on the back of the hand, and round the palm (kit units in the hand's frame, scaled FS)
+        const a = sd * 0.95, ca = Math.cos(a), sa = Math.sin(a), th0 = Math.atan2(0.0165 * Math.sin(0.95), sd * 0.0335 * Math.cos(0.95));   // th0: the outer side
+        const wrap = [];
+        for (let i = 0; i <= 28; i++) {
+          const k = i / 28, th = th0 + k * 1.6 * TAU, y = -0.03 - k * 0.026;
+          const lx = Math.cos(th) * 0.0335, lz = Math.sin(th) * 0.0165;   // round the palm (its breadth, its thickness), then turned as the hand (handRaw)
+          wrap.push(new Vector3(lx * ca + lz * sa, y, -lx * sa + lz * ca));
+        }
+        const w0 = wrap[0];
+        const pts = [new Vector3(w0.x * 1.05, 0.03, w0.z * 1.05), new Vector3(w0.x * 1.12, 0.004, w0.z * 1.12), ...wrap];
+        const g = new TubeGeometry(new CatmullRomCurve3(pts), 90, 0.0042, 4, false);
+        g.translate(0, -0.012, 0);
+        g.scale(FS, FS, FS);
+        const m = new Mesh(g, mTef);
+        m.name = "tefillin-yad-hand";
+        wrist.add(m);
+        list.push(m);
+      }
+      for (const m of list) { m.visible = TEF.on; TEF.list.push(m); }
+      return { list };
+    };
+    // KIDDUSH_FLAT_A2 (the user via the coordinator, 22.11.2026: "כף היד על כף הרגל, וכך שניהם בו זמנית" - the palm flat on the back
+    // of the foot, the right on the right and the left on the left, at once; not over it in the air and not on the shin): "מניח ידו הימנית
+    // על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש" (Zevachim 19b, 130:754), "ושוחה ומקדש" (the Rambam, Biat HaMikdash
+    // 5:16, 340:93). For a figure with a waist (both houses: f.bend at the waist, f.L / f.R = { sh, el, wr }, f.A = the arm's { sx, sy,
+    // up, fo } in amot): his feet together (x +-FX) and a little forward from under the hem (DZ); he bows at the waist as far as both
+    // hands need (th - the least); each hand on its foot's forepart, the palm down, the fingers toward the toes (turned out with the foot),
+    // the thumb inward. setArm(A, [x, abduct, elbow], side) - the house's own (the same in both). Found once per figure (f.kidH):
+    // { th, arm: { 1, -1 }, wq: { 1, -1 } (the wrists' turns), fx, dz } - in amot. How far forward, how close - model choices.
+    const KID_FX = 0.064, KID_DZ = 0.06;
+    const kidHZ = (0.095 + KID_DZ + 0.05 * Math.cos(0.22)) * FS;   // the hands' middle before him (amot) - where the stream falls (55-tamid.js KID.flatSpot)
+    // KIDDUSH_RYOSE_A2 (the user's decision 82 c, via the coordinator): mode "ryose" - Rabbi Yose b. R. Yehuda, "מניח שתי ידיו זו על גב
+    // זו, ועל גבי שתי רגליו זו על גבי זו, ומקדש" (Zevachim 19b, 130:754-755): he stands on his left foot, his right foot laid on the back
+    // of it (the right leg: kidLegs), his left palm on the back of the right foot and his right palm on the back of the left hand - and
+    // his fellow holds him ("וחבירו מסייעו" - the house's own figure). Which foot is above and which hand - model choices.
+    // Every place in the kit's units in the figure's frame: KF - the feet (x, y, z, pitch, yaw), KP - the palms' middles
+    const KIDM = {
+      tk: { feet: { 1: [KID_FX, 0, KID_DZ, 0, 0], "-1": [-KID_FX, 0, KID_DZ, 0, 0] }, palms: null, leg: 0 },
+      ryose: { feet: { 1: [0.045, 0, KID_DZ, 0, 0], "-1": [0.03, 0.046, KID_DZ + 0.03, 0.12, 0.18] },
+        palms: { 1: [0.045, 0.106, KID_DZ + 0.13], "-1": [0.04, 0.131, KID_DZ + 0.118] }, leg: -1 }
+    };
+    const kidHands = (f, setArm, mode = "tk") => {
+      const key = mode === "ryose" ? "kidHY" : "kidH";
+      if (f[key]) return f[key];
+      const M0 = KIDM[mode === "ryose" ? "ryose" : "tk"];
+      const A = f.A, WY = f.bend.position.y, a = A.up, b = A.fo;
+      const cl = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+      const reach = (sp, tp, side) => {   // as 55-tamid.js reach: the shoulder's two turns and the elbow's, the wrist at tp
+        const vx = tp[0] - sp[0], vy = tp[1] - sp[1], vz = tp[2] - sp[2], D3 = Math.hypot(vx, vy, vz) || 1e-6;
+        const al = Math.asin(cl(vx / D3, -0.9, 0.9)), ca = Math.cos(al);
+        const Dp = Math.min(Math.hypot(vy, vz), (a + b) * ca - 1e-4), a2 = a * ca, b2 = b * ca;
+        const be = Math.acos(cl((a2 * a2 + Dp * Dp - b2 * b2) / (2 * a2 * Dp), -1, 1)), ga = Math.acos(cl((a2 * a2 + b2 * b2 - Dp * Dp) / (2 * a2 * b2), -1, 1));
+        return [Math.atan2(-vz, -vy) + be, side * al, -(Math.PI - ga)];
+      };
+      const fin = {}, palmN = {}, wrist = {};
+      for (const sd of [1, -1]) {
+        const ft = M0.feet[sd], ry = M0.palms ? ft[4] * 0.5 : sd * 0.22, cy = Math.cos(ry), sy = Math.sin(ry);   // the foot turned out (footGeo)
+        const F = new Vector3(0.95 * sy, -0.3, 0.95 * cy).normalize();
+        const N = new Vector3(-0.3 * sy, -1, -0.3 * cy).normalize();
+        N.addScaledVector(F, -N.dot(F)).normalize();
+        fin[sd] = F; palmN[sd] = N;
+        // the palm's middle: on its own foot's forepart (the foot's middle z 0.095 + DZ, 0.05 before it; its top 0.05 there), or as KP
+        const P = M0.palms ? new Vector3(M0.palms[sd][0], M0.palms[sd][1], M0.palms[sd][2]) : new Vector3(sd * (KID_FX + 0.008 + 0.05 * sy), 0.066, 0.095 + KID_DZ + 0.05 * cy);
+        wrist[sd] = P.addScaledVector(F, -0.045).multiplyScalar(FS);
+      }
+      const toBend = (p, th) => { const dy = p.y - WY, c = Math.cos(th), s2 = Math.sin(th); return [p.x, dy * c + p.z * s2, -dy * s2 + p.z * c]; };
+      let th = 0.9;
+      for (; th < 2.2; th += 0.02) {
+        let ok = true;
+        for (const sd of [1, -1]) { const t = toBend(wrist[sd], th), sp = [sd * A.sx, A.sy - WY, 0]; if (Math.hypot(t[0] - sp[0], t[1] - sp[1], t[2] - sp[2]) > (a + b) * 0.97) ok = false; }
+        if (ok) break;
+      }
+      const res = { mode: M0 === KIDM.ryose ? "ryose" : "tk", th, arm: {}, wq: {}, fx: KID_FX * FS, dz: KID_DZ * FS, feet: M0.feet, leg: null };
+      for (const sd of [1, -1]) res.arm[sd] = reach([sd * A.sx, A.sy - WY, 0], toBend(wrist[sd], th), sd);
+      if (M0.leg) {   // the leg whose foot is laid on the other: hip, knee (two bones, the knee forward), ankle - amot
+        const ft = M0.feet[M0.leg], c = Math.cos(ft[3]), sn = Math.sin(ft[3]);
+        const H = new Vector3(M0.leg * 0.1, 1.0, 0), Aa = new Vector3(ft[0], ft[1] + 0.15 * c + 0.01 * sn, ft[2] + 0.15 * sn - 0.01 * c);
+        const L1 = 0.45, L2 = 0.401, d = Math.min(L1 + L2 - 1e-4, H.distanceTo(Aa)), u = Aa.clone().sub(H).normalize();
+        const al = (L1 * L1 - L2 * L2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, L1 * L1 - al * al)), n = new Vector3(0, 0, 1).addScaledVector(u, -u.z).normalize();
+        const K = H.clone().addScaledVector(u, al).addScaledVector(n, h);
+        res.leg = { side: M0.leg, H: H.multiplyScalar(FS), K: K.multiplyScalar(FS), A: Aa.multiplyScalar(FS) };
+      }
+      // the wrists: the hand's own axes (the fingers down its -y, the palm toward the body - handRaw) to the wanted ones, in the frame of
+      // the forearm as it is in this pose
+      const lr = f.lean.rotation.x, br = [f.bend.rotation.x, f.bend.rotation.z];
+      f.lean.rotation.x = 0; f.bend.rotation.set(th, 0, 0);
+      for (const sd of [1, -1]) setArm(sd > 0 ? f.L : f.R, res.arm[sd], sd);
+      f.g.updateMatrixWorld(true);
+      const qG = f.g.getWorldQuaternion(new Quaternion()).invert(), M1 = new Matrix4(), M2 = new Matrix4();
+      for (const sd of [1, -1]) {
+        const Fh = new Vector3(0, -1, 0), Nh = new Vector3(-sd * Math.sin(0.95), 0, -Math.cos(0.95)), Bh = new Vector3().crossVectors(Fh, Nh);
+        const Ft = fin[sd], Nt = palmN[sd], Bt = new Vector3().crossVectors(Ft, Nt);
+        M1.makeBasis(Fh, Nh, Bh); M2.makeBasis(Ft, Nt, Bt);
+        const qT = new Quaternion().setFromRotationMatrix(M2.multiply(M1.transpose()));
+        const qE = qG.clone().multiply((sd > 0 ? f.L : f.R).el.getWorldQuaternion(new Quaternion()));
+        res.wq[sd] = qE.invert().multiply(qT);
+      }
+      f.lean.rotation.x = lr; f.bend.rotation.set(br[0], 0, br[1]);
+      return (f[key] = res);
+    };
+    // the feet (and in "ryose" the leg laid on the other) for a figure at kiddush, u 0..1 into it: from where they stand (+-0.1, 0) to
+    // their places; the raised leg's thigh, knee, shin and foot (f.legs - the same in both houses) instead of its own foot
+    const _kv = [new Vector3(), new Vector3()], _kup = new Vector3(0, 1, 0);
+    const kidSeg = (m, A0, B0) => { _kv[1].subVectors(B0, A0); const n = _kv[1].length() || 1e-6; m.position.copy(A0); m.quaternion.setFromUnitVectors(_kup, _kv[1].multiplyScalar(1 / n)); m.scale.set(1, n, 1); };
+    const kidLegs = (f, H, u) => {
+      for (const sd of [1, -1]) {
+        const ft = H.feet[sd], m = sd > 0 ? f.fl : f.fr, x0 = sd * 0.1;
+        m.position.set((x0 + (ft[0] - x0) * u) * FS, ft[1] * u * FS, ft[2] * u * FS);
+        m.rotation.set(ft[3] * u, ft[4] * u, 0);
+      }
+      const lg = H.leg && f.legs ? f.legs[H.leg.side] : null;
+      if (f.legs) for (const sd of [1, -1]) if (f.legs[sd] && f.legs[sd] !== lg) f.legs[sd].g.visible = false;
+      if (!lg) { f.fl.visible = f.fr.visible = true; return; }
+      const on = u > 0.02, own = H.leg.side > 0 ? f.fl : f.fr;
+      lg.g.visible = on; own.visible = !on;
+      if (!on) return;
+      const hip = H.leg.H, Kn = _kv[0].copy(hip).lerp(H.leg.K, 1), Aa = H.leg.A;
+      const K2 = new Vector3(hip.x, hip.y - 0.45 * FS, hip.z + 0.02 * FS).lerp(Kn, u), A2 = new Vector3(H.leg.side * 0.1 * FS, 0.15 * FS, -0.01 * FS).lerp(Aa, u);
+      kidSeg(lg.th, hip, K2); lg.kn.position.copy(K2); kidSeg(lg.sn, K2, A2);
+      lg.ft.position.copy(own.position); lg.ft.rotation.copy(own.rotation);
+    };
     const gCap = sph(HR[0] * 1.1, HR[1] * 1.1, HR[2] * 1.1, 16, 5, 0, TAU, 0, 1.15);   // the elder's cap
     const gFlame = new ConeGeometry(0.2, 0.7, 8); gFlame.translate(0, 0.35, 0);
     const gArrowHead = new ConeGeometry(0.2, 0.4, 12); gArrowHead.rotateX(Math.PI);   // the point down

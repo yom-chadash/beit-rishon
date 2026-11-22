@@ -1189,7 +1189,7 @@ body.tm-measuring #tm-tour-box{bottom:96px}
         rt.undo.push(() => {
           call(ctx.shared.holdAuto, false);
           call(ctx.shared.closeAuto);
-          //@@slot enter
+          try { if (ctx.ui && ctx.ui.autoOff) ctx.ui.autoOff.flush(); } catch (_) {}   // TOUR_FLUSH_211: the zones, the see-through house
         });
         if (s.kind === "opinion") {
           // 1.0.1-K review (tour-5): a reading's own calls may switch a layer that is not its own - the forest house's onPick and fly

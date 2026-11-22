@@ -97,7 +97,7 @@
       uv.needsUpdate = true;
     };
     // 1.9.1 (the mukhni): the laver's well - through the court's podium and pave (40-altar.js lines it and hangs the laver over it)
-    const KPIT = ctx2.shared.KPIT = { x: 22, z: 57, w: 6.4, d: 6.4 };
+    const KPIT = ctx2.shared.KPIT = { x: 22, z: 61.4, w: 6.4, d: 6.4 };   // KIYOR_A2 (fix-a2; decision 59): the laver's well 4.4 south (z 57 until then) - its base stands north of it (40-altar.js)
     // KLI_DEEP_211 (the user, 15.11.2026 18:21: "1. להעמיק"): the instruments' chambers run WEST from their opening in the women's court,
     // through the line of the court's east wall and under the floor of the court of Israel (x 82.5..93.5) - "ולשכות היו תחת עזרת ישראל,
     // ופתוחות לעזרת הנשים" (Middot 2:6; 89:17); R. Shemaya (645:78): "מחילות תחתיה". The podium and the fill under the wall are cut for
@@ -186,14 +186,29 @@
       if (gx === -18 && s < 0) continue;   // 1.8.0: Beit HaMoked's own gate to the chel - by the house, below
       const joined = (gx === -78 && s > 0) || (gx === -48 && s < 0);   // a small gate's landing joins this one's free end in the readings of thirteen gates
       chelFlight(g, gx, s, s > 0 ? 1 : -1, { endRail: !joined });
-      stairsR(g, { width: 10, totalRise: 2.5, steps: 5, dir: s < 0 ? "S" : "N", x: gx, y: 13.5, z: 70 * s, tread: 0.5 });
+      // GATE_STEPS_A2 (fix-a2; the user's decision 79, 22.11.2026): the last two and a half amot inside the gate - a step of one amah and
+      // three of half an amah, as the Rambam, Beit HaBechirah 6:3 (337:96): "ועולה ממנו לעזרת הכהנים במעלה גבוהה אמה ועליה דוכן יש בו
+      // שלש מעלות. רום כל מעלה חצי אמה". Until now five steps of half an amah. The amah step's tread (an amah) - a model choice.
+      H2.stairs(g, { width: 10, totalRise: 1, steps: 1, dir: s < 0 ? "S" : "N", x: gx, y: 13.5, z: 70 * s, tread: 1 });   // (no rail on one step)
+      stairsR(g, { width: 10, totalRise: 1.5, steps: 3, dir: s < 0 ? "S" : "N", x: gx, y: 14.5, z: 69 * s, tread: 0.5 });
     }
     // 1.4.0 (the user, the reviewer's note 2): the step of one amah and the duchan's three steps run the WHOLE width of the court (135),
     // as Tiferet Yisrael draws them (the Mishnah, 2:6, gives them no length); until 1.3.0 they were 60 wide
     const duchanDef = new Group();   // 1.9.3: the default reading's step and duchan, in a group of their own (hidden in the Chazon Ish's)
     g.add(duchanDef);
-    H2.stairs(duchanDef, { width: 135, totalRise: 1, steps: 1, dir: "W", x: 88, y: 13.5, z: 0, tread: 1 });
-    H2.stairs(duchanDef, { width: 135, totalRise: 1.5, steps: 3, dir: "W", x: 87, y: 14.5, z: 0, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
+    // DUCHAN_GAP_A2 (fix-a2, 22.11.2026; found walking in walk mode - the eye went down into a ditch and into the priests' court): since
+    // 1.1.0 (the treads cut to half an amah, their east end left at x 87) the duchan's top step ended at x 85.5, three amot short of
+    // the priests' court (its face x 82.5), and between them lay a ditch two and a half amot deep. The Rambam, Beit HaBechirah 6:3, 6:6
+    // (337, lines 96, 99): "ועולה ממנו לעזרת הכהנים במעלה גבוהה אמה ועליה דוכן יש בו שלש מעלות. רום כל מעלה חצי אמה ושלחה חצי אמה";
+    // "ועל הדוכן העולה מעזרת ישראל לעזרת הכהנים". So the step and the duchan stand against the priests' court: the step x 84..85, the
+    // three steps x 82.5..84 (the court of Israel's floor x 85..93.5).
+    // DUCHAN_GAZIT_A2 (agent B2's request, the user's decision 75 - the floor of לשכת הגזית down to 13.5): in the north the step and the
+    // duchan end at the south face of the chamber (z -54) - they do not stand out inside it; in the south - to the court's wall (67.5)
+    const DUCH = { z0: -54, z1: 67.5 };
+    DUCH.w = DUCH.z1 - DUCH.z0; DUCH.z = (DUCH.z0 + DUCH.z1) / 2;
+    ctx2.shared.duchanSpan = DUCH;
+    H2.stairs(duchanDef, { width: DUCH.w, totalRise: 1, steps: 1, dir: "W", x: 85, y: 13.5, z: DUCH.z, tread: 1 });
+    H2.stairs(duchanDef, { width: DUCH.w, totalRise: 1.5, steps: 3, dir: "W", x: 84, y: 14.5, z: DUCH.z, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
     // 1.9.3 (the user, of the kuntres, point 18: "לשכת הדוכן (חזו״א) כשיטה"): THE DUCHAN'S CHAMBER - the Chazon Ish on Middot 2:6 (OC Moed;
     // book 5849, lines 6087-6088): "נראה דהמעלה היתה כעין לשכה כנוסה בזקיפת ההר של עזרת כהנים, שהרי עזרת כהנים גבוהה מעזרת ישראל ב' אמות
     // ומחצה על פני כל המזרח מדרום לצפון, וכנגד המזבח נכנסה לשכה, ארכה כנגד אורך המזבח ורחבה לא אתפרש... ובה בנוי כעין בימה לעלות הלוים
@@ -240,7 +255,7 @@
     lbl("עזרת ישראל — י״א אמה", 88, 16.5, 25, 2.2);
     lbl("עזרת כהנים — י״א אמה", 77, 19, 25, 2.2);
     lbl("בין האולם ולמזבח — כ״ב אמה", 28.5, 19.5, -30, 2.2);
-    lbl("דוכן הלויים", 85, 19.5, 0, 2.5);
+    lbl("דוכן הלויים", 83.5, 19.5, 0, 2.5);   // DUCHAN_GAP_A2: over the steps (x 82.5..85)
     {
       const guards = new Group();
       guards.visible = false;
@@ -1086,12 +1101,8 @@
       H2.wall(grp, { axis: "x", length: 192, height: 26.5, thickness: 5, mat: M2.stone, cx: 0, cz: 67.5, y: 13.5, openings: ops(gS).concat(extra ? [small(SMALL_X)] : []) });
       H2.wall(grp, { axis: "z", length: 135, height: 26.5, thickness: 5, mat: M2.stone, cx: -93.5, cz: 0, y: 13.5, openings: extra ? SMALL_Z.map(small) : [] });
     }
-    {
-      const br = H2.wall(g, { axis: "x", length: MW1 - MW0, height: 2.5, thickness: 5, mat: M2.stone, cx: MOKED_X, cz: -67.5, y: 37.5 });
-      const brC = H2.occ(H2.box(g, MW1 - MW0, 0.9, 6.5, M2.stoneLight, MOKED_X, 40, -67.5));
-      const brK = H2.crenellate(g, { x1: MW0 + 0.5, z1: -67.5, x2: MW1 - 0.5, z2: -67.5, y: 40.9, mat: M2.stoneLight });
-      ctx2.lishkotCut.push(br, brC, brK);
-    }
+    // MOKED_VAULT_A2 (the user's decision 26: "החומה נקטעת מעל בית המוקד"): the court's wall is broken over the hall - its vault rises
+    // in the gap and is seen from without. (Until now a bridge of wall, 2.5 high, with its coping and battlements, ran over it.)
     // CHEL_211: the small gates' landings in the chel. The Upper Gate (x -88) - a landing joined to the first south gate's; the north's
     // small gate of Tiferet Yisrael (x -36) - joined to the Korban gate's; the rejected reading's (x 4) - a landing and a flight of its
     // own; the two of the west - a landing each and a flight along the west wall. In the reading of seven gates the two great gates'
@@ -1195,7 +1206,7 @@
     {
       const bs = (x0, x1, z0, z1) => { const m = H2.box(g, x1 - x0, 2.5, z1 - z0, M2.stoneSmooth, (x0 + x1) / 2, 13.5, (z0 + z1) / 2); m.name = "barShura"; return m; };
       for (const [z0, z1] of [[-65, -26], [-22, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 22], [26, 65]]) bs(90, 91, z0, z1);   // KLI_SHIR_211: broken at the chambers' doors (z +-24) too
-      for (const sg of [-1, 1]) bs(85.52, 90, sg < 0 ? -65 : 64, sg < 0 ? -64 : 65);
+      for (const sg of [-1, 1]) bs(85.02, 90, sg < 0 ? -65 : 64, sg < 0 ? -64 : 65);   // DUCHAN_GAP_A2: to the step's east face (x 85)
       lbl("בר שורא — חומה קטנה לפנים מן החומה (רש״י פסחים פו.)", 89.4, 17.6, 38, 1.2);
     }
     // 1.1.0: the stone lintels (shkufot, Middot 2:3) of the six north/south Azara gates (threshold y 13.5 -> lintel at 33.5), of the
@@ -1854,8 +1865,26 @@
         H2.box(mokedRosh, 1.4, 0.8, 6.4, M2.stoneSmooth, XE, 23.5, -73.3);                    // its lintel
         H2.box(mokedRosh, 10, 20, 1, M2.stoneLight, X, 13.5, Z - D / 2 + 0.5);                // the north doorway walled up
       }
-      const roof = H2.box(g, W + 1.4, 0.7, D + 1.4, M2.stoneSmooth, X, 13.5 + Hh, Z);
+      // MOKED_VAULT_A2 (the user's decision 26): "ובית המוקד כיפה" (Tamid 1:1, 88:2) - the Bartenura (634:7): "בנין של בית המוקד לא
+      // היתה עליה אלא כפה, ארקוולט"ו בלע"ז, עשויה בארץ"; the Yachin, Middot 1 (819:110): "בית המוקד היה מקורה עם גג עגול" - a vault
+      // over the hall (its axis along the hall's length, a segment of a circle: five amot of rise over its twenty), the court's wall
+      // broken over it, so that the vault is seen from without. Until now a flat roof with a small dome on a drum. Its rise and its
+      // thickness - model choices.
+      const VR = 5, VS = D / 2 + 0.7, VRad = (VS * VS + VR * VR) / (2 * VR), VA = Math.asin(VS / VRad), VC = 13.5 + Hh - (VRad - VR);
+      const roof = H2.box(g, W + 1.4, 0.5, D + 1.4, M2.stoneSmooth, X, 13.5 + Hh - 0.5, Z);   // the springing course round the top of the walls
       ctx2.lishkotCut.push(roof);
+      {
+        const vg = new CylinderGeometry(VRad, VRad, W + 1.4, 40, 1, true, -VA, 2 * VA);
+        vg.rotateZ(-Math.PI / 2); vg.rotateX(-Math.PI / 2);   // its axis along x; the arc up (+y), across z
+        const vm = M2.stoneSmooth.clone(); vm.side = DoubleSide;
+        const vault = new Mesh(vg, vm); vault.position.set(X, VC, Z); vault.castShadow = vault.receiveShadow = true; g.add(vault);
+        const sh = new Shape(); sh.moveTo(-VS, 0);
+        for (let i = 0; i <= 24; i++) { const a = -VA + (2 * VA * i) / 24; sh.lineTo(VRad * Math.sin(a), VC + VRad * Math.cos(a) - (13.5 + Hh)); }
+        sh.lineTo(-VS, 0);
+        const ends = [-1, 1].map((sx) => { const m = new Mesh(new ShapeGeometry(sh), vm); m.rotation.y = HP; m.position.set(X + sx * (W / 2 + 0.7), 13.5 + Hh, Z); g.add(m); return m; });   // the two lunettes
+        ctx2.lishkotCut.push(vault, ...ends);
+        ctx2.shared.mokedVault = { top: 13.5 + Hh + VR, x: X, z: Z };
+      }
       for (const sz of [-1, 1]) H2.occ(H2.box(g, 12, 1, 1.4, M2.stoneSmooth, X, sz > 0 ? 36 : 33.5, Z + sz * (D / 2 - 0.5)));   // the lintels
       const courtGate = H2.doors(g, { axis: "x", cx: X, cz: Z + D / 2 - 0.5, y: FL, width: 10, height: 20, inward: 1, mat: M2.gateGold, open: 1.0, inset: 0.6 });    // to the court
       H2.doors(mokedDef, { axis: "x", cx: X, cz: Z - D / 2 + 0.5, y: 13.5, width: 10, height: 20, inward: -1, mat: M2.gateGold, open: 0.25, inset: 0.6 }); // to the chel (the default reading)
@@ -1865,8 +1894,46 @@
         if (leaf) { const wm = new Mesh(new BoxGeometry(1.8, 3.8, 0.52), wk); wm.position.set(2.45, 2.1, 0); wm.castShadow = true; leaf.add(wm); }
         lbl("פשפש קטן — רבי יהודה (מידות א, ז)", X + 4, 22.1, Z + D / 2 + 3, 0.9);
       }
-      for (const sx of [-1, 1]) for (const y of [17.5, 20, 22.5, 25, 28, 31]) H2.box(g, 1.6, 0.45, 0.45, M2.cedar, X + sx * (W / 2 - 1.8), y, -65.2);   // ראשי פספסין
-      lbl("ראשי פספסין — מכאן לדרום קודש, לצפון חול", X, 32.5, -65.2, 1.1);
+      // PISPASIN_A2 (the user's decisions 57, 64): "וראשי פספסין מבדילין בין קדש לחל" (Middot 1:6) - a switch,
+      // ctx2.shared.pispasin.set("bartenura" | "rambam"): the Bartenura (643:36) "ראשי קורות יוצאים מן הכתל עד המקום שהוא קדש" - beam-ends
+      // out of the east and west walls on the line (as until now); the Rambam's commentary (573:10) "עשו בקרקעיתם ממעל שבכות להבדיל
+      // קרקע השתים של הקדש מקרקע שתים של חול... פשפש הוא דבר קטן מפסיק מנוקב נקבים קטנים" - a low lattice on the floor along the line.
+      // The same switch between the court of Israel and the priests' (Middot 2:6; the Bartenura 643:99) - below, PIS.israel. The beams'
+      // number, the lattice's height and its making - model choices.
+      const PIS = ctx2.shared.pispasin = ctx2.shared.pispasin || { mode: "bartenura", B: [], R: [], set(m) { this.mode = m === "rambam" ? "rambam" : "bartenura"; for (const o of this.B) o.visible = this.mode === "bartenura"; for (const o of this.R) o.visible = this.mode === "rambam"; return this.mode; } };
+      {
+        const pB = new Group(), pR = new Group();
+        g.add(pB); g.add(pR); PIS.B.push(pB); PIS.R.push(pR); pR.visible = false;
+        for (const sx of [-1, 1]) for (const y of [17.5, 20, 22.5, 25, 28, 31]) H2.box(pB, 1.6, 0.45, 0.45, M2.cedar, X + sx * (W / 2 - 1.8), y, -65.2);   // ראשי פספסין
+        const lat = (parent, x0, x1, z, y0, h) => {   // a low lattice along x at z: rails and a close row of slats, crossed
+          const L = x1 - x0, cx = (x0 + x1) / 2;
+          H2.box(parent, L, 0.08, 0.12, M2.cedar, cx, y0 + h - 0.08, z); H2.box(parent, L, 0.08, 0.12, M2.cedar, cx, y0, z);
+          const n = Math.floor(L / 0.25), sg = new BoxGeometry(0.05, h * 1.25, 0.05), im = new InstancedMesh(sg, M2.cedar, 2 * n), m4 = new Matrix4(), qq = new Quaternion(), e = new Euler(), ps = new Vector3(), one = new Vector3(1, 1, 1);
+          for (let i = 0; i < n; i++) for (const k of [0, 1]) { e.set(0, 0, k ? 0.6 : -0.6); qq.setFromEuler(e); m4.compose(ps.set(x0 + (i + 0.5) * (L / n), y0 + h / 2, z), qq, one); im.setMatrixAt(2 * i + k, m4); }
+          im.castShadow = true; parent.add(im);
+        };
+        lat(pR, X - W / 2 + 1, X - 5, -65.2, FL, 0.55); lat(pR, X + 5, X + W / 2 - 1, -65.2, FL, 0.55);   // across the hall, apart from the way between the gates (model choice)
+        PIS.lat = lat;
+        // ... and between the court of Israel and the priests' (the user's decision 64; Middot 2:6 "וראשי פספסין מבדילין בין עזרת ישראל
+        // לעזרת הכהנים"; the Bartenura 643:99 "ראשי קורות בולטים ויוצאים מן הכתל להבדיל בין עזרת ישראל לעזרת כהנים"): on the line x 85,
+        // beam-ends out of the south wall and out of the face of the hall of hewn stone in the north (z -54); or the low lattice on the floor
+        // along it (the Rambam). (The step and the duchan of R. Eliezer b. Yaakov stand there as before.)
+        {
+          const iB = new Group(), iR = new Group();
+          g.add(iB); g.add(iR); PIS.B.push(iB); PIS.R.push(iR); iR.visible = false;
+          for (const [zw, sz] of [[-54, 1], [65, -1]]) for (const y of [18, 20.5, 23, 25.5, 28.5, 31.5]) H2.box(iB, 0.45, 0.45, 1.6, M2.cedar, 85, y, zw + sz * 0.8);
+          const sub = new Group(); sub.rotation.y = HP; sub.position.set(85.25, 0, 0); iR.add(sub);
+          lat(sub, -65, 54, 0, 13.5, 0.5);   // local x -> the world's -z: z -54 .. 65
+          const PI = { info: "**ראשי פספסין** (מידות ב, ו): ״וראשי פספסין מבדילין בין עזרת ישראל לעזרת הכהנים״. ברטנורא: ״ראשי קורות בולטים ויוצאים מן הכתל להבדיל בין עזרת ישראל לעזרת כהנים״; ולפירוש המשניות לרמב״ם — שבכה נמוכה ברצפה (ראו בבית המוקד). המתג — בתפריט, ״ראשי פספסין — קורות או שבכה ברצפה״.", refs: [["מידות ב, ו", { book: 89, index: 17 }], ["ברטנורא מידות ב, ו", { book: 643, index: 99 }], ["פירוש המשניות לרמב״ם מידות א, ו", { book: 573, index: 10 }]] };
+          ctx2.labels.push(Object.assign({ text: "ראשי פספסין — בין עזרת ישראל לעזרת כהנים (ברטנורא מידות ב, ו)", x: 85, y: 33, z: 60, size: 1.1, layer: "pisIB" }, PI),
+            Object.assign({ text: "פשפש — שבכה ברצפה בין עזרת ישראל לעזרת כהנים (הרמב״ם)", x: 86.5, y: 15.6, z: 40, size: 1.0, layer: "pisIR" }, PI));
+          ctx2.layers.pisIB = iB; ctx2.layers.pisIR = iR;
+        }
+        const PM = { info: "**ראשי פספסין** (מידות א, ו): ״וראשי פספסין מבדילין בין קדש לחל״. ברטנורא: ״ראשי קורות יוצאים מן הכתל עד המקום שהוא קדש״; פירוש המשניות לרמב״ם: ״עשו בקרקעיתם ממעל שבכות להבדיל קרקע השתים של הקדש מקרקע שתים של חול״. המתג — בתפריט, ״ראשי פספסין — קורות או שבכה ברצפה״.", refs: [["מידות א, ו", { book: 89, index: 7 }], ["ברטנורא מידות א, ו", { book: 643, index: 36 }], ["פירוש המשניות לרמב״ם מידות א, ו", { book: 573, index: 10 }]] };
+        ctx2.labels.push(Object.assign({ text: "ראשי פספסין — מכאן לדרום קודש, לצפון חול", x: X, y: 32.5, z: -65.2, size: 1.1, layer: "pisB" }, PM),
+          Object.assign({ text: "פשפש — שבכה ברצפה, מכאן לדרום קודש (פירוש המשניות לרמב״ם)", x: X, y: FL + 2.2, z: -65.2, size: 1.0, layer: "pisR" }, PM));
+        ctx2.layers = ctx2.layers || {}; ctx2.layers.pisB = pB; ctx2.layers.pisR = pR;
+      }
       lbl("בית המוקד", X, 13.5 + Hh + 7.5, Z, 3);
       const CH = [[-1, 1, "לשכת טלאי קרבן"], [1, 1, "לשכת עושי לחם הפנים"], [1, -1, "לשכת אבני המזבח שגנזו בני חשמונאי"], [-1, -1, "הירידה לבית הטבילה"]];
       const chCeil = [];
@@ -2082,12 +2149,31 @@
           }
         }
       }
-      // the benches: two steps along the east and the west walls between the corner rooms
-      for (const sx of [-1, 1]) {
-        H2.box(g, 2, 1, D - 16, M2.stoneSmooth, X + sx * (W / 2 - 2), FL, Z);
-        H2.box(g, 1, 1, D - 16, M2.stoneSmooth, X + sx * (W / 2 - 1.5), FL + 1, Z);
+      // ROVDIN_A2 (the user's decision 58): "ומוקף רובדין של אבן, וזקני בית אב ישנים שם" (Middot 1:8) - a switch,
+      // ctx2.shared.rovdin.set("rosh" | "mefaresh"): the Rosh (2224:9) "אצטבאות חתיכות של אבני גזית בולטות מן החומה זו למעלה מזו ועליהם
+      // היו ישנים" and the Tiferet Yisrael (819:114) "כעין מדריגות" - stone steps along the walls (as until now); the Mefaresh, Tamid 25b-26b
+      // (2105:9-10, 57) "שמן הרובדין היו עולין ע״ג מטותיהן שהיו בתוך כניסת החומה כעין מטות" - "ישנים בתוך כניסת החומה" - recesses in the
+      // wall, like beds, and the stones standing out below them, by which one goes up to them. Their number and measures - model choices.
+      {
+        const rR = new Group(), rM = new Group();
+        g.add(rR); g.add(rM); rM.visible = false;
+        for (const sx of [-1, 1]) {
+          H2.box(rR, 2, 1, D - 16, M2.stoneSmooth, X + sx * (W / 2 - 2), FL, Z);
+          H2.box(rR, 1, 1, D - 16, M2.stoneSmooth, X + sx * (W / 2 - 1.5), FL + 1, Z);
+          // the Mefaresh: two recesses in the wall, one over another, each with a step of stone standing out under it
+          const xi = X + sx * (W / 2 - 1.02), dark = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
+          for (const [y, zc] of [[FL + 1.6, Z], [FL + 4.0, Z]]) {
+            const rc = new Mesh(new BoxGeometry(0.06, 1.3, D - 17), dark); rc.position.set(xi, y + 0.65, zc); rM.add(rc);                      // the recess's shadow
+            H2.box(rM, 1.2, 0.18, D - 17, M2.stoneSmooth, X + sx * (W / 2 - 1.6), y - 0.18, zc);                                              // its bed's edge
+            H2.box(rM, 0.7, 0.35, D - 17, M2.stoneSmooth, X + sx * (W / 2 - 1.35), y - 0.95, zc);                                             // the stone to go up by
+          }
+        }
+        ctx2.shared.rovdin = { mode: "rosh", set(m) { this.mode = m === "mefaresh" ? "mefaresh" : "rosh"; rR.visible = this.mode === "rosh"; rM.visible = this.mode === "mefaresh"; return this.mode; } };
+        ctx2.layers = ctx2.layers || {}; ctx2.layers.rovdinR = rR; ctx2.layers.rovdinM = rM;
+        const RV = { info: "**רובדין של אבן** (מידות א, ח): ״ומקף רובדין של אבן, וזקני בית אב ישנים שם״. להרא״ש ולתפארת ישראל — מדרגות של אבן לאורך הכתלים; למפרש — גומחות בכותל כעין מטות, ורובדין לעלות אליהן. המתג — בתפריט, ״רובדין של אבן בבית המוקד״.", refs: [["מידות א, ח", { book: 89, index: 9 }], ["פירוש הרא״ש תמיד כה:", { book: 2224, index: 9 }], ["המפרש תמיד כה:", { book: 2105, index: 9 }]] };
+        ctx2.labels.push(Object.assign({ text: "רובדין של אבן — זקני בית אב ישנים שם", x: X, y: FL + 3.5, z: Z, size: 1.2, layer: "rovdinR" }, RV),
+          Object.assign({ text: "רובדין — גומחות בכותל ואבנים לעלות אליהן (המפרש)", x: X, y: FL + 6.2, z: Z, size: 1.1, layer: "rovdinM" }, RV));
       }
-      lbl("רובדין של אבן — זקני בית אב ישנים שם", X, FL + 3.5, Z, 1.2);
       // 1.5.0 (the user: "צייר את פנים בית המוקד"): the hearth - "בית המוקד" is named for the great fire kept there, by which the priests warmed
       // themselves (Tamid 1:1 with the Rambam's commentary; Shabbat 20a): a stone ring, logs and a flame in the middle of the hall; and in the
       // north-west chamber the steps going down to the bath (Tamid 1:1 "ומסיבה היתה תחת הבירה... ויורד וטובל")
@@ -2679,17 +2765,7 @@
         }
       }
     }
-    const drum = H2.cyl(g, 8.2, 8.6, 1.3, M2.stoneLight, MOKED_X, 38.2, -67.5);   // 1.8.0: on the roof at 37.5 (29.2 until 1.7.1)
-    const dome = H2.lathe(
-      g,
-      [[8.1, 0], [7.7, 1.7], [6.4, 3.1], [4.4, 4.2], [2.2, 4.9], [0, 5.15]],
-      M2.stoneLight,
-      MOKED_X,
-      39.5,
-      -67.5,
-      28
-    );
-    ctx2.lishkotCut.push(drum, dome);
+    // (MOKED_VAULT_A2: the drum and the small dome on the flat roof (1.8.0) are gone - the hall's own vault, above)
     // 1.8.0: the four corner blocks of the solid house (until 1.3.0) removed - they stood inside the corner rooms
     // 1.9.5 (THREE_CHAMBERS_195): the Golah chamber stood here alone until 1.9.4 (annex at x 20, 14 x 14.5), with a second, unlabelled
     // well outside the wall at (32, -74) - both gone: the chamber is part of the one building of the three chambers, below
@@ -3159,25 +3235,25 @@
       }
       zone("zoneEzn", 93.5, 228.5, -67.5, 67.5, 6, 0xc07aff, "עזרת נשים — 135 על 135 (מידות ב, ה)", 4);
       // 1.9.1 (the user: "דוכן הלויים — מבט מלמעלה"): the duchan glows on its steps for 15 s - a pale amber volume over the step of one amah
-      // and the three half-amah steps (x 85.5..88, the whole width of the court), its edges in a stronger line
+      // and the three half-amah steps (x 82.5..85 - DUCHAN_GAP_A2; until then 85.5..88), its edges in a stronger line
       {
         const grp = new Group();
         grp.visible = false;
         grp.name = "zoneDuchan";
         const pm = new MeshBasicMaterial({ color: 0xffc94a, transparent: true, opacity: 0.38, depthWrite: false });
-        const steps = [[87, 88, 13.5, 14.5], [86.5, 87, 13.5, 15], [86, 86.5, 13.5, 15.5], [85.5, 86, 13.5, 16]];   // [x0, x1, y0, y1]
+        const steps = [[84, 85, 13.5, 14.5], [83.5, 84, 13.5, 15], [83, 83.5, 13.5, 15.5], [82.5, 83, 13.5, 16]];   // [x0, x1, y0, y1]
         for (const [x0, x1, y0, y1] of steps) {
-          const m = new Mesh(new BoxGeometry(x1 - x0 + 0.04, y1 - y0 + 0.06, 135), pm);
-          m.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.03, 0);
+          const m = new Mesh(new BoxGeometry(x1 - x0 + 0.04, y1 - y0 + 0.06, DUCH.w), pm);   // DUCHAN_GAZIT_A2
+          m.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.03, DUCH.z);
           m.userData.noPick = true;
           grp.add(m);
         }
         const fm = new MeshBasicMaterial({ color: 0xffa21a });
-        for (const [x, y] of [[88, 14.55], [85.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, 135), fm); b.position.set(x, y, 0); b.userData.noPick = true; grp.add(b); }
+        for (const [x, y] of [[85, 14.55], [82.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, DUCH.w), fm); b.position.set(x, y, DUCH.z); b.userData.noPick = true; grp.add(b); }
         g.add(grp);
         ctx2.layers.zoneDuchan = grp;
         ctx2.shared.features.zoneDuchan = { key: "zoneDuchan", isOn: () => grp.visible, on: () => { grp.visible = true; }, off: () => { grp.visible = false; } };
-        ctx2.labels.push({ text: "דוכן הלויים — מעלה של אמה ושלוש מעלות של חצי אמה", x: 86.5, y: 19.5, z: 30, size: 2, layer: "zoneDuchan" });
+        ctx2.labels.push({ text: "דוכן הלויים — מעלה של אמה ושלוש מעלות של חצי אמה", x: 83.5, y: 19.5, z: 30, size: 2, layer: "zoneDuchan" });
       }
     }
     // ===== FIX-B2 (22.11.2026): THE GATES' PALMS, THE RAMPS FOR THE BEASTS, THE OIL CHAMBER'S SECOND DOOR, THE BLEMISHED PRIESTS =====

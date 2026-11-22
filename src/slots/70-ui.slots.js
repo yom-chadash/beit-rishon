@@ -282,11 +282,8 @@
   var UI_SRC_TAL = { "מנחות": 131, "יומא": 107, "עירובין": 105, "סוטה": 119, "בבא בתרא": 124, "סנהדרין": 125, "זבחים": 130, "חגיגה": 114, "סוכה": 108, "מגילה": 112 };
   var UI_SRC_PRE = ['רש"י', 'רד"ק', "מצודת דוד", "מצודת ציון", "מצודות", 'מלבי"ם', 'רלב"ג', "תרגום יונתן", "תרגום"];
   var UI_SRC_TN_IDS = [10, 11, 38, 39, 13, 2, 3, 4, 31, 32];
+  var UI_SRC_BARE = "";   // UI_UNIFY_A2: a bare "(ב, ג)" with no citation named before it - not linked (no default book here)
 //@@end ui_sefToOtz.mm
-//@@begin ui_srcParse
-//@@end ui_srcParse
-//@@begin ui_srcParse-2
-//@@end ui_srcParse-2
 //@@begin UI_BOOK_ITEM
   // ===== 1.0.2 (item 2): opening the plugin from the books (the reader's button "open-beit-rishon", openPlugin: true, shown in I Kings
   // and II Chronicles only). Otzaria opens the page and delivers reader.toolbar_item_clicked with the reading position (api.md: itemId,
@@ -555,12 +552,9 @@
     ["1.0.3", ["מבט חופשי למעלה ולמטה בכל מקום, וגובה העין בחצים או ב-Shift עם הגלגלת.", "באברבנאל גם הכבש מצופה נחושת.", "תוויות הדגמת המכונה בתוך התמונה."]],
     ["1.0.2", ["כפתור ״פתח בתוסף בית ראשון״ בספרי מלכים א ודברי הימים ב.", "השיתין, ומזבח הנחושת מאבנים או מצופה נחושת (אברבנאל).", "היסוד, הסובב וחוט הסיקרא; הכבשים הקטנים — כרש״י או כתוספות.", "טשטוש חומות: גם קיר שמסתיר את המקום נעשה שקוף.", "השיטות בתוך כרטיסי ההסבר.", "המקורות שבסוגריים נפתחים באוצריא בלחיצה.", "הדפסה או שמירה כ-PDF.", "סיבוב 360 מעלות בתוך הבית ובכל מקום מקורה.", "הדגמת המכונה מקרוב.", "סרגל הכותרת קבוע, גם בזמן הטעינה.", "דיווח על טעות או תקלה מתוך התוסף."]]
 //@@end UI_NEWS
-//@@begin ui_CSS
-//@@end ui_CSS
 //@@begin buildUI.CO
       // fallback = the 10-core.js CO values (used only if ctx.CO is missing): 1.0.1-L the Sea in the court's CORNER x 80, z -54 (Rashi) /
       // +54 (L.7), the block of bases round x 30 in the rows z 33 / 45 with Moses' laver between them at z 39 (L.77; vessels-2.md), the house wall 7 / 6 / 5 / 4 (K.2)
-      const CO = ctx.CO || { seaX: 80, seaZ: 54, seaZRashi: -54, kiyorX: 30, mechX: 30, mechZ: [38, 50], xUlamE: 18.5, xHouseE: 2.5, HOUSE_WALL: [7, 6, 5, 4], zHouseS: 27, xHeiW: -80.5 };
 //@@end buildUI.CO
 //@@begin applyHidden
         if (ctx.shared && ctx.shared.ulamCeiling && ctx.shared.ulamCeiling.mode === "none") for (const m of cutList(ctx.ulamCeilCut)) hide.add(m);   // 1.3.5: the ulam with no ceiling (50-heichal.js)
@@ -639,9 +633,6 @@
       sub.className = "s";
       sub.textContent = "מלכים א ו–ז · דברי הימים ב ג–ד · חז״ל ומפרשים";
 //@@end buildUI.after-title
-//@@begin opRow
-        bb.className = "bb" + (row.options.length === 3 ? " c3" : "");   // 1.0.1-L: three in a row; two and four in two columns
-//@@end opRow
 //@@begin opRow-note
             // CHIP_CLOSEAUTO_211 (the user, 15.11.2026: after the place "לשכת הכלים" a reading's view came out EMPTY - that place's section
             // of the house stayed, since only a place put back what the place before it had opened): a reading does the same first - the
@@ -673,7 +664,7 @@
         throne: ["throneVersion"], throneSteps: ["throneVersion"],
         heichalSouth: ["yatziaShape"], yatziaSection: ["yatziaShape"], yatziaDoor: ["yatziaShape"],   // 1.3.4: the yatzia's readings
         arkInside: ["arkLayout"],   // 1.3.3 (the user: "על הדרך תוסיף מתגי שיטות"): what is in the ark - R. Meir / R. Yehuda
-        mizbeach: ["altarPlace", "altarRTam", "altarYose", "altarLook", "altarRamps", "maarachot", "maarachotYK"], mizbeachSE: ["altarRTam", "altarPlace"], mizbeachTop: ["maarachot", "maarachotYK", "altarYose"], mizbeachMeasures: ["altarYose"], sfalim: ["sfalim"],   // 1.3.3   // 1.0.2: the small ramps (ctx.shared.altarRamps; no row, no chips); 1.2.3: the altar's place too (the user)
+        mizbeach: ["altarPlace", "altarRTam", "altarYose", "altarKarkov", "altarLook", "altarRamps", "maarachot", "maarachotYK"], mizbeachSE: ["altarRTam", "altarPlace"], mizbeachTop: ["maarachot", "maarachotYK", "altarYose"], mizbeachMeasures: ["altarYose"], sfalim: ["sfalim"],   // 1.3.3   // 1.0.2: the small ramps (ctx.shared.altarRamps; no row, no chips); 1.2.3: the altar's place too (the user)
         altarFromDoor: ["altarPlace"], altarPlaceView: ["altarPlace"], mizbeachSW: ["altarPlace", "altarRTam", "altarRamps"], mizbeachRamps: ["altarPlace", "altarRTam", "altarRamps", "rampGap"]
       };
       const UI_OPS_P = {
@@ -699,7 +690,7 @@
       const UI_OPS_L = [
         [/^(?:יכין|בועז)/, ["pillarCapital"]],
         [/^(?:הים(?:\s|$)|ים של שלמה)/, ["seaPlacement"]],
-        [/^מזבח הנחושת/, ["altarPlace", "altarRTam", "altarYose", "altarLook", "altarRamps", "maarachot", "maarachotYK"]],
+        [/^מזבח הנחושת/, ["altarPlace", "altarRTam", "altarYose", "altarKarkov", "altarLook", "altarRamps", "maarachot", "maarachotYK"]],
         [/^היסוד/, ["altarRTam"]],   // 1.3.7: R. Tam's reading on the yesod's own label   // 1.2.3: the place's chips on the altar's own label too
         [/^(?:היסוד|הסובב|הכבשים הקטנים|כבש קטן|שני כבשים קטנים)/, ["altarRamps"]],
         [/^ספלי הניסוך/, ["sfalim"]],   // 1.3.3
@@ -713,9 +704,6 @@
         altarMeasures: "altarYose", altarM_chronicles: "altarYose", altarM_yose: "altarYose", yatziaRambam: "yatziaShape", yatziaRashi: "yatziaShape" };   // 1.3.3: the numbers of the altar's frames
       // subj = { view?, title?, label?, layers? } -> the row ids (kept unfiltered: the rows are built after the places and the labels)
 //@@end buildUI.UI_OPS_V
-//@@begin opsChip
-        return s.length > 34 ? s.slice(0, 32) + "…" : s;
-//@@end opsChip
 //@@begin pickFromCard
           try { if (typeof ctx.shared.closeAuto === "function") ctx.shared.closeAuto(); } catch (_) {}   // CHIP_CLOSEAUTO_211: a card's chip that flies, too
 //@@end pickFromCard
@@ -735,13 +723,6 @@
 //@@begin placeLeave
         if (leaveFeat && !keepF) { try { if (leaveFeat.isOn()) leaveFeat.off(); if (typeof leaveFeat.leave === "function") leaveFeat.leave(); } catch (_) {} }   // THRONE_BACK_211: + the feature's own leave()
 //@@end placeLeave
-//@@begin resolve
-//@@end resolve
-//@@begin srcLinker.lastName
-//@@end srcLinker.lastName
-//@@begin srcLinker.hit
-            const hit = body ? resolve(body, bare) : null;
-//@@end srcLinker.hit
 //@@begin buildUI.palaceBasis
       // 1.0.1 (FIXES E.2 / F.3): the basis of the palace's placement, written by 60-palace.js (ctx.shared.palaceBasis, a Hebrew string)
       // or the UI's copy; appended once to the "בית שלמה" view text and used by the "מקום בית שלמה" entry of the EXTRAS
@@ -1487,6 +1468,18 @@
             feature: { key: "leviimPlace", isOn: () => LV.get(), on: () => LV.set(true), off: () => LV.set(false) },
             info: String(LV.info || "") + " הסימון מוצג לחמש עשרה שניות.", refs: Array.isArray(LV.refs) ? LV.refs : [] });
         }
+        // KARKOV_A2 (fix-a2; the user's decision 3): the karkov on the sovev's band (ctx.shared.karkov, 40-altar.js)
+        if (ctx.shared.karkov) opRow({
+          id: "altarKarkov", short: "הכרכוב — פרחים וציצים במזבח", cardFly: true,
+          chips: { rabbi: "רבי: כיור", none: "ר׳ יוסי בר״י: הסובב" },
+          cap: "הכרכוב (כיור) של המזבח",
+          refs: [["זבחים סב.", { book: 130, index: 2109 }], ["רש״י זבחים סב.", { book: 2191, index: 2969 }], ["רש״י זבחים סב. (תרי הוו)", { book: 2191, index: 2982 }], ["יכין מידות ג, ד", { book: 819, index: 321 }]],
+          options: [["rabbi", "רבי — ״זה כיור״: פרחים וציצים", "**הגמרא** (זבחים סב.): ״איזהו כרכוב? רבי אומר: זה כיור, רבי יוסי ברבי יהודה אומר: זה הסובב״; ובסוף הסוגיא: ״תרי הוו; חד לנוי, וחד לכהנים דלא נשתרקו״.\n**רש״י** (שם): ״ציורים של פרחים וציצים וקלעים סביב למזבח כמו סיידו וכיירו״; ״זה כיור — ציורים סביב למעלה מאמצעו״.\n**בבית ראשון — על פס הסובב:** רש״י (זבחים סב.), על מזבח משה: ״סביב הקיר משעלה שש אמות גובה... היקף הבליטה קטנה חוגרתו סביב לנוי, וזהו סובב וכיור דאפליגו ביה רבי ור׳ יוסי בר׳ יהודה״.\n**במודל:** פרחים וציצים לסירוגין על פס הסובב, באמה העליונה שמעל חוט הסיקרא, בארבע הרוחות, מחומר המזבח (לפי ״מראה המזבח״); לא מתחת לראש הכבש. צורתם, גודלם והמרווח ביניהם — בחירת מודל."],
+            ["none", "רבי יוסי ברבי יהודה — ״זה הסובב״: בלי ציורים", "**רבי יוסי ברבי יהודה** (זבחים סב.): ״זה הסובב״ — הכרכוב שבפסוק הוא הסובב, ואין ציורים.\n**הרמב״ם** אינו מזכיר כיור במזבח (תמה עליו תפארת ישראל, יכין מידות ג, ד: ״ותמהני שהשמיטו הרמב״ם, והרי קיי״ל כרבי מחברו״).\n**במודל:** בלי פרחים וציצים."]],
+          current: "rabbi",
+          onPick: (k) => { const K = ctx.shared.karkov; if (K && typeof K.set === "function") K.set(k); },
+          fly: () => flyView("mizbeach")
+        });
         // 1.3.3 (the user: "ספלים — להוסיף בשיטות"): the libation bowls by the south-west horn - ctx.shared.sfalim (40-altar.js), a completion
         // from the Mishnah as the shitin; the holes' two readings are the row "ספלי הניסוך" (its chips on this card)
         const SF = ctx.shared.sfalim;
@@ -1652,13 +1645,6 @@
         // 1.1.0 (the user: no doubles): the last three of the grid too - the grid keeps "מבט כללי" alone
         heichalFront: "הבית (בית ה׳)", yachinBoazFull: "יכין ובועז — מבט מפתח האולם", kodeshHakodashim: "קודש הקדשים — הדביר" };
 //@@end buildUI.after-PLACES
-//@@begin uiMergedCard.seenP
-        // DEDUPE_211 (the understandability review, U-53): each of the joined texts came with the "בקצרה" block of the card's switches -
-        // the card of "שולחן משה מקרוב" showed it twice. A paragraph that already stands in the card is not repeated.
-        const seenP = new Set(), outP = [];
-        for (const par of parts.filter(Boolean).join("\n\n").split("\n")) { const k = par.trim(); if (k.length > 40 && seenP.has(k)) continue; if (k) seenP.add(k); outP.push(par); }
-        return { text: outP.join("\n").replace(/\n{3,}/g, "\n\n"), refs };
-//@@end uiMergedCard.seenP
 //@@begin buildUI.after-b
               // DEMO_FLY_301 (the user, 18.11.2026: "ואני גם לב שכנראה בעוד הדגמות"): a pill whose own switch leaves the view where it is
               // (pressed on the model, one stands by it already - the witnesses' scene) started from this group ran out of sight, wherever
@@ -2236,6 +2222,75 @@
             });
           }
         }
+        // SCALE_FIG_A2 (fix-a2; the user's decision 23): a priest for scale, 3.54 amot (ctx.shared.scaleFigure, 58-ark.js)
+        if (ctx.shared.scaleFigure) opRow({
+          id: "scaleFigure", short: "דמות לקנה מידה — כהן בגובה אדם", cardFly: false,
+          chips: { off: "בלי", on: "כהן — 170 ס״מ" },
+          cap: "דמות לקנה מידה",
+          refs: [["עירובין מח.", { book: 105, index: 1782 }]],
+          options: [["off", "בלי", "המודל בלי דמות לקנה מידה."],
+            ["on", "כהן לקנה מידה — 170 ס״מ", "**דמות לקנה מידה:** כהן אחד בבגדיו, וגובהו 170 ס״מ — גובה אדם ממוצע — באמה של 48 ס״מ: 3.54 אמות (כשלוש אמות ושלושה טפחים ורבע, בטפח של 8 ס״מ). בחירת מודל.\n**היכן הוא עומד:** על הרצפה, מעט מימין למה שמביטים בו, ופניו אל העין; כשהמבט זז — הוא הולך איתו. בחירת מודל.\n**לעניין המקום שאדם תופס** (עירובין מח.): ״וכמה תחתיו? גופו שלש אמות, ואמה כדי לפשוט ידיו ורגליו — דברי רבי מאיר״."]],
+          current: "off",
+          onPick: (k) => { const F = ctx.shared.scaleFigure; if (F && typeof F.set === "function") F.set(k === "on"); }
+        });
+        // HP_RISHON_A2 (fix-a2; the user's decision 70 b): a priest in his four garments and the high priest in his eight (58-ark.js)
+        // HP_KIT_A2: the common priest's avnet in it - of wool and linen (Rebbi; the Rambam - the default) or of linen (Rabbi Elazar b. R.
+        // Shimon), Yoma 12b; the ephod and the mitznefet - the two rows after it (both houses, the same pair: shared/frag/hp-kit.js)
+        const pgOn = () => { try { const r = OPS_BY_ID.priestGarments, P = ctx.shared.priestGarments; if (r && r.cur === "off" && P) { P.set(true); r.mark("on"); } } catch (_) {} };
+        // KIDDUSH_RYOSE_A2 (the user's decision 82 c): the reading of kiddush for the washing priest by the base (45-vessels.js kiddAt) - the
+        // Tanna Kamma and the Rambam, or Rabbi Yose b. R. Yehuda with his fellow holding him (as the Second Temple's morning service)
+        if (ctx.shared.mechona) opRow({
+          id: "kidReading", short: "קידוש ידיים ורגליים — תנא קמא או רבי יוסי ברבי יהודה", cardFly: false,
+          chips: { tk: "תנא קמא", ryose: "רבי יוסי בר״י" },
+          cap: "קידוש ידיים ורגליים",
+          refs: [["זבחים יט:", { book: 130, index: 754 }], ["זבחים יט: — וחבירו מסייעו", { book: 130, index: 755 }], ["רמב״ם ביאת המקדש ה, טז", { book: 340, index: 93 }]],
+          options: [["tk", "תנא קמא והרמב״ם — יד ימין על רגל ימין ויד שמאל על רגל שמאל", "**זבחים יט:** ״תנו רבנן: כיצד מצות קידוש? מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש״; והרמב״ם (ביאת המקדש ה, טז): ״ושוחה ומקדש״.\nבמודל: בהדגמת המכונה, הכהן שוחה, כפות ידיו שטוחות על גב כפות רגליו, והזרם מן הברז נופל על גב הידיים ומשם על הרגליים."],
+            ["ryose", "רבי יוסי ברבי יהודה — ידיים זו על זו ורגליים זו על זו, וחבירו מסייעו", "**זבחים יט:** ״רבי יוסי ברבי יהודה אומר: מניח שתי ידיו זו על גב זו, ועל גבי שתי רגליו זו על גבי זו, ומקדש. אמרו לו: הפלגתה, אי אפשר לעשות כן״; ״אמר רב יוסף: וחבירו מסייעו״.\nבמודל: הכהן עומד על רגל שמאל, רגל ימין מונחת על גבה, כף יד שמאל על גב רגל ימין וכף יד ימין על גבה; וחבירו עומד מימינו ותומך בו. איזו רגל למעלה ואיזו יד, ומקום החבר — בחירת מודל."]],
+          current: "tk",
+          onPick: (k) => { ctx.shared.kidReading = k === "ryose" ? "ryose" : "tk"; }
+        });
+        // AVNET_ONE_A2 (the user's decision, via the coordinator): one switch for the common priest's avnet - all the priests and the pair of
+        // "בגדי הכהנים" together (58-ark.js ctx.shared.priestBelt), as the Second Temple's row "אבנטו של כהן הדיוט"
+        if (ctx.shared.priestBelt) opRow({
+          id: "priestBelt", short: "אבנטו של כהן הדיוט — כלאים או בוץ", cardFly: false,
+          chips: { kilayim: "כלאים", butz: "בוץ" },
+          cap: "אבנטו של כהן הדיוט",
+          refs: [["יומא יב:", { book: 107, index: 270 }], ["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }]],
+          options: [["kilayim", "רבי והרמב״ם — של כלאים", "**יומא יב:** ״אבנטו של כהן גדול ביום הכפורים — דברי הכל של בוץ. בשאר ימות השנה — דברי הכל של כלאים. לא נחלקו אלא באבנטו של כהן הדיוט בין בשאר ימות השנה, בין ביום הכפורים. שרבי אומר: של כלאים, ורבי אלעזר ברבי שמעון אומר: של בוץ״.\n**הרמב״ם** (כלי המקדש ח, א) כרבי: ״וארבעתן של פשתן לבנים וחוטן כפול ששה. והאבנט לבדו רקום בצמר״; (ח, ב): ״ואבנטו של כהן גדול מעשה רוקם הוא והוא דומה במעשיו לאבנט כהן הדיוט״.\nבמודל: אבנט כל הכהנים צבוע, ארוג מן המינים יחד. אבנט הכהן הגדול — תמיד של כלאים."],
+            ["butz", "רבי אלעזר ברבי שמעון — של בוץ", "**יומא יב:** ״לא נחלקו אלא באבנטו של כהן הדיוט... שרבי אומר: של כלאים, ורבי אלעזר ברבי שמעון אומר: של בוץ״.\nבמודל: אבנט כל הכהנים לבן, של פשתן. אבנט הכהן הגדול — של כלאים: ״בשאר ימות השנה — דברי הכל של כלאים״ (שם)."]],
+          current: "kilayim",
+          onPick: (k) => { const B = ctx.shared.priestBelt; if (B && typeof B.set === "function") B.set(k); }
+        });
+        if (ctx.shared.priestGarments) opRow({
+          id: "priestGarments", short: "בגדי הכהנים — כהן הדיוט וכהן גדול", cardFly: false,
+          chips: { off: "בלי", on: "להציג" },
+          cap: "בגדי הכהנים",
+          refs: [["שמות כח, ד", { book: 2, index: 790 }], ["שמות כח, לא", { book: 2, index: 817 }], ["שמות כח, לו", { book: 2, index: 822 }], ["שמות כח, לט", { book: 2, index: 825 }], ["יומא יב:", { book: 107, index: 270 }], ["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }], ["רמב״ם כלי המקדש ט, א", { book: 338, index: 143 }], ["רמב״ם כלי המקדש ט, ג", { book: 338, index: 145 }], ["רמב״ם כלי המקדש ט, ד", { book: 338, index: 146 }], ["רמב״ם כלי המקדש ט, ו", { book: 338, index: 148 }], ["רמב״ם כלי המקדש ט, ט", { book: 338, index: 151 }]],
+          options: [["off", "בלי", "בלי הדמויות."],
+            ["on", "כהן הדיוט וכהן גדול", "הפסוק (שמות כח, ד): ״ואלה הבגדים אשר יעשו חשן ואפוד ומעיל וכתנת תשבץ מצנפת ואבנט״.\n**הרמב״ם** (כלי המקדש ח, א–ב): ״בגדי כהנה שלשה מינים. בגדי כהן הדיוט. ובגדי זהב. ובגדי לבן. בגדי כהן הדיוט הם ארבעה כלים״; ״בגדי זהב הן בגדי כהן גדול והם שמנה כלים. הארבעה של כל כהן. ומעיל ואפוד וחשן וציץ״.\n**המעיל** (ט, ג–ד): ״המעיל כלו תכלת... ואין לו בית יד, אלא נחלק לשתי כנפים מסוף הגרון עד למטה״; ובשוליו רמונים של תכלת וארגמן ותולעת שני, ״ומביא שנים ושבעים זוגים ובהם שנים ושבעים ענבולים, הכל זהב״.\n**האפוד** (ט, ט): ״רחבו כרחב גבו של אדם מכתף לכתף. וארכו מכנגד אצילי הידים מאחוריו עד הרגלים״, וחשב האפוד חוגר אותו; ובכתפותיו שתי אבני השהם.\n**החשן** (ט, ו): ״ארכו אמה ורחבו זרת וכופלו לשנים, נמצא זרת על זרת מרבע. וקובע בו ארבעה טורים של אבן״.\n**הציץ** (ט, א): ״טס של זהב רחב שתי אצבעות ומקיף מאזן לאזן״ — על המצח, ומעליו, בין הציץ למצנפת, התפילין (זבחים יט.).\n**אבנטו של כהן הדיוט** (יומא יב:): ״לא נחלקו אלא באבנטו של כהן הדיוט... שרבי אומר: של כלאים, ורבי אלעזר ברבי שמעון אומר: של בוץ״. הרמב״ם (כלי המקדש ח, א) כרבי: ״וארבעתן של פשתן לבנים וחוטן כפול ששה. והאבנט לבדו רקום בצמר״. ואבנט הכהן הגדול — ״בשאר ימות השנה — דברי הכל של כלאים״ (יומא יב:).\nבמודל: אבנט כהן הדיוט — לפי השורה ״אבנטו של כהן הדיוט״ (כלאים או בוץ), והוא משנה את כל הכהנים יחד; אבנט הכהן הגדול — תמיד של כלאים.\n" + "**המצנפת** — ״ועשית מצנפת שש״ (שמות כח, לט): לבנה, ופתילי התכלת שעל הציץ קשורים עליה. צורתה, וצורת האפוד — לפי השורות ״אפוד הכהן הגדול״ ו״מצנפת הכהן הגדול״.\nבמודל: בין האולם למזבח — מימין כהן הדיוט (כתונת, מכנסים, אבנט, מגבעת), ומשמאל כהן גדול בשמונה בגדים. " + "הצבעים, המידות וצבעי האבנים — בחירת מודל."]],
+          current: "off",
+          onPick: (k) => { const P = ctx.shared.priestGarments; if (P && typeof P.set === "function") { P.set(k !== "off"); } if (k !== "off") fly([44.5, 9.5, 20.5], [37, 8.2, 14]); }
+        });
+        if (ctx.shared.priestGarments) opRow({
+          id: "hpEphod", short: "אפוד הכהן הגדול — רש״י או הרמב״ם", cardFly: false,
+          chips: { rashi: "רש״י", rambam: "הרמב״ם" },
+          cap: "אפוד הכהן הגדול",
+          refs: [["רש״י שמות כח, ו", { book: 3692, index: 1963 }], ["רש״י שמות כח, כו", { book: 3692, index: 2020 }], ["רמב״ם כלי המקדש ט, ט", { book: 338, index: 151 }]],
+          options: [["rashi", "רש״י — רחב מגבו, וקצותיו לפניו", "**רש״י** (שמות כח, ו): ״האפוד עשוי כמין סינר של נשים רוכבות סוסים, וחוגר אותו מאחוריו כנגד לבו למטה מאציליו, רחבו כמדת רחב גבו של אדם ויותר, ומגיע עד עקביו״; ובפסוק כו: ״שחשב האפוד חוגרו הכהן ונקפל הסינר לפני הכהן על מתניו, וקצת כרסו מכאן ומכאן עד כנגד קצות החשן״.\nבמודל: האפוד מקיף את הגב ואת הצדדים, וקצותיו לפניו, תחת קצות החשן. רוחבו המדויק — בחירת מודל.\n**הכתפות** — ממין האפוד, ועל כל כתף ״אבן שהם מרבע משקע בבית של זהב״, ושתי עבותות זהב — ״והם הנקראים שרשרות״ (הרמב״ם, כלי המקדש ט, ט)."],
+            ["rambam", "הרמב״ם — כרוחב הגב בלבד", "**הרמב״ם** (כלי המקדש ט, ט): ״האפוד רחבו כרחב גבו של אדם מכתף לכתף. וארכו מכנגד אצילי הידים מאחוריו עד הרגלים. ויש לו כמו שתי ידות יוצאות ממנו באריג לכאן ולכאן שחוגרין אותו בהם והם הנקראין חשב האפוד״.\nבמודל: האפוד מאחוריו בלבד, מכתף לכתף.\n**הכתפות** — ממין האפוד, ועל כל כתף ״אבן שהם מרבע משקע בבית של זהב״, ושתי עבותות זהב — ״והם הנקראים שרשרות״ (שם)."]],
+          current: "rashi",
+          onPick: (k) => { const P = ctx.shared.priestGarments; if (P && typeof P.reading === "function") { P.reading({ ephod: k }); pgOn(); fly([39.5, 9.2, 19.5], [37, 8.4, 15.4]); } }
+        });
+        if (ctx.shared.priestGarments) opRow({
+          id: "hpMitz", short: "מצנפת הכהן הגדול — רש״י או הרמב״ן", cardFly: false,
+          chips: { rashi: "רש״י", ramban: "הרמב״ן" },
+          cap: "מצנפת הכהן הגדול",
+          refs: [["שמות כח, לט", { book: 2, index: 825 }], ["רש״י שמות כח, ד", { book: 3692, index: 1957 }], ["רש״י שמות כח, לז", { book: 3692, index: 2050 }], ["רמב״ן שמות כח, לא", { book: 3627, index: 709 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }], ["רמב״ם כלי המקדש ט, ב", { book: 338, index: 144 }]],
+          options: [["rashi", "רש״י — כמין כפת כובע, למעלה בגובה הראש", "״ועשית מצנפת שש״ (שמות כח, לט) — לבנה.\n**רש״י** (שמות כח, ד): ״מצנפת. כמין כפת כובע״; (כח, לז): ״למדנו שהמצנפת למעלה בגבה הראש ואינה עמקה לכנס בה כל הראש עד המצח, והציץ מלמטה, והפתילים היו בנקבים ותלויין בו בשני ראשים ובאמצעו... וקושר ראשי הפתילים מאחורי הערף שלשתן״.\nבמודל: המצנפת לבנה ונוטה לאחור, והשערות נראות בין הציץ למצנפת — ושם התפילין; שלושה פתילי תכלת, האמצעי עובר על גבי המצנפת. מידת הנטייה — בחירת מודל."],
+            ["ramban", "הרמב״ן — צניף שצונף בו את ראשו", "״ועשית מצנפת שש״ (שמות כח, לט) — לבנה.\n**הרמב״ן** (שמות כח, לא): ״והרי הוא כעין צניף שצונף בו את ראשו, מגלגל ומחזיר מגלגל ומחזיר סביב ראשו כפל על כפל״; וכן **הרמב״ם** (כלי המקדש ח, ב): ״אלא שכהן גדול צונף בה כמי שלופף על השבר״.\nופתיל התכלת של הציץ, כלשון הרמב״ם (ט, ב): ״ופתיל תכלת למטה ממנו נכנס מנקב לנקב כדי שיהיה נקשר בפתיל כנגד העורף״.\nבמודל: הכריכות לבנות, נוטות לאחור, ופתיל התכלת קשור מאחור, מעל המצנפת."]],
+          current: "rashi",
+          onPick: (k) => { const P = ctx.shared.priestGarments; if (P && typeof P.reading === "function") { P.reading({ mitz: k }); pgOn(); fly([38.6, 10.4, 17.2], [37, 9.8, 15.4]); } }
+        });
         // 1.3.3 (the user: "להוסיף שיטת ברירת מחדל לפותות כרש״י"): "והפתות... זהב" (7:50) - ctx.shared.potot (55-interior.js)
         {
           const pt = ctx.shared.potot;
@@ -2518,10 +2573,11 @@
 //@@end buildUI.after-tvNotes-note
 //@@begin buildUI.after-GROUPS
           ["הר הבית והחצרות", ["lesserPlace", "eastSteps", "yehoyadaChests", "sanhedrinRows", "slaughterLayout"]],
-          ["המזבח וכלי הנחושת", ["seaPlacement", "altarPlace", "altarRTam", "altarYose", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps"]],
+          ["המזבח וכלי הנחושת", ["seaPlacement", "altarPlace", "altarRTam", "altarYose", "altarKarkov", "altarLook", "maarachot", "maarachotYK", "sfalim", "rampGap", "altarRamps"]],
           ["הבית מבחוץ והיציע", ["aliyot", "ulamRambam", "yatziaShape", "pillarCapital", "ulamTables", "ulamCeiling"]],
           ["הבית מבפנים", ["potot", "kodeshLayout", "kodeshOpinion", "breadShape", "devirDoor", "devirHeight", "cherubPose", "arkLayout"]],
-          ["בית שלמה", ["forestHouse", "throneVersion"]]
+          ["בית שלמה", ["forestHouse", "throneVersion"]],
+          ["הכהנים", ["scaleFigure", "priestBelt", "priestGarments", "hpEphod", "hpMitz", "kidReading"]]
 //@@end buildUI.after-GROUPS
 //@@begin buildUI.after-note-code
         // 1.0.1-L: the pills of this round; what a PLACE switches on goes off by itself (L.27), what a pill switches on stays
@@ -2564,42 +2620,6 @@
 //@@begin buildUI.after-rb-note-2
           // 1.3.3: the pills' frame() lives in another block (the pills); a call to it from here threw a ReferenceError after the switch was made
 //@@end buildUI.after-rb-note-2
-//@@begin buildUI.after-sg
-          tip(sg, "חתך חי: מישור חיתוך שעובר במודל — כל מה שמדרום לו (בציר צפון–דרום) או ממזרח לו (בציר מזרח–מערב) נחתך, ורואים את הפנים כמו בחתך אדריכלי. המישור מתחיל במקום שאליו מביטים; הגרירה מזיזה אותו (80 אמה לכל צד), הכפתור מחליף ציר, ״חתך״ מפעיל ומכבה. פני החתך אינם ממולאים — בחירת מודל.");
-//@@end buildUI.after-sg
-//@@begin buildUI.after-sr
-          sr.min = "-80"; sr.max = "80"; sr.step = "0.5"; sr.value = "0";
-//@@end buildUI.after-sr
-//@@begin buildUI.HALF
-          const HALF = 80;
-          // 1.3.4 (from the Second Temple plugin; the user: "כל סעיף 3 לעשות"): a third axis, the height - a plan, everything above the slider cut
-          const center = (axis) => { const t = ctx.controls && ctx.controls.target; const c = t ? (axis === "x" ? t.x : axis === "y" ? t.y + 6 : t.z) : 0; return Math.round(c * 2) / 2; };
-          const span = (c, axis) => { if (axis === "y") { sr.min = "-10"; sr.max = "150"; } else { sr.min = String(c - HALF); sr.max = String(c + HALF); } sr.value = String(c); };
-//@@end buildUI.HALF
-//@@begin paintSec
-            wb.classList.toggle("on", !!(ctx.shared.walkMode || {}).on);
-          };
-          sb.addEventListener("click", () => {
-            const S = ctx.shared.section;
-            if (!S) return;
-            if (!S.on) { const c = center(S.axis); span(c, S.axis); S.set(true, S.axis, c); } else S.set(false, S.axis, +sr.value);
-            paintSec();
-            pillsFrame();
-          });
-          sr.addEventListener("input", () => { const S = ctx.shared.section; if (!S || !S.on) return; S.set(true, S.axis, +sr.value); pillsFrame(); });
-          ax.addEventListener("click", () => {
-            const S = ctx.shared.section;
-            if (!S) return;
-            const axis = S.axis === "z" ? "x" : S.axis === "x" ? "y" : "z", c = center(axis);   // 1.3.4: south -> east -> height
-            span(c, axis);
-            S.set(S.on, axis, c);
-            paintSec();
-            pillsFrame();
-          });
-//@@end paintSec
-//@@begin buildUI.after-axis
-          ctx.shared.navRepaint = paintSec;   // "↺ החזר הכל" repaints after switching both off
-//@@end buildUI.after-axis
 //@@begin stepDist
           lsSet("tm1.fade.dist", fs.dist);
 //@@end stepDist

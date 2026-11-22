@@ -261,12 +261,12 @@
   var CAM_LOOK_MIN = 0.03;
   var cam = { mode: "orbit", inside: true, lookLock: false, roofed: false, floorY: -Infinity, decideAt: 0, ray: null, n: new Vector3(), tmp: new Vector3(), s: new Spherical(), dirs: [new Vector3(1, 0, 0), new Vector3(-1, 0, 0), new Vector3(0, 0, 1), new Vector3(0, 0, -1)], up: new Vector3(0, 1, 0) };
   var ent_look = cam;   // (the name the roofed test below uses for its ray and directions)
-  var ent_sol = { t: -1e9, all: [], roof: [], walls: [], big: [] };
+  var ent_sol = { t: -1e9, all: [], roof: [], floor: [], walls: [], big: [] };
   function ent_solids(withCut) {
     const now = performance.now();
     if (now - ent_sol.t > 1000) {
       ent_sol.t = now;
-      const all = [], roof = [], cut = new Set();
+      const all = [], roof = [], floor = [], cut = new Set();
       for (const k of ["cutaway", "yatziaCut", "ulamCut", "forestBoardsCut"]) {
         const list = ctx && ctx[k];
         if (Array.isArray(list)) for (const m of list) if (m) cut.add(m);
@@ -287,6 +287,11 @@
             // 1.0.4: a building's wall or ceiling (userData.tmPass, 70-ui.js) stays in the list when faded: the floors in its merged mesh still hold the eye, and
             // its walls and ceilings are let through hit by hit (ent_wallHit, ent_passSurf)
             if (!off && (!thin || o.userData.tmPass)) all.push(o);
+            // WALK_FLOOR_A2 (fix-a2, 22.11.2026; the user: in walk mode "הוא נכנס לתוך המדרגה במקום לטפס עליה"): a wall or a floor that
+            // the fade loop shows see-through is still there to stand on - walk mode's floor (ent_solids("floor")) keeps it. Until now
+            // a faded mesh left the list, and the eye fell through what it stood on: the altar's top from its ramp (the eye sank into the
+            // altar), the threshold of a gate in the wall of the Mount (the eye dropped into the Mount's fill), a court's floor.
+            if (!off && (!thin || o.userData.tmPass || o.userData.fade)) floor.push(o);
           }
         }
         for (const c of o.children) walk(c, off);
@@ -294,6 +299,7 @@
       walk(scene, false);
       ent_sol.all = all;
       ent_sol.roof = roof;
+      ent_sol.floor = floor;
       const walls = [], big = [];
       for (const o of all) {
         try {
@@ -316,7 +322,7 @@
       ent_sol.walls = walls;
       ent_sol.big = big;
     }
-    return withCut ? ent_sol.roof : ent_sol.all;
+    return withCut === "floor" ? ent_sol.floor : withCut ? ent_sol.roof : ent_sol.all;
   }
   function ent_roofed(p) {   // is p under a roof (the test above; 1.0.4: for the camera and for the target)
     let res = false;
@@ -331,14 +337,14 @@
     }
     return res;
   }
-  function cam_floorY(p) {   // the floor under p (a downward ray on the solids), or -Infinity over the void
+  function cam_floorY(p, list) {   // the floor under p (a downward ray on the solids), or -Infinity over the void (list: ent_solids("floor") for walk mode)
     try {
       const ray = cam.ray || (cam.ray = new Raycaster());
       ray.camera = camera;
       ray.set(cam.tmp.set(p.x, p.y + 0.3, p.z), CAM_DOWN);
       ray.near = 0;
       ray.far = 500;
-      const h = ray.intersectObjects(ent_solids(false), false);
+      const h = ray.intersectObjects(list || ent_solids(false), false);
       return h.length ? h[0].point.y : -Infinity;
     } catch (_) {
       return -Infinity;
@@ -603,7 +609,11 @@
     if (!dir && Math.abs(W.v) < 0.02) W.v = 0;
     if (!sd && Math.abs(W.vs) < 0.02) W.vs = 0;
     if (!W.v && !W.vs) {
-      cam_wf.h = NaN;   // CAM_219 (4): standing - the next walk takes its height over the floor afresh
+      // WALK_SETTLE_A2 (fix-a2): standing, the eye finishes the climb or the descent it began - a tap of a key or a notch of the wheel on
+      // a stair stopped it short of its height, and the next walk took that lower height afresh (CAM_219 (4)), so tap after tap up a
+      // stair the eye sank into the steps. Its height over the floor is now taken afresh only when something else moved the eye (a lift,
+      // a flight, a place - cam_walkFloor).
+      if (ent_wm.on) cam_walkFloor(dt, true);
       return;
     }
     const p = camera.position, q = controls.target, d = W.dir.copy(q).sub(p);
@@ -628,18 +638,31 @@
   // under them. Now the floor is followed along the way walked since the last ray, a third of an amah at a time, each ray from a knee over
   // the floor found before it: a stair under a knee is climbed at any pace, a ledge higher than 1.2 is still a wall. Up eases in 60 ms,
   // down in 110.
-  var cam_wf = { h: NaN, rayAt: -1e9, x: NaN, z: NaN, fy: NaN, o: new Vector3() };
-  function cam_walkFloor(dt) {
+  // WALK_FLOOR_A2 (fix-a2, 22.11.2026; the user, of walk mode: "הוא נכנס לתוך המדרגה במקום לטפס עליה"; a sweep of every rise in both
+  // houses, walking with the model's own loop): (1) the floor is looked for in ent_solids("floor") - the faded walls and floors too (see
+  // ent_solids); (2) climbing, the eye is never more than WALK_LAG below its height over the floor - with a far target the walk is fast
+  // (ent_walkSpeed: up to 28 amot a second at 80), and the 60 ms easing left the eye an amah and a half under its height on the fifteen
+  // steps; (3) standing, the eye settles (WALK_SETTLE_A2, ent_walkStep); the height over the floor is taken afresh only when something
+  // else moved the eye since the last step (F.y: its height after the last step); (4) the wheel and the + / − buttons and keys walk too
+  // (ent_walkNudge) - until now they flew the eye straight to the point under the cursor, down into the steps.
+  var WALK_LAG = 0.4;
+  var cam_wf = { h: NaN, rayAt: -1e9, x: NaN, z: NaN, fy: NaN, y: NaN, o: new Vector3() };
+  function cam_walkFloor(dt, standing) {
     const p = camera.position, q = controls.target, F = cam_wf, now = performance.now();
-    if (!Number.isFinite(F.h)) { F.rayAt = -1e9; F.x = NaN; }   // a new walk (ent_walkStep: the walk stood): its height over the floor is taken afresh
+    if (Number.isFinite(F.h) && (!Number.isFinite(F.y) || Math.abs(p.y - F.y) > 0.02 || (standing && Number.isFinite(F.x) && Math.hypot(p.x - F.x, p.z - F.z) > 0.6))) F.h = NaN;   // moved by something else
+    if (!Number.isFinite(F.h)) {   // a new walk: its height over the floor is taken afresh
+      if (standing) return;
+      F.rayAt = -1e9;
+      F.x = NaN;
+    }
     const moved = Number.isFinite(F.x) ? Math.hypot(p.x - F.x, p.z - F.z) : 0;
-    if (now - F.rayAt >= 90 || moved > 0.3) {
+    if (standing ? moved > 0.01 : (now - F.rayAt >= 90 || moved > 0.3)) {
       F.rayAt = now;
       const ray = cam.ray || (cam.ray = new Raycaster());
       ray.camera = camera;
       ray.near = 0;
       ray.far = 400;
-      const solids = ent_solids(false);
+      const solids = ent_solids("floor");   // WALK_FLOOR_A2 (1)
       const down = (x, z, from) => {
         try {
           ray.set(F.o.set(x, from, z), CAM_DOWN);
@@ -654,8 +677,19 @@
         const n = Math.min(24, Math.max(1, Math.ceil(moved / 0.33)));
         let base = F.fy;
         fy = base;
+        const ux = moved > 1e-6 ? (p.x - F.x) / moved : 0, uz = moved > 1e-6 ? (p.z - F.z) / moved : 0;
         for (let i = 1; i <= n; i++) {
-          const u = i / n, y = down(F.x + (p.x - F.x) * u, F.z + (p.z - F.z) * u, base + 1.2);
+          const u = i / n, sx = F.x + (p.x - F.x) * u, sz = F.z + (p.z - F.z) * u;
+          let y = down(sx, sz, base + 1.2);
+          // WALK_FLOOR_A2 (5): a drop is a drop only if it is wider than a foot - a ray that fell through a hair's gap (the air between
+          // the altar and the head of its ramp, "ואויר מעט היה מפסיק") found a floor far below, and every ray after it began under the
+          // altar's top, so the eye sank into the altar. Two more rays, a sixth of an amah before and behind, and the highest wins.
+          if (Number.isFinite(y) && y < base - 0.6) {
+            for (const o of [-0.17, 0.17]) {
+              const y2 = down(sx + ux * o, sz + uz * o, base + 1.2);
+              if (Number.isFinite(y2) && y2 > y) y = y2;
+            }
+          }
           if (Number.isFinite(y)) base = fy = y;
         }
       }
@@ -664,12 +698,21 @@
       F.fy = fy;
       if (!Number.isFinite(F.h) && Number.isFinite(fy)) F.h = Math.max(0.5, p.y - fy);
     }
-    if (!Number.isFinite(F.fy) || !Number.isFinite(F.h)) return;
+    if (!Number.isFinite(F.fy) || !Number.isFinite(F.h)) { F.y = p.y; return; }
     const want = F.fy + F.h, dy = want - p.y;
-    if (Math.abs(dy) < 0.003) return;
-    const s = dy * (1 - Math.exp(-Math.max(1, dt) / (dy > 0 ? 60 : 110)));
+    if (Math.abs(dy) < 0.003) { F.y = p.y; return; }
+    let s = dy * (1 - Math.exp(-Math.max(1, dt) / (dy > 0 ? 60 : 110)));
+    if (dy > 0 && p.y + s < want - WALK_LAG) s = want - WALK_LAG - p.y;   // WALK_FLOOR_A2 (2)
     p.y += s;
     q.y += s;
+    F.y = p.y;
+  }
+  // WALK_FLOOR_A2 (4): a short walk forward (k > 0) or back - a wheel notch (amt by its size) or a press of + / − (70-ui.js zoomBy)
+  function ent_walkNudge(k, amt) {
+    const W = ent_walk, now = performance.now(), a = k > 0 ? "fwdTo" : "backTo", b = k > 0 ? "backTo" : "fwdTo";
+    W[b] = 0;
+    W[a] = Math.min(now + 900, Math.max(W[a], now) + ENT_LIFT_TAP * (amt > 0 ? amt : 1));
+    if (flyAnim) cam_flyStop();
   }
   (function liftKeys() {
     const KEYS = { ArrowUp: 1, PageUp: 1, ArrowDown: -1, PageDown: -1 };
@@ -720,7 +763,8 @@
     const el = renderer.domElement;
     if (on) {
       const p = camera.position, q = controls.target;
-      const fy = cam_floorY(p);
+      const fy = cam_floorY(p, ent_solids("floor"));   // WALK_FLOOR_A2 (1)
+      cam_wf.h = NaN;
       const v = cam.tmp.copy(q).sub(p);
       v.y = 0;
       if (v.lengthSq() < 1e-6) v.set(1, 0, 0);
@@ -960,6 +1004,18 @@
     };
     el.addEventListener("wheel", (e) => {
       if (ent_load.loading || !controls || controls.enabled === false) return;
+      // WALK_FLOOR_A2 (4): in walk mode the wheel walks (forward when turned away from the user), and the eye climbs and descends with
+      // the floors as with the keys; Shift + wheel still lifts (below)
+      if (ent_wm.on && !e.shiftKey) {
+        e.preventDefault();
+        if (!ent_zoom.held) {
+          ent_zoom.held = true;
+          controls.enableZoom = false;
+        }
+        const dw = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : 0;
+        if (dw && isFinite(dw)) ent_walkNudge(dw < 0 ? 1 : -1, Math.min(1.5, Math.abs(dw) * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 800 : 1) / 100));
+        return;
+      }
       // 1.0.2 (M): Shift + wheel raises or lowers the eye (ent_liftWheel), never zooms; Chromium on Windows turns a Shift + wheel into a sideways one (deltaX), so the
       // larger delta counts (a line is 33 pixels, a page 800, as near enough)
       if (e.shiftKey && !e.ctrlKey) {
@@ -1197,6 +1253,8 @@
     renderer
   };
   //@@slot after-root
+  if (ctx.shared.walkMode) ctx.shared.walkMode.nudge = ent_walkNudge;   // WALK_FLOOR_A2 (4): 70-ui.js zoomBy, in walk mode
+  if (!ctx.shared.floorY) ctx.shared.floorY = (x, y, z) => cam_floorY({ x, y, z });   // SCALE_FIG_A2: the floor under a point, in both houses (the Second's had it)
   ctx.shared.camUnder = (list) => {
     if (!list || !list.length) return false;
     const p = camera.position;
@@ -1493,7 +1551,18 @@
       },
       trumpets(a, t, k, o) {
         if (o.pattern === "long") { brass(a, t, 2.6, k, 466); brass(a, t + 0.03, 2.6, k * 0.8, 470); return; }
-        //@@slot trumpets
+        if (o.pattern === "drawn") {   // TERUAH_305: Rashi's - the tekia, the teruah and the tekia drawn out over o.dur seconds
+          const d = Math.max(4.5, +o.dur || 20) / 3;
+          brass(a, t, d - 0.25, k);
+          for (let i = 0, n = Math.max(9, Math.round((d - 0.3) / 0.2)); i < n; i++) brass(a, t + d + i * 0.2, 0.13, k * 1.1);
+          brass(a, t + 2 * d + 0.15, d - 0.15, k);
+          return;
+        }
+        brass(a, t, 1.4, k);
+        // TERUAH_305 (the user, 21:10: "ונראה לי יש תרועה שם גם"): the teruah's nine short blasts, each long enough to be heard as one
+        // (0.08 s every 0.16 until 2.0.13 - one rattle)
+        for (let i = 0; i < 9; i++) brass(a, t + 1.75 + i * 0.2, 0.13, k * 1.1);
+        brass(a, t + 3.75, 1.4, k);
       },
       cymbals(a, t, k) {
         for (let i = 0; i < 3; i++) {

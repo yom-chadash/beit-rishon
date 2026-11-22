@@ -33,7 +33,50 @@
     //@@include priest-kit
     SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, handRaw, footGeo,
       WAIST, gRobeLow, gRobeUp, bZ, spl,
-      mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards };
+      mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards,
+      MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs };   // MIGBAAT_A2, TEFILLIN_A2
+    // HP_KIT_A2: the high priest in his eight and the priest in his four - one construction for both houses (shared/frag/hp-kit.js): the
+    // morning service's high priest (55-tamid.js) and "בגדי הכהנים" (below); built when first asked
+    //@@include hp-kit
+    SH.hpKit = () => hpKit(SH.priestKit);
+    // HP_KIT_A2 (the user via the coordinator: "מתג כזה תעשה גם בבית שני"): "בגדי הכהנים" - a priest in his four garments and the high
+    // priest in his eight, side by side between the ulam and the altar, facing east, as in the First Temple (58-ark.js): the same pair
+    // (hpKit pair), its readings - the avnet of the common priest (Yoma 12b), the ephod and the mitznefet - set from the opinions table.
+    // ctx.shared.priestGarments = { on, set(on), reading(o), state }
+    {
+      const PG = new Group();
+      PG.name = "priestGarments";
+      PG.visible = false;
+      ctx2.root.add(PG);
+      ctx2.layers.priestGarments = PG;
+      // on the lower landing of the steps between the ulam and the altar ("אמה אמה ורובד שלש", Middot 3:6 - x 31..34, 2 amot above the
+      // court; 30-courts.js), 7 amot west of the altar's west face (x 39.5) - model choice
+      const X = 32.5, Y = LV.KOH + 2, Z = 14;
+      let P = null;
+      const want = { belt: "kilayim", ephod: "rashi", mitz: "rashi" };
+      const PGI = { info: "בגדי הכהנים — הפירוט בתפריט, תחת ״הכהנים״: ״בגדי הכהנים — כהן הדיוט וכהן גדול״.", refs: [["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }]] };
+      ctx2.labels.push(Object.assign({ text: "כהן הדיוט — ארבעה בגדים", x: X, y: Y + 3.9, z: Z - 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI),
+        Object.assign({ text: "כהן גדול — שמונה בגדים", x: X, y: Y + 4.35, z: Z + 1.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI));
+      SH.priestGarments = {
+        get on() { return PG.visible; },
+        get state() { return Object.assign({}, want); },
+        reading(o) { Object.assign(want, o || {}); if (P) P.set(want); return Object.assign({}, want); },
+        set(on) {
+          if (on && !P) { P = SH.hpKit().pair(); P.g.position.set(X, Y, Z); PG.add(P.g); P.set(want); }
+          PG.visible = !!on;
+          return PG.visible;
+        }
+      };
+    }
+    // TEFILLIN_A2 (fix-a2; the user, 22.11.2026 01:04: "תפילין — אין לאף אחד בשבת, ביום טוב... ובחול המועד", nor by night): the
+    // priests' tefillin (the kit's, and the morning service's - 55-tamid.js) are hidden while any reason in SH.tefOff stands - this
+    // demonstration's night (until the dawn), the morning service's night (55-tamid.js applySky), and the High Priest's entry on
+    // Yom Kippur (50-heichal.js ykEntry); by day they are seen
+    SH.tefOff = SH.tefOff || new Set();
+    ctx2.animated.push(() => {
+      const off = SH.tefOff.size > 0 || !!(SH.ykEntry && SH.ykEntry.on);
+      if (TEF.on === off) tefSet(!off);
+    });
     const figure = (robe, sash, beard) => {
       const f = new Group(), n = beard || 0;
       const body = new Mesh(gRobe, robe);
@@ -45,6 +88,7 @@
       const yaw = (rnd() - 0.5) * 0.5;
       const hg = headOn(f, HEAD_Y, mBeards[n % mBeards.length], n);
       hg.rotation.set((rnd() - 0.5) * 0.1, yaw, (rnd() - 0.5) * 0.07);
+      tefOn(hg);   // TEFILLIN_A2
       const hat = new Group();
       hat.add(new Mesh(gHat, mHat));
       hat.position.y = HAT_Y;
@@ -103,13 +147,54 @@
       const st = new Mesh(new BoxGeometry(0.8, 0.42, 0.8), M2.cedar);
       st.position.y = 0.21;
       ELDER.add(st);
-      headOn(ELDER, 1.645, mBeardOld);
+      tefOn(headOn(ELDER, 1.645, mBeardOld));   // TEFILLIN_A2 (an elder of the priests)
       const cap = new Mesh(gCap, mElder);
       cap.position.y = 1.645;
       ELDER.add(cap);
       ELDER.position.set(77.2, FYG, -67);
       ELDER.scale.setScalar(FS);
       g.add(ELDER);
+    }
+    // SCALE_FIG_A2 (fix-a2, 22.11.2026; the user's decision 23): A FIGURE FOR SCALE - one priest, 170 cm tall in an amah of 48 cm =
+    // 3.54 amot to the top of his head (the user's numbers: "גובה אדם ממוצע... באמה של 48 ס״מ — בחירת מודל"), in his garments, with the
+    // head's tefillin (a weekday, by day). He stands on the floor a little to the right of what one looks at (a fifth of the view's
+    // distance, 1.5 to 12 amot; the floor found under a point 2.5 amot over the target - not a roof over it), facing the eye, and goes with the view. Built when first asked (the lots' figures' sequence untouched).
+    // SH.scaleFigure = { on, set(on) } - the row "דמות לקנה מידה" (70-ui.js). Where he stands - a model choice.
+    {
+      const SCALE_H = 3.54, SF = { on: false, f: null, at: new Vector3(Infinity, 0, 0), tg: new Vector3(Infinity, 0, 0) };
+      const vR = new Vector3();
+      const place = () => {
+        const cam = ctx2.camera, oc = ctx2.controls;
+        if (!cam || !oc || !SF.f) return;
+        if (SF.at.distanceToSquared(cam.position) < 1e-6 && SF.tg.distanceToSquared(oc.target) < 1e-6) return;
+        SF.at.copy(cam.position); SF.tg.copy(oc.target);
+        const dx = oc.target.x - cam.position.x, dz = oc.target.z - cam.position.z, L = Math.hypot(dx, dz) || 1;
+        const off = Math.max(1.5, Math.min(12, cam.position.distanceTo(oc.target) * 0.2));
+        vR.set(-dz / L, 0, dx / L);   // the view's right
+        const x = oc.target.x + vR.x * off, z = oc.target.z + vR.z * off;
+        const fy = typeof SH.floorY === "function" ? SH.floorY(x, oc.target.y + 2.5, z) : -Infinity;
+        SF.f.position.set(x, isFinite(fy) ? fy : oc.target.y, z);
+        SF.f.rotation.y = Math.atan2(cam.position.x - x, cam.position.z - z);
+      };
+      SH.scaleFigure = {
+        get on() { return SF.on; },
+        set(on) {
+          SF.on = !!on;
+          if (SF.on && !SF.f) {
+            const f = figure(mRobe, true, 2);
+            if (f.parent) f.parent.remove(f);
+            f.scale.setScalar(SCALE_H / (HEAD_Y + HR[1]));
+            f.name = "scaleFigure";
+            f.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+            f.userData.hand.visible = false;
+            (ctx2.root || ctx2.scene).add(f);
+            SF.f = f;
+          }
+          if (SF.f) { SF.f.visible = SF.on; SF.at.set(Infinity, 0, 0); place(); }
+          return SF.on;
+        }
+      };
+      ctx2.animated.push(() => { if (SF.on) place(); });
     }
     const T1 = torch(), T2 = torch(), T3 = torch(), T4 = torch();
     const MARK = new Mesh(new SphereGeometry(0.14, 10, 8), mMark);
@@ -524,9 +609,11 @@
       // ===== "צאו וראו": the watcher goes up; the east lights
       ev(0, () => { for (const f of K) f.visible = false; MEM.visible = true; WATCH.visible = true; T3.visible = T4.visible = false; });
       cap(0, "״אמר להם הממנה, צאו וראו אם הגיע זמן השחיטה״ (תמיד ג, ב)");
-      track(MEM, [[0, 84.2, Y, -50.6], [1, 84.2, Y, -50.6]], [89.4, -51.4]);
+      // DUCHAN_GAP_A2 (fix-a2): the duchan stands against the priests' court now (x 82.5..85, 30-courts.js) - the officer on the priests'
+      // court's edge, the watcher down the duchan's steps (until then both stood in the air, over the ditch that lay at x 82.5..85.5)
+      track(MEM, [[0, 82.2, Y, -50.6], [1, 82.2, Y, -50.6]], [89.4, -51.4]);
       cam(2.6, [70, 30, -30], [89, 24, -55]);
-      track(WATCH, [[0, 84.9, Y, -50.4], [1, 86.75, 14.75, -50.7], [2, 89.4, 13.5, -51], [7, 89.4, RY, -54.9], [9, 90.3, RY, WZ], [12.6, 91.6, WY, WZ], [13.6, WX, WY, WZ]], [WX + 40, WZ]);
+      track(WATCH, [[0, 82.3, Y, -50.4], [0.7, 84.5, 14.5, -50.6], [1.1, 85.5, 13.5, -50.7], [2, 89.4, 13.5, -51], [7, 89.4, RY, -54.9], [9, 90.3, RY, WZ], [12.6, 91.6, WY, WZ], [13.6, WX, WY, WZ]], [WX + 40, WZ]);
       cap(5, "להיכן יצאו? רש״י: ״על החומה או על הגג״; ״הרואה - זה שעלה לגג״. ברטנורא: ״על מקום גבוה שהיה להם במקדש״");
       cam(9.5, [72, 40, -40], [92, 36, -60]);
       cam(14.5, [79, 47.5, -57], [120, 39.5, -61]);
@@ -761,6 +848,7 @@
       g.visible = true;
       NIGHT.begin();
       NIGHT.set("night");
+      SH.tefOff.add("payis");   // TEFILLIN_A2: by night none (the step below gives them back with the dawn)
       try { if (typeof SH.navRepaint === "function") SH.navRepaint(); } catch (_) {}
     }
     function stop() {
@@ -774,6 +862,7 @@
       caption("");
       stopShow(false);
       NIGHT.end();
+      SH.tefOff.delete("payis");   // TEFILLIN_A2
       for (const [b, a] of R.pills || []) b.anchor = a;
       gatesNight(false);
       if (R.slaughter && SH.slaughterLayout) SH.slaughterLayout.set(R.slaughter);   // SLAUGHTER_HOLD_211
@@ -865,6 +954,7 @@
         const a = K2[i], b = K2[i + 1];
         if (!b || a[1] === a[2]) NIGHT.set(a[1]);
         else NIGHT.set(a[1], a[2], (t - a[0]) / Math.max(0.01, b[0] - a[0]));
+        if (a[1] === "night") SH.tefOff.add("payis"); else SH.tefOff.delete("payis");   // TEFILLIN_A2: from the dawn on
       }
       // the camera
       {

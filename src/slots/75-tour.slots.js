@@ -516,8 +516,6 @@
 //@@end render
 //@@begin beginAnim
 //@@end beginAnim
-//@@begin enter
-//@@end enter
 //@@begin restore
         for (const [row, key] of sv.rows) setRow(row, key);
 //@@end restore

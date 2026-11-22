@@ -116,6 +116,48 @@
     // רבי יוסי ברבי יהודה אומר: זה הסובב"; Rashi there (line 2987, of Moses' altar) "סביב הקיר משעלה שש אמות גובה... היקף הבליטה
     // קטנה חוגרתו סביב לנוי וזהו סובב" - the band is the sovev now; and the lip at the top is the other כרכוב, "וחד לכהנים דלא
     // נשתרקו" (line 2988 "שפתו היקף מעקה קטן סביב שלא יחליקו"). The middle of the height is the red line's (below).
+    // KARKOV_A2 (fix-a2, 22.11.2026; the user's decision 3): THE KARKOV ON THE SOVEV'S BAND, as Rashi reads Zevachim 62a (2191:2982, of
+    // Moses' altar): "סביב הקיר משעלה שש אמות גובה... היקף הבליטה קטנה חוגרתו סביב לנוי וזהו סובב וכיור דאפליגו ביה רבי ור' יוסי בר'
+    // יהודה" - so here the flowers and buds (Rashi 2969 "ציורים של פרחים וציצים וקלעים סביב למזבח") stand on the band of the sovev itself,
+    // its top amah under the ledge, above the red line; of the altar's own metal or stone (the look switch dresses them). The same two
+    // readings as the Second Temple's - ctx.shared.karkov.set("rabbi" | "none"), Rabbi the default. Not where the ramp meets the altar.
+    // KARKOV_A2: the flowers and buds of the karkov - instanced, one mesh for the flowers and one for the buds, along faces
+    // [[x0, z0, x1, z1, nx, nz] ...] (nx, nz - the face's outward normal), at the height yc, skipping the x ranges in `skip` on faces
+    // whose normal is +z (the ramp's place); a molding above and below (y0, y1). Their size and spacing - model choices.
+    const karkovBand = (parent, faces, y0, y1, mat, skip) => {
+      // KARKOV_BIG_A2 (the user: "יותר בולט וגדול"): the flowers and buds 1.4 times as large, standing out 2.6 times as far, a little
+      // farther apart (0.62); the moldings above and below thicker - model choices
+      const yc = (y0 + y1) / 2, sc = Math.min(1, (y1 - y0) / 0.6) * 1.4, D = 2.6 / 1.4;
+      const petal = (k) => { const q = new SphereGeometry(1, 7, 5); q.scale(0.065 * sc, 0.11 * sc, 0.035 * sc * D); q.translate(0, 0.1 * sc, 0.02 * sc * D); q.rotateZ(k * Math.PI * 2 / 5); return q; };
+      const ctr = new SphereGeometry(1, 9, 6); ctr.scale(0.06 * sc, 0.06 * sc, 0.05 * sc * D); ctr.translate(0, 0, 0.035 * sc * D);
+      const gFlower = mergeGeometries([ctr, petal(0), petal(1), petal(2), petal(3), petal(4)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const bud = new SphereGeometry(1, 8, 6); bud.scale(0.05 * sc, 0.12 * sc, 0.045 * sc * D); bud.translate(0, 0.02 * sc, 0.03 * sc * D);
+      const leaf = (s) => { const q = new SphereGeometry(1, 6, 4); q.scale(0.03 * sc, 0.08 * sc, 0.02 * sc * D); q.rotateZ(s * 0.8); q.translate(s * 0.05 * sc, -0.07 * sc, 0.015 * sc * D); return q; };
+      const gBud = mergeGeometries([bud, leaf(-1), leaf(1)].map((q) => { q.deleteAttribute("uv"); return q; }));
+      const pts = [];
+      for (const [x0, z0, x1, z1, nx, nz] of faces) {
+        const L = Math.hypot(x1 - x0, z1 - z0), n = Math.floor(L / 0.62);
+        for (let i = 0; i < n; i++) {
+          const u = (i + 0.5) / n, x = x0 + (x1 - x0) * u, z = z0 + (z1 - z0) * u;
+          if (nz > 0.5 && skip && skip.some(([a, b]) => x > a && x < b)) continue;
+          pts.push([x + nx * 0.005, z + nz * 0.005, Math.atan2(nx, nz), i % 2]);
+        }
+      }
+      const m4 = new Matrix4(), q4 = new Quaternion(), up = new Vector3(0, 1, 0), one = new Vector3(1, 1, 1), ps = new Vector3();
+      for (const kind of [0, 1]) {
+        const list = pts.filter((p) => p[3] === kind), im = new InstancedMesh(kind ? gBud : gFlower, mat, list.length);
+        list.forEach(([x, z, yaw], i) => { q4.setFromAxisAngle(up, yaw); m4.compose(ps.set(x, yc, z), q4, one); im.setMatrixAt(i, m4); });
+        im.instanceMatrix.needsUpdate = true;
+        im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true;
+        parent.add(im);
+      }
+      for (const [x0, z0, x1, z1, nx, nz] of faces) for (const y of [y0, y1 - 0.04]) {   // the moldings
+        const L = Math.hypot(x1 - x0, z1 - z0), b = new Mesh(new BoxGeometry(Math.abs(nx) > 0.5 ? 0.12 : L + 0.24, 0.06, Math.abs(nx) > 0.5 ? L + 0.24 : 0.12), mat);
+        b.position.set((x0 + x1) / 2 + nx * 0.06, y + 0.03, (z0 + z1) / 2 + nz * 0.06);
+        b.userData.noPick = true;
+        parent.add(b);
+      }
+    };
     const YS = 1;                                      // the yesod: 1 out, 1 high (Middot 3:1 "עלה אמה וכנס אמה")
     const SVH = 6;                                     // the sovev's ledge 6 above the floor: 1 + 5 (Middot 3:1 "עלה חמש וכנס אמה")
     const MID = S + 2;                                 // 22: the wall below the sovev, 1 out of the body all round (the sovev's amah)
@@ -123,6 +165,16 @@
     const XW = ACX - MID / 2, XE = ACX + MID / 2;      // 44, 66 (1.3.2): the wall's west and east faces
     const ZN = ACZ - MID / 2, ZS = ACZ + MID / 2;      // -11, 11: its north and south faces
     bodyParts.push(H2.box(defG, MID, SVH, MID, BR, ACX, F, ACZ));   // the wall up to the sovev, y 6..12 (the body stands inside it)
+    {   // KARKOV_A2: its flowers on the four faces, F + 5.1 .. F + 5.96
+      const kg = new Group();
+      kg.name = "karkov";
+      defG.add(kg);
+      // KARKOV_WHITE_A2 (the user's decision 86: "הכרכוב בבית ראשון לבן, כמו בבית שני"): white, its own material - the look switch does
+      // not dress it (until now of the altar's own bronze or stone)
+      const KW = new MeshStandardMaterial({ color: 0xf6f3ea, roughness: 0.8, metalness: 0 });
+      karkovBand(kg, [[XW, ZN, XE, ZN, 0, -1], [XW, ZS, XE, ZS, 0, 1], [XW, ZN, XW, ZS, -1, 0], [XE, ZN, XE, ZS, 1, 0]], F + 5.1, F + 5.96, KW, [[41.3, 57.7]]);
+      ctx.shared.karkov = { mode: "rabbi", set(m) { this.mode = m === "none" ? "none" : "rabbi"; kg.visible = this.mode === "rabbi"; return this.mode; } };
+    }
     bandParts.push(
       H2.box(defG, YO, YS, YS, BRD, ACX, F, ZN - YS / 2),                     // north, the whole side with both corners: x 37.5..61.5, z -12..-11
       H2.box(defG, YS, YS, MID + YS, BRD, XW - YS / 2, F, ACZ + YS / 2),      // west, the whole side with the south-west corner: z -11..12
@@ -158,8 +210,29 @@
 
     // --- four horns 1 x 1 x 1 at the corners (model choice after Ex 27:2; plan after Middot 3:1 "מקום הקרנות אמה מזה ואמה מזה";
     // height 1 a model choice after the altar baraita, Zevachim 54a) ---
+    // HORNS_A2 (fix-a2, 22.11.2026; the user's decisions 47, 49, 80): THE HORNS HOLLOW, a square opening at the top as the booklet
+    // draws it - the Rambam, Beit HaBechirah 2:8 (337:31), of the Second Temple's altar: "וְאַרְבַּע הַקְּרָנוֹת חֲלוּלוֹת הָיוּ מִתּוֹכָן" - in the First Temple too (the user, 00:21). Four walls (a sixth of an amah thick,
+    // a model choice) and the hollow dark within them, half the horn deep. A group whose origin is at the altar's top; height h
+    // over it (and 0.1 sunk into it).
+    const hornHollow = (parent, mat, x, y, z, h, inner) => {
+      const hg = new Group(), T = 0.16, W = 1, H = h + 0.1;
+      hg.position.set(x, y, z);
+      for (const [w, d, ox, oz] of [[W, T, 0, -(W - T) / 2], [W, T, 0, (W - T) / 2], [T, W - 2 * T, -(W - T) / 2, 0], [T, W - 2 * T, (W - T) / 2, 0]]) {
+        const m = new Mesh(new BoxGeometry(w, H, d), mat);
+        m.position.set(ox, H / 2 - 0.1, oz);
+        m.castShadow = m.receiveShadow = true;
+        hg.add(m);
+      }
+      const din = h * 0.55, lin = new Mesh(new BoxGeometry(W - 2 * T - 0.004, din, W - 2 * T - 0.004), inner);   // the hollow: its walls and floor dark (seen from within)
+      lin.material = inner.userData.back || (inner.userData.back = Object.assign(inner.clone(), { side: BackSide }));
+      lin.position.y = h - din / 2 - 0.004;
+      hg.add(lin);
+      parent.add(hg);
+      return hg;
+    };
+    const hornInner = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
     for (const sx of [-1, 1]) for (const sz of [-1, 1])
-      bodyParts.push(H2.box(defG, 1, 1, 1, BR, ACX + sx * (S / 2 - 0.5), TOP, ACZ + sz * (S / 2 - 0.5)));
+      (ctx.shared.__horns || (ctx.shared.__horns = [])).push(hornHollow(defG, BR, ACX + sx * (S / 2 - 0.5), TOP, ACZ + sz * (S / 2 - 0.5), 1, hornInner)), ctx.shared.__horns[ctx.shared.__horns.length - 1].traverse((o) => { if (o.isMesh && o.material === BR) bodyParts.push(o); });   // (__horns: tests)
 
     // (1.0.2 add-on: the band (כרכוב) that stood here at half the height, y 10.75..11.25, 0.2 out of the body, is now the sovev - see
     // "the profile" above; it would have been inside the wall below the sovev anyway.)
@@ -259,9 +332,10 @@
       WAYS.push(WL);
       ctx.layers = ctx.layers || {};
       ctx.layers.rampWays = WL;
-      ctx.labels.push({ text: "״כהנים עולים במזרחו של כבש״", x: ACX + 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#2f7fe0", layer: "rampWays" },
-        { text: "״ויורדין במערבו״", x: ACX - 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#f08a1c", layer: "rampWays" },
-        { text: "״והיום כהן גדול עולה באמצע ויורד באמצע״ (יומא ד, ה)", x: ACX, y: F + RTOP(35.5) + 3.2, z: 35.5, size: 1.0, box: true, rim: "#e2b13c", layer: "rampWays" });
+      const RWI = { info: "יומא ד, ה: ״בכל יום כהנים עולים במזרחו של כבש ויורדין במערבו, והיום כהן גדול עולה באמצע ויורד באמצע״.", refs: [["יומא ד, ה", { book: 55, index: 35 }]] };   // (the labels' own source - they had none)
+      ctx.labels.push({ text: "״כהנים עולים במזרחו של כבש״", x: ACX + 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#2f7fe0", layer: "rampWays", ...RWI },
+        { text: "״ויורדין במערבו״", x: ACX - 6.5, y: F + RTOP(27) + 2.2, z: 27, size: 1.0, box: true, rim: "#f08a1c", layer: "rampWays", ...RWI },
+        { text: "״והיום כהן גדול עולה באמצע ויורד באמצע״ (יומא ד, ה)", x: ACX, y: F + RTOP(35.5) + 3.2, z: 35.5, size: 1.0, box: true, rim: "#e2b13c", layer: "rampWays", ...RWI });
       ctx.shared.features = ctx.shared.features || {};
       ctx.shared.features.rampWays = { key: "rampWays", timed: false, isOn: () => WL.visible, on: () => { for (const w of WAYS) w.visible = true; }, off: () => { for (const w of WAYS) w.visible = false; } };
     }
@@ -778,12 +852,75 @@
       return new CanvasTexture(cv);
     })();
     const smoke = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 24; i++) {   // SMOKE_COLUMN_A2: 24 (7 until then) - thick over the pyre, below the column
       const sp = new Sprite(new SpriteMaterial({ map: smokeTexture, color: 0x8a8a8a, transparent: true, opacity: 0.15, depthWrite: false }));
       sp.renderOrder = 3;
       g.add(sp);
       smoke.push(sp);
     }
+    // SMOKE_COLUMN_A2 (fix-a2, 22.11.2026; the user: "לא פגש עשן עד היום" - the column of smoke of the great pyre; the incense's smoke
+    // is seen): the faint sprites below - a fifth opaque, grey on the pale sky, spread over the whole height - were not seen. Now THE
+    // COLUMN: a strip that turns to the eye about its own upright axis, its smoke drawn by a noise that rises, thick at the pyre and
+    // thinning upward, three amot wide and widening a little; the sprites rise thick over the pyre into it. Its shade follows the
+    // light of the sky (the fog's colour - dark at night), and at its foot the fire lights it. Straight: Yoma 21a (107:456) "ועשן
+    // המערכה, אפילו כל הרוחות שבעולם באות ומנשבות בו — אין מזיזות אותו ממקומו"; Avot 5:5 (78:84) "ולא נצחה הרוח את עמוד העשן"; and
+    // the smoke rises from the fire that men bring, Yoma 21b (107:465-466) "כי קא אמרינן — בדהדיוט". (״מתמר ועולה כמקל״ is said of the
+    // incense's smoke - Yoma 38a, 53a.) Its height, width and shade - model choices.
+    const SMK = { H: 220, W0: 3.2, W1: 11, OP: 0.9, DAYLUM: 0.84 };
+    const smokeColumn = (() => {
+      const geo = new PlaneGeometry(1, 1, 1, 40);
+      geo.translate(0.5, 0.5, 0);   // uv = position: x 0..1 across, y 0..1 up
+      const vs = [
+        "uniform float uH; uniform float uW0; uniform float uW1; varying vec2 vUv;",
+        "void main(){",
+        "  vUv = uv;",
+        "  vec4 base = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);",
+        "  vec3 toCam = cameraPosition - base.xyz; toCam.y = 0.0;",
+        "  float L = length(toCam);",
+        "  vec3 right = L > 1e-4 ? vec3(toCam.z, 0.0, -toCam.x) / L : vec3(1.0, 0.0, 0.0);",
+        "  float w = mix(uW0, uW1, pow(uv.y, 1.4));",
+        "  vec3 wp = base.xyz + right * (uv.x - 0.5) * w + vec3(0.0, uv.y * uH, 0.0);",
+        "  gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);",
+        "}"
+      ].join("\n");
+      const fs = [
+        "varying vec2 vUv; uniform float uTime; uniform float uOp; uniform float uDay; uniform float uFire;",
+        "float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }",
+        "float noise(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f);",
+        "  return mix(mix(hash(i), hash(i+vec2(1.0,0.0)), f.x), mix(hash(i+vec2(0.0,1.0)), hash(i+vec2(1.0,1.0)), f.x), f.y); }",
+        "float fbm(vec2 p){ return noise(p)*0.5 + noise(p*2.03)*0.25 + noise(p*4.1)*0.125 + noise(p*8.3)*0.0625; }",
+        "void main(){",
+        "  float x = vUv.x - 0.5, y = vUv.y;",
+        "  float n = fbm(vec2(x * 3.0 + 7.0, y * 24.0 - uTime * 0.5));",
+        "  float n2 = fbm(vec2(x * 7.0 + 1.3, y * 60.0 - uTime * 1.2));",
+        "  float xs = x + (n - 0.5) * 0.16;",
+        "  float a = exp(-xs * xs * 12.0) * (0.55 + 0.6 * n) * (0.8 + 0.4 * n2);",
+        "  a *= smoothstep(0.0, 0.02, y) * pow(1.0 - y, 1.1);",
+        "  vec3 col = vec3(0.30 + 0.24 * n) * mix(0.16, 1.0, uDay);",
+        "  col += vec3(1.0, 0.42, 0.10) * uFire * (1.0 - smoothstep(0.0, 0.05, y)) * (0.35 + 0.4 * (1.0 - uDay));",
+        "  gl_FragColor = vec4(col, clamp(a * uOp, 0.0, 1.0));",
+        "}"
+      ].join("\n");
+      const mat = new ShaderMaterial({
+        uniforms: { uTime: { value: 0 }, uOp: { value: SMK.OP }, uDay: { value: 1 }, uFire: { value: 1 }, uH: { value: SMK.H }, uW0: { value: SMK.W0 }, uW1: { value: SMK.W1 } },
+        vertexShader: vs, fragmentShader: fs, transparent: true, depthWrite: false, side: DoubleSide, fog: false
+      });
+      const m = new Mesh(geo, mat);
+      m.name = "smokeColumn";
+      m.frustumCulled = false;
+      m.castShadow = m.receiveShadow = false;
+      m.renderOrder = 2;
+      m.userData.noPick = true;
+      m.userData.noFade = true;
+      return m;
+    })();
+    const smokeDay = () => {   // 0 at night .. 1 by day: the fog's colour against the day's (55-tamid.js and the lots' demo darken it)
+      const f = (ctx.scene || {}).fog;
+      if (!f || !f.color) return 1;
+      const c = f.color, lum = 0.3 * c.r + 0.59 * c.g + 0.11 * c.b;
+      return Math.max(0, Math.min(1, lum / SMK.DAYLUM));
+    };
+    g.add(smokeColumn);
     // the ash heap (תפוח) in the middle of the top (model choice, as in the Second Temple model after Tamid 2:2)
     try {
       // 1.3.5 (the user, 10.11.2026: "התפוח שעל המזבח צריך להיות כעין אפר (אותה הצורה רק החומר והצבע משתנים)"): THE ASH - the heap kept
@@ -1051,18 +1188,24 @@
       }
       fireLight.intensity = 23 + 4.5 * Math.sin(s * 9.7) + 2.5 * Math.sin(s * 22.3 + 1.3);
       emberLight.intensity = 5.5 + 1.4 * Math.sin(s * 7.3);
+      // 1.2.8: a straight column, almost no drift. SMOKE_COLUMN_A2: the column (above) carries it up - "ועשן המערכה, אפילו כל הרוחות
+      // שבעולם באות ומנשבות בו — אין מזיזות אותו ממקומו" (Yoma 21a; "מתמר ועולה כמקל", written here until now, is the incense's - Yoma
+      // 38a); the sprites rise thick over the pyre (the lowest 24 amot) into its foot
+      const sday = smokeDay(), sg = 0.33 + 0.25 * sday;
+      smokeColumn.position.set(PX, TOP + 1.2, PZ);
+      { const u = smokeColumn.material.uniforms; u.uTime.value = s; u.uDay.value = sday; }
       for (let i = 0; i < smoke.length; i++) {
         const sp = smoke[i];
-        const p = (s * 0.045 + i / smoke.length) % 1;
-        // 1.2.8: a straight column (Yoma 21b: the smoke of the pyre "מתמר ועולה כמקל" - one of the ten wonders), almost no drift
+        const p = (s * 0.09 + i / smoke.length) % 1;
         sp.position.set(
-          PX + Math.sin(s * 0.55 + i * 1.9 + p * 5) * (0.15 + p * 0.5),
-          TOP + 1.6 + p * 70,
-          PZ + Math.cos(s * 0.5 + i * 2.7 + p * 4) * (0.12 + p * 0.4)
+          PX + Math.sin(s * 0.55 + i * 1.9 + p * 5) * (0.15 + p * 0.35),
+          TOP + 1.6 + p * 24,
+          PZ + Math.cos(s * 0.5 + i * 2.7 + p * 4) * (0.12 + p * 0.3)
         );
-        const sc2 = 2.2 + p * 4.5;
+        const sc2 = 2.0 + p * 3.2;
         sp.scale.set(sc2, sc2, 1);
-        sp.material.opacity = 0.17 * (p < 0.12 ? p / 0.12 : 1 - (p - 0.12) / 0.88);
+        sp.material.color.setRGB(sg, sg, sg);
+        sp.material.opacity = 0.42 * Math.min(1, p / 0.06) * Math.pow(1 - p, 1.2);
       }
     });
 
