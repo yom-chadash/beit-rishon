@@ -1417,7 +1417,7 @@
       prop("tru2", trumpet(), { p: [0, 0, 0], r: [-1.1, 0, 0] }, false);
       prop("cymL", mesh(new CylinderGeometry(0.28, 0.28, 0.03, 16).rotateZ(HP), MAT.bronze), { p: [0, -0.05, 0.05], r: [0, 0, 0] }, false);
       prop("cymR", mesh(new CylinderGeometry(0.28, 0.28, 0.03, 16).rotateZ(HP), MAT.bronze), { p: [0, -0.05, 0.05], r: [0, 0, 0] }, false);
-      prop("flags", (() => { const g = new Group(); g.add(mesh(new CylinderGeometry(0.025, 0.025, 1.1, 6), MAT.wood, 0, 0.5, 0)); g.add(mesh(new PlaneGeometry(0.9, 0.6), MAT.cloth, 0.45, 0.85, 0)); return g; })(), null, false);
+      prop("flags", SH.makeSudar(), null, false);   // SUDAR_A2: the flag (SH.makeSudar, below); until now a pole with a white cloth
       for (let i = 1; i <= 9; i++) {   // LEVITES_211: nine lyres (six until 2.0.1)
         const g = new Group();
         g.add(mesh(new TorusGeometry(0.32, 0.03, 6, 14, Math.PI * 1.3).rotateZ(-0.1), MAT.wood, 0, 0.3, 0));
@@ -2535,7 +2535,14 @@
       a.hold("s13", "p9", "R", 2.8);
       a.walk("s13", [[48.9, onRamp(8)[1] + 0.6], A(59.6, (onRamp(8)[1] + 0.6 - D + 12.2) / 2), A(59.4, 12.0), A(50.8, 9.8), A(46.6, 8.6), A(45.0, 8.05), A(SFALIM_POUR[0], SFALIM_POUR[1])], 3, 7, { carry: true, yaw: 0 });   // EAST_UP_211: up the east side, and at the top to his left, to the south-west horn; SFALIM_303: north of the bowls, to the wine's, facing it
       a.hold("sg", "flags", "R", 0);
-      a.go("sg", A(42.4, 7.4), 0, 6, { hold: true, yaw: -Math.PI * 0.75 });
+      // SUDAR_A2: "הסגן עומד על הקרן" - up onto the south-west horn itself (its top: 40-altar.js, the hollow horns - he stands on its rim,
+      // over the small square mouth), beside it on the altar's top first
+      const HS = (SH.__horns || []).map((h) => { const v = h.getWorldPosition(new Vector3()); return { x: v.x, y: v.y + h.scale.y, z: v.z, h }; }).filter((q) => q.h.visible !== false && (!q.h.parent || q.h.parent.visible !== false));
+      const sw = HS.length ? HS.reduce((b, q) => (q.z - q.x > b.z - b.x ? q : b)) : null;
+      if (sw) {
+        a.go("sg", [sw.x + 1.05, sw.z - 1.05], 0, 6, { hold: true, yaw: -Math.PI * 0.75 });
+        a.at("sg", sw.x, sw.z, -Math.PI * 0.75, 6.3, { y: sw.y });
+      } else a.go("sg", A(42.4, 7.4), 0, 6, { hold: true, yaw: -Math.PI * 0.75 });
       // SHULCHAN_210: the marble table stands by the altar's south-west corner (40-altar.js, ctx2.shared.rampTables - the Ra'avad); the
       // two step up onto it from its west side, and down to it again
       const tb = tableAt("marble"), TTOP = F + tableTop();
@@ -2569,7 +2576,7 @@
       const BOW = [...REST, "b4", "s3", "s4", "mc", "f", "k"];
       for (const k of BOW) a.face(k, -HP, 20.9);
       for (const k of BOW) { a.pose(k, "prostrate", 21.6, 24.6); a.pose(k, "prostrate", 26.6, 29.6); }
-      a.tag("sg", "הסגן — הסודרים", 1, 18);
+      a.tag("sg", "״הסגן עומד על הקרן והסודרין בידו״; ״הניף הסגן בסודרין״ (תמיד ז, ג)", 1, 18);
       a.tag("ba", "בן ארזא — הצלצל", 12, 18);
       a.tag("s13", "הנסכים", 3, 18);
     };
@@ -2864,6 +2871,31 @@
         it.pool.position.set((fR.x + fL.x) / 2, F + 0.012, (fR.z + fL.z) / 2);
       }
     };
+    // SUDAR_A2 (the user: "הגבהת הסודר כמו בחלמיש — שייך גם להדגמת הבוקר"; B-04, B-05): THE DEPUTY'S SUDAR - "הסגן עומד על הקרן
+    // והסודרין בידו... הניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר" (Tamid 7:3, 88:40); its form a flag - the Rambam's
+    // commentary there (575:79) "וסודרין — הם דגלים"; its size, its colour and the way it is held as the booklet draws it: a black cloth
+    // held by its corner, hanging by his side, then raised high and waved. SH.makeSudar() - for both demonstrations (the water's
+    // libation, 57-add208.js, too): a Group whose origin is the corner in the hand, the cloth along its -y (and -x); .userData.tick(t, k) ripples
+    // it (k 0 - still, 1 - waved). Its measures (0.62 x 1.0) and the ripple - model choices.
+    SH.makeSudar = () => {
+      const g = new Group(), W0 = 0.62, L0 = 1.0, geo = new PlaneGeometry(W0, L0, 6, 10);
+      geo.translate(-W0 / 2, -L0 / 2, 0);   // from the corner in the hand along the fingers' way (down by his side; up over the raised hand)
+      const pos = geo.attributes.position, base = Float32Array.from(pos.array);
+      const m = new Mesh(geo, new MeshStandardMaterial({ color: 0x17171c, roughness: 0.9, metalness: 0, side: DoubleSide }));
+      m.castShadow = true;
+      g.add(m);
+      g.userData.tick = (t, k) => {
+        for (let i = 0; i < pos.count; i++) {
+          const x = base[i * 3], y = base[i * 3 + 1], d = Math.hypot(x, y) / L0;
+          pos.array[i * 3 + 2] = (0.03 + 0.16 * k) * d * Math.sin(6.5 * d - (3 + 7 * k) * t) + 0.05 * k * d * d * Math.sin(2.1 * t);
+          pos.array[i * 3] = x * (1 - 0.12 * k * d * (0.5 + 0.5 * Math.sin(4 * t + 3 * d)));
+        }
+        pos.needsUpdate = true;
+        geo.computeVertexNormals();
+      };
+      g.userData.tick(0, 0);
+      return g;
+    };
     const setArm = (A2, v, side) => { A2.sh.rotation.x = v[0]; A2.sh.rotation.z = side * v[1]; A2.el.rotation.x = v[2]; };
     // MUSICIANS_305 (the user, 19.11.2026 21:08: "צריך גם לעשות את הלוויים מנגנים, אותו דבר בעבודת הבוקר. אם הם מנגנים, לא יכולים
     // לעמוד כמו פסלים"): THE PLAYER'S RIGHT HAND on the strings of the instrument in his left (the lyre: seven strings on its face - KINOR7_A2; the
@@ -2964,6 +2996,7 @@
       // BIRKAT_HANDS_A2 (the user: "צריכים להושיט ידיים בדיוק כמו בחלמיש!" - B-07, B-25): in the blessing the arms go up straight before him,
       // about 55 degrees over the level, side by side (POSES.raise); the hands turned so that the palms face forward, to the people, and
       // bent back at the wrist - the fingers up. Elsewhere the hand straight on the arm
+      if (f.id === "sg" && W.props.flags && W.props.flags.o.userData.tick) { const fl = W.props.flags.o; if (fl.visible) fl.userData.tick(p === "wave" ? (s.t || 0) : performance.now() / 1000, p === "wave" ? 1 : 0); }   // SUDAR_A2
       if (f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) { if (p === "raise") A2.wr.rotation.set(-0.64, -sd * Math.PI / 2, 0); else A2.wr.rotation.set(0, 0, 0); }
       if (f.bend) { f.bend.rotation.x = bendA; f.bend.rotation.z = bendZ; }
       if (f.legs) { setLeg(f, -1, legR); setLeg(f, 1, legL); }

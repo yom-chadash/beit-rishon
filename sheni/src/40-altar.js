@@ -90,7 +90,7 @@
     // a model choice) and the hollow dark within them, half the horn deep. A group whose origin is at the altar's top; height h
     // over it (and 0.1 sunk into it).
     const hornHollow = (parent, mat, x, y, z, h, inner) => {
-      const hg = new Group(), T = 0.16, W = 1, H = h + 0.1;
+      const hg = new Group(), T = 0.34, W = 1, H = h + 0.1;   // SUDAR_A2: the mouth a third of the horn (0.32), as the booklet draws it (0.68 until now) - the deputy stands on its rim
       hg.position.set(x, y, z);
       for (const [w, d, ox, oz] of [[W, T, 0, -(W - T) / 2], [W, T, 0, (W - T) / 2], [T, W - 2 * T, -(W - T) / 2, 0], [T, W - 2 * T, (W - T) / 2, 0]]) {
         const m = new Mesh(new BoxGeometry(w, H, d), mat);
