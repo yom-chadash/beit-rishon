@@ -865,7 +865,10 @@
       const SPRING_C = { x: 14, z: 972, yaw: -0.6435, approach: [-14, 952], pool: { dx: 3.6, dz: -55.2, w: 14, d: 9 }, poolAt: [50, 930] };   // { x, z, yaw, approach: [x, z] (the way's end before it), lake (the kit's own: the natural pool, decision 122 b) }
       let springLabel = null;
       if (SPRING_C) {
-        ctx.shared.shiloach1 = { place: SPRING_C };
+        // THE CHANNEL to the pool (the user's 189 a): in the kit's frame, from just inside the natural pool's front to over the great pool's back
+        // wall - a straight line at x 4 (east of the procession's arc and of the man by the fall); built and checked in section 12
+        const CHANNEL_C = { x: 4.0, z0: -3.4, z1: -50.9 };
+        ctx.shared.shiloach1 = { place: SPRING_C, channel: CHANNEL_C };
         // its label over the cliff (its height set when the spring is built, on the ground found then)
         springLabel = { text: "מעיין השילוח", x: SPRING_C.x, y: -36, z: SPRING_C.z, size: 4 };
         (ctx.labels = ctx.labels || []).push(springLabel);
@@ -902,6 +905,7 @@
           // city's wall at one height; not drawn (the coordinator's note: "a thin blue line out of the wall") - the water's way to the pool
           // is not drawn (a question to the user)
           { const rm2 = []; kit.G.traverse((o) => { if (o.isMesh && o.material && o.material.color && o.material.color.getHex() === 0x8fc3ec && o.geometry && o.geometry.type === "PlaneGeometry") rm2.push(o); }); for (const o of rm2) { if (o.parent) o.parent.remove(o); if (o.geometry) o.geometry.dispose(); } SHL.rillHidden = rm2.length; }
+          { const CHANNEL_C = (ctx.shared.shiloach1 && ctx.shared.shiloach1.channel) || { x: 4.0, z0: -3.4, z1: -50.9 }; const rmC = []; kit.G.traverse((o) => { if (!o.isMesh || !o.geometry || o === kit.G) return; if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); const r = o.geometry.boundingSphere.radius * Math.max(o.scale.x, o.scale.y, o.scale.z); if (r > 2.2) return; const p = o.position; if (Math.abs(p.x - CHANNEL_C.x) < 1.5 && p.z < -2.4 && p.z > CHANNEL_C.z1 - 1.2) rmC.push(o); }); for (const o of rmC) if (o.parent) o.parent.remove(o); SHL.chCleared = rmC.length; }   // CHANNEL_189
           mergeStatic(kit.G);
           kit.setBottom(basinY);
           const fp = Wl(0, -0.5);   // where the fall comes down (fallZ: 0.5 before the face)
@@ -916,6 +920,7 @@
           SHL.camLow = Math.min(-27.5, gy - 3);
           if (springLabel) { const lq = Wl(0, 3.5); par_moveLabel(ctx, springLabel, lq[0], gy + 18, lq[1]); }
           ctx.shared.camLow = SHL.camLow;
+          try { const IRD = ctx.shared.irDavid; if (IRD && fnc(IRD.buildChannel)) IRD.buildChannel(); } catch (e) { console.warn("[parallels] channel", e && e.message); }
         } catch (e) { console.warn("[parallels] shiloach spring", e && e.message); SHL.spring = null; }
         return SHL.spring;
       };
@@ -1555,6 +1560,55 @@
       };
       // THE CITY: the ridge, the houses, the wall (its breach before Solomon; Hezekiah's second wall and the pool between the walls), the
       // fortress of Zion and its tower (the row "מצודת ציון"), the stairs down from the city (Nehemiah 3:15), David's house and the ark's tent
+      // ---- THE CHANNEL from the spring to the Shiloach pool (the user's 189 a): "יען כי מאס העם הזה את מי השלח ההלכים לאט" (Isaiah 8:6,
+      // 12:167) - an open channel built of stone, narrow and shallow, its water going slowly; on the drawn ground (the terrain's own grid, and
+      // the city's ground when it is built), its water level going down all the way (0.6 in a hundred) to over the great pool's back wall;
+      // where it meets the city's wall, a small opening in the wall. Its course and form - model choices.
+      const triAt = (A, x0, z0, nx, nz, dx, dz, x, z) => { const fx = (x - x0) / dx, fz = (z - z0) / dz, ix = Math.max(0, Math.min(nx - 1, Math.floor(fx))), iy = Math.max(0, Math.min(nz - 1, Math.floor(fz))), u = fx - ix, v = fz - iy, W1 = nx + 1, ia = ix + W1 * iy, ib = ix + W1 * (iy + 1), ic = ix + 1 + W1 * (iy + 1), id = ix + 1 + W1 * iy; return u + v <= 1 ? A(ia) + u * (A(id) - A(ia)) + v * (A(ib) - A(ia)) : A(ic) + (1 - u) * (A(ib) - A(ic)) + (1 - v) * (A(id) - A(ic)); };
+      let TERR;   // the terrain's mesh (20-mount.js: 5200 wide, its vertices in the world's coordinates)
+      const terrI = (x, z) => {
+        if (TERR === undefined) { TERR = null; try { ctx.root.traverse((o) => { if (!TERR && o.isMesh && o.geometry && o.geometry.parameters && o.geometry.parameters.width === 5200) TERR = o; }); } catch (_) {} }
+        if (!TERR) return TH(x, z);
+        const P = TERR.geometry.parameters, A = TERR.geometry.attributes.position;
+        return triAt((i) => A.getY(i) + TERR.position.y, A.getX(0) + TERR.position.x, A.getZ(0) + TERR.position.z, P.widthSegments, P.heightSegments, P.width / P.widthSegments, P.height / P.heightSegments, x, z);
+      };
+      const cityH = (x, z) => { const G3 = ML.gridh; if (!G3) return -Infinity; return Math.max(triAt((i) => G3.a[i], G3.x0, G3.z0, G3.nx, G3.nz, G3.dx, G3.dz, x, z), triAt((i) => G3.b[i], G3.x0, G3.z0, G3.nx, G3.nz, G3.dx, G3.dz, x, z)); };
+      const drawnH = (x, z) => Math.max(terrI(x, z), cityH(x, z));
+      const CHP = { ds: 1.0, slope: 0.006, wIn: 0.8, wall: 0.34, free: 0.15, floor: 0.3 };
+      const chProf = () => {
+        const S1 = ctx.shared.shiloachSpring1, C1 = ctx.shared.shiloach1 && ctx.shared.shiloach1.channel;
+        if (!S1 || !S1.kit || !S1.kit.pool || !C1 || !fnc(S1.Wl)) return null;
+        const a = S1.Wl(C1.x, C1.z0), b = S1.Wl(C1.x, C1.z1), L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(2, Math.round(L / CHP.ds)), ux = (b[0] - a[0]) / L, uz = (b[1] - a[1]) / L, px = -uz, pz = ux;
+        const pts = [], gmax = [], gmin = [];
+        for (let i = 0; i <= n; i++) { const x = a[0] + (b[0] - a[0]) * i / n, z = a[1] + (b[1] - a[1]) * i / n; let hi = -Infinity, lo = Infinity; for (const o of [-0.7, 0, 0.7]) { const xx = x + px * o, zz = z + pz * o; hi = Math.max(hi, drawnH(xx, zz)); lo = Math.min(lo, terrI(xx, zz)); } pts.push([x, z]); gmax.push(hi); gmin.push(lo); }
+        const W = new Array(n + 1), rim = S1.kit.pool.rim;
+        W[n] = Math.max(rim + CHP.floor + 0.04, gmax[n] - CHP.free);   // over the great pool's back wall
+        for (let i = n - 1; i >= 0; i--) W[i] = Math.max(gmax[i] - CHP.free, W[i + 1] + CHP.slope * (L / n));   // down all the way; its edge not under the ground
+        const lake = S1.kit.lake ? S1.kit.lake.y : S1.kit.basinY;
+        return { a, b, L, n, ux, uz, px, pz, pts, gmax, gmin, W, rim, lake, yaw: -Math.atan2(uz, ux) };
+      };
+      let CHG = null;
+      const buildChannel = () => {
+        const P = chProf(); if (!P) return null;
+        if (CHG) { g.remove(CHG); CHG.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
+        CHG = new Group(); CHG.name = "shiloachChannel1"; g.add(CHG);
+        const st = [], wa = [], half = CHP.wIn / 2 + CHP.wall / 2;
+        for (let i = 0; i < P.n; i++) {
+          const [x0, z0] = P.pts[i], [x1, z1] = P.pts[i + 1], cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, Wm = (P.W[i] + P.W[i + 1]) / 2, len = P.L / P.n + 0.03;
+          const bot = Math.min(Wm - CHP.floor - 0.15, Math.min(P.gmin[i], P.gmin[i + 1]) - 0.25), top = Wm + CHP.free;
+          for (const sd of [-1, 1]) st.push([cx + P.px * sd * half, bot, cz + P.pz * sd * half, len, top - bot, CHP.wall, P.yaw]);   // its two stone sides
+          st.push([cx, bot, cz, len, Wm - CHP.floor - bot, CHP.wIn + 0.02, P.yaw]);   // its stone bed
+          wa.push([cx, Wm - 0.03, cz, len, 0.03, CHP.wIn, P.yaw]);   // the water
+        }
+        instBoxes(CHG, st, ML.chStone || (ML.chStone = new MeshStandardMaterial({ color: 0x8f7e62, roughness: 0.95 })), "shiloachChannelStone");   // a darker stone than the sand round it
+        if (!ML.chTex) { const cv = document.createElement("canvas"); cv.width = 64; cv.height = 16; const c2 = cv.getContext("2d"); c2.fillStyle = "#3f86c8"; c2.fillRect(0, 0, 64, 16); for (let k = 0; k < 9; k++) { c2.fillStyle = "rgba(220,240,255," + (0.18 + 0.2 * Math.random()) + ")"; c2.fillRect(Math.random() * 64, Math.random() * 16, 10 + Math.random() * 16, 1.2); } ML.chTex = new CanvasTexture(cv); ML.chTex.wrapS = ML.chTex.wrapT = RepeatWrapping; }
+        const wm = new MeshStandardMaterial({ color: 0xffffff, map: ML.chTex, transparent: true, opacity: 0.82, roughness: 0.08, metalness: 0.05 });
+        const wim = instBoxes(CHG, wa, wm, "shiloachChannelWater"); wim.castShadow = false; wim.renderOrder = 2;
+        CHG.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+        ML.channel = P;
+        return P;
+      };
+      ctx.animated.push(() => { if (ML.chTex && CHG && CHG.visible) ML.chTex.offset.x -= 0.0016; });   // the water going slowly ("ההלכים לאט")
       const buildCity = () => {
         if (ML.city) return;
         ML.city = true;
@@ -1571,7 +1625,7 @@
           for (let i = 0; i < ps.count; i++) { const x = ps.getX(i) + (x0 + x1) / 2, z = ps.getZ(i) + (z0 + z1) / 2; hts[i] = ridgeH(x, z); ins[i] = inPoly(x, z) ? 1 : 0; }
           const geoS = geo.clone(), psS = geoS.attributes.position;
           for (let i = 0; i < ps.count; i++) { ps.setY(i, ins[i] ? hts[i] : hts[i] - 0.6); psS.setY(i, ins[i] ? hts[i] - 0.25 : hts[i]); }
-          GRIDH = { x0, z0, nx, nz, dx: (x1 - x0) / nx, dz: (z1 - z0) / nz, a: Float32Array.from({ length: ps.count }, (_, i) => ps.getY(i)), b: Float32Array.from({ length: ps.count }, (_, i) => psS.getY(i)) };
+          GRIDH = { x0, z0, nx, nz, dx: (x1 - x0) / nx, dz: (z1 - z0) / nz, a: Float32Array.from({ length: ps.count }, (_, i) => ps.getY(i)), b: Float32Array.from({ length: ps.count }, (_, i) => psS.getY(i)) }; ML.gridh = GRIDH;
           geo.computeVertexNormals(); geoS.computeVertexNormals();
           const sm2 = new Mesh(geoS, new MeshStandardMaterial({ color: 0x8c7653, roughness: 1 })); sm2.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); sm2.receiveShadow = true; sm2.userData.noPick = true; sm2.name = "irDavidSlopes"; CG.add(sm2);
           const rm = new Mesh(geo, new MeshStandardMaterial({ color: 0xcdb88f, roughness: 1 })); rm.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); rm.receiveShadow = true; rm.userData.noPick = true; CG.add(rm);
@@ -1686,12 +1740,12 @@
         const wallG = new Group(), breachFill = new Group(), outer = new Group(), towers = new Group(); CG.add(wallG, breachFill, outer, towers);
         // a stretch of wall from its foot (the ground at the outline) to WH over the highest ground just inside it (the city stands behind it)
         const cxm = (IR_C.W + IR_C.E) / 2, czm = (IR_C.N + IR_C.tip[1]) / 2;
-        const seg = (parent, ax, az, bx, bz, h, t, out) => {
+        const seg = (parent, ax, az, bx, bz, h, t, out, ybOver) => {
           const L = Math.hypot(bx - ax, bz - az); let nx = -(bz - az) / L, nz = (bx - ax) / L; if (nx * (cxm - (ax + bx) / 2) + nz * (czm - (az + bz) / 2) < 0) { nx = -nx; nz = -nz; }
           const g0 = Math.min(TH(ax, az), TH(bx, bz), TH((ax + bx) / 2, (az + bz) / 2));
           let hi = -Infinity;
           for (const u of [0, 0.15, 0.3, 0.5, 0.7, 0.85, 1]) { const x = ax + (bx - ax) * u, z = az + (bz - az) * u; hi = Math.max(hi, out ? groundAt(x, z) : ridgeH(x + nx * 1.6, z + nz * 1.6)); }   // on the brow: the plateau just inside
-          const yb = g0 - 1.5, top = hi + (out ? h : 6.5);
+          const yb = ybOver != null ? ybOver : g0 - 1.5, top = hi + (out ? h : 6.5);
           const m = H2.box(parent, L + t * 0.6, top - yb, t, wallM, (ax + bx) / 2, yb, (az + bz) / 2); m.rotation.y = -Math.atan2(bz - az, bx - ax); return m;
         };
         for (let i = 0; i < POLY.length; i++) {
@@ -1703,6 +1757,22 @@
             seg(breachFill, xAt(breach.z0), breach.z0, xAt(breach.z1), breach.z1, WH, WT);
             ML.breachAt = [xAt((breach.z0 + breach.z1) / 2), (breach.z0 + breach.z1) / 2];
             segs.push([ax, az, bx, bz]); continue;
+          }
+          // the channel's opening (CHANNEL_189): where the channel crosses this stretch, the wall in two, and over the opening the wall from a
+          // little above the channel's edge
+          const CP = chProf();
+          if (CP) {
+            const ex = bx - ax, ez = bz - az, dx2 = CP.b[0] - CP.a[0], dz2 = CP.b[1] - CP.a[1], den = ex * dz2 - ez * dx2;
+            if (Math.abs(den) > 1e-6) {
+              const sE = ((CP.a[0] - ax) * dz2 - (CP.a[1] - az) * dx2) / den, tC = ((CP.a[0] - ax) * ez - (CP.a[1] - az) * ex) / den;
+              if (sE > 0.05 && sE < 0.95 && tC > 0 && tC < 1) {
+                const Le = Math.hypot(ex, ez), sinA = Math.abs(ex * dz2 - ez * dx2) / (Le * Math.hypot(dx2, dz2)), cosA = Math.sqrt(Math.max(0, 1 - sinA * sinA)), half = ((CHP.wIn + 2 * CHP.wall) / sinA + WT * cosA / Math.max(0.2, sinA)) / 2 + 0.3, g2 = (half + WT * 0.3) / Le, s0 = sE - g2, s1 = sE + g2, i2 = Math.round(tC * CP.n), topC = CP.W[i2] + CHP.free;
+                seg(wallG, ax, az, ax + ex * s0, az + ez * s0, WH, WT); seg(wallG, ax + ex * s1, az + ez * s1, bx, bz, WH, WT);
+                // (the opening: the channel's width across the wall's slant, and its thickness; over it the wall, from a little above the channel)
+                const sb0 = sE - half / Le, sb1 = sE + half / Le; seg(wallG, ax + ex * sb0, az + ez * sb0, ax + ex * sb1, az + ez * sb1, WH, WT, false, topC + 0.8);
+                ML.chOpening = [ax + ex * sE, az + ez * sE, topC + 0.8]; segs.push([ax, az, bx, bz]); continue;
+              }
+            }
           }
           seg(wallG, ax, az, bx, bz, WH, WT); segs.push([ax, az, bx, bz]);
         }
@@ -1783,6 +1853,7 @@
           const tx2 = dx2 + 24, tz2 = dz2 + 2, ty2 = footMin(tx2, tz2, 11, 8, 0, 4)[0] - 0.2; const tm2 = new Mesh(new ConeGeometry(4.2, 5.5, 4, 1, true).rotateY(Math.PI / 4).translate(0, 2.75, 0), tentMs[0]); tm2.position.set(tx2, ty2, tz2); tm2.scale.set(1.4, 1, 1); tm2.castShadow = true; arkTent.add(tm2); ML.arkAt = [tx2, ty2, tz2]; }
         CG.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
         ML.cityParts = { wallG, breachFill, outer, towers, fortG, towerG, stairG, davidG, arkTent };
+        try { buildChannel(); } catch (e) { console.warn("[parallels] channel", e && e.message); }
         applyMillo();
       };
       const ensure = () => { if (!IR.visible) return; if (!ML.parts && !ML.failed) { try { buildMillo(); applyMillo(); } catch (e) { console.warn("[parallels] millo", e && e.message); ML.err = String(e && e.stack || e).slice(0, 300); ML.parts = null; ML.failed = true; } } if (!ML.city) { try { const t0 = performance.now(); buildCity(); ML.buildMs = Math.round(performance.now() - t0); } catch (e) { console.warn("[parallels] ir david", e && e.message); ML.errC = String(e && e.stack || e).slice(0, 300); } } };
@@ -1790,13 +1861,14 @@
       const setLayer = (on) => {
         IR.visible = !!on;
         if (on) {
-          ensure();
-          // the spring and the Shiloach pool are at the city's south-west corner (117): built with the city, not only when the eye comes near
+          // the spring and the Shiloach pool are at the city's south-west corner (117): built with the city, not only when the eye comes near -
+          // first, so that the channel's opening in the wall is known when the wall is built
           try { const D1 = ctx.shared.shiloachDemo1; if (D1 && fnc(D1.spring)) D1.spring(); } catch (e) { console.warn("[parallels] ir david spring", e && e.message); }
+          ensure();
         }
         return IR.visible;
       };
-      ctx.shared.irDavid = { get on() { return IR.visible; }, set: setLayer, millo: MILLO_C, ground: (x, z) => ridgeH(x, z), poly: () => IR_C.poly, stats: () => ({ houses: ML.cityCount || 0, terraces: ML.terraceCount || 0, courts: ML.courtCount || 0, flights: ML.stepFlights || 0, check: ML.chk || null, milloCheck: ML.milloChk || null, millo: !!ML.parts, err: ML.err, errC: ML.errC, buildMs: ML.buildMs }) };
+      ctx.shared.irDavid = { get on() { return IR.visible; }, set: setLayer, millo: MILLO_C, ground: (x, z) => ridgeH(x, z), buildChannel: () => buildChannel(), channel: () => ML.channel || null, drawnH: (x, z) => drawnH(x, z), poly: () => IR_C.poly, stats: () => ({ houses: ML.cityCount || 0, terraces: ML.terraceCount || 0, courts: ML.courtCount || 0, flights: ML.stepFlights || 0, check: ML.chk || null, milloCheck: ML.milloChk || null, millo: !!ML.parts, err: ML.err, errC: ML.errC, buildMs: ML.buildMs }) };
       ctx.shared.millo = {
         get form() { return ML.form; }, get time() { return ML.time; },
         setForm(f) { ML.form = f === "tel" ? "tel" : "plaza"; applyMillo(); return ML.form; },
