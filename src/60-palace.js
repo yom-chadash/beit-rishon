@@ -1455,7 +1455,7 @@
     H.box(g, NW, 20, TZ0 - NZ, M.stone, X, -30, (TZ0 + NZ) / 2);                       // causeway y -30..-10
     // ASCENT2_D (fix-d, 22.11.2026 - the user's decision 142 א): TWO READINGS of the ascent, the row "העלייה מבית המלך אל בית ה׳"
     // (ctx.shared.palaceAscent.set("stairs" | "almug")). "stairs" (the default, as until now) - Rashi on II Chr 9:11 (book 3662 line 335)
-    // "מסלות. מדרגות; ובמלכים כתיב 'מסעד', כדרך שעושין לעולין בדרך מעלות ומדרגות", and 9:4 (3662 line 328) "מסלות עליותיו אשר יעלה
+    // "מסלות. מדרגות; ובמלכים (מלכים א י:יב) כתיב ״מסעד״, כדרך שעושין לעולין בדרך מעלות ומדרגות", and 9:4 (3662 line 328) "מסלות עליותיו אשר יעלה
     // עליהם מביתו לבית ה'": the stone stair and the landing. "almug" - the Ralbag on I Kings 10:12 (3645 line 443) "שבעליה אשר יעלה בה בית
     // ה' מבית המלך עשה כדמות מעקה מעצי האלמוגים שיסמך האדם בהם במסלתו בזאת העליה... כי לא היו בהם מעלות", the Malbim on 10:11 (3394
     // line 612) "לפי שהיתה כולה מעצי אלמגים", the Abarbanel (3574 lines 224, 555) "העלייה אשר עשה מביתו אל בית השם מעצי אלמוגים": a
