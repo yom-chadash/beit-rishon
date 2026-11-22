@@ -1865,14 +1865,15 @@
       a.set("kidWater", 12, 9.2); a.set("kidWater", 0, 15);
       a.fx("water", 9.2);
       if (TM.kidd === "ryose") {
-        // KIDDUSH_RYOSE_A2: "וחבירו מסייעו" (Zevachim 19b, 130:755) - each of the twelve, standing on one foot, is held by a fellow: at his
-        // right (away from the laver), his face to him, his hands on his side and back. Who the fellows are and where they stand - model choices
-        const HELP = ["b1", "b2", "b3", "b4", "t", "mc", "k", "f", "e", "s13", "sg", "cv"];
-        HELP.forEach((h, i) => {
-          const q = KID.flatSpot(i), side = [q.p[0] - Math.cos(q.yaw) * 0.72, q.p[1] + Math.sin(q.yaw) * 0.72];
-          a.go(h, side, 0.4 + i * 0.12, 7.6 + i * 0.12, { yaw: q.yaw + HP });
-          a.pose(h, "support", 8.4 + (i % 3) * 0.1, 15.4);
-        });
+        // KIDDUSH_RYOSE_A2: "וחבירו מסייעו" (Zevachim 19b, 130:755) - the one at the upper spout (s1), standing on one foot, is held by
+        // a fellow (b1): at his right (away from the laver), his face to him, his hands on his side and back. KIDDUSH_HELP1_A2 (the user's
+        // decision 120 b, via the coordinator: "חבר אחד בלבד, אצל הכהן שבדד העליון. שאר האחד עשר מקדשים בלי חבר מצויר") - until now a
+        // fellow for each of the twelve. Who he is and where he stands - model choices
+        {
+          const q = KID.flatSpot(0), side = [q.p[0] - Math.cos(q.yaw) * 0.72, q.p[1] + Math.sin(q.yaw) * 0.72];
+          a.go("b1", side, 0.4, 7.6, { yaw: q.yaw + HP });
+          a.pose("b1", "support", 8.4, 15.4);
+        }
         a.tag("b1", "״וחבירו מסייעו״ (זבחים יט:) — לרבי יוסי ברבי יהודה", 8.6, 15.4);
         a.tag("s4", "״מניח שתי ידיו זו על גב זו, ועל גבי שתי רגליו זו על גבי זו״ (זבחים יט:)", 8.6, 15.4);
       }
@@ -2893,7 +2894,7 @@
           // flat on the back of its foot (the kit's kidHands - the same in the First Temple); until now each hand on the front of its leg
           // as low as it reached (kidReach, KB)
           // KIDDUSH_RYOSE_A2 (the user's decision 82 c): in Rabbi Yose b. R. Yehuda's reading the twelve stand on the left foot, the right
-          // laid on it, and the hands one on the other above (the kit's kidHands "ryose"); each one's fellow holds him (SC.kiyor12)
+          // laid on it, and the hands one on the other above (the kit's kidHands "ryose"); the one at the upper spout held by his fellow (SC.kiyor12)
           const md = TM.kidd === "ryose" && /^s\d+$/.test(f.id) ? "ryose" : "tk";
           const u = smooth(clamp(t / 0.8, 0, 1)), H = SH.priestKit.kidHands(f, setArm, md), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
           R = mix(POSES.stand[0], H.arm[-1]); Lv = mix(POSES.stand[1], H.arm[1]); lean = 0; bendA = H.th * u; kidU = u; kidH = H;
