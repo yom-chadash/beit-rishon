@@ -237,10 +237,12 @@
       let v = 0;
       if (x > CO2.harE) v += 32 * Math.exp(-((((x - CO2.harE) - 150) / 85) ** 2));
       // (no slope on the south here: Solomon's palace stands there on its terrace - 60-palace.js reads the ground under it)
-      if (x < CO2.harW) v += 24 * Math.exp(-((((CO2.harW - x) - 110) / 70) ** 2));
+      // VALLEYS_188: faded in over the first 5 amot west of the wall's line (until now a step of 2 amot along x = harW south of the mount,
+      // hidden by the terrain's 23.6-amot cells - the valleys' small cells would draw it; no vertex of the terrain's grid lies in those 5 amot)
+      if (x < CO2.harW) v += 24 * Math.exp(-((((CO2.harW - x) - 110) / 70) ** 2)) * sm(0, 5, CO2.harW - x);
       return v;
     };
-    const terrainH = (x, z) => {
+    const terrainH0 = (x, z) => {
       const d = rectDist(x, z);
       const ramp = sm(70, 380, d);
       let h = bump(x, z, 1100, 30, 460, 950, 190) + bump(x, z, -700, 620, 420, 330, 130) + bump(x, z, -560, -760, 460, 380, 100) + bump(x, z, 220, 1350, 560, 320, 130) + bump(x, z, 380, -1380, 620, 360, 120);
@@ -248,19 +250,100 @@
       const rim = sm(1500, 2500, Math.hypot(x - CX, z - CZ)) * 260;
       return GROUND_Y + ramp * Math.max(h * 0.2, -5) + rim * 0.15 * ramp - sm(35, 100, d) * valley(x, z);
     };
+    // VALLEYS_188 (fix-f, 22.11.2026 - the coordinator's task 188: "להעמיק את הקרקע סביב עיר דוד... את הגיא ממערב ואת הנחל (קדרון)
+    // ממזרח, כך שעיר דוד תיראה באמת כרכס בולט, גם ממערב ומרחוק"): until now the ground round the City of David lay 20 to 27 under the
+    // mount's top, and the city's spine (-11 by the king's terrace, under it, down to about -21 at its tip) stood only about ten amot over
+    // it. Now a valley runs west of the city (the gai) and one east of it (the nachal), meeting south of its tip: each along its axis
+    // (VAL.W / VAL.E), its floor at a fixed height going down southward (floor: [z, y] - about 20 under the old ground), its far bank a
+    // long, low bell curve from the floor's edge; on the city's side the ground goes down over VAL_BANK amot from the nearest thing that
+    // keeps its ground. NOT CARVED (mask): the city itself - inside
+    // its wall's outline and a few amot out (its wall and towers; in the north-west, Hezekiah's other wall 14 out and the pool between the
+    // two walls - 59-parallels.js), the king's terrace with its stairs (60-palace.js), the spring with the way's end and the water's way
+    // into the city, and the way of the water-drawing procession down to the spring (its ground as before; the valley beside it).
+    // The depths, the widths and the axes - no source gives them: a model choice for the look (the city on its ridge).
+    const VAL = {
+      city: [[0, 690], [210, 690], [222, 770], [210, 859.6], [165, 950], [105, 1010], [45, 950], [-5, 859.6], [-12, 770]],   // = 59-parallels.js POLY (IR_C: N 690, W 0, E 210, tip [105, 1010])
+      W: { axis: [[-172, 470], [-134, 560], [-108, 700], [-101, 860], [-90, 970], [-34, 1068], [105, 1132], [110, 1250], [112, 1460]], z0: 470, z1: 640,
+        floor: [[470, -32], [700, -46], [900, -49], [1060, -51], [1132, -52], [1210, -40], [1300, -22], [1400, -9], [1460, -3]], fw: 10, near: 45, far: 90, city: -1 },
+      E: { axis: [[310, 590], [302, 700], [298, 780], [288, 870], [256, 975], [190, 1082], [105, 1132], [110, 1250], [112, 1460]], z0: 590, z1: 720,
+        floor: [[590, -38], [700, -48], [900, -50], [1060, -51], [1132, -52], [1210, -40], [1300, -22], [1400, -9], [1460, -3]], fw: 10, near: 45, far: 110, city: 1 },
+      // south of the tip the two meet (105, 1132) and go on southward as one, its floor going up the hill there, its banks narrower
+      terrace: [10, 196, 352.5, 697],   // the king's terrace (60-palace.js TX0..TX1, TZ0..TZ1) and its stairs down southward (to TZ1 + 24)
+      spring: [[[14, 972], [-14, 952]], [[14, 972], [50, 930]]],   // the spring (59-parallels.js SPRING_C) - to the way's end, and to the pool of the Shiloach
+      path: [[-165, 345], [-110, 400], [-60, 560], [-36, 720], [-30, 860], [-14, 952]]   // the procession's way (59-parallels.js valley())
+    };
+    const val_sstep = (u) => { const v = Math.max(0, Math.min(1, u)); return v * v * (3 - 2 * v); };
+    // the nearest point of a polyline (closed: a polygon): VN = { d, ex, ez, cr (the side: the cross product's sign) } - one object, filled
+    // again by each call (read it before the next call); val_dist - the distance alone. (No allocations: they run some 100,000 times.)
+    const VN = { d: 0, ex: 0, ez: 0, cr: 0 };
+    const val_near = (x, z, P, closed) => {
+      let bd = Infinity, bx2 = x, bz2 = z, bc = 0;
+      const n = P.length, m = closed ? n : n - 1;
+      for (let i = 0; i < m; i++) {
+        const A = P[i], B = P[(i + 1) % n], ax = A[0], az = A[1], vx = B[0] - ax, vz = B[1] - az;
+        let t = ((x - ax) * vx + (z - az) * vz) / (vx * vx + vz * vz); t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const qx = ax + vx * t, qz = az + vz * t, d2 = (x - qx) * (x - qx) + (z - qz) * (z - qz);
+        if (d2 < bd) { bd = d2; bx2 = qx; bz2 = qz; bc = vx * (z - az) - vz * (x - ax); }
+      }
+      VN.d = Math.sqrt(bd); VN.ex = bx2; VN.ez = bz2; VN.cr = Math.sign(bc);
+      return VN;
+    };
+    const val_dist = (x, z, P) => {
+      let bd = Infinity;
+      for (let i = 0; i < P.length - 1; i++) {
+        const A = P[i], B = P[i + 1], ax = A[0], az = A[1], vx = B[0] - ax, vz = B[1] - az;
+        let t = ((x - ax) * vx + (z - az) * vz) / (vx * vx + vz * vz); t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const dx = x - ax - vx * t, dz = z - az - vz * t, d2 = dx * dx + dz * dz;
+        if (d2 < bd) bd = d2;
+      }
+      return Math.sqrt(bd);
+    };
+    const val_in = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const xi = P[i][0], zi = P[i][1], xj = P[j][0], zj = P[j][1]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
+    const val_lerp = (T, z) => { if (z <= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (z <= T[i][0]) { const z0 = T[i - 1][0], y0 = T[i - 1][1]; return y0 + (T[i][1] - y0) * (z - z0) / (T[i][0] - z0); } return T[T.length - 1][1]; };
+    const val_one = (V, x, z, h0) => {   // one valley's carving at (x, z), over the old ground h0
+      // (the floor's height, the weight and the far bank's width go by the point's own z, not by its nearest point on the axis: on the
+      // inner side of a bend the nearest point jumps from one stretch to the next, and the ground would jump with it)
+      const w = val_sstep((z - V.z0) / (V.z1 - V.z0)) * (1 - val_sstep((z - 1400) / 60));
+      if (w <= 0) return 0;
+      const N = val_near(x, z, V.axis, false), r = N.d - V.fw, bw = N.cr * V.city > 0 ? V.near : V.far + (60 - V.far) * val_sstep((z - 1060) / 80), p = r <= 0 ? 1 : Math.exp(-((r / bw) ** 2));
+      return Math.max(0, h0 - val_lerp(V.floor, z)) * p * w;
+    };
+    // the mask: by the distance from the nearest thing that keeps its ground (the city with its margin, the terrace, the spring, the way);
+    // the ground goes down from there to the valley's floor over VAL_BANK amot (one smooth step - no cliff where two ramps meet)
+    const VAL_BANK = 60;
+    const val_mask = (x, z) => {   // 0 where the ground stays as it was, 1 where the valleys are carved in full
+      if (val_in(x, z, VAL.city)) return 0;
+      const E = val_near(x, z, VAL.city, true), hz = (1 - val_sstep((E.ex - 25) / 30)) * (1 - val_sstep((E.ez - 862) / 16));   // the north-west: Hezekiah's wall
+      let d = E.d - (4 + 15 * hz);
+      const T = VAL.terrace, tx = Math.max(T[0] - x, x - T[1], 0), tz = Math.max(T[2] - z, z - T[3], 0);
+      d = Math.min(d, Math.sqrt(tx * tx + tz * tz) - 8);
+      d = Math.min(d, val_dist(x, z, VAL.spring[0]) - 18, val_dist(x, z, VAL.spring[1]) - 18);
+      d = Math.min(d, val_dist(x, z, VAL.path) - 7);
+      return val_sstep(d / VAL_BANK);
+    };
+    const valCarve = (x, z, h0) => {
+      if (z < 440 || z > 1460 || x < -420 || x > 640) return 0;
+      const c = Math.max(val_one(VAL.W, x, z, h0), val_one(VAL.E, x, z, h0));
+      return c > 0.005 ? c * val_mask(x, z) : 0;
+    };
+    const terrainH = (x, z) => { const h0 = terrainH0(x, z); return h0 - valCarve(x, z, h0); };
     ctx.shared.terrainH = terrainH;   // CITY_C (fix-c, 22.11.2026): the ground's height, for the City of David's ridge (59-parallels.js)
+    ctx.shared.valleys188 = { VAL, carve: (x, z) => valCarve(x, z, terrainH0(x, z)), mask: val_mask, terrainH0 };   // for the checks (VALLEYS_188)
     try {
       const SIZE = 5200, SEG = 220;
       const geo = new PlaneGeometry(SIZE, SIZE, SEG, SEG);
       geo.rotateX(-Math.PI / 2);
       const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+      const colAt = (x, z, h, out, o) => {
+        const k = 0.86 + fbm(x * 0.02, z * 0.02) * 0.2, up = sm(-20, 160, h - GROUND_Y);
+        out[o] = Math.min(1, k * (0.93 - up * 0.03));
+        out[o + 1] = Math.min(1, k * (0.94 - up * 0.03));
+        out[o + 2] = Math.min(1, k * (0.84 - up * 0.04));
+      };
       for (let i = 0; i < pos.count; i++) {
         const x = pos.getX(i) + CX, z = pos.getZ(i) + CZ, h = terrainH(x, z);
         pos.setXYZ(i, x, h, z);
-        const k = 0.86 + fbm(x * 0.02, z * 0.02) * 0.2, up = sm(-20, 160, h - GROUND_Y);
-        col[i * 3] = Math.min(1, k * (0.93 - up * 0.03));
-        col[i * 3 + 1] = Math.min(1, k * (0.94 - up * 0.03));
-        col[i * 3 + 2] = Math.min(1, k * (0.84 - up * 0.04));
+        colAt(x, z, h, col, i * 3);
       }
       geo.setAttribute("color", new BufferAttribute(col, 3));
       geo.attributes.uv.array.forEach((v, i, arr) => arr[i] = v * SIZE);
@@ -271,6 +354,125 @@
       const terrain = new Mesh(geo, tm);
       terrain.receiveShadow = true;
       g.add(terrain);
+      // VALLEYS_188: the terrain's cells are 23.6 amot - too coarse for the valleys' banks (the drawn ground would stand amot off the
+      // height that the city's wall and the things by it are built on). Every cell where the valleys carve is cut out of the terrain
+      // (its vertices stay: 60-palace.js reads them) and drawn again in VAL_SUB x VAL_SUB small cells (about 5.9 amot), in blocks of
+      // 8 x 8 cells (each its own mesh - a downward ray tests one block, not all). The small cells' vertices on an edge shared with a
+      // cell that was not cut lie on that edge's straight line, with its colour and normal - no crack, no seam.
+      // Built AFTER the load, in the model's frames: a few rows of small cells in each frame (up to about 12 ms), then the cut and the
+      // blocks in one frame; until then the terrain's own cells show the valleys (their vertices are on the carved ground). So the load
+      // is not made longer (the small grid's heights are some 36,000 points: about 140 ms if done at once).
+      try {
+        const RK = [0.76, 0.65, 0.5], FLc = [0.7, 0.71, 0.52];   // the valleys' colours (below)
+        const VAL_SUB = 4, cell = SIZE / SEG, W1 = SEG + 1, ox = CX - SIZE / 2, oz = CZ - SIZE / 2, fc = cell / VAL_SUB;
+        const ix0 = Math.max(0, Math.floor((-430 - ox) / cell)), ix1 = Math.min(SEG - 1, Math.ceil((650 - ox) / cell));
+        const iz0 = Math.max(0, Math.floor((430 - oz) / cell)), iz1 = Math.min(SEG - 1, Math.ceil((1470 - oz) / cell));
+        const NX = (ix1 - ix0 + 1) * VAL_SUB + 1, NZ = (iz1 - iz0 + 1) * VAL_SUB + 1;
+        const FH = new Float32Array(NX * NZ), FC = new Float32Array(NX * NZ);   // the small grid: height, carving
+        const rowOf = (j) => { for (let i = 0; i < NX; i++) { const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc, h0 = terrainH0(x, z), c = valCarve(x, z, h0); FH[j * NX + i] = h0 - c; FC[j * NX + i] = c; } };
+        const finish = () => {
+          const CW = ix1 - ix0 + 1, CHn = iz1 - iz0 + 1, cut = new Uint8Array(CW * CHn);
+          for (let cj = 0; cj < CHn; cj++) for (let ci = 0; ci < CW; ci++) {
+            let mx = 0;
+            for (let b = 0; b <= VAL_SUB; b++) for (let a = 0; a <= VAL_SUB; a++) mx = Math.max(mx, FC[(cj * VAL_SUB + b) * NX + ci * VAL_SUB + a]);
+            if (mx > 0.02) cut[cj * CW + ci] = 1;
+          }
+          const isCut = (ci, cj) => ci >= 0 && cj >= 0 && ci < CW && cj < CHn && cut[cj * CW + ci] === 1;
+          let nCut = 0; for (const v of cut) nCut += v;
+          if (nCut) {
+            // the terrain without the cut cells
+            const idx = geo.index.array, keep = [];
+            for (let iy = 0; iy < SEG; iy++) for (let ix = 0; ix < SEG; ix++) {
+              const ci = ix - ix0, cj = iy - iz0;
+              if (isCut(ci, cj)) continue;
+              const o = (iy * SEG + ix) * 6; for (let k = 0; k < 6; k++) keep.push(idx[o + k]);
+            }
+            geo.setIndex(keep);
+            // the small grid's vertices on an edge between a cut cell and one that was not: on the coarse edge's line
+            const nrm = geo.attributes.normal, CV = (ix, iy) => iy * W1 + ix;
+            const FN = new Float32Array(NX * NZ * 3), FCol = new Float32Array(NX * NZ * 3), fixed = new Uint8Array(NX * NZ);
+            const onCoarse = (i, j) => {   // a small vertex on a coarse edge whose two cells are not both cut -> the coarse edge's line
+              const a = i % VAL_SUB, b = j % VAL_SUB, ci = Math.floor(i / VAL_SUB), cj = Math.floor(j / VAL_SUB);
+              if (a !== 0 && b !== 0) return null;
+              let A, B, t;
+              if (a === 0 && b === 0) {   // a coarse vertex: fixed if any of its four cells is not cut
+                if (isCut(ci - 1, cj - 1) && isCut(ci, cj - 1) && isCut(ci - 1, cj) && isCut(ci, cj)) return null;
+                A = B = CV(ix0 + ci, iz0 + cj); t = 0;
+              } else if (a === 0) {   // on a vertical coarse edge (along z): cells (ci-1, cj) and (ci, cj)
+                if (isCut(ci - 1, cj) && isCut(ci, cj)) return null;
+                A = CV(ix0 + ci, iz0 + cj); B = CV(ix0 + ci, iz0 + cj + 1); t = b / VAL_SUB;
+              } else {   // on a horizontal coarse edge (along x): cells (ci, cj-1) and (ci, cj)
+                if (isCut(ci, cj - 1) && isCut(ci, cj)) return null;
+                A = CV(ix0 + ci, iz0 + cj); B = CV(ix0 + ci + 1, iz0 + cj); t = a / VAL_SUB;
+              }
+              return [A, B, t];
+            };
+            for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+              const k = j * NX + i, x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc, e = onCoarse(i, j);
+              if (e) {
+                const [A, B, t] = e; fixed[k] = 1;
+                FH[k] = pos.getY(A) * (1 - t) + pos.getY(B) * t;
+                for (let q = 0; q < 3; q++) { FCol[k * 3 + q] = col[A * 3 + q] * (1 - t) + col[B * 3 + q] * t; FN[k * 3 + q] = nrm.array[A * 3 + q] * (1 - t) + nrm.array[B * 3 + q] * t; }
+              } else colAt(x, z, FH[k], FCol, k * 3);
+            }
+            for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {   // the normals of the free vertices: from the small grid's heights
+              const k = j * NX + i; if (fixed[k]) continue;
+              const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc;
+              const hx0 = FH[j * NX + Math.max(0, i - 1)], hx1 = FH[j * NX + Math.min(NX - 1, i + 1)], hz0 = FH[Math.max(0, j - 1) * NX + i], hz1 = FH[Math.min(NZ - 1, j + 1) * NX + i];
+              const dx = (hx1 - hx0) / (fc * ((i > 0 && i < NX - 1) ? 2 : 1)), dz = (hz1 - hz0) / (fc * ((j > 0 && j < NZ - 1) ? 2 : 1)), L = Math.hypot(dx, 1, dz);
+              FN[k * 3] = -dx / L; FN[k * 3 + 1] = 1 / L; FN[k * 3 + 2] = -dz / L;
+              // the valleys' colour (so their shape reads from afar): a little darker with the depth, and the steep banks toward the colour of
+              // earth and rock; nothing where nothing was carved (the cells' edges keep the terrain's own colour)
+              // the floor - toward a dull olive-brown (earth that holds water), the banks - toward earth and rock
+              const cv = FC[k], kk = 0.86 + fbm(x * 0.02, z * 0.02) * 0.2, sl = Math.hypot(dx, dz);
+              const st = val_sstep((sl - 0.18) / 0.35) * 0.55 * val_sstep(cv / 4), fl = val_sstep((cv - 6) / 10) * (1 - val_sstep((sl - 0.08) / 0.2)) * 0.42;
+              const dk = 1 - 0.12 * val_sstep(cv / 16);
+              for (let q = 0; q < 3; q++) FCol[k * 3 + q] = (FCol[k * 3 + q] * (1 - st - fl) + RK[q] * kk * st + FLc[q] * kk * fl) * dk;
+            }
+            const BLK = 8, fineG = new Group(); fineG.name = "terrainFine188"; g.add(fineG);
+            for (let bj = 0; bj < CHn; bj += BLK) for (let bi = 0; bi < CW; bi += BLK) {
+              const map = new Map(), P = [], N = [], C = [], U = [], I = [];
+              const vid = (i, j) => {
+                const k = j * NX + i; let v = map.get(k);
+                if (v === undefined) {
+                  v = P.length / 3; map.set(k, v);
+                  const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc;
+                  P.push(x, FH[k], z); N.push(FN[k * 3], FN[k * 3 + 1], FN[k * 3 + 2]); C.push(FCol[k * 3], FCol[k * 3 + 1], FCol[k * 3 + 2]); U.push(x - ox, SIZE - (z - oz));
+                }
+                return v;
+              };
+              for (let cj = bj; cj < Math.min(CHn, bj + BLK); cj++) for (let ci = bi; ci < Math.min(CW, bi + BLK); ci++) {
+                if (!isCut(ci, cj)) continue;
+                for (let b = 0; b < VAL_SUB; b++) for (let a = 0; a < VAL_SUB; a++) {
+                  const i = ci * VAL_SUB + a, j = cj * VAL_SUB + b;
+                  const va = vid(i, j), vb = vid(i, j + 1), vc = vid(i + 1, j + 1), vd = vid(i + 1, j);   // as PlaneGeometry's faces: (a, b, d), (b, c, d)
+                  I.push(va, vb, vd, vb, vc, vd);
+                }
+              }
+              if (!I.length) continue;
+              const fg = new BufferGeometry();
+              fg.setAttribute("position", new BufferAttribute(new Float32Array(P), 3));
+              fg.setAttribute("normal", new BufferAttribute(new Float32Array(N), 3));
+              fg.setAttribute("color", new BufferAttribute(new Float32Array(C), 3));
+              fg.setAttribute("uv", new BufferAttribute(new Float32Array(U), 2));
+              fg.setIndex(I);
+              fg.computeBoundingSphere();
+              const fm = new Mesh(fg, tm); fm.receiveShadow = true; fm.name = "terrainFine188"; fineG.add(fm);
+            }
+            ctx.shared.valleys188.cells = nCut;
+          }
+        };
+        const ST = { j: 0, done: false, ms: 0, frames: 0 };
+        ctx.shared.valleys188.state = ST;   // { j: the rows done, done, ms: the build's own time, frames }
+        ctx.animated.push(() => {
+          if (ST.done) return;
+          const t0 = performance.now();
+          for (let n = 0; ST.j < NZ && n < 48 && (n === 0 || performance.now() - t0 < 12); n++) rowOf(ST.j++);
+          ST.frames++;
+          if (ST.j >= NZ) { ST.done = true; try { finish(); } catch (e) { console.warn("[mount] valleys' fine ground:", e && e.message); } }
+          ST.ms += performance.now() - t0;
+        });
+      } catch (e) { console.warn("[mount] valleys' fine ground skipped:", e && e.message); }
     } catch (e) {
       console.warn("[mount] terrain skipped:", e);
     }
