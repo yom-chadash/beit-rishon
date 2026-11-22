@@ -97,7 +97,7 @@
       uv.needsUpdate = true;
     };
     // 1.9.1 (the mukhni): the laver's well - through the court's podium and pave (40-altar.js lines it and hangs the laver over it)
-    const KPIT = ctx2.shared.KPIT = { x: 22, z: 57, w: 6.4, d: 6.4 };
+    const KPIT = ctx2.shared.KPIT = { x: 22, z: 61.4, w: 6.4, d: 6.4 };   // KIYOR_A2 (fix-a2; decision 59): the laver's well 4.4 south (z 57 until then) - its base stands north of it (40-altar.js)
     // KLI_DEEP_211 (the user, 15.11.2026 18:21: "1. להעמיק"): the instruments' chambers run WEST from their opening in the women's court,
     // through the line of the court's east wall and under the floor of the court of Israel (x 82.5..93.5) - "ולשכות היו תחת עזרת ישראל,
     // ופתוחות לעזרת הנשים" (Middot 2:6; 89:17); R. Shemaya (645:78): "מחילות תחתיה". The podium and the fill under the wall are cut for

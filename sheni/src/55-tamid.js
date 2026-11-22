@@ -35,8 +35,11 @@
     const V3 = (x, y, lz) => [x, y, lz + D];
     // (the methods never use `this`: the tour calls them unbound)
     const TM = SH.tamid = {
-      order: "abba", lamps: "rambam", belt: "kilayim", mitz: "rashi", ephod: "rashi", shalom: "mishna", active: false, stage: -1, sec: 0, qa: null,
-      readings: () => ({ order: TM.order, lamps: TM.lamps, belt: TM.belt, mitz: TM.mitz, ephod: TM.ephod, shalom: TM.shalom }),
+      order: "abba", lamps: "rambam", belt: "kilayim", mitz: "rashi", ephod: "rashi", shalom: "mishna", kidd: "tk", active: false, stage: -1, sec: 0, qa: null,
+      readings: () => ({ order: TM.order, lamps: TM.lamps, belt: TM.belt, mitz: TM.mitz, ephod: TM.ephod, shalom: TM.shalom, kidd: TM.kidd }),
+      // KIDDUSH_A2 (the user's decision 82): the kiddush - the Tanna Kamma and the Rambam (the default) or R. Yose b. R. Yehuda with his
+      // fellow helping him (Zevachim 19b, 130:754-755) - the presentation built again at the same stage
+      setKidd: (m) => { TM.kidd = m === "ryose" ? "ryose" : "tk"; retour(); return TM.kidd; },
       // NIGHT_WATCH_305: the row "״שלום עליך״" - who says it: the officer (the Mishnah, Middot 1:2; the default, the user 23:49) or
       // the guard (the Gemara, Tamid 27b; the Rambam, Beit HaBechira 8:10) - the presentation built again at the same stage
       setShalom: (m) => { TM.shalom = m === "gemara" ? "gemara" : "mishna"; retour(); return TM.shalom; },
@@ -110,7 +113,8 @@
       moked: () => CAMK.moked()[0].slice(1),   // NIGHT_WATCH_305: the moving eye's first key (MOKED_WIDE_211's eye at its end)
       lot1: (o) => (o === "rambam" ? GZV : [[-18, 50.5, -58.6], [-18, 15, -69]]),
       patrol: () => CAMK.patrol()[0].slice(1),
-      kiyor: () => [[12, 24.5, 54.5], [22.4, 18.6, 54.8]],
+      kiyor: () => [[8.5, 25.5, 50.5], [20.2, 18.4, 55.6]],   // KIYOR_A2: the wheel at the crane's foot, the laver on its base
+      kiyor12: () => [[34.5, 28, 44.5], [22, 17.6, 54.7]],   // KIYOR_A2: the twelve round the laver
       terumah: () => [V3(88, 44, 46), V3(56, 21, 18)],
       tapuach: () => [V3(82, 42, 28), V3(55.5, 25, -3.5)],
       maarachah: () => [V3(84, 42, 24), V3(60, 26, 0)],
@@ -1933,24 +1937,46 @@
       a.set("torches", [0, 0], 33.6);
       a.gone("torch1", 33.6); a.gone("torch2", 33.6);
     };
+    // KIYOR_A2 / KIDDUSH_A2 (fix-a2; the user's decisions 58, 82, 38): the winner turns Ben Katin's wheel and the arm raises the laver
+    // out of the well onto its base (the Mefaresh, Tamid 28b, 2105:153); then he sanctifies at a spout: he opens its tap, puts his right
+    // hand on his right foot and his left hand on his left foot, bows and sanctifies all four at once - Zevachim 19b (130:754) "מניח ידו
+    // הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש"; the Rambam, Biat HaMikdash 5:16 (340:93) "ושוחה ומקדש"; and the
+    // water goes down to the floor. Until now (KIDDUSH_FOOT_213) the right foot raised under the stream, then the left.
+    const KIY = () => (fnc(SH.kiyorInfo) ? SH.kiyorInfo() : { R: 2, x: 22, z: 54.7, foot: F + 1.3, spouts: [] });
+    KID.spotAt = (i, out = 0.95) => { const I = KIY(), o = I.spouts[i] || { a: -HP }, r = I.R + out; return { p: [I.x + Math.sin(o.a) * r, I.z + Math.cos(o.a) * r], yaw: o.a + Math.PI }; };
+    const WHEEL_SPOT = [15.15, 57.15];   // west of the drum's handles (40-altar.js: the post x 17.4, z 58.05; the handles at x 16.05)
     SC.kiyor = (a) => {
       a.putA("machtaS", 46.4, 14.1, 0, Math.PI);   // "והרי המחתה נתונה במקצוע בין הכבש למזבח, במערבו של כבש"
-      a.go("t", [22.2, 53.3], 0, 9.8, { yaw: 0 });   // PACE_215: round the house and the altar (some 150 amot) in 9.8 s (7.4 until 2.0.14)
+      a.go("t", WHEEL_SPOT, 0, 9.4, { yaw: HP });   // PACE_215: round the house and the altar
+      a.pose("t", "carry", 9.6, 14.2);              // his hands on the wheel's handles
       a.ramp("mukhni", 1, 0, 9.8, 14);
       a.fx("mukhni", 10.6);
-      // KIDDUSH_FOOT_213 (the user, 16.11.2026 17:14: "יד ימין על רגל ימין (מורמת) וכן בשמאל לפי הסדר!"): he raises his right foot,
-      // his right hand on it, under the north spout's stream (his face to the laver), lowers it; a step west, the left hand on the raised
-      // left foot (Zevachim 19b, 130:754: "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש")
-      const qR = KID.spot(-1), qL = KID.spot(1);
-      a.walk("t", [[22.2, 53.3], qR], 14.3, 15.0, { yaw: KID.yaw(-1) });
-      a.pose("t", "kidR", 15.0, 17.05);
-      a.set("kidWater", 1, 15.45); a.set("kidWater", 0, 16.65);
-      a.fx("water", 15.4);   // SOUND_211
-      a.walk("t", [qR, qL], 17.1, 17.95, { yaw: KID.yaw(1) });   // KIDDUSH_SOUTH_214: a step west (round the stream until 2.0.13)
-      a.pose("t", "kidL", 18.0, 19.95);
-      a.set("kidWater", 2, 18.45); a.set("kidWater", 0, 19.55);
-      a.fx("water", 18.4);
-      a.tag("t", "מקדש ידיו ורגליו — יד ימין על רגל ימין, ואחר כך יד שמאל על רגל שמאל (זבחים יט:)", 15, 19.95);
+      const W8 = KID.spotAt(6);                     // the spout on the laver's west side (40-altar.js: spout 6 at 270 degrees)
+      a.walk("t", [WHEEL_SPOT, [WHEEL_SPOT[0] + 1.2, 54.2], W8.p], 14.4, 15.6, { yaw: W8.yaw });
+      a.pose("t", "kiddush", 15.8, 19.6);
+      a.set("kidWater", 1, 16.4); a.set("kidWater", 0, 19.0);
+      a.fx("water", 16.4);   // SOUND_211
+      a.tag("t", "מסובב את הגלגל ומעלה את הכיור; ואחר כך מקדש — יד ימין על רגל ימין ויד שמאל על רגל שמאל, שוחה ומקדש (זבחים יט:)", 9.6, 19.6);
+    };
+    // KIYOR_A2 (the user's decision 83): THE TWELVE AT ONCE - "כדי שיהיו שנים עשר אחיו הכהנים העסוקין בתמיד מקדשין ידיהן ורגליהן בבת
+    // אחת. תנא: שחרית במילואו — מקדש ידיו ורגליו מן העליון" (Yoma 37a, 107:888): s1 at the upper spout, s2..s12 at the eleven. In R. Yose
+    // b. R. Yehuda's reading his fellow (b1) stands by s1 and helps him ("וחבירו מסייעו", 130:755). Who stands where - model choices.
+    SC.kiyor12 = (a) => {
+      for (let i = 0; i < 12; i++) {
+        const k = "s" + (i + 1), q = KID.spotAt(i, i === 0 ? 0.75 : 0.95);
+        a.go(k, q.p, 0.2 + i * 0.15, 7 + i * 0.15, { yaw: q.yaw });
+        a.pose(k, "kiddush", 8.6 + (i % 3) * 0.1, 15.4);
+      }
+      a.set("kidWater", 12, 9.2); a.set("kidWater", 0, 15);
+      a.fx("water", 9.2);
+      if (TM.kidd === "ryose") {
+        const q = KID.spotAt(0, 0.75), side = [q.p[0] + Math.cos(q.yaw) * 0.9, q.p[1] - Math.sin(q.yaw) * 0.9];
+        a.go("b1", side, 0, 7.6, { yaw: q.yaw - HP });
+        a.pose("b1", "reach", 8.6, 15.4);
+        a.tag("b1", "״וחבירו מסייעו״ (זבחים יט:) — לרבי יוסי ברבי יהודה", 8.6, 15.4);
+      }
+      a.tag("s1", "מן הדד העליון — ״שחרית במילואו מקדש ידיו ורגליו מן העליון״ (יומא לז.)", 8.6, 15.4);
+      a.tag("s6", "שנים עשר כהנים מקדשים בבת אחת", 8.6, 15.4);
     };
     SC.terumah = (a) => {
       const pan = A(45.3, 15.3);
@@ -2721,20 +2747,26 @@
     };
     // the north spout's stream (40-altar.js: its mouth at x 22, y KY + 1.22 - 0.129, z 55.35, pointing north and down by 0.35) onto the
     // hand on the raised foot (KID.P), and off the foot to the floor; built on first use
-    KID.water = () => {
+    // KIYOR_A2 / KIDDUSH_A2: the water from a spout's tap onto the hands on the feet, and off them to the floor (decision 38: "המים היו
+    // נשפכים על הרצפה ולא לתוך קערה") - for the spouts in `list` (40-altar.js kiyorInfo: their mouths); built on first use
+    KID.water = (list) => {
       const g = new Group();
       g.name = "kiddushWater";
       const M = new MeshStandardMaterial({ color: 0x7db8ec, emissive: 0x15406a, emissiveIntensity: 0.5, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.85, depthWrite: false });
-      const y0 = F + 0.6 + 1.22 - 0.129, hy = F + KID.local(-1)[1];
-      const P0 = new Vector3(22, y0, 55.35), C = new Vector3(22, y0 - 0.17, 55.35 - 0.47), P1 = new Vector3(KID.P[0], hy + 0.02, KID.P[1]);
-      g.add(new Mesh(new TubeGeometry(new QuadraticBezierCurve3(P0, C, P1), 24, 0.034, 8, false), M));
-      const run = new Mesh(new CylinderGeometry(0.026, 0.036, 1, 8, 1, true).translate(0, -0.5, 0), M);   // off the foot's edge
-      run.position.set(KID.P[0], hy - 0.2, KID.P[1] - 0.12);
-      run.scale.y = Math.max(0.05, hy - 0.2 - F);
-      g.add(run);
-      const pool = new Mesh(new CircleGeometry(0.2, 20).rotateX(-Math.PI / 2), M);   // KIDDUSH_LEG_214: 0.2 (0.32 until 2.0.13)
-      pool.position.set(KID.P[0], F + 0.012, KID.P[1] - 0.12);
-      g.add(pool);
+      const I = KIY();
+      for (const i of list) {
+        const o = I.spouts[i];
+        if (!o) continue;
+        const sx = Math.sin(o.a), sz = Math.cos(o.a), r1 = I.R + (o.upper ? 0.55 : 0.72), hy = F + 0.3;
+        const P0 = new Vector3(o.p[0], o.p[1], o.p[2]), C = new Vector3(o.p[0] + sx * 0.25, o.p[1] - 0.1, o.p[2] + sz * 0.25), P1 = new Vector3(I.x + sx * r1, hy, I.z + sz * r1);
+        g.add(new Mesh(new TubeGeometry(new QuadraticBezierCurve3(P0, C, P1), 16, 0.03, 6, false), M));
+        const run = new Mesh(new CylinderGeometry(0.025, 0.034, hy - F, 6, 1, true), M);
+        run.position.set(P1.x, (hy + F) / 2, P1.z);
+        g.add(run);
+        const pool = new Mesh(new CircleGeometry(0.24, 16).rotateX(-Math.PI / 2), M);
+        pool.position.set(P1.x, F + 0.012, P1.z);
+        g.add(pool);
+      }
       W.group.add(g);
       return g;
     };
@@ -2940,8 +2972,14 @@
       if (SH.greatGate && fnc(SH.greatGate.pose)) { try { SH.greatGate.pose(N.gate); } catch (_) {} }
       chelGate(N.chelG);   // CHEL_GATE_215
       if (SH.mukhni && fnc(SH.mukhni.pose)) { try { SH.mukhni.pose(5.6 * N.mukhni, null); } catch (_) {} }
-      if (N.kidWater > 0 && !W.kidWater) { try { W.kidWater = KID.water(); } catch (_) {} }   // KIDDUSH_FOOT_213
-      if (W.kidWater) W.kidWater.visible = N.kidWater > 0;
+      {   // KIYOR_A2: 1 - the west spout (the winner), 12 - all twelve; built again when the laver's size changed
+        const sz = SH.kiyorSize ? SH.kiyorSize.mode : "", want = N.kidWater >= 12 ? "all" : N.kidWater > 0 ? "one" : "";
+        if (want && (!W.kidWater || W.kidWater.userData.k !== want + sz)) {
+          if (W.kidWater) W.group.remove(W.kidWater);
+          try { W.kidWater = KID.water(want === "all" ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : [6]); W.kidWater.userData.k = want + sz; } catch (_) { W.kidWater = null; }
+        }
+        if (W.kidWater) W.kidWater.visible = !!want;
+      }
       const now = performance.now();
       if (N.roofs && fnc(SH.openFor) && now - roofAt > 2500) { roofAt = now; try { SH.openFor("crt-lishkot-roofs", 6000); } catch (_) {} }
     };

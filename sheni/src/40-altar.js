@@ -1763,185 +1763,255 @@
     const KPIT = ctx2.shared.KPIT || { x: KX, z: KZ, w: 6.4, d: 6.4 };
     {
       const bot = 10.3, top = F, wt = 0.5, iw = KPIT.w - 2 * wt;
-      H2.box(g, KPIT.w, 0.2, KPIT.d, M2.stoneSmooth, KX, bot - 0.2, KZ);
+      H2.box(g, KPIT.w, 0.2, KPIT.d, M2.stoneSmooth, KPIT.x, bot - 0.2, KPIT.z);
       for (const s2 of [-1, 1]) {
-        H2.box(g, KPIT.w, top - bot, wt, M2.stoneSmooth, KX, bot, KZ + s2 * (iw / 2 + wt / 2));
-        H2.box(g, wt, top - bot, iw, M2.stoneSmooth, KX + s2 * (iw / 2 + wt / 2), bot, KZ);
-        H2.box(g, KPIT.w + 0.6, 0.3, 0.3, M2.stoneSmooth, KX, top, KZ + s2 * (KPIT.d / 2 + 0.15));
-        H2.box(g, 0.3, 0.3, KPIT.d, M2.stoneSmooth, KX + s2 * (KPIT.w / 2 + 0.15), top, KZ);
+        H2.box(g, KPIT.w, top - bot, wt, M2.stoneSmooth, KPIT.x, bot, KPIT.z + s2 * (iw / 2 + wt / 2));
+        H2.box(g, wt, top - bot, iw, M2.stoneSmooth, KPIT.x + s2 * (iw / 2 + wt / 2), bot, KPIT.z);
+        H2.box(g, KPIT.w + 0.6, 0.3, 0.3, M2.stoneSmooth, KPIT.x, top, KPIT.z + s2 * (KPIT.d / 2 + 0.15));
+        H2.box(g, 0.3, 0.3, KPIT.d, M2.stoneSmooth, KPIT.x + s2 * (KPIT.w / 2 + 0.15), top, KPIT.z);
       }
       const wm = new MeshStandardMaterial({ color: 0x2f6f86, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.62, depthWrite: false });
       const surf = new Mesh(new BoxGeometry(iw, 0.04, iw), wm);
-      surf.position.set(KX, top - 0.8, KZ);
+      surf.position.set(KPIT.x, top - 0.8, KPIT.z);
       surf.renderOrder = 4;
       g.add(surf);
       const deep = new Mesh(new BoxGeometry(iw, top - 0.8 - bot, iw), new MeshStandardMaterial({ color: 0x163a48, roughness: 0.3, transparent: true, opacity: 0.35, depthWrite: false }));
-      deep.position.set(KX, (top - 0.8 + bot) / 2, KZ);
+      deep.position.set(KPIT.x, (top - 0.8 + bot) / 2, KPIT.z);
       g.add(deep);
     }
-    const kiyorG = new Group();   // the laver, its water and its twelve spouts - lowered and raised together
+    // ===== KIYOR_A2 (fix-a2, 22.11.2026; the user's decisions 40, 43, 57-60, 73, 81): THE LAVER, ITS BASE, THE WELL'S LID AND BEN KATIN'S
+    // MACHINE, as the booklet "חלמיש" draws them (the user: "כחוברת").
+    //  * The laver - "כמין דוד גדולה ולה דדים" (Rashi, Shemot 30:18): a great kettle, its belly round. Its size - a switch (decision 73;
+    //    ctx2.shared.kiyorSize): Tosafot Yom Tov, Yoma 3:10 (898:110): its round twelve (against the twelve spouts), across four - the
+    //    default (decision 81: "במקום הבור חסרו מן המעלות"); or round nine, across three; or as until now, across five and a quarter (a
+    //    model choice). The base, the well, the lid and the priests' spots follow the size.
+    //  * The twelve spouts (decision 60) as the Melechet Shlomo (1151:128): one upper spout and eleven under it; a small tap in each (a
+    //    model choice). The upper one toward the east.
+    //  * The base (decision 43) - the second answer of Tosafot, Zevachim 22a (1936:254): "כעין יורה כפויה על פיהו נפחתו שוליה", as R.
+    //    Chaim Kanievsky explains it in the booklet: "כחבית על גבי חבית" - a cauldron upside down, its bottom cut away, the laver standing
+    //    on it. It stands BESIDE the well (decision 59).
+    //  * The well, covered by day with a lid and no fence round it (decision 40: "מכסה לבור, בלי גדר"; Rashi, Sukkah 48b: "שהיו משקעין
+    //    אותו מבערב בבור"). Its form (square, as it was) and the number of the ropes - "מה שיותר יפה": model choices.
+    //  * Ben Katin's machine (decision 57): a crane - a post, an arm that turns round it, the rope over two pulleys to a drum at the
+    //    post's foot - and on the drum a TOOTHED WHEEL with a tongue of wood that knocks on its teeth: "קול דפיקת שיני הגלגל" (Tiferet
+    //    Yisrael, Tamid 3, 818:330), "קול העץ שעשה בן קטין מוכני לכיור" (Tamid 1:4). The arm lifts the laver off its base, swings it over
+    //    the well and lowers it into the water in the evening; in the morning back onto the base (decision 59).
+    // ctx2.shared.mukhni = { demo(), stop(), pose(d, ph) } (d 0 .. 5.6: 0 the laver on its base, 5.6 in the well); ctx2.shared.kiyorSize =
+    // { mode, set("d4" | "d3" | "d525") }; ctx2.shared.kiyorInfo() -> { R, H, foot, spouts: [{ p: [x, y, z], a (its angle), upper }] }.
+    const PITX = KPIT.x, PITZ = KPIT.z, KZK = 54.7;   // the base's place: north of the well (the well moved south for it, 30-courts.js)
+    const KEN_H = 1.45, KR0 = 2.625;                  // the base's height; the laver's own radius (across 5.25) - the size scales it
+    const kiyorG = new Group();   // the laver, its water and its twelve spouts - lifted, swung and lowered together
     g.add(kiyorG);
-    const KY = F + 0.6;           // the laver's foot when it hangs up
-    H2.lathe(kiyorG, [
-      [0.007, 0.0],
-      [1.125, 0.0],
-      [1.163, 0.105],
-      [0.788, 0.225],
-      [0.45, 0.413],
-      [0.39, 0.975],
-      [0.637, 1.2],
-      [1.425, 1.537],
-      [2.175, 1.95],
-      [2.565, 2.325],
-      [2.625, 2.625],
-      [2.565, 2.715],
-      [2.362, 2.588],
-      [2.287, 2.25],
-      [1.65, 1.838],
-      [0.675, 1.65],
-      [0.007, 1.612]
-    ], (() => { const m = M2.bronze.clone(); m.side = DoubleSide; return m; })(), KX, KY, KZ, 48);   // 1.5.0: both faces - as a one-sided lathe only the rim showed
+    const bowlG = new Group();    // the laver in its own frame (its foot at 0), scaled by the size
+    kiyorG.add(bowlG);
+    const LAVER_H = 3.0;
+    const bronzeD = (() => { const m = M2.bronze.clone(); m.side = DoubleSide; return m; })();
+    H2.lathe(bowlG, [[0.006, 0.0], [1.7, 0.0], [2.05, 0.18], [2.42, 0.6], [2.625, 1.2], [2.6, 1.75], [2.42, 2.3], [2.18, 2.7], [2.12, 2.82], [2.3, 2.92], [2.34, 3.0], [2.2, 3.0], [2.02, 2.86], [2.006, 0.2], [0.006, 0.2]], bronzeD, 0, 0, 0, 48);
+    for (const [y, r] of [[0.95, 2.55], [2.05, 2.52]]) { const b = new Mesh(new TorusGeometry(r, 0.05, 6, 48), M2.bronze); b.rotation.x = Math.PI / 2; b.position.y = y; bowlG.add(b); }   // two bands, as the booklet
     {
-      const water = new Mesh(
-        new CircleGeometry(2.2, 28),
-        new MeshStandardMaterial({ color: 3104873, roughness: 0.15, metalness: 0.1 })
-      );
+      const water = new Mesh(new CircleGeometry(2.0, 32), new MeshStandardMaterial({ color: 3104873, roughness: 0.15, metalness: 0.1 }));
       water.rotation.x = -Math.PI / 2;
-      water.position.set(KX, KY + 2.22, KZ);
-      water.receiveShadow = true;
-      kiyorG.add(water);
+      water.position.y = 2.72;
+      bowlG.add(water);
     }
+    // the spouts: eleven lower ones round the belly (y 1.0), the upper one above them toward the east (y 2.3); each a short pipe out and a
+    // little down, its tap a small handle across it
+    const SPOUTS = [];
     {
-      const geo = new CylinderGeometry(0.055, 0.08, 0.75, 8);
-      geo.rotateX(Math.PI / 2);
+      const gs = new CylinderGeometry(0.055, 0.08, 0.62, 8); gs.rotateX(Math.PI / 2); gs.translate(0, 0, 0.31);
+      const gt = new CylinderGeometry(0.03, 0.03, 0.26, 6); gt.translate(0, 0.13, 0.36);
+      const gk = new BoxGeometry(0.2, 0.04, 0.04); gk.translate(0, 0.27, 0.36);
+      const geo = mergeGeometries([gs, gt, gk].map((q) => { q.deleteAttribute("uv"); return q; }));
       const inst = new InstancedMesh(geo, M2.bronze, 12);
-      const m42 = new Matrix4(), q = new Quaternion(), e = new Euler();
-      const p = new Vector3(), s = new Vector3(1, 1, 1);
+      const m42 = new Matrix4(), q = new Quaternion(), e = new Euler(), p = new Vector3(), s = new Vector3(1, 1, 1);
       for (let i = 0; i < 12; i++) {
-        const a = i / 12 * Math.PI * 2;
-        e.set(0.35, a, 0, "YXZ");
+        const upper = i === 0, a = upper ? Math.PI / 2 : Math.PI / 2 + (i * Math.PI * 2) / 12;   // the upper toward +x (east); the eleven in the other slots
+        const y = upper ? 2.3 : 1.0, r = upper ? 2.47 : 2.5;
+        e.set(0.3, a, 0, "YXZ");
         q.setFromEuler(e);
-        p.set(KX + Math.sin(a) * 1.3, KY + 1.22, KZ + Math.cos(a) * 1.3);
+        p.set(Math.sin(a) * r, y, Math.cos(a) * r);
         m42.compose(p, q, s);
         inst.setMatrixAt(i, m42);
+        SPOUTS.push({ a, y, r, upper });
       }
       inst.castShadow = true;
-      kiyorG.add(inst);
+      bowlG.add(inst);
     }
     // MOCHANI_RAMBAM_211 (the user, 15.11.2026 23:45: "תוסיף את זה כמתג שיטה לכיור"): the Rambam's מוכני - "עשה כלי סביב לכיור, והיו בו
     // המים תמיד, והיו שותתין מאותו כלי לכיור כדי הצורך ראשון ראשון, ואותו הכלי היה נקרא מוכני" (his commentary on Yoma 3, quoted by the
     // Kesef Mishneh, Beit HaBechirah 3:18, 4260:166), "כלי על הכיור להיות מלא מים, והיה סביב לכיור" (on Tamid 1:4, 575:10), "ומוכני עשו לו
     // שיהיו בה המים תמיד, והיא חול" (Beit HaBechirah 3:18, 337:60); the Kesef Mishneh: "כלי עגול כגלגל סביבות הכיור, שהיה הכיור משוקע
-    // בתוכו". Here a round trough about the laver's bowl, open above, with its water, and one short pipe from it over the laver's rim (the
-    // water "שותתין... לכיור"). It is in kiyorG, so in the demonstration it goes down with the laver - the Even HaAzel (4466:45): "שהי' כלי
-    // סביב ושהיו משקעין אותו הכלי". Its form, size, height and material: model choice. Shown only when the row "המוכני של הכיור" stands on
-    // the Rambam (ctx.shared.mochani.set).
+    // בתוכו". A round trough about the laver's upper part, open above, with its water, and one short pipe from it over the laver's rim. It
+    // goes with the laver (the Even HaAzel, 4466:45: "שהי' כלי סביב ושהיו משקעין אותו הכלי"). Its form, size, height and material: model
+    // choice. Shown only when the row "המוכני של הכיור" stands on the Rambam (ctx.shared.mochani.set).
     const mochR = new Group();
     mochR.visible = false;
-    kiyorG.add(mochR);
+    bowlG.add(mochR);
     {
       const cm = new MeshStandardMaterial({ color: 0x8c5a3c, roughness: 0.45, metalness: 0.45, side: DoubleSide });
-      H2.lathe(mochR, [[2.72, 2.95], [2.72, 1.75], [3.35, 1.75], [3.35, 2.95], [3.25, 2.95], [3.25, 1.85], [2.82, 1.85], [2.82, 2.95], [2.72, 2.95]], cm, KX, KY, KZ, 48);
+      H2.lathe(mochR, [[2.72, 3.05], [2.72, 1.85], [3.35, 1.85], [3.35, 3.05], [3.25, 3.05], [3.25, 1.95], [2.82, 1.95], [2.82, 3.05], [2.72, 3.05]], cm, 0, 0, 0, 48);
       const ring = new Mesh(new RingGeometry(2.82, 3.25, 48), new MeshStandardMaterial({ color: 3104873, roughness: 0.15, metalness: 0.1, side: DoubleSide }));
       ring.rotation.x = -Math.PI / 2;
-      ring.position.set(KX, KY + 2.7, KZ);
+      ring.position.y = 2.8;
       mochR.add(ring);
-      const pipe = new Mesh(new CylinderGeometry(0.06, 0.06, 0.75, 10), cm);   // from the trough's inner wall over the laver's rim (west)
+      const pipe = new Mesh(new CylinderGeometry(0.06, 0.06, 0.75, 10), cm);
       pipe.rotation.z = Math.PI / 2;
-      pipe.position.set(KX - 2.47, KY + 2.88, KZ);
+      pipe.position.set(-2.47, 2.98, 0);
       mochR.add(pipe);
-      const noz = new Mesh(new CylinderGeometry(0.05, 0.075, 0.22, 10), cm);   // and its mouth turned down, into the laver
-      noz.position.set(KX - 2.12, KY + 2.77, KZ);
+      const noz = new Mesh(new CylinderGeometry(0.05, 0.075, 0.22, 10), cm);
+      noz.position.set(-2.12, 2.87, 0);
       mochR.add(noz);
     }
     ctx2.layers = ctx2.layers || {};
     ctx2.layers.mochaniRambam = mochR;
-    ctx2.labels.push({ text: "המוכני לרמב״ם — כלי סביב הכיור, ובו המים (בית הבחירה ג, יח)", x: KX - 1, y: KY + 4.6, z: KZ, size: 1.0, layer: "mochaniRambam" });
     ctx2.shared.mochani = {
       mode: "rashi",
       set(m) { this.mode = m === "rambam" ? "rambam" : "rashi"; mochR.visible = this.mode === "rambam"; return this.mode; }
     };
-    // the winch: posts east and west of the well, the axle along x at AY, the wheel on its east end, ropes to four points of the rim
-    const AY = F + 8.2, RIM = KY + 2.6;
-    const wheelG = new Group();
-    wheelG.position.set(KX + 4.3, AY, KZ);
-    g.add(wheelG);
+    // the base: an upside-down cauldron, its bottom cut away (the laver's foot sits in its mouth); scaled with the laver in x and z
+    const kenG = new Group();
+    kenG.position.set(KX, F, KZK);
+    g.add(kenG);
+    H2.lathe(kenG, [[0.006, 0], [2.0, 0], [2.08, 0.12], [1.98, 0.3], [1.8, 0.75], [1.55, 1.15], [1.32, 1.38], [1.36, KEN_H], [1.2, KEN_H], [1.15, 1.3], [0.006, 1.3]], M2.bronze, 0, 0, 0, 40);
+    { const b = new Mesh(new TorusGeometry(1.9, 0.05, 6, 40), M2.bronze); b.rotation.x = Math.PI / 2; b.position.y = 0.42; kenG.add(b); }
+    // the well's lid: cedar boards on the curb, an iron ring to lift it; it slides off to the west in the evening (the demonstration)
+    const lidG = new Group();
+    g.add(lidG);
     {
-      for (const dx of [-3.7, 3.7]) H2.box(g, 0.5, AY - F + 0.6, 0.5, M2.cedar, KX + dx, F, KZ);
-      const axle = H2.cyl(g, 0.22, 0.22, 9.4, M2.cedar, KX + 0.4, AY - 4.7, KZ);
-      axle.rotation.z = Math.PI / 2;
-      axle.position.set(KX + 0.4, AY, KZ);
-      const rim = new Mesh(new TorusGeometry(1.8, 0.18, 8, 26), M2.cedar);
-      rim.rotation.y = Math.PI / 2;
-      rim.castShadow = true;
-      wheelG.add(rim);
-      for (const rot of [0, Math.PI / 4, Math.PI / 2, Math.PI * 0.75]) {
-        const sp = new Mesh(new BoxGeometry(0.16, 3.5, 0.16), M2.cedar);
-        sp.rotation.x = rot;
-        sp.castShadow = true;
-        wheelG.add(sp);
-      }
-      for (const dz of [-0.95, 0.95]) for (const dy of [-0.95, 0.95]) {   // the handles of the wheel
-        const hd = new Mesh(new CylinderGeometry(0.07, 0.07, 0.9, 6), M2.cedar);
-        hd.rotation.z = Math.PI / 2;
-        hd.position.set(0.45, dy * 1.27, dz * 1.27);
-        wheelG.add(hd);
-      }
+      const LW = KPIT.w + 0.5, LD = KPIT.d + 0.5;
+      for (let i = 0; i < 6; i++) { const b = new Mesh(new BoxGeometry(LW, 0.14, LD / 6 - 0.03), M2.cedar); b.position.set(0, 0.07, -LD / 2 + (i + 0.5) * LD / 6); b.castShadow = b.receiveShadow = true; lidG.add(b); }
+      for (const dx of [-LW / 3, LW / 3]) { const c = new Mesh(new BoxGeometry(0.22, 0.06, LD - 0.2), M2.cedar); c.position.set(dx, 0.17, 0); lidG.add(c); }
+      const rg = new Mesh(new TorusGeometry(0.22, 0.035, 6, 16), M2.bronze); rg.rotation.x = Math.PI / 2; rg.position.set(0, 0.22, 0); lidG.add(rg);
     }
+    const LID0 = new Vector3(PITX, F + 0.3, PITZ), LID1 = new Vector3(PITX - KPIT.w - 1.4, F, PITZ);
+    lidG.position.copy(LID0);
+    // the crane: the post on the line between the base and the well, west of them; the arm turns round it at AY
+    const AY = F + 8.6, PSX = KX - 4.6, PSZ = (KZK + PITZ) / 2;
+    const ARM = Math.hypot(KX - PSX, KZK - PSZ);
+    const angTo = (x, z) => Math.atan2(-(z - PSZ), x - PSX);
+    const TH_K = angTo(KX, KZK), TH_P = angTo(PITX, PITZ);
+    {
+      H2.box(g, 0.6, AY - F + 0.4, 0.6, M2.cedar, PSX, F, PSZ);
+      H2.box(g, 1.6, 0.3, 1.6, M2.stoneSmooth, PSX, F, PSZ);
+    }
+    const armG = new Group();
+    armG.position.set(PSX, AY, PSZ);
+    g.add(armG);
+    {
+      const arm = new Mesh(new BoxGeometry(ARM + 0.6, 0.36, 0.3), M2.cedar); arm.position.set(ARM / 2 - 0.1, 0, 0); arm.castShadow = true; armG.add(arm);
+      const brace = new Mesh(new BoxGeometry(0.22, 0.22, 3.4), M2.cedar); brace.rotation.x = 0; brace.position.set(1.0, -1.1, 0);
+      const br2 = new Mesh(new BoxGeometry(2.6, 0.2, 0.2), M2.cedar); br2.position.set(0.95, -1.0, 0); br2.rotation.z = 0.78; armG.add(br2);
+      const pulMat = new MeshStandardMaterial({ color: 0x8d7a9e, roughness: 0.6 });
+      for (const x of [0.2, ARM]) { const pl = new Mesh(new CylinderGeometry(0.42, 0.42, 0.14, 18), pulMat); pl.rotation.x = Math.PI / 2; pl.position.set(x, 0.32, 0); armG.add(pl); }
+    }
+    // the drum and Ben Katin's toothed wheel at the post's foot (its axle east-west, on the post's north side), and the wooden tongue
+    const drumG = new Group();
+    drumG.position.set(PSX, F + 1.7, PSZ - 0.9);
+    g.add(drumG);
+    const wheelG = new Group();
+    drumG.add(wheelG);
+    {
+      const drum = new Mesh(new CylinderGeometry(0.42, 0.42, 1.6, 16), M2.cedar); drum.rotation.z = Math.PI / 2; wheelG.add(drum);
+      const coil = new Mesh(new CylinderGeometry(0.47, 0.47, 1.2, 16), new MeshStandardMaterial({ color: 0x8a6a3e, roughness: 1 })); coil.rotation.z = Math.PI / 2; wheelG.add(coil);
+      for (const sx of [-1, 1]) { const w = new Mesh(new TorusGeometry(1.15, 0.12, 6, 28), M2.cedar); w.rotation.y = Math.PI / 2; w.position.x = sx * 0.95; wheelG.add(w);
+        for (let k = 0; k < 4; k++) { const sp = new Mesh(new BoxGeometry(0.1, 2.3, 0.12), M2.cedar); sp.position.x = sx * 0.95; sp.rotation.x = k * Math.PI / 4; wheelG.add(sp); } }
+      // the teeth on the east wheel's rim
+      const tg = new BoxGeometry(0.16, 0.26, 0.16), ti = new InstancedMesh(tg, M2.cedar, 24), m4t = new Matrix4(), qt = new Quaternion(), et = new Euler(), pt = new Vector3(), st = new Vector3(1, 1, 1);
+      for (let k = 0; k < 24; k++) { const a = (k * Math.PI * 2) / 24; et.set(a, 0, 0); qt.setFromEuler(et); pt.set(0.95, Math.cos(a) * 1.3, Math.sin(a) * 1.3); m4t.compose(pt, qt, st); ti.setMatrixAt(k, m4t); }
+      wheelG.add(ti);
+      for (const [dy, dz] of [[1.0, 0], [-1.0, 0], [0, 1.0], [0, -1.0]]) { const hd = new Mesh(new CylinderGeometry(0.06, 0.06, 0.8, 6), M2.cedar); hd.rotation.z = Math.PI / 2; hd.position.set(-1.35, dy, dz); wheelG.add(hd); }   // the handles, on the west wheel
+      for (const sx of [-1, 1]) H2.box(g, 0.3, 1.9, 0.3, M2.cedar, PSX + sx * 1.35, F, PSZ - 0.9);   // its two stands
+    }
+    const tongue = new Group();   // pivoted over the toothed wheel; its tip rides the teeth
+    tongue.position.set(PSX + 0.95, F + 1.7 + 1.75, PSZ - 0.9 - 0.25);
+    g.add(tongue);
+    { const t = new Mesh(new BoxGeometry(0.12, 0.7, 0.14), M2.cedar); t.position.y = -0.3; tongue.add(t); }
+    // the rope: up from the drum to the post's head, along the arm, and down from its end to the laver's four chains
     const ropeMat = new MeshStandardMaterial({ color: 0x8a6a3e, roughness: 1 });
-    const ropes = [];
-    for (const [dx, dz] of [[-2.2, 0], [2.2, 0], [0, -2.2], [0, 2.2]]) {
-      const r = new Mesh(new CylinderGeometry(0.05, 0.05, 1, 6), ropeMat);
-      r.userData.at = [KX + dx * 0.95, KZ + dz * 0.95];
-      g.add(r);
-      ropes.push(r);
-    }
+    const mkRope = (r) => { const m = new Mesh(new CylinderGeometry(r, r, 1, 6), ropeMat); g.add(m); return m; };
+    const ropeUp = mkRope(0.045), ropeArm = mkRope(0.045), ropeDown = mkRope(0.045), chains = [0, 1, 2, 3].map(() => mkRope(0.03));
     const UPV = new Vector3(0, 1, 0), pa = new Vector3(), pb = new Vector3();
-    const setDrop = (d) => {   // d >= 0: how far the laver is down; each rope from its point on the rim up to the axle
-      kiyorG.position.y = -d;
-      for (const r of ropes) {
-        pa.set(r.userData.at[0], RIM - d, r.userData.at[1]);
-        pb.set(r.userData.at[0], AY - 0.15, KZ);
-        const L = Math.max(0.05, pa.distanceTo(pb));
-        r.scale.set(1, L, 1);
-        r.position.copy(pa).add(pb).multiplyScalar(0.5);
-        r.quaternion.setFromUnitVectors(UPV, pb.clone().sub(pa).normalize());
+    const span = (m, a, b) => { const L = Math.max(0.05, a.distanceTo(b)); m.scale.set(1, L, 1); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UPV, pb.copy(b).sub(a).normalize()); };
+    // the size (decision 73 / 81)
+    const SIZES = { d4: 4, d3: 3, d525: 5.25 };
+    const K = { s: 4 / 5.25, th: TH_K, foot: F + KEN_H - 0.15, d: 0 };
+    const place = () => {
+      const x = PSX + Math.cos(K.th) * ARM, z = PSZ - Math.sin(K.th) * ARM;
+      kiyorG.position.set(0, 0, 0);
+      bowlG.position.set(x, K.foot, z);
+      bowlG.scale.setScalar(K.s);
+      armG.rotation.y = K.th;
+      const top = K.foot + LAVER_H * K.s, hook = top + 1.1;
+      span(ropeUp, pa.set(PSX, F + 2.2, PSZ - 0.9), pb.set(PSX + 0.05, AY + 0.3, PSZ).clone());
+      const E = new Vector3(x, AY + 0.3, z);
+      span(ropeArm, new Vector3(PSX + Math.cos(K.th) * 0.2, AY + 0.62, PSZ - Math.sin(K.th) * 0.2), new Vector3(x, AY + 0.62, z));
+      span(ropeDown, E, new Vector3(x, hook, z));
+      chains.forEach((c, i) => { const a = (i * Math.PI) / 2 + 0.4, r = 2.25 * K.s; span(c, new Vector3(x, hook, z), new Vector3(x + Math.cos(a) * r, top - 0.05, z + Math.sin(a) * r)); });
+    };
+    ctx2.shared.kiyorSize = {
+      mode: "d4",
+      set(m) {
+        this.mode = SIZES[m] ? m : "d4";
+        K.s = SIZES[this.mode] / 5.25;
+        kenG.scale.set(K.s * 1.25, 1, K.s * 1.25);   // its mouth (1.36) holds the laver's foot (1.7 of the laver's own size)
+        place();
+        return this.mode;
       }
     };
+    ctx2.shared.kiyorInfo = () => {   // the laver as it stands ON ITS BASE (the priests' spots are by it there)
+      const c = { x: KX, z: KZK }, s = K.s, foot = F + KEN_H - 0.15;
+      return { R: KR0 * s, H: LAVER_H * s, foot, x: c.x, z: c.z, onBase: K.d < 0.01,
+        spouts: SPOUTS.map((o) => { const rr = (o.r + 0.6) * s; return { a: o.a, upper: o.upper, p: [c.x + Math.sin(o.a) * rr, foot + (o.y - 0.18) * s, c.z + Math.cos(o.a) * rr] }; }) };
+    };
+    // the way from the base to the well: u 0..1 - lift (0..0.15), swing (0.15..0.45), lower into the water (0.45..1)
+    const DROP = 5.6, LIFT = 1.2;
+    const setDrop = (d) => {
+      const u = Math.max(0, Math.min(1, d / DROP)), base = F + KEN_H - 0.15, sunk = F - 1.1 - LAVER_H * K.s;
+      K.d = d;
+      if (u <= 0.15) { K.th = TH_K; K.foot = base + LIFT * (u / 0.15); }
+      else if (u <= 0.45) { const v = (u - 0.15) / 0.3, w = 0.5 - 0.5 * Math.cos(Math.PI * v); K.th = TH_K + (TH_P - TH_K) * w; K.foot = base + LIFT; }
+      else { const v = (u - 0.45) / 0.55; K.th = TH_P; K.foot = base + LIFT + (sunk - base - LIFT) * v; }
+      place();
+      // the wheel winds by the rope's length; the tongue knocks on each tooth
+      const ang = (K.foot - base) / 0.47;
+      wheelG.rotation.x = ang;
+      tongue.rotation.x = 0.12 * (((ang * 24) / (Math.PI * 2)) % 1);
+      // the lid: off while the laver is not on its base
+      const lo = Math.min(1, u / 0.06);
+      lidG.position.lerpVectors(LID0, LID1, lo);
+      lidG.position.y = lo > 0 && lo < 1 ? F + 0.3 + 0.25 * Math.sin(Math.PI * lo) : lo >= 1 ? F + 0.02 : F + 0.3;
+    };
+    ctx2.shared.kiyorSize.set("d4");   // decision 81: across four - the default
     setDrop(0);
     // the demonstration's captions (layers mukhniEve / mukhniNight / mukhniMorning)
     const capG = { eve: new Group(), night: new Group(), morning: new Group() };
     for (const k of Object.keys(capG)) { capG[k].visible = false; g.add(capG[k]); }
-    ctx2.layers = ctx2.layers || {};
     ctx2.layers.mukhniEve = capG.eve; ctx2.layers.mukhniNight = capG.night; ctx2.layers.mukhniMorning = capG.morning;
     ctx2.labels.push(
-      { text: "בערב: הגלגל מסתובב והכיור יורד לבור — ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י)", x: KX, y: F + 10.2, z: KZ + 2, size: 1.3, layer: "mukhniEve" },
-      { text: "בלילה: מי הכיור מחוברים במי הבור", x: KX, y: F + 10.2, z: KZ + 2, size: 1.3, layer: "mukhniNight" },
-      { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד)", x: KX, y: F + 10.2, z: KZ + 2, size: 1.3, layer: "mukhniMorning" },
-      { text: "המוכני — הגלגל של בן קטין", x: KX + 4.3, y: AY + 3, z: KZ, size: 1.2 }
+      { text: "בערב: מסירים את המכסה, והזרוע מרימה את הכיור מן הכן ומשקיעה אותו בבור — ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י)", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniEve" },
+      { text: "בלילה: מי הכיור מחוברים במי הבור", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniNight" },
+      { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד) — הכיור עולה וחוזר אל הכן", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniMorning" },
+      { text: "המוכני — גלגל השיניים ולשון העץ", x: PSX, y: F + 4.2, z: PSZ - 1.2, size: 1.1 },
+      { text: "הכן — ״כעין יורה כפויה על פיהו״ (תוספות זבחים כב.)", x: KX + 2.6, y: F + 1.0, z: KZK - 2.4, size: 0.9 },
+      { text: "הבור — ביום מכוסה, בלי גדר", x: PITX + 1.5, y: F + 1.0, z: PITZ + 2.2, size: 0.9 }
     );
-    const DROP = 5.6, T_DOWN = 5000, T_NIGHT = 2500, T_UP = 5000, T_PRE = 1500;
+    ctx2.labels.push({ text: "המוכני לרמב״ם — כלי סביב הכיור, ובו המים (בית הבחירה ג, יח)", x: KX - 1, y: F + 6.2, z: KZK, size: 1.0, layer: "mochaniRambam" });
+    const T_DOWN = 7000, T_NIGHT = 2500, T_UP = 7000, T_PRE = 1500;
     const M = ctx2.shared.mukhni = {
       t0: -1, drop: 0,
       demo() { this.t0 = performance.now(); },
-      // NOTE 14 (the function review, F1-10: "nine meshes of the altar's group" not back after the presentation - the wheel: its rim, four
-      // spokes and four handles): the wheel's turn follows the drop (drop / 1.8), so a stop in the middle puts it back too, and a still
-      // frame turns it to its drop
-      stop() { this.t0 = -1; setDrop(0); this.drop = 0; wheelG.rotation.x = 0; for (const k of Object.keys(capG)) capG[k].visible = false; },
-      pose(d, ph) { this.t0 = -1; setDrop(d); this.drop = d; wheelG.rotation.x = d / 1.8; for (const k of Object.keys(capG)) capG[k].visible = k === ph; }   // a still frame (checks, the tour)
+      stop() { this.t0 = -1; setDrop(0); this.drop = 0; for (const k of Object.keys(capG)) capG[k].visible = false; },
+      pose(d, ph) { this.t0 = -1; setDrop(d); this.drop = d; for (const k of Object.keys(capG)) capG[k].visible = k === ph; }   // a still frame (checks, the tour)
     };
     (ctx2.shared.demoStops || (ctx2.shared.demoStops = [])).push({ id: "alt-mukhni-demo", running: () => M.t0 >= 0, stop: () => M.stop() });   // 1.9.2
-    // 1.9.1 (the user: "כפתור על הכיור להדגמה וכן בכל מקום שיש הדגמה כפתור כמו בבית ראשון"; "זוהי הזווית להדגמת הכיור שיראו גם את הגלגל"):
-    // the demonstration's view - from the south-west and a little above, the two posts, the wheel and the well in the frame (the user's
-    // picture) - and a button on the model over the winch, as the base's in the First Temple plugin (its own flight, no "reveal")
     ctx2.shared.flyPoints = ctx2.shared.flyPoints || {};
-    ctx2.shared.flyPoints.mukhniDemo = { pos: [KX - 10, F + 13, KZ + 6.8], target: [KX + 1, F + 5, KZ - 1.8] };   // inside the court (its south wall 65..70)
+    ctx2.shared.flyPoints.mukhniDemo = { pos: [KX + 11, F + 12, KZK - 9], target: [KX - 1, F + 3.6, PSZ] };
     {
       const MB = Array.isArray(ctx2.shared.modelButtons) ? ctx2.shared.modelButtons : (ctx2.shared.modelButtons = []);
-      const anc = [KX, AY + 4.6, KZ];
+      const anc = [PSX, AY + 2.4, PSZ];
       MB.push({
         id: "alt-mukhni-demo", label: "הדגמה: הכיור יורד לבור ועולה", labelOn: "עצור את ההדגמה", maxDist: 120,
-        title: "המוכני של בן קטין: בערב הגלגל מסתובב והכיור יורד לבור, ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י); בבוקר הוא עולה. גודל הגלגל והבור — בחירת מודל.",
+        title: "המוכני של בן קטין: בערב מסירים את מכסה הבור, והזרוע מרימה את הכיור מן הכן ומשקיעה אותו בבור, ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י); בבוקר הוא עולה וחוזר אל הכן. צורת המכונה, הבור ומספר החבלים — בחירת מודל.",
         anchor: () => anc,
         get: () => M.t0 >= 0,
         set: (on) => {
@@ -1954,30 +2024,26 @@
     }
     ctx2.animated.push(() => {
       if (M.t0 < 0) return;
-      const e = (performance.now() - M.t0) / (ctx2.shared.demoSlow || 1.5);   // 1.9.2: every demonstration slower (50-heichal.js SLOW)
+      const e = (performance.now() - M.t0) / (ctx2.shared.demoSlow || 1.5);
       let d = 0, ph = "eve";
       if (e < T_PRE) { d = 0; ph = "eve"; }
-      else if (e < T_PRE + T_DOWN) { const u = (e - T_PRE) / T_DOWN; d = DROP * (0.5 - 0.5 * Math.cos(Math.PI * u)); ph = "eve"; }
+      else if (e < T_PRE + T_DOWN) { const u = (e - T_PRE) / T_DOWN; d = DROP * u; ph = "eve"; }
       else if (e < T_PRE + T_DOWN + T_NIGHT) { d = DROP; ph = "night"; }
-      else if (e < T_PRE + T_DOWN + T_NIGHT + T_UP) { const u = (e - T_PRE - T_DOWN - T_NIGHT) / T_UP; d = DROP * (0.5 + 0.5 * Math.cos(Math.PI * u)); ph = "morning"; }
+      else if (e < T_PRE + T_DOWN + T_NIGHT + T_UP) { const u = (e - T_PRE - T_DOWN - T_NIGHT) / T_UP; d = DROP * (1 - u); ph = "morning"; }
       else if (e < T_PRE + T_DOWN + T_NIGHT + T_UP + 3000) { d = 0; ph = "morning"; }
       else { M.stop(); return; }
-      // SOUNDS_300 (the user's item 9, 18.11.2026): Ben Katin's wooden wheel - "קול העץ שעשה בן קטין מוכני לכיור" (Tamid 1:4) - as each
-      // motion begins, for as long as it lasts (the evening's down, the morning's up: T_DOWN, T_UP at the demonstration's pace), and a
-      // short splash as the laver's foot goes into the well's water (0.8 under the floor) and as it comes out of it. On this clock, each
-      // once a run (a new t0 is a new run; a frame's step, not a jump). This demonstration has no pause of its own
+      // SOUNDS_300: Ben Katin's wooden wheel as each motion begins, and a splash as the laver goes into the water and comes out
       try {
-        const SH = ctx2.shared, slow = SH.demoSlow || 1.5, WET = KY - F + 0.8, TU = T_PRE + T_DOWN + T_NIGHT;
+        const SH = ctx2.shared, slow = SH.demoSlow || 1.5, TU = T_PRE + T_DOWN + T_NIGHT, wetD = DROP * (0.45 + 0.55 * ((F + KEN_H - 0.15 + LIFT) - (F - 0.8)) / ((F + KEN_H - 0.15 + LIFT) - (F - 1.1 - LAVER_H * K.s)));
         if (M.sndT0 !== M.t0) { M.sndT0 = M.t0; M.sndE = null; }
         const e0 = M.sndE;
         M.sndE = e;
         if (e0 != null && e > e0 && e - e0 < 1000 && typeof SH.sfx === "function") {
           if (e0 < T_PRE && e >= T_PRE) SH.sfx("wheel", { dur: T_DOWN * slow / 1000 });
           if (e0 < TU && e >= TU) SH.sfx("wheel", { dur: T_UP * slow / 1000 });
-          if ((M.drop < WET && d >= WET) || (M.drop > WET && d <= WET)) SH.sfx("water", { dur: 1.2 });
+          if ((M.drop < wetD && d >= wetD) || (M.drop > wetD && d <= wetD)) SH.sfx("water", { dur: 1.2 });
         }
       } catch (_) {}
-      wheelG.rotation.x += (d - M.drop) / 1.8;   // the rope winds on the axle as the wheel turns
       M.drop = d;
       setDrop(d);
       for (const k of Object.keys(capG)) capG[k].visible = k === ph;
@@ -2286,7 +2352,7 @@
     ctx2.labels.push(
       { text: "המזבח", x: ACX, y: F + 18, z: ACZ, size: 5 },
       { text: "הכבש", x: ACX, y: F + 11, z: 28, size: 3 },
-      { text: "הכיור", x: KX, y: F + 5.6, z: KZ, size: 2.2 },
+      { text: "הכיור", x: KX, y: F + 6.4, z: KZK, size: 2.2 },   // KIYOR_A2: over the laver on its base
       { text: "בית המטבחים", x: 52, y: F + 10, z: -50, size: 3.5, layers: ["slaughterLbl"] },   // 1.9.2: hidden while the hooks are lit
       { text: "הטבעות", x: 52, y: F + 4.5, z: -27, size: 2.5 }
     );
