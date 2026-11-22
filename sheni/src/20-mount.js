@@ -412,7 +412,7 @@
       ctx2.labels.push(
         { text: "״שהכהן השורף את הפרה עומד בראש הר המשחה, ומתכוון ורואה בפתחו של היכל בשעת הזית הדם״ (מידות ב, ד)", x: OLV.x - 10, y: E + 9, z: 0, size: 4, layer: "parahSight", far: 1600 },
         { text: "כאן הכותל נמוך — הקו עובר מעליו", x: CO.harE + 4, y: 34, z: 6, size: 2.4, layer: "parahSight", far: 1600 },
-        { text: "פתח ההיכל", x: DX + 3, y: yt + 6, z: 4, size: 2.4, layer: "parahSight", far: 1600 });
+        { text: "פתח ההיכל — סוף קו הראייה מהר המשחה", x: DX + 3, y: yt + 6, z: 4, size: 2.4, layer: "parahSight", far: 1600 });
       let saved = null;
       ctx2.shared.features = ctx2.shared.features || {};
       ctx2.shared.features.parahSight = { key: "parahSight", timed: false, isOn: () => SG.visible,
@@ -423,7 +423,9 @@
     // ROSES_B2 (fix-b2, 22.11.2026 - the user's decisions 76, 77): the rose garden - a hidden layer outside the Kiponos gate (shared/frag/
     // rose-garden.js), on the place's feature "גנת הוורדים — מחוץ לשער קיפונוס"
     try {
-      const RG = tm_roseGarden(ctx2, { x0: -177, x1: -149.6, z0: 12, z1: 38, ground: terrainH, open: "n", wall: "e", name: "roseGarden" });
+      const RG = tm_roseGarden(ctx2, { x0: -177, x1: -149.6, z0: 12, z1: 38, ground: terrainH, open: "n", wall: "e", name: "roseGarden",
+        info: "**הברייתא** (בבא קמא פב:): ״ואין עושין בה גנות ופרדסות — חוץ מגנות וורדין שהיו מימות נביאים הראשונים״; **הרמב״ם** (בית הבחירה ז, יד): ״ואין מקיימין בה אילנות חוץ מגינת ורדים שהיתה שם מימות נביאים הראשונים״. מקומה לא נתפרש; תוספות יום טוב (מידות א, ג) ותפארת ישראל (יכין, מידות א, כה) מפרשים כך את שם ״שער קיפונוס״ שבמערב. מקומה, גודלה וצורתה — בחירת מודל.",
+        refs: [["בבא קמא פב:", { book: 122, index: 3124 }], ["רמב״ם בית הבחירה ז, יד", { book: 337, index: 124 }], ["תוספות יום טוב מידות א, ג", { book: 948, index: 30 }], ["יכין מידות א, כה", { book: 819, index: 52 }]] });
       ctx2.shared.features = ctx2.shared.features || {};
       ctx2.shared.features.roseGarden = { key: "roseGarden", timed: false, isOn: () => RG.visible, on: () => { RG.visible = true; }, off: () => { RG.visible = false; } };
     } catch (e) { console.warn("[mount] rose garden skipped", e && e.message); }

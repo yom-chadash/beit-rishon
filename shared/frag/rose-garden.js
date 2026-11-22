@@ -70,6 +70,7 @@
     if (o.wall !== "w") side("w", z0, z1, (a, b) => seg(x0, a, x0, b));
     if (o.wall !== "e") side("e", z0, z1, (a, b) => seg(x1, a, x1, b));
     if (fence.length) { const fm = new Mesh(mergeGeometries(fence), stone); fm.castShadow = fm.receiveShadow = true; G.add(fm); }
-    ctx.labels.push({ text: "גנת הוורדים — ״חוץ מגנות וורדין שהיו מימות נביאים הראשונים״ (בבא קמא פב:); מקומה — בחירת מודל", x: mx, y: gy(mx, mz) + 5, z: mz, size: 1.6, layer: G.name });
+    ctx.labels.push({ text: "גנת הוורדים — ״חוץ מגנות וורדין שהיו מימות נביאים הראשונים״ (בבא קמא פב:); מקומה — בחירת מודל", x: mx, y: gy(mx, mz) + 5, z: mz, size: 1.6, layer: G.name,
+      info: o.info || "", refs: o.refs || [] });
     return G;
   }

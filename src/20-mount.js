@@ -250,7 +250,9 @@
     // ROSES_B2 (fix-b2, 22.11.2026 - the user's decision 77 of 02:27: "שכבה כבויה גם בבית ראשון; מקום — צילום לאישור"): the rose garden
     // outside the west gate (shared/frag/rose-garden.js), on the place's feature "גנת הוורדים — מחוץ לשער המערב"
     try {
-      const RG = tm_roseGarden(ctx, { x0: -177, x1: -149.6, z0: 12, z1: 38, ground: terrainH, open: "n", wall: "e", name: "roseGarden" });
+      const RG = tm_roseGarden(ctx, { x0: -177, x1: -149.6, z0: 12, z1: 38, ground: terrainH, open: "n", wall: "e", name: "roseGarden",
+        info: "**הברייתא** (בבא קמא פב:): ״ואין עושין בה גנות ופרדסות — חוץ מגנות וורדין שהיו מימות נביאים הראשונים״; **הרמב״ם** (בית הבחירה ז, יד): ״ואין מקיימין בה אילנות חוץ מגינת ורדים שהיתה שם מימות נביאים הראשונים״. מקומה לא נתפרש; תוספות יום טוב (מידות א, ג) ותפארת ישראל (יכין, מידות א, כה) מפרשים כך את שם ״שער קיפונוס״ שבמערב. מקומה, גודלה וצורתה — בחירת מודל.",
+        refs: [["בבא קמא פב:", { book: 122, index: 3124 }], ["רמב״ם בית הבחירה ז, יד", { book: 337, index: 124 }], ["תוספות יום טוב מידות א, ג", { book: 948, index: 30 }], ["יכין מידות א, כה", { book: 819, index: 52 }]] });
       ctx.shared.features = ctx.shared.features || {};
       ctx.shared.features.roseGarden = { key: "roseGarden", timed: false, isOn: () => RG.visible, on: () => { RG.visible = true; }, off: () => { RG.visible = false; } };
     } catch (e) { console.warn("[mount] rose garden skipped", e && e.message); }
