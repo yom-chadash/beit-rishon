@@ -757,7 +757,7 @@
     // altar's frame - "מערבי של מים ומזרחי של יין"). Its walk is the walk engine's (ctx2.shared.walk); the walks are hurried.
     // SH.shiloach = { demo, stop, at(t), info, refs, POOL }.
     {
-      const SHL = { POOL: [32, 550], PW: 26, PD: 12, D: null, run: false, SP: { x: 25.5, z: 541.4, zT: 540.92 } };
+      const SHL = { POOL: [40.5, 535.5], PW: 15, PD: 8, D: null, run: false, SP: { x: 25.5, z: 541.4, zT: 540.92 } };   // SPRING_CAVE_B2: the pool before the rock, beside the path (until 22.11.2026 at [32, 550], 26 x 12, behind the rock)
       const K = SH.priestKit;
       const fnc = (f) => typeof f === "function";
       const smooth = (u) => u * u * (3 - 2 * u), lerp = (a, b, u) => a + (b - a) * u;
@@ -804,7 +804,7 @@
         const SP = SHL.SP, gy = groundY(SP.x, SP.z - 0.9, 20), offF = SHL.offF || { y: 1.2 };
         SP.gy = gy;
         SP.y = gy + Math.max(1.15, offF.y + 0.34);   // the spout's tip
-        box(2.6, SP.y - gy + 1.15, 1.6, new MeshStandardMaterial({ color: 0xb4703a, roughness: 0.95 }), SP.x, gy - 0.4, SP.z + 0.8);   // SHILOACH_CHALAMISH_B2: the mouth's block - part of the rock face
+        box(2.6, SP.y - gy + 0.65, 1.6, new MeshStandardMaterial({ color: 0xa8683a, roughness: 0.95 }), SP.x, gy - 0.4, SP.z + 0.8);   // (SPRING_CAVE_B2: lower - the cave over it)   // SHILOACH_CHALAMISH_B2: the mouth's block - part of the rock face
         const spout = new Mesh(new CylinderGeometry(0.045, 0.07, 0.48, 10), new MeshStandardMaterial({ color: 0x7a4626, roughness: 0.95 }));   // SPRING_ROAR_B2: a small opening in the rock ("כאיסר")
         spout.rotation.x = Math.PI / 2;
         spout.position.set(SP.x, SP.y + 0.03, SP.z - 0.24);
@@ -828,42 +828,77 @@
           const cliffM = new MeshStandardMaterial({ color: 0xb4703a, roughness: 0.95, flatShading: true }), bould = new MeshStandardMaterial({ color: 0x8e8b86, roughness: 0.95, flatShading: true });
           const fernM = new MeshStandardMaterial({ color: 0x3f7a32, roughness: 0.8, side: DoubleSide });
           const add2 = (geo, m, x, y, z, sx, sy, sz, ry) => { const r = new Mesh(geo, m); r.position.set(x, y, z); r.scale.set(sx, sy, sz); r.rotation.y = ry || 0; r.castShadow = r.receiveShadow = true; SG.add(r); return r; };
-          // the rock face behind the mouth (north of it), its foot at the spout's ground
-          for (let i = 0; i < 7; i++) {
-            const dx = (i - 3) * 1.9 + (rr() - 0.5), h = 3.2 + rr() * 3.2;
-            add2(rockGeo(i), cliffM, SP.x + dx, gy - 0.6 + h * 0.55, SP.z + 1.6 + rr() * 1.2 + Math.abs(dx) * 0.15, 1.5 + rr() * 0.8, h, 1.4 + rr() * 0.6, rr() * 3);
+          // SPRING_CAVE_B2 (the coordinator, 22.11.2026, after the pictures, as Chalamish p. 13: "מערה בצלע הר סלעית, עם סלעים אפורים, שרכים,
+          // והבריכה בין הסלעים"; the user's decision 101: "המים נובעים בקול גדול, ורק בסוף יוצא כאיסר"): A HILLSIDE OF ROCK south of the
+          // mouth and the pool - two rows of great reddish rocks, the nearer 6-10 amot high, the farther higher, lower toward their ends -
+          // and in it, over the small opening, a CAVE: a dark hollow in which white water churns (moving spray), loud; out of it only the
+          // small opening and its thin stream ("שילוח היה מוציא מים כאיסר"), into the basin, and from the basin a rill to the pool. The rocks,
+          // the cave, the water's look - model choices
+          const CAV = { x: SP.x, y: SP.y + 1.5, z: SP.z + 0.95, r: 1.3 };
+          const clearOf = (x, y, z, sx, sy) => !(Math.abs(x - CAV.x) < 1.6 + sx && y - sy < CAV.y + 1.6 && z - 2.2 < CAV.z);
+          for (let row = 0; row < 2; row++) {
+            for (let k = 0; k < 15; k++) {
+              const dx = -12 + k * 2.6 + (rr() - 0.5) * 0.9, mid = Math.exp(-(((dx - 3) / 13) ** 2));
+              const h = (row ? 7 : 3.5) + mid * (row ? 7 : 6.5) + rr() * 1.6, sx = 1.7 + rr() * 0.8, sz = 1.6 + rr() * 0.7;
+              const x = SP.x + dx, z = SP.z + (row ? 6.2 : 2.6) + rr() * 1.4 + Math.abs(dx) * 0.06, y = groundY(x, z, 20) - 0.8 + h * 0.5;
+              if (!row && Math.abs(dx) < 2.2) { add2(rockGeo(70 + k), cliffM, x, CAV.y + 1.6 + h * 0.35, z + 0.6, sx * 1.1, h * 0.45, sz, rr() * 3); continue; }   // over the cave: its roof
+              add2(rockGeo(70 + k + row * 20), cliffM, x, y, z, sx, h * 0.55, sz, rr() * 3);
+            }
           }
-          // grey boulders round the pool's rim and by the mouth
-          const [px2, pz2] = SHL.POOL, W2b = SHL.PW / 2 + 0.6, D2b = SHL.PD / 2 + 0.6;
-          for (let i = 0; i < 26; i++) {
-            const side = i % 4, u = rr() * 2 - 1;
-            const x = side < 2 ? px2 + u * W2b : px2 + (side === 2 ? -W2b : W2b), z = side < 2 ? pz2 + (side === 0 ? -D2b : D2b) : pz2 + u * D2b;
-            if (Math.hypot(x - SP.x, z - SP.zT) < 2.2) continue;   // the way to the mouth stays open
-            const sc = 0.5 + rr() * 0.9;
-            add2(rockGeo(10 + i), bould, x, RIM - 0.2 + sc * 0.4, z, sc * 1.2, sc * 0.75, sc, rr() * 3);
-          }
-          for (const [dx, dz] of [[-1.7, -0.6], [1.8, -0.5], [-2.4, 0.4], [2.5, 0.6]]) add2(rockGeo(40 + dx), bould, SP.x + dx, gy + 0.2, SP.zT + dz, 0.8, 0.55, 0.7, dx);
-          // the block of the mouth wrapped in rock: on its two sides and over the spout
-          for (const sx of [-1, 1]) add2(rockGeo(60 + sx), cliffM, SP.x + sx * 1.75, gy + 1.1, SP.z + 0.75, 1.0, 1.9, 1.05, sx);
-          add2(rockGeo(63), cliffM, SP.x, SP.y + 1.85, SP.z + 1.05, 1.7, 0.95, 1.05, 0.4);
-          // SPRING_ROAR_B2 (the user's decision 101, 22.11.2026 09:00: "תעשה שהמים נובעים בקול גדול, ורק בסוף יוצא כאיסר"): over the small
-          // opening, a dark hollow in the rock face and in it a whirlpool of water turning (the sound - a loud stream, while they are at the
-          // spring); the water comes out only by the opening, a thin stream (the Yerushalmi, Sukkah 5:6: "שילוח היה מוציא מים כאיסר").
-          // The hollow's size and the whirlpool's look - model choices
+          // the cave: a hollow (the back of a sphere, seen from inside), rocks round its mouth
+          const caveM = new MeshStandardMaterial({ color: 0x1c130e, roughness: 1, side: BackSide });
+          const cave = new Mesh(new SphereGeometry(1, 24, 14, 0, Math.PI), caveM); cave.scale.set(CAV.r * 1.15, CAV.r, CAV.r * 1.1); cave.position.set(CAV.x, CAV.y, CAV.z); cave.userData.noPick = true; SG.add(cave);
+          for (const sx of [-1, 1]) add2(rockGeo(60 + sx), cliffM, SP.x + sx * 1.8, gy + 0.6, SP.z + 0.7, 0.9, 1.3, 1.0, sx);   // the opening's block wrapped in rock on its two sides
+          for (const [ax, ay, sx, sy] of [[-1.75, 0.2, 0.75, 1.5], [1.75, 0.1, 0.8, 1.5], [0, 1.55, 1.7, 0.6], [-1.2, 1.25, 0.8, 0.7], [1.25, 1.2, 0.8, 0.7]]) add2(rockGeo(90 + ax), cliffM, CAV.x + ax, CAV.y + ay, CAV.z - 0.1, sx, sy, 0.9, ax);
+          // the water in it: churning white spray (points that whirl and fall back), a foaming floor, and a mist at the mouth
           {
-            const NY = SP.y + 0.62, NZ = SP.z - 0.05, NG = new Group(); NG.position.set(SP.x, NY, NZ); NG.rotation.y = Math.PI; SG.add(NG);
-            const hole = new Mesh(new CircleGeometry(0.5, 32), new MeshBasicMaterial({ color: 0x0a141c })); NG.add(hole);
-            const rimM = new Mesh(new TorusGeometry(0.52, 0.11, 8, 32), cliffM); rimM.castShadow = true; NG.add(rimM);
-            const cv = document.createElement("canvas"); cv.width = cv.height = 128;
-            const c2 = cv.getContext("2d"); c2.fillStyle = "rgba(20,60,90,1)"; c2.beginPath(); c2.arc(64, 64, 64, 0, Math.PI * 2); c2.fill();
-            for (let k = 0; k < 5; k++) { c2.strokeStyle = k % 2 ? "rgba(170,215,240,0.9)" : "rgba(90,160,205,0.85)"; c2.lineWidth = 5 - k * 0.6; c2.beginPath();
-              for (let a = 0; a < Math.PI * 5; a += 0.08) { const r = 4 + a * 3.6 + k * 2.2, x = 64 + Math.cos(a + k * 1.25) * r, y = 64 + Math.sin(a + k * 1.25) * r; if (r > 60) break; if (a === 0) c2.moveTo(x, y); else c2.lineTo(x, y); } c2.stroke(); }
-            const wtex = new CanvasTexture(cv);
-            const whirl = new Mesh(new CircleGeometry(0.42, 32), new MeshBasicMaterial({ map: wtex, transparent: true, opacity: 0.95 }));
-            whirl.position.z = 0.01; NG.add(whirl);
-            NG.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
-            if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (SHL.run || SHL.whirlAlways) whirl.rotation.z -= 0.09; });
+            const N = 700, pos = new Float32Array(N * 3), P = [];
+            for (let k = 0; k < N; k++) P.push({ a: rr() * Math.PI * 2, r: 0.2 + rr() * 1.0, y: rr(), sp: 1.2 + rr() * 2.6, ph: rr() * 6.3, out: k < 120 });
+            const pg = new BufferGeometry(); pg.setAttribute("position", new Float32BufferAttribute(pos, 3));
+            const pts = new Points(pg, new PointsMaterial({ color: 0xffffff, size: 0.3, transparent: true, opacity: 0.95, depthWrite: false }));
+            pts.frustumCulled = false; pts.userData.noPick = true; SG.add(pts);
+            const foamG = new PlaneGeometry(CAV.r * 2.0, CAV.r * 1.6, 14, 10).rotateX(-Math.PI / 2), fpos = foamG.attributes.position, fbase = Float32Array.from(fpos.array);
+            const foam = new Mesh(foamG, new MeshStandardMaterial({ color: 0xf2f8fc, roughness: 0.25, emissive: 0x6a8aa0, emissiveIntensity: 0.8 }));
+            foam.position.set(CAV.x, CAV.y - CAV.r * 0.62, CAV.z + 0.35); foam.userData.noPick = true; SG.add(foam);
+            const tick = (tt) => {
+              for (let k = 0; k < N; k++) {
+                const q2 = P[k], u = (q2.y + tt * q2.sp * 0.35) % 1;
+                if (q2.out) {   // the mist at the mouth: thrown out a little and falling
+                  pos[k * 3] = CAV.x + Math.cos(q2.a) * 0.9 * q2.r + Math.sin(tt * 3 + q2.ph) * 0.05;
+                  pos[k * 3 + 1] = CAV.y - 0.5 + 0.9 * Math.sin(u * Math.PI) - u * 0.6;
+                  pos[k * 3 + 2] = CAV.z - 0.3 - u * 1.1;
+                } else {   // the churning inside: round and up, and down again
+                  const a = q2.a + tt * q2.sp, r = q2.r * (0.75 + 0.25 * Math.sin(tt * 2.3 + q2.ph));
+                  pos[k * 3] = CAV.x + Math.cos(a) * r * CAV.r * 0.85;
+                  pos[k * 3 + 1] = CAV.y - CAV.r * 0.6 + Math.abs(Math.sin(u * Math.PI)) * CAV.r * 1.1;
+                  pos[k * 3 + 2] = CAV.z + 0.25 + Math.abs(Math.sin(a)) * r * CAV.r * 0.6;
+                }
+              }
+              pg.attributes.position.needsUpdate = true;
+              for (let k = 0; k < fpos.count; k++) { const x = fbase[k * 3], z = fbase[k * 3 + 2]; fpos.array[k * 3 + 1] = 0.12 * Math.sin(x * 5 + tt * 7) * Math.cos(z * 6 - tt * 5) + 0.06 * Math.sin((x + z) * 9 + tt * 11); }
+              fpos.needsUpdate = true; foamG.computeVertexNormals();
+            };
+            tick(0);
+            const cam = ctx2.camera, V3 = new Vector3(CAV.x, CAV.y, CAV.z);
+            if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (!SHL.run && !(cam && cam.position.distanceTo(V3) < 60)) return; tick(performance.now() / 1000); });
           }
+          // the pool among grey boulders (as Chalamish p. 13), the way to the mouth left open
+          const [px2, pz2] = SHL.POOL, W2b = SHL.PW / 2 + 0.5, D2b = SHL.PD / 2 + 0.5;
+          {
+            for (let i = 0; i < 46; i++) {
+              const side = i % 4, u = rr() * 2 - 1;
+              const x = side < 2 ? px2 + u * W2b : px2 + (side === 2 ? -W2b : W2b), z = side < 2 ? pz2 + (side === 0 ? -D2b : D2b) : pz2 + u * D2b;
+              if (Math.hypot(x - SP.x, z - SP.zT) < 2.4) continue;
+              const sc = 0.7 + rr() * 1.0;
+              add2(rockGeo(10 + i), bould, x, RIM - 0.1 + sc * 0.35, z, sc * 1.3, sc * 0.7, sc * 1.1, rr() * 3);
+            }
+            for (const [dx, dz] of [[-1.9, -0.7], [2.0, -0.6], [-2.6, 0.5]]) add2(rockGeo(40 + dx), bould, SP.x + dx, gy + 0.2, SP.zT + dz, 0.8, 0.55, 0.7, dx); }
+          // the rill from the basin to the pool
+          { const ax = SP.x + 0.6, az = SP.z - 0.6, [bx2, bz2] = SHL.POOL, ex = bx2 - SHL.PW / 2, ez = Math.min(bz2 + SHL.PD / 2 - 1, az - 1.5), L = Math.hypot(ex - ax, ez - az);
+            const rill = new Mesh(new PlaneGeometry(0.45, L).rotateX(-Math.PI / 2), mStream); rill.position.set((ax + ex) / 2, Math.max(groundY((ax + ex) / 2, (az + ez) / 2, 20), RIM - 0.4) + 0.07, (az + ez) / 2); rill.rotation.y = Math.atan2(ex - ax, ez - az); rill.userData.noPick = true; SG.add(rill); }
+          // the torches' light on the place while the procession is there (SHILOACH_CHALAMISH_B2 extraApply turns it on)
+          { const tl = new PointLight(0xffa04a, 0, 34, 1.4); tl.position.set(SP.x + 2.5, SP.y + 3.2, SP.z - 5); SG.add(tl); SHL.springLight = tl;
+            const cl = new PointLight(0xcfe6ff, 0, 5, 1.5); cl.position.set(CAV.x, CAV.y + 0.2, CAV.z - 0.2); SG.add(cl); SHL.caveLight = cl; }   // and a pale light on the white water in the cave
           // ferns: clumps of long narrow fronds
           const frond = new PlaneGeometry(0.22, 1.3, 1, 3).translate(0, 0.65, 0);
           const clump = (x, y, z, s2) => { for (let k = 0; k < 7; k++) { const f = new Mesh(frond, fernM); f.position.set(x, y, z); f.rotation.set(-0.5 - rr() * 0.5, k * 0.9 + rr() * 0.4, 0, "YXZ"); f.scale.setScalar(s2 * (0.8 + rr() * 0.4)); f.userData.noPick = true; SG.add(f); } };
@@ -1098,8 +1133,11 @@
       // SHILOACH_SHUSHAN_B2 (the user's decision 104, 22.11.2026 09:00: "הופכים פניהם בשער עזרת נשים, ויוצאים בשער שושן, כבחלמיש (עמ' 10)"):
       // from the turn at the women's court's gate (decl1) across the mount, out by the Shushan gate (shu1); then, unseen, to the southern
       // ramp, down it (gate1 - stairs1). Back up the same ramp (backR - back1) to the Water Gate.
-      const T = { walk0: 4.0, out1: 9.6, decl1: 12.4, shu1: 17.4, gate1: 20.0, stairs1: 25.0, path1: 29.8, rim1: 31.0, fill0: 31.8, fill1: 34.8, back0: 35.8,
-        backR: 40.4, back1: 44.8, wg0: 47.0, wg1: 50.4, blow0: 50.6, blow1: 54.8, in1: 58.8, ramp1: 63.2, top1: 66.0, pour0: 66.6, pour1: 70.2, end: 72.8 };
+      // SHILOACH_PARAH_B2 (the user's decision 109, 22.11.2026: "ג" - out by the Shushan gate, along the ramp of the Parah (20-mount.js),
+      // and from its end south to the southern ramp - all of it seen): shu1 - the Shushan gate; par1 - the Parah ramp's end on the Mount of
+      // Olives; stairs1 - the foot of the southern ramp (CHULDA_RAMPS_B2), whence the path to the Shiloach. The walk outside is hurried.
+      const T = { walk0: 4.0, out1: 9.6, decl1: 12.4, shu1: 17.4, par1: 23.9, gate1: 17.6, stairs1: 33.9, path1: 38.7, rim1: 39.9, fill0: 40.7, fill1: 43.7, back0: 44.7,
+        backR: 49.3, back1: 53.7, wg0: 55.9, wg1: 59.3, blow0: 59.5, blow1: 63.7, in1: 67.7, ramp1: 72.1, top1: 74.9, pour0: 75.5, pour1: 79.1, end: 81.7 };
       // the flask: upright in the world, its neck in his hand; tilted forward to pour. Its mouth - where the streams begin and end
       const FILL_LEAN = 0.1, POUR_LEAN = 0.08, TILT = 1.62;
       const QG = new Quaternion(), QT = new Quaternion(), AX = new Vector3(), NECK = new Vector3(0, -0.21, 0), MOUTH = new Vector3(0, 0.3, 0), V1 = new Vector3();
@@ -1138,8 +1176,10 @@
           { pts: [[92.5, 0], [97, 0], [105, 0], [213, 0]], t: [T.walk0 + 0.5, T.out1 + 0.5], near: 13.5, endYaw: -Math.PI / 2 },   // his face to the west there
           // SHILOACH_SHUSHAN_B2: out of the women's court's gate, across the mount, out by the Shushan gate (its sill, x 350..356, y 0)
           { pts: [[213, 0], [236, 0], [300, 0], [358, 0]], t: [T.decl1 + 0.2, T.shu1], near: 1, proc: true },
-          { pts: [[358, 0], [362, 0], [362, 340], [0, 340], [0, 335.2]], t: [T.shu1, T.gate1], near: 1, hide: true },   // (not seen: from the Shushan gate to the southern ramp - a question for the user)
-          { pts: [[0, 335.2], [0, RP.zf]], t: [T.gate1, T.stairs1], stairs: [0, RP.yf] },   // down the southern ramp (CHULDA_RAMPS_B2)
+          // SHILOACH_PARAH_B2: along the Parah ramp to its end (OLV.rampEnd), then down the hill southward, across the valley, to the foot of
+          // the southern ramp (the way from the Parah ramp's end - a model choice)
+          { pts: [[358, 0], [((SH.olives && SH.olives.rampEnd) || 765) - 1, 0]], t: [T.shu1, T.par1], near: 1, proc: true },
+          { pts: [[((SH.olives && SH.olives.rampEnd) || 765) + 2, 0], [((SH.olives && SH.olives.rampEnd) || 765) - 20, 120], [600, 330], [380, 450], [160, 440], [0, RP.zf + 1]], t: [T.par1, T.stairs1], terrain: true, proc: true },
           { pts: PATH.slice(), t: [T.stairs1, T.path1], terrain: true },
           { pts: [PATH[PATH.length - 1], standF()], t: [T.path1, T.rim1], terrain: true, endYaw: 0 },   // his face to the spout
           { pts: [standF()].concat(PATH.slice().reverse()), t: [T.back0, T.backR], terrain: true },
@@ -1266,7 +1306,7 @@
         // the procession: each a little behind him on his way, on its two sides (a lane each side, so that he goes between them)
         const fl = 0.85 + 0.15 * Math.sin(t * 17);
         const wp = wayAt(WS, t), wi = wp ? WS.indexOf(wp) : -1;
-        const outside = !!wp && !wp.hide && ((t >= T.gate1 && t < T.back1 + 0.3 && (wp.stairs || wp.terrain)) || (wp.proc && t >= T.decl1 + 1.2));
+        const outside = !!wp && !wp.hide && ((t >= T.shu1 && t < T.back1 + 0.3 && (wp.stairs || wp.terrain)) || (wp.proc && t >= T.decl1 + 1.2));
         const Sp = wp ? clamp((t - wp.t[0]) / Math.max(1e-3, wp.t[1] - wp.t[0]), 0, 1) * plen(wp.pts) : 0;
         for (const F of D2.fol) {
           let w = wp, S = Sp - F.d, L = wp ? plen(wp.pts) : 0;
@@ -1282,6 +1322,7 @@
           F.G.rotation.y = tf >= w.t[1] && w.endYaw != null && w === wp ? w.endYaw : yaw;
           if (F.fl) F.fl.scale.set(fl, 0.9 + 0.2 * Math.sin(t * 23 + F.lag * 3), fl);
         }
+        if (SHL.springLight) { const on = SHL.run && t >= T.path1 - 1.2 && t < T.back0 + 2.4; SHL.springLight.intensity = on ? 38 : 0; if (SHL.caveLight) SHL.caveLight.intensity = on ? 9 : 0; }   // SPRING_CAVE_B2
         // the Levite with the lyre, by the spring while they are there
         const SP = SHL.SP, lvOn = t >= T.path1 - 1 && t < T.back0 + 1.6 && SP.gy != null;
         D2.lev.visible = lvOn;
@@ -1343,12 +1384,12 @@
           // SHILOACH_SHUSHAN_B2: across the mount with them, and out by the Shushan gate
           [T.decl1 + 1.4, [266, 12, 24], [246, 2, 0]], [T.shu1 - 1.4, [340, 10, 22], [312, 2, 0]], [T.shu1, [334, 11, 20], [356, 4, 0]],
           // over the mount (above the roof of the royal stoa, 37.5) to the southern ramp (CHULDA_RAMPS_B2), and down it with them
-          [T.shu1 + 1.2, [200, 95, 250], [30, 0, 350]], [T.gate1 - 0.6, [24, 34, 372], [2, -4, 340]],
-          [T.gate1, [16, 9, 350], [0, -3, 339]], [T.gate1 + 1.6, [13, RP.yAt(354) + 6, 364], [0, RP.yAt(350), 350]],
-          [T.stairs1 - 0.5, [14, RP.yAt(RP.zf - 12) + 5, RP.zf + 2], [0, RP.yAt(RP.zf - 22), RP.zf - 18]],   // (close, with him: the people on the ramp)
-          [T.stairs1 + 1.6, [19, RP.yf + 13, RP.zf + 22], [3, RP.yf, RP.zf + 2]],
-          [T.path1 - 2.2, [44, wy + 22, 470], [20, wy + 4, 515]],
-          [T.rim1, [sf[0] - 5.2, sy + 2.9, sf[1] - 2.0], [sf[0] + 0.3, sy + 1.3, sf[1] + 0.8]], [T.fill1, [sf[0] - 4.8, sy + 2.7, sf[1] - 1.6], [sf[0] + 0.3, sy + 1.25, sf[1] + 0.85]],
+          // SHILOACH_PARAH_B2: out of the gate onto the Parah ramp, along it, off its end, down and across to the southern ramp's foot
+          [T.shu1 + 1.4, [392, 18, 26], [430, 2, 0]], [T.shu1 + 3.6, [520, 26, 34], [580, 0, 0]], [T.par1 - 0.8, [700, 22, 36], [752, 0, 0]],
+          [T.par1 + 1.2, [772, 14, 152], [730, -8, 162]], [T.par1 + 4.5, [562, 12, 328], [524, -22, 372]], [T.stairs1 - 3.2, [342, 12, 508], [298, -34, 446]],
+          [T.stairs1 - 0.6, [42, RP.yf + 14, RP.zf + 48], [18, RP.yf, RP.zf + 12]], [T.stairs1 + 1.6, [19, RP.yf + 13, RP.zf + 22], [3, RP.yf, RP.zf + 2]],
+          [T.path1 - 2.2, [36, wy + 9, 506], [28, wy + 4, 540]], [T.path1 - 0.4, [33, sy + 4.2, 526], [27, sy + 2.5, 543]],   // SPRING_CAVE_B2: the rock, the cave and the pool, at a man's height
+          [T.rim1, [sf[0] - 3.4, sy + 2.2, sf[1] - 3.0], [SP.x + 0.4, SP.y + 1.0, SP.z + 0.9]], [T.fill1, [sf[0] - 3.0, sy + 2.0, sf[1] - 2.7], [SP.x + 0.4, SP.y + 1.0, SP.z + 0.9]],
           [T.back0 + 1.0, [sf[0] - 6, sy + 10, sf[1] - 6], [sf[0] + 4, sy - 2, sf[1] - 30]], [T.back0 + 2.6, [40, wy + 34, 600], [12, RP.yf, RP.zf + 10]],
           [T.back1 - 0.6, [22, RP.yAt(360) + 10, RP.zf - 5], [0, -6, 345]],
           // up over the wall and the mount again, to the Water Gate
@@ -1366,7 +1407,8 @@
         [T.walk0 + 0.4, "״היו תוקעין והולכין, עד שמגיעין לשער היוצא מזרח״ (סוכה ה, ד)"],
         [T.out1 + 0.4, "״הגיעו לשער היוצא ממזרח, הפכו פניהן למערב, ואמרו... ואנו ליה עינינו״ (סוכה ה, ד)"],
         [T.decl1 + 0.2, "ויוצאים מהר הבית בשער המזרחי — שער שושן; ביציאה מהר הבית מחלקים לפידים — כפי שהובא בחלמיש"],
-        [T.gate1 - 0.4, "״התהלוכה יורדת בכבש הדרומי של הר הבית, לכוון מעין השילוח״ — כפי שהובא בחלמיש; הדרך — בחירת מודל"],
+        [T.shu1 + 0.4, "יורדים בכבש הפרה — ״וכבש היו עושים מהר הבית להר המשחה״ (פרה ג, ו)"],
+        [T.par1 + 0.3, "ומסוף כבש הפרה פונים דרומה, אל הכבש הדרומי של הר הבית, ומשם אל השילוח — הדרך בחירת מודל; ההליכה מואצת"],
         [T.stairs1, "אל השילוח — הדרך ומקום המעיין בחירת מודל: אין מקור שמתאר אותם"],
         [T.rim1 - 0.4, "המים נובעים בתוך הסלע בקול גדול, ויוצאים בפתח קטן — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו); ״היה ממלא מן השלוח״ (סוכה ד, ט)"],
         [T.back0 + 0.6, "״בעוד השחר עומד לעלות, שבה התהלוכה ועולה בכבש הדרומי של הר הבית״ — כפי שהובא בחלמיש; ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״ (מידות א, ג)"],
@@ -1436,14 +1478,14 @@
         "**שער המים** (מידות ב, ו): ״ולמה נקרא שמו שער המים. שבו מכניסין צלוחית של מים של נסוך בחג. רבי אליעזר בן יעקב אומר, ובו המים מפכים, ועתידין להיות יוצאין מתחת מפתן הבית״; וכן בתוספתא (סוכה ג, ג).\n" +
         "**שערי חולדה** (מידות א, ג): ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״.\n" +
         "**השילוח** — תני, רבן שמעון בן גמליאל אומר: ״שילוח היה מוציא מים כאיסר. אמרו: נרחיבנו וירבו מימיו. הרחיבוהו ונתמעטו מימיו. חזרו וגדרוהו וחזר לכמות שהיה״ (ירושלמי סוכה ה, ו).\n" +
-        "**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. הבריכה מצוירת בתחתית העמק שבדרום ההר, כמאתיים ועשרים אמה מחומתו, והשביל אליה יוצא מרגלי הכבש שלפני שער חולדה המערבי — בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): בפתיחה שני כהנים תוקעים בשער ניקנור, יורדים במעלות ותוקעים בהליכה עד שער עזרת נשים, ושם הופכים פניהם למערב (סוכה ה, ד); יוצאים מהר הבית בשער המזרחי — שער שושן — ובלפידים; ״התהלוכה יורדת בכבש הדרומי של הר הבית, לכוון מעין השילוח״, ובחזרה, עם עלות השחר, ״עולה בכבש הדרומי של הר הבית״ ונכנסת בשער חולדה אל שער המים. במשנה נאמר רק ״הגיעו לשער המים״ — הדרך בחירת מודל; בין שער שושן לכבש הדרומי ההליכה אינה נראית. **הכבש הדרומי**: לפני שני שערי חולדה כבש משופע (במקום מדרגות) — כפי שהוא נקרא בחלמיש; שיפועו ורוחבו — בחירת מודל. **המעין**: המים נובעים בתוך הסלע בקול גדול, ורואים בו מערבולת, ויוצאים בפתח קטן, בזרם דק — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו). **התוקעים בשעת הניסוך** — לשון המשנה (תמיד ז, ג): ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו״; **הרמב״ם** (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״. במודל — על שלחן החלבים. **הסגן והסודר** — ״הסגן עומד על הקרן והסודרים בידו״, ״והניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם). צורת הבריכה והסלע, הפתח, צורת הכד, מספר ההולכים והלפידים, ומקומות התוקעים והסגן — בחירות מודל. בהדגמה הכהן ממלא את הכד מתחת לזרם, ומנסך ביד מורמת לתוך הספל המערבי, וכהן היין בספל המזרחי. ההליכה בהדגמה מואצת, ובשני מקומות היא מדולגת.";
+        "**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. הבריכה מצוירת בתחתית העמק שבדרום ההר, כמאתיים ועשרים אמה מחומתו, והשביל אליה יוצא מרגלי הכבש שלפני שער חולדה המערבי — בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): בפתיחה שני כהנים תוקעים בשער ניקנור, יורדים במעלות ותוקעים בהליכה עד שער עזרת נשים, ושם הופכים פניהם למערב (סוכה ה, ד); יוצאים מהר הבית בשער המזרחי — שער שושן — ובלפידים, יורדים בכבש הפרה (״וכבש היו עושים מהר הבית להר המשחה״, פרה ג, ו), ומסופו פונים דרומה אל הכבש הדרומי של הר הבית, ומשם אל מעין השילוח; ובחזרה, עם עלות השחר, ״עולה בכבש הדרומי של הר הבית״ ונכנסת בשער חולדה אל שער המים. במשנה נאמר רק ״הגיעו לשער המים״ — הדרך, ובפרט הדרך מסוף כבש הפרה אל הכבש הדרומי, בחירת מודל; ההליכה מחוץ להר הבית מואצת. **הכבש הדרומי**: לפני שני שערי חולדה כבש משופע (במקום מדרגות) — כפי שהוא נקרא בחלמיש; שיפועו ורוחבו — בחירת מודל. **המעין**: המים נובעים בתוך הסלע בקול גדול, ורואים בו מערבולת, ויוצאים בפתח קטן, בזרם דק — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו). **התוקעים בשעת הניסוך** — לשון המשנה (תמיד ז, ג): ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו״; **הרמב״ם** (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״. במודל — על שלחן החלבים. **הסגן והסודר** — ״הסגן עומד על הקרן והסודרים בידו״, ״והניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם). צורת הבריכה והסלע, הפתח, צורת הכד, מספר ההולכים והלפידים, ומקומות התוקעים והסגן — בחירות מודל. בהדגמה הכהן ממלא את הכד מתחת לזרם, ומנסך ביד מורמת לתוך הספל המערבי, וכהן היין בספל המזרחי. ההליכה בהדגמה מואצת, ובשני מקומות היא מדולגת.";
       const REFS = [["סוכה ד, ט", { book: 56, index: 48 }], ["סוכה ד, י", { book: 56, index: 49 }], ["מידות ב, ו", "Mishnah_Middot.2.6"], ["מידות א, ג", "Mishnah_Middot.1.3"], ["רמב״ם כלי המקדש ז, ו", { book: 338, index: 107 }], ["תמיד ז, ג", { book: 88, index: 40 }], ["סוכה ה, ד", { book: 56, index: 54 }]];
       SH.shiloach = { demo: start, stop, T, info: INFO, refs: REFS, POOL: SHL.POOL, at: (t) => { buildPool(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); return { Y0 }; },
         leave: () => { if (SHL.D) SHL.D.DG.visible = false; }, dbg: () => ({ offF: SHL.offF, offP: SHL.offP, SP: { x: SHL.SP.x, y: SHL.SP.y, gy: SHL.SP.gy, zT: SHL.SP.zT }, standF: standF(), standP: standP(), bowl: BOWL(), bowlY: bowlY() }) };
       SH.modelButtons = SH.modelButtons || [];
       SH.modelButtons.push({
         id: "shiloachDemo", label: "הדגמה: ניסוך המים — מן השילוח", labelOn: "עצור את ההדגמה", maxDist: 140,
-        title: "״צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט). ההדגמה: כהן יוצא בשער שושן ויורד בכבש הדרומי, ממלא מן השילוח, חוזר בשער חולדה ובשער המים, ומנסך בספל המערבי, ושני כהנים תוקעים על שלחן החלבים.",
+        title: "״צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח. הגיעו לשער המים, תקעו והריעו ותקעו״ (סוכה ד, ט). ההדגמה: כהן יוצא בשער שושן ובכבש הפרה, פונה אל הכבש הדרומי, ממלא מן השילוח, חוזר בשער חולדה ובשער המים, ומנסך בספל המערבי, ושני כהנים תוקעים על שלחן החלבים.",
         anchor: () => [SHL.POOL[0], Y0 + 9, SHL.POOL[1]],
         get: () => SHL.run,
         set: (on) => { if (on) start(); else stop(); }
@@ -2488,26 +2530,50 @@
     {
       const SG2 = grp("azaraSeating", false);
       const CX = 77.2, CZ = 45, F = groundAt(CX, CZ, 30, LV.KOH);
-      const stoneT = M2.marble || M2.stoneLight, benchM = M2.cedar || M2.stoneLight;
-      const silverM = new MeshStandardMaterial({ color: 0xd7d7dc, metalness: 0.85, roughness: 0.3 });
-      const meatM = new MeshStandardMaterial({ color: 0x8a3b2a, roughness: 0.7 }), matzaM = new MeshStandardMaterial({ color: 0xe8d3a2, roughness: 0.85 });
-      const TL = 4.4, TW = 1.6, TH = 1.55;
-      mesh(SG2, new BoxGeometry(TW, 0.16, TL), stoneT, CX, F + TH - 0.08, CZ);   // the table
-      for (const lx of [-1, 1]) for (const lz of [-1, 1]) mesh(SG2, new BoxGeometry(0.16, TH - 0.16, 0.16), stoneT, CX + lx * (TW / 2 - 0.15), F + (TH - 0.16) / 2, CZ + lz * (TL / 2 - 0.2));
+      // (the user, after the picture: "השולחן לא בגובה הכהנים, הבשר צריך להיות בשר אמיתי!" - the table's top now over the knees of
+      // the seated, under their elbows; pieces of cooked meat, irregular, some with a bone, in silver bowls; round thin matzot; the table
+      // of veined marble)
+      const marbleTex = (() => { const cv = document.createElement("canvas"); cv.width = cv.height = 256; const c2 = cv.getContext("2d");
+        c2.fillStyle = "#e9e3d6"; c2.fillRect(0, 0, 256, 256);
+        let q3 = 31; const r3 = () => (q3 = (q3 * 1664525 + 1013904223) >>> 0) / 4294967296;
+        for (let k = 0; k < 14; k++) { c2.strokeStyle = "rgba(120,112,100," + (0.18 + r3() * 0.3) + ")"; c2.lineWidth = 0.6 + r3() * 1.8; c2.beginPath(); let x = r3() * 256, y = 0; c2.moveTo(x, y); while (y < 256) { x += (r3() - 0.5) * 22; y += 6 + r3() * 10; c2.lineTo(x, y); } c2.stroke(); }
+        const t = new CanvasTexture(cv); t.wrapS = t.wrapT = RepeatWrapping; return t; })();
+      const stoneT = new MeshStandardMaterial({ map: marbleTex, color: 0xf2ece0, roughness: 0.32, metalness: 0.02 }), benchM = M2.cedar || M2.stoneLight;
+      const silverM = new MeshStandardMaterial({ color: 0xd7d7dc, metalness: 0.85, roughness: 0.3, side: DoubleSide });
+      const meatM = new MeshStandardMaterial({ color: 0x7a3a20, roughness: 0.42, metalness: 0.05 }), meatM2 = new MeshStandardMaterial({ color: 0x96502c, roughness: 0.5 });
+      const boneM = new MeshStandardMaterial({ color: 0xeee6d2, roughness: 0.6 });
+      const matzaTex = (() => { const cv = document.createElement("canvas"); cv.width = cv.height = 128; const c2 = cv.getContext("2d");
+        c2.fillStyle = "#e6cf9a"; c2.fillRect(0, 0, 128, 128); let q4 = 7; const r4 = () => (q4 = (q4 * 1664525 + 1013904223) >>> 0) / 4294967296;
+        for (let k = 0; k < 90; k++) { c2.fillStyle = "rgba(120,72,30," + (0.25 + r4() * 0.5) + ")"; c2.beginPath(); c2.arc(r4() * 128, r4() * 128, 0.8 + r4() * 2.4, 0, Math.PI * 2); c2.fill(); }
+        for (let y = 10; y < 128; y += 12) { c2.strokeStyle = "rgba(150,100,50,0.35)"; c2.beginPath(); c2.moveTo(0, y); c2.lineTo(128, y); c2.stroke(); }
+        return new CanvasTexture(cv); })();
+      const matzaM = new MeshStandardMaterial({ map: matzaTex, roughness: 0.85 });
+      const TL = 4.4, TW = 1.6, TH = 1.3;
+      mesh(SG2, new BoxGeometry(TW, 0.12, TL), stoneT, CX, F + TH - 0.06, CZ);   // the table: its top over the knees of the seated (bench 0.9)
+      for (const lx of [-1, 1]) for (const lz of [-1, 1]) mesh(SG2, new BoxGeometry(0.16, TH - 0.12, 0.16), stoneT, CX + lx * (TW / 2 - 0.15), F + (TH - 0.12) / 2, CZ + lz * (TL / 2 - 0.2));
       for (const sd of [-1, 1]) mesh(SG2, new BoxGeometry(0.6, 0.9, TL), benchM, CX + sd * (TW / 2 + 0.75), F + 0.45, CZ);   // the benches
       for (const sz of [-1, 1]) mesh(SG2, new BoxGeometry(0.7, 0.9, 0.6), benchM, CX, F + 0.45, CZ + sz * (TL / 2 + 0.75));   // a stool at each end
-      // the dishes: meat in silver dishes, stacks of matzot, before each one
       const TY = F + TH;
       const seats = [];
       for (const sd of [-1, 1]) for (const k of [-1, 0, 1]) seats.push([CX + sd * (TW / 2 + 0.75), CZ + k * 1.35, sd < 0 ? Math.PI / 2 : -Math.PI / 2]);
       for (const sz of [-1, 1]) seats.push([CX, CZ + sz * (TL / 2 + 0.75), sz < 0 ? 0 : Math.PI]);
-      for (const [sx, sz2] of seats) {
-        const dx = CX - sx, dz = CZ - sz2, L = Math.hypot(dx, dz) || 1, px = sx + dx / L * (Math.abs(dx) > 0.1 ? 1.15 : 1.05), pz = sz2 + dz / L * (Math.abs(dz) > 0.1 ? 1.15 : 1.05);
-        mesh(SG2, new CylinderGeometry(0.24, 0.2, 0.05, 16), silverM, px, TY + 0.025, pz);
-        mesh(SG2, new BoxGeometry(0.2, 0.08, 0.14), meatM, px, TY + 0.09, pz).rotation.y = Math.atan2(dx, dz);
-      }
-      for (const [mx, mz] of [[CX, CZ - 0.6], [CX, CZ + 0.6]]) for (let i = 0; i < 5; i++) mesh(SG2, new CylinderGeometry(0.22, 0.22, 0.025, 18), matzaM, mx, TY + 0.015 + i * 0.03, mz);
-      mesh(SG2, new BoxGeometry(0.5, 0.12, 0.9), matzaM, CX, TY + 0.06, CZ);   // a loaf of the shewbread (a model choice)
+      let q5 = 106;
+      const r5 = () => (q5 = (q5 * 1664525 + 1013904223) >>> 0) / 4294967296;
+      const lump = (n) => { const g3 = new IcosahedronGeometry(1, 1), ps = g3.attributes.position; for (let k = 0; k < ps.count; k++) { const x = ps.getX(k), y = ps.getY(k), z = ps.getZ(k), f = 1 + 0.28 * Math.sin(x * 4.1 + n) * Math.cos(z * 3.3 + n * 2) + 0.15 * Math.sin(y * 6 + n); ps.setXYZ(k, x * f, y * f * 0.6, z * f); } g3.computeVertexNormals(); return g3; };
+      const bowlG = new LatheGeometry([[0.001, 0], [0.18, 0], [0.26, 0.05], [0.31, 0.12], [0.3, 0.13], [0.24, 0.07], [0.001, 0.04]].map(([r, y]) => new Vector2(r, y)), 22);
+      seats.forEach(([sx, sz2], si) => {
+        const dx = CX - sx, dz = CZ - sz2, L = Math.hypot(dx, dz) || 1, px = sx + dx / L * (Math.abs(dx) > 0.1 ? 1.12 : 1.02), pz = sz2 + dz / L * (Math.abs(dz) > 0.1 ? 1.12 : 1.02);
+        mesh(SG2, bowlG, silverM, px, TY, pz);
+        for (let k = 0; k < 3; k++) {   // pieces of meat in the bowl
+          const m3 = mesh(SG2, lump(si * 3 + k), k % 2 ? meatM2 : meatM, px + (r5() - 0.5) * 0.22, TY + 0.1 + k * 0.03, pz + (r5() - 0.5) * 0.22);
+          m3.scale.set(0.09 + r5() * 0.05, 0.07 + r5() * 0.03, 0.07 + r5() * 0.04); m3.rotation.y = r5() * 3;
+        }
+        if (si % 3 === 0) { const b = mesh(SG2, new CylinderGeometry(0.018, 0.018, 0.26, 6).rotateZ(Math.PI / 2), boneM, px, TY + 0.15, pz + 0.04); b.rotation.y = r5() * 3;
+          for (const e of [-1, 1]) { const k2 = mesh(SG2, new SphereGeometry(0.035, 8, 6), boneM, 0, 0, 0); b.add(k2); k2.position.set(e * 0.13, 0, 0); } }
+        const mz = mesh(SG2, new CylinderGeometry(0.2, 0.2, 0.012, 24), matzaM, px - dz / L * 0.45, TY + 0.008, pz + dx / L * 0.45);   // a matzah beside the bowl
+        mz.rotation.y = r5() * 3;
+      });
+      for (const [mx, mz] of [[CX, CZ - 0.7], [CX, CZ + 0.7]]) for (let i = 0; i < 6; i++) { const m4 = mesh(SG2, new CylinderGeometry(0.27, 0.27, 0.014, 26), matzaM, mx + (r5() - 0.5) * 0.04, TY + 0.008 + i * 0.016, mz + (r5() - 0.5) * 0.04); m4.rotation.y = r5() * 3; }
       try {
         tm_people(ctx2).crowd(SG2, seats, { y: F, s: 1.4, pose: "bench", seat: 0.9, kind: "kohen", robe: 0xf1ede2, tone: (i) => i % 3, fwd: 0.3, shadow: true, name: "azaraSeated" });
       } catch (e) { console.warn("[azara seating]", e && e.message); }
