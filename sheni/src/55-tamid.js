@@ -1773,6 +1773,14 @@
     // water goes down to the floor. Until now (KIDDUSH_FOOT_213) the right foot raised under the stream, then the left.
     const KIY = () => (fnc(SH.kiyorInfo) ? SH.kiyorInfo() : { R: 2, x: 22, z: 54.7, foot: F + 1.3, spouts: [] });
     KID.spotAt = (i, out = 1.75) => { const I = KIY(), o = I.spouts[i] || { a: -HP }, r = I.R + out; return { p: [I.x + Math.sin(o.a) * r, I.z + Math.cos(o.a) * r], yaw: o.a + Math.PI }; };
+    // KIDDUSH_FLAT_A2: where he stands for the palms on the feet - sideways to the spout, the laver at his left: the stream comes out of
+    // the spout and falls in an arc (KID.waterAt) past his left side, under his bowed body, onto the backs of his hands on his feet; his
+    // hands' middle d amot out from the spout's mouth (until now he faced the laver - bowed so, his body was under the stream). Model choice
+    KID.flatSpot = (i, d = 0.9) => {
+      const I = KIY(), o = I.spouts[i] || { a: -HP, p: [I.x, F, I.z - I.R] }, ua = [Math.sin(o.a), Math.cos(o.a)];
+      const rh = Math.hypot(o.p[0] - I.x, o.p[2] - I.z) + d, yaw = o.a + HP, fw = [Math.sin(yaw), Math.cos(yaw)], hz = (SH.priestKit && SH.priestKit.kidHZ) || 0.29;
+      return { p: [I.x + ua[0] * rh - fw[0] * hz, I.z + ua[1] * rh - fw[1] * hz], yaw };
+    };
     const WHEEL_SPOT = [15.15, 57.15];   // west of the drum's handles (40-altar.js: the post x 17.4, z 58.05; the handles at x 16.05)
     SC.kiyor = (a) => {
       a.putA("machtaS", 46.4, 14.1, 0, Math.PI);   // "והרי המחתה נתונה במקצוע בין הכבש למזבח, במערבו של כבש"
@@ -1780,7 +1788,7 @@
       a.pose("t", "carry", 9.6, 14.2);              // his hands on the wheel's handles
       a.ramp("mukhni", 1, 0, 9.8, 14);
       a.fx("mukhni", 10.6);
-      const W8 = KID.spotAt(6);                     // the spout on the laver's west side (40-altar.js: spout 6 at 270 degrees)
+      const W8 = KID.flatSpot(6);                   // the spout on the laver's west side (40-altar.js: spout 6 at 270 degrees) - KIDDUSH_FLAT_A2
       a.walk("t", [WHEEL_SPOT, [WHEEL_SPOT[0] + 1.2, 54.2], W8.p], 14.4, 15.6, { yaw: W8.yaw });
       a.pose("t", "kiddush", 15.8, 19.6);
       a.set("kidWater", 1, 16.4); a.set("kidWater", 0, 19.0);
@@ -1792,15 +1800,15 @@
     // b. R. Yehuda's reading his fellow (b1) stands by s1 and helps him ("וחבירו מסייעו", 130:755). Who stands where - model choices.
     SC.kiyor12 = (a) => {
       for (let i = 0; i < 12; i++) {
-        const k = "s" + (i + 1), q = KID.spotAt(i, i === 0 ? 1.55 : 1.75);   // (KIYOR_CHALAMISH_A2: 0.75 / 0.95 until the laver was straight-sided)
+        const k = "s" + (i + 1), q = KID.flatSpot(i);   // KIDDUSH_FLAT_A2 (KID.spotAt(i, 1.55 / 1.75) - facing the laver - until now)
         a.go(k, q.p, 0.2 + i * 0.15, 7 + i * 0.15, { yaw: q.yaw });
         a.pose(k, "kiddush", 8.6 + (i % 3) * 0.1, 15.4);
       }
       a.set("kidWater", 12, 9.2); a.set("kidWater", 0, 15);
       a.fx("water", 9.2);
       if (TM.kidd === "ryose") {
-        const q = KID.spotAt(0, 1.55), side = [q.p[0] + Math.cos(q.yaw) * 0.9, q.p[1] - Math.sin(q.yaw) * 0.9];
-        a.go("b1", side, 0, 7.6, { yaw: q.yaw - HP });
+        const q = KID.flatSpot(0), side = [q.p[0] - Math.cos(q.yaw) * 0.95, q.p[1] + Math.sin(q.yaw) * 0.95];   // KIDDUSH_FLAT_A2: at his right, his face to him
+        a.go("b1", side, 0, 7.6, { yaw: q.yaw + HP });
         a.pose("b1", "reach", 8.6, 15.4);
         a.tag("b1", "״וחבירו מסייעו״ (זבחים יט:) — לרבי יוסי ברבי יהודה", 8.6, 15.4);
       }
@@ -2637,9 +2645,9 @@
       const blob = (sx, sy, sz) => { const m = new Mesh(new SphereGeometry(1, 10, 6), M); m.scale.set(sx, sy, sz); m.renderOrder = 5; g.add(m); return m; };
       g.userData.items = list.map((i) => ({
         i, fig: list.length > 1 ? "s" + (i + 1) : "t",
-        stream: [cyl(0.03, 0.028), cyl(0.028, 0.026), cyl(0.026, 0.03), cyl(0.03, 0.034)],
+        stream: [cyl(0.03, 0.029), cyl(0.029, 0.028), cyl(0.028, 0.027), cyl(0.027, 0.026), cyl(0.026, 0.027), cyl(0.027, 0.029), cyl(0.029, 0.031), cyl(0.031, 0.035)],   // KIDDUSH_FLAT_A2: eight pieces
         drip: [cyl(0.02, 0.016), cyl(0.02, 0.016), cyl(0.014, 0.012), cyl(0.014, 0.012)],
-        film: [blob(0.07, 0.022, 0.085), blob(0.07, 0.022, 0.085), blob(0.075, 0.02, 0.12), blob(0.075, 0.02, 0.12)],
+        film: [blob(0.05, 0.012, 0.065), blob(0.05, 0.012, 0.065), blob(0.06, 0.012, 0.09), blob(0.06, 0.012, 0.09)],   // KIDDUSH_FLAT_A2: thinner - the hands seen under the water
         pool: (() => { const m = new Mesh(new CircleGeometry(0.34, 18).rotateX(-Math.PI / 2), M); g.add(m); return m; })()
       }));
       W.group.add(g);
@@ -2654,18 +2662,25 @@
         const show = !!(o && f && f.g.visible && f.st && f.st.pose === "kiddush");
         for (const m of [...it.stream, ...it.drip, ...it.film, it.pool]) m.visible = show;
         if (!show) continue;
-        const hR = f.R.grip.getWorldPosition(_kq[0]), hL = f.L.grip.getWorldPosition(_kq[1]);
-        const fR = f.fr.getWorldPosition(_kq[2]), fL = f.fl.getWorldPosition(_kq[3]);
-        const ft = 0.11 * (SH.priestKit ? SH.priestKit.FS : 1);
-        fR.y += ft; fL.y += ft;
-        const H = _kq[4].copy(hR).add(hL).multiplyScalar(0.5); H.y += 0.03;
+        // KIDDUSH_FLAT_A2: the palms on the feet - the stream onto the backs of both hands between them, off the fingers onto the toes
+        // and off the toes to the floor ("המים מהברז נופלים על גב היד, ומשם על הרגל, ושתיהן נשטפות יחד")
+        const FSk = SH.priestKit ? SH.priestKit.FS : 1, flat = !!(f.R.wr && f.kidH);
+        const hR = flat ? f.R.wr.localToWorld(_kq[0].set(0, -0.05 * FSk, 0)) : f.R.grip.getWorldPosition(_kq[0]);
+        const hL = flat ? f.L.wr.localToWorld(_kq[1].set(0, -0.05 * FSk, 0)) : f.L.grip.getWorldPosition(_kq[1]);
+        const fR = flat ? f.fr.localToWorld(_kq[2].set(0, 0.03 * FSk, 0.2 * FSk)) : f.fr.getWorldPosition(_kq[2]);
+        const fL = flat ? f.fl.localToWorld(_kq[3].set(0, 0.03 * FSk, 0.2 * FSk)) : f.fl.getWorldPosition(_kq[3]);
+        if (!flat) { const ft = 0.11 * FSk; fR.y += ft; fL.y += ft; }
+        const H = _kq[4].copy(hR).add(hL).multiplyScalar(0.5); H.y += flat ? 0.045 : 0.03;
         // the stream: out of the tap and down onto the hands (a quadratic curve in four pieces)
         const P0 = _kq[5].set(o.p[0], o.p[1], o.p[2]), sx = Math.sin(o.a), sz = Math.cos(o.a);
         const C = _kc.set(o.p[0] + sx * 0.3, o.p[1] - 0.05, o.p[2] + sz * 0.3);
         let prev = v3a(P0);
-        for (let k = 1; k <= 4; k++) {
-          const t = k / 4, u = 1 - t;
-          const q = [u * u * P0.x + 2 * u * t * C.x + t * t * H.x, u * u * P0.y + 2 * u * t * C.y + t * t * H.y, u * u * P0.z + 2 * u * t * C.z + t * t * H.z];
+        const NS = it.stream.length;
+        for (let k = 1; k <= NS; k++) {
+          const t = k / NS, u = 1 - t;
+          // KIDDUSH_FLAT_A2: out of the mouth level and falling - straight on across, down as the square of the way (a jet's arc)
+          const q = flat ? [P0.x + (H.x - P0.x) * t, P0.y - (P0.y - H.y) * t * t, P0.z + (H.z - P0.z) * t]
+            : [u * u * P0.x + 2 * u * t * C.x + t * t * H.x, u * u * P0.y + 2 * u * t * C.y + t * t * H.y, u * u * P0.z + 2 * u * t * C.z + t * t * H.z];
           seg(it.stream[k - 1], prev, q);
           prev = q;
         }
@@ -2738,6 +2753,7 @@
       const t = s.t || 0, k = smooth(clamp(t / 0.6, 0, 1)) * smooth(clamp((s.tl == null ? 9 : s.tl) / 0.5, 0, 1)), ph = figNo(f) * 0.11;
       return [0.055 * k * Math.sin(t * 2.4 + ph), k * (0.04 + 0.035 * Math.sin(t * 4.8 + ph))];
     };
+    const _qI = new Quaternion();   // KIDDUSH_FLAT_A2
     const applyFig = (f) => {
       const s = f.st;
       f.g.visible = !!s.vis;
@@ -2745,7 +2761,7 @@
       f.g.position.set(s.x, s.y, s.z);
       f.g.rotation.y = s.yaw;
       const p = s.pose;
-      let R = POSES.stand[0], Lv = POSES.stand[1], lean = 0, bob = 0, fz0 = 0, fz1 = 0, bendA = 0, bendZ = 0, legR = 0, legL = 0, headA = 0, sitU = 0, sitZ = 0;   // NIGHT_SIT_305: headA, sitU, sitZ
+      let R = POSES.stand[0], Lv = POSES.stand[1], lean = 0, bob = 0, fz0 = 0, fz1 = 0, bendA = 0, bendZ = 0, legR = 0, legL = 0, headA = 0, sitU = 0, sitZ = 0, kidU = 0, kidH = null;   // NIGHT_SIT_305: headA, sitU, sitZ   // KIDDUSH_FLAT_A2: kidU, kidH
       if (p === "walk" || p === "walkCarry" || p === "walkHold") {
         const sw = Math.sin(s.ph);
         R = p === "walkCarry" ? POSES.carry[0] : p === "walkHold" ? POSES.hold[0] : [-0.32 * sw, 0.08, -0.25];
@@ -2794,6 +2810,14 @@
           else { Lv = mix(POSES.stand[1], H.arm); R = mix(POSES.stand[0], other); legL = u; }
           lean = 0; bendA = H.th * u; bendZ = H.ph * u;
         }
+        else if (p === "kiddush" && f.bend && f.L.wr && SH.priestKit && SH.priestKit.kidHands) {
+          // KIDDUSH_FLAT_A2 (the user via the coordinator: "כף היד על כף הרגל, וכך שניהם בו זמנית"): the feet together, he bows, each palm
+          // flat on the back of its foot (the kit's kidHands - the same in the First Temple); until now each hand on the front of its leg
+          // as low as it reached (kidReach, KB)
+          const u = smooth(clamp(t / 0.8, 0, 1)), H = SH.priestKit.kidHands(f, setArm), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
+          R = mix(POSES.stand[0], H.arm[-1]); Lv = mix(POSES.stand[1], H.arm[1]); lean = 0; bendA = H.th * u; kidU = u; kidH = H;
+          fz0 = fz1 = H.dz * u;
+        }
         else if (p === "kiddush" && f.bend && SH.priestKit && SH.priestKit.bZ) {   // KIDDUSH_BEND_212: upright legs, bent at the waist, the hands on the legs
           const u = smooth(clamp(t / 0.8, 0, 1)), H = kidReach(f), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
           R = mix(POSES.stand[0], H[-1]); Lv = mix(POSES.stand[1], H[1]); lean = 0.03 * u; bendA = KB * u;
@@ -2806,12 +2830,14 @@
       // bent back at the wrist - the fingers up. Elsewhere the hand straight on the arm
       if (f.id === "sg" && W.props.flags && W.props.flags.o.userData.tick) { const fl = W.props.flags.o; if (fl.visible) fl.userData.tick(p === "wave" ? (s.t || 0) : performance.now() / 1000, p === "wave" ? 1 : 0); }   // SUDAR_A2
       if (f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) { if (p === "raise") A2.wr.rotation.set(-0.64, -sd * Math.PI / 2, 0); else A2.wr.rotation.set(0, 0, 0); }
+      if (kidH && f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) A2.wr.quaternion.slerpQuaternions(_qI, kidH.wq[sd], kidU);   // KIDDUSH_FLAT_A2: the palms down on the feet
       if (f.bend) { f.bend.rotation.x = bendA; f.bend.rotation.z = bendZ; }
       if (f.legs) { setLeg(f, -1, legR); setLeg(f, 1, legL); }
       f.lean.rotation.x = lean;
       f.lean.position.y = bob + (lean > 1 ? 0.36 * Math.sin(lean) : 0);
       f.fl.position.z = fz0;
       f.fr.position.z = fz1;
+      if (f.kit) { const fx = 0.1 * SH.priestKit.FS - (kidH ? (0.1 * SH.priestKit.FS - kidH.fx) * kidU : 0); f.fl.position.x = fx; f.fr.position.x = -fx; }   // KIDDUSH_FLAT_A2: the feet together
       f.fl.visible = f.fr.visible = lean < 1;
       if (f.neck) f.neck.rotation.x = headA;   // NIGHT_SIT_305
       if (f.legs && (sitU > 0 || f.sitP)) setSit(f, sitU);   // NIGHT_SIT_305: on his stone - after the lean and the feet

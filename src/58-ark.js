@@ -12,7 +12,7 @@
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
       BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, footGeo, mat, mRobe, mSkin, mHat, mFace, mEye, mSashDyed, mSashWhite,
-      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef });   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
+      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ });   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
   }
   // ARK_FIG_208: the kit's arms in amot (as the Second Temple's 55-tamid.js makeFigKit): the sleeve from the shoulder to the elbow, the
   // forearm, the open hand; the feet; the neck
@@ -25,7 +25,8 @@
     const hand = (side, fo) => sc(K.at(K.handRaw(side), 0, -(fo / FS + 0.045), 0), FS);
     const foot = (side) => sc(K.footGeo(side).translate(-side * 0.1, 0, 0), FS);
     const P = { sx: K.SH_X * FS, sy: K.SH_Y * FS, up: K.UP * FS, fo: K.FORE * FS };
-    return (ark_kitArms.kg = { P, upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, foot: { 1: foot(1), "-1": foot(-1) },
+    const handW = (side) => sc(K.at(K.handRaw(side), 0, -0.045, 0), FS);   // KIDDUSH_FLAT_A2: the hand in its own wrist frame (as 55-tamid.js KG.handW)
+    return (ark_kitArms.kg = { P, upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, handW: { 1: handW(1), "-1": handW(-1) }, foot: { 1: foot(1), "-1": foot(-1) },
       neck: K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0),
       // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin
       thigh: W1(new CylinderGeometry(0.084 * FS, 0.1 * FS, 1, 12, 1, true).translate(0, 0.5, 0)),
@@ -83,6 +84,8 @@
       const fo = new Mesh(KG.foP, K.mRobe);
       fo.castShadow = true;
       el.add(fo);
+      // KIDDUSH_FLAT_A2: with a waist (the washing priest) the hand on its own wrist (wr), which turns for the palm on the foot
+      if (waist) { const wr = new Group(); wr.position.y = -KG.P.fo; el.add(wr); wr.add(new Mesh(KG.handW[side], K.mSkin)); return { sh, el, wr }; }
       el.add(new Mesh(KG.handP[side], K.mSkin));
       return { sh, el };
     };
@@ -106,7 +109,7 @@
         legs[side] = { g: lg, th, kn, sn, ft };
       }
     }
-    return { g, lean, bend, legs, L, R, fl, fr, hat, hg, S: U };   // (HP_RISHON_A2: hat, hg, S - for the high priest's garments)
+    return { g, lean, bend, legs, L, R, fl, fr, hat, hg, S: U, A: KG.P };   // (HP_RISHON_A2: hat, hg, S; KIDDUSH_FLAT_A2: A - the arm, for the kit's kidHands)
   }
   // HP_KIT_A2 (the user via the coordinator, 22.11.2026: "בבית ראשון להשתמש באותה בנייה עצמה, ולא בבנייה נפרדת"): THE HIGH PRIEST IN
   // HIS EIGHT AND THE PRIEST IN HIS FOUR - the Second Temple's construction itself (shared/frag/hp-kit.js; until now its 55-tamid.js
@@ -179,31 +182,23 @@
       lg.ft.position.set(A[0], A[1] - (ay * c - az * sn), A[2] - (ay * sn + az * c));
     }
   }
-  // KIDDUSH_BEND_212: a priest with a waist (ark_priestFig(n, true)) at kiddush - the legs upright, bent at the waist by kb, each hand on
-  // the front of its leg as low as it reaches (as the Second Temple's 55-tamid.js kidReach): "מניח ידו הימנית על גבי רגלו הימנית, וידו
-  // השמאלית על גבי רגלו השמאלית, ומקדש" (Zevachim 19b)
-  function ark_kiddush(w, kb) {
-    const K = ark_kit(), KG = ark_kitArms(), FS = K.FS, P = KG.P, WY = w.bend.position.y, cb = Math.cos(kb), sb = Math.sin(kb);
-    const cl = (v, a, b) => (v < a ? a : v > b ? b : v), a = P.up, b = P.fo + 0.06 * FS;
-    const toBend = (x, y, z) => { const dy = y - WY; return [x, dy * cb + z * sb, -dy * sb + z * cb]; };
-    const reach = (sp, tp, side) => {
-      const vx = tp[0] - sp[0], vy = tp[1] - sp[1], vz = tp[2] - sp[2], D3 = Math.hypot(vx, vy, vz) || 1e-6;
-      const al = Math.asin(cl(vx / D3, -0.9, 0.9)), ca = Math.cos(al);
-      const Dp = Math.min(Math.hypot(vy, vz), (a + b) * ca - 1e-4), a2 = a * ca, b2 = b * ca;
-      const be = Math.acos(cl((a2 * a2 + Dp * Dp - b2 * b2) / (2 * a2 * Dp), -1, 1)), ga = Math.acos(cl((a2 * a2 + b2 * b2 - Dp * Dp) / (2 * a2 * b2), -1, 1));
-      return [Math.atan2(-vz, -vy) + be, side * al, -(Math.PI - ga)];
-    };
-    w.lean.rotation.x = 0.03;
-    w.bend.rotation.x = kb;
-    for (const side of [1, -1]) {
-      const sp = [side * P.sx, P.sy - WY, 0];
-      let best = null;
-      for (let y = 0.18; y <= 1.2; y += 0.02) {
-        const tp = toBend(side * 0.1 * FS, y * FS, (K.spl(K.bZ, y) + 0.05) * FS);
-        if (Math.hypot(tp[0] - sp[0], tp[1] - sp[1], tp[2] - sp[2]) <= (a + b) * 0.985) { best = tp; break; }
-      }
-      ark_setArm(side > 0 ? w.L : w.R, reach(sp, best || toBend(side * 0.1 * FS, 0.9 * FS, 0.25 * FS), side), side);
-    }
+  // KIDDUSH_FLAT_A2 (the user via the coordinator, 22.11.2026: "כף היד על כף הרגל, וכך שניהם בו זמנית"): a priest with a waist
+  // (ark_priestFig(n, true)) at kiddush - "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש" (Zevachim 19b):
+  // the feet together, he bows, each palm flat on the back of its foot, at once (the kit's kidHands - the same in the Second Temple's
+  // 55-tamid.js); u 0..1 - how far into it. Until now (KIDDUSH_BEND_212) the legs upright, bent at the waist by kb, each hand on the
+  // front of its leg as low as it reached.
+  function ark_kiddush(w, u) {
+    const K = ark_kit(), FS = K.FS, P = ark_kitArms().P;
+    const H = K.kidHands(w, ark_setArm), mix = (q, v) => [q[0] + (v[0] - q[0]) * u, q[1] + (v[1] - q[1]) * u, q[2] + (v[2] - q[2]) * u];
+    w.lean.rotation.x = 0;
+    w.bend.rotation.set(H.th * u, 0, 0);
+    ark_setArm(w.L, mix(ARK_POSE.stand, H.arm[1]), 1);
+    ark_setArm(w.R, mix(ARK_POSE.stand, H.arm[-1]), -1);
+    const qI = ark_kiddush.qI || (ark_kiddush.qI = new Quaternion());
+    for (const [A2, sd] of [[w.L, 1], [w.R, -1]]) if (A2.wr) A2.wr.quaternion.slerpQuaternions(qI, H.wq[sd], u);
+    const fx = 0.1 * FS + (H.fx - 0.1 * FS) * u;
+    w.fl.position.set(fx, 0, H.dz * u); w.fr.position.set(-fx, 0, H.dz * u);
+    return H;
   }
   // KING_211: the king's cloths - his robe of tekhelet, his mantle of argaman bordered with gold, his dark hair - made once, for the
   // kneeling king of "דבקו שערים" (below) and for the king who climbs his throne (60-palace.js pal_kingFig)

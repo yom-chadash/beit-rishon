@@ -1345,9 +1345,12 @@
     // base on his left (he faces north): the stream of the east tap falls past his left side onto his left hand, and runs over both hands
     // onto his feet and to the floor (decision 38; the user: "גם היד נשטפת") - standing sideways, his bowed body is not under the stream.
     // Until now (KIDDUSH_FOOT_213) the right foot raised under the stream, then the left. His stance - a model choice.
-    const KB82 = 0.95, YW82 = Math.PI, JET_DX = 0.24;
+    // KIDDUSH_FLAT_A2 (the user via the coordinator: "כף היד על כף הרגל, וכך שניהם בו זמנית"): the palms flat on the feet (58-ark.js
+    // ark_kiddush, the kit's kidHands); the stream comes out of the tap and falls in an arc past his left side, under his bowed body, onto
+    // the backs of both hands - their middle JET_DX east of the tap's mouth (0.24 until now, onto his left hand on his leg)
+    const YW82 = Math.PI, JET_DX = 0.9;
     const kidWater = { made: false, drip: [], film: [] };
-    const handW = (w, A2, out) => { const KG = ark_kitArms(); return A2.el.localToWorld(out.set(0, -(KG.P.fo + 0.05 * ark_kit().FS), 0.01)); };
+    const handW = (w, A2, out) => { const KG = ark_kitArms(); return A2.wr ? A2.wr.localToWorld(out.set(0, -0.05 * ark_kit().FS, 0)) : A2.el.localToWorld(out.set(0, -(KG.P.fo + 0.05 * ark_kit().FS), 0.01)); };
     const kiddAt = (lt) => {
       const w = kidd.w;
       if (!w) return;
@@ -1355,14 +1358,14 @@
       const sm = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u)), cl = (v, a, b) => (v < a ? a : v > b ? b : v);
       const k = sm(cl((lt - 0.35) / 0.8, 0, 1)) * sm(cl((6.8 - lt) / 0.6, 0, 1));
       if (!w.off82) {   // where he stands: his hands (fully bowed) under the stream - found once
-        ark_kiddush(w, KB82);
+        ark_kiddush(w, 1);
         w.g.position.set(0, F, 0); w.g.rotation.y = YW82; w.g.updateMatrixWorld(true);
-        const b = handW(w, w.L, new Vector3());
-        w.off82 = [JET_DX - b.x, -b.z];   // his left hand JET_DX east of the tap's mouth, on its line
+        const b = handW(w, w.L, new Vector3()).add(handW(w, w.R, new Vector3())).multiplyScalar(0.5);
+        w.off82 = [JET_DX - b.x, -b.z];   // KIDDUSH_FLAT_A2: his hands' middle JET_DX east of the tap's mouth, on its line
       }
       w.g.position.set(sx + w.off82[0], F, sz + w.off82[1]);
       w.g.rotation.y = YW82;
-      ark_kiddush(w, KB82 * k);
+      ark_kiddush(w, k);
       if (w.legs) for (const sd of [1, -1]) if (w.legs[sd]) w.legs[sd].g.visible = false;
       w.fl.visible = w.fr.visible = true;
       // the water on him: the stream ends at his hands; from each hand to its foot, and the wet on the hands and the feet
@@ -1370,20 +1373,25 @@
         kidWater.made = true;
         const M = new MeshStandardMaterial({ color: 0x7db8ec, emissive: 0x15406a, emissiveIntensity: 0.5, roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.8, depthWrite: false });
         for (let q = 0; q < 3; q++) { const c = new Mesh(q < 2 ? new CylinderGeometry(0.016, 0.02, 1, 7, 1, true).translate(0, 0.5, 0) : new CylinderGeometry(0.04, 0.045, 1, 10, 1, true).translate(0, 0.5, 0), M); c.renderOrder = 5; wash.add(c); kidWater.drip.push(c); }   // [2]: the jet from the tap to his left hand
-        for (let q = 0; q < 4; q++) { const m = new Mesh(new SphereGeometry(1, 10, 6), M); m.scale.set(0.07, 0.022, q < 2 ? 0.085 : 0.12); m.renderOrder = 5; wash.add(m); kidWater.film.push(m); }
+        kidWater.arc = [];   // KIDDUSH_FLAT_A2: the jet in eight pieces
+        for (let q = 0; q < 8; q++) { const c = new Mesh(new CylinderGeometry(0.03, 0.032, 1, 8, 1, true).translate(0, 0.5, 0), M); c.renderOrder = 5; wash.add(c); kidWater.arc.push(c); }
+        for (let q = 0; q < 4; q++) { const m = new Mesh(new SphereGeometry(1, 10, 6), M); m.scale.set(q < 2 ? 0.05 : 0.06, 0.012, q < 2 ? 0.065 : 0.09); m.renderOrder = 5; wash.add(m); kidWater.film.push(m); }   // KIDDUSH_FLAT_A2: thinner
       }
       const on = k > 0.6 && pose.flow > 0.001;
-      for (const m of [...kidWater.drip, ...kidWater.film]) m.visible = on;
+      for (const m of [...kidWater.drip, ...kidWater.film, ...(kidWater.arc || [])]) m.visible = on;
       if (!on) return;
       w.g.updateMatrixWorld(true);
       const hR = handW(w, w.R, new Vector3()), hL = handW(w, w.L, new Vector3());
-      const fR = w.fr.getWorldPosition(new Vector3()), fL = w.fl.getWorldPosition(new Vector3()), ft = 0.11 * ark_kit().FS;
-      fR.y += ft; fL.y += ft;
+      const FSk = ark_kit().FS, fR = w.fr.localToWorld(new Vector3(0, 0.03 * FSk, 0.2 * FSk)), fL = w.fl.localToWorld(new Vector3(0, 0.03 * FSk, 0.2 * FSk));   // KIDDUSH_FLAT_A2: the toes
       stream.visible = false;   // (the base's own stream - straight down - gives way to the jet onto his hand)
       const UPV = new Vector3(0, 1, 0), dv = new Vector3();
       const seg = (m, a, b) => { dv.subVectors(b, a); const n = dv.length() || 1e-6; m.position.copy(a); m.quaternion.setFromUnitVectors(UPV, dv.multiplyScalar(1 / n)); m.scale.set(1, n, 1); };
       seg(kidWater.drip[0], hR, fR); seg(kidWater.drip[1], hL, fL);
-      seg(kidWater.drip[2], new Vector3(sx, F + VSL_TAP_Y, sz), hL);
+      // KIDDUSH_FLAT_A2: out of the tap level and falling - on across, down as the square of the way - onto the backs of both hands
+      kidWater.drip[2].visible = false;
+      { const P0 = new Vector3(sx, F + VSL_TAP_Y, sz), Hm = hR.clone().add(hL).multiplyScalar(0.5), n = kidWater.arc.length; Hm.y += 0.045;
+        let pv = P0.clone();
+        for (let q = 1; q <= n; q++) { const t = q / n, nx = new Vector3(P0.x + (Hm.x - P0.x) * t, P0.y - (P0.y - Hm.y) * t * t, P0.z + (Hm.z - P0.z) * t); seg(kidWater.arc[q - 1], pv, nx); pv = nx; } }
       kidWater.film[0].position.copy(hR); kidWater.film[1].position.copy(hL); kidWater.film[2].position.copy(fR); kidWater.film[3].position.copy(fL);
       for (const m of kidWater.film) m.rotation.y = YW82;
     };
@@ -1394,7 +1402,7 @@
       // stream - the right foot raised under the stream and the right hand on it, then the left (kiddAt above, every frame of the stop;
       // KIDDUSH_WEST_214: facing the base)
       const w = ark_priestFig(3, true);
-      ark_kiddush(w, 0);   // KIDDUSH_82_A2 (ark_kidPose and the raised foot until now)
+      ark_kiddush(w, 0);   // KIDDUSH_82_A2 (ark_kidPose and the raised foot until now); KIDDUSH_FLAT_A2: u 0 - standing
       wash.add(w.g); kidd.w = w;
       const q = ark_priestFig(5);
       q.g.position.set(STOP[0] + VSL_TAP_R + 0.48, F, STOP[1] - 0.9); q.g.rotation.y = Math.atan2(-0.48, 0.9);   // north of the stream, his face to it

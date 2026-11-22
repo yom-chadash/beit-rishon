@@ -2097,11 +2097,11 @@
     for (const k of Object.keys(capG)) { capG[k].visible = false; g.add(capG[k]); }
     ctx2.layers.mukhniEve = capG.eve; ctx2.layers.mukhniNight = capG.night; ctx2.layers.mukhniMorning = capG.morning;
     ctx2.labels.push(
-      { text: "בערב: מסירים את המכסה, והזרוע מרימה את הכיור מן הכן ומשקיעה אותו בבור — ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י)", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniEve" },
+      { text: "בערב: מסירים את המכסה, והזרוע מרימה את הכיור מן הכן ומשקיעה אותו בבור — ״שלא יהיו מימיו נפסלין בלינה״ (יומא ג, י)", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniEve", info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["יומא ג, י", "Mishnah_Yoma.3.10"]] },
       { text: "בלילה: מי הכיור מחוברים במי הבור", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniNight" },
-      { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד) — הכיור עולה וחוזר אל הכן", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniMorning" },
+      { text: "בבוקר: ״קול העץ שעשה בן קטין מוכני לכיור, והן אומרים הגיע עת״ (תמיד א, ד) — הכיור עולה וחוזר אל הכן", x: KX, y: F + 10.6, z: PSZ, size: 1.3, layer: "mukhniMorning", info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["תמיד א, ד", "Mishnah_Tamid.1.4"]] },
       { text: "המוכני — גלגל השיניים ולשון העץ", x: PSX, y: F + 4.2, z: PSZ - 1.2, size: 1.1 },
-      { text: "הכן — ״כעין יורה כפוייה על פיה״ (תוספות זבחים כב.)", x: KX + 2.6, y: F + 1.0, z: KZK - 2.4, size: 0.9 },
+      { text: "הכן — ״כעין יורה כפוייה על פיה״ (תוספות זבחים כב.)", x: KX + 2.6, y: F + 1.0, z: KZK - 2.4, size: 0.9, info: "הכיור והמוכני — הפירוט בכרטיס של הכיור.", refs: [["תוספות זבחים כב.", { book: 1936, index: 254 }]] },
       { text: "הבור — ביום מכוסה, בלי גדר", x: PITX + 1.5, y: F + 1.0, z: PITZ + 2.2, size: 0.9 }
     );
     ctx2.labels.push({ text: "המוכני לרמב״ם — כלי סביב הכיור, ובו המים (בית הבחירה ג, יח)", x: KX - 1, y: F + 6.2, z: KZK, size: 1.0, layer: "mochaniRambam" });

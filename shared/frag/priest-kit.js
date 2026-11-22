@@ -474,6 +474,65 @@
       for (const m of list) { m.visible = TEF.on; TEF.list.push(m); }
       return { list };
     };
+    // KIDDUSH_FLAT_A2 (the user via the coordinator, 22.11.2026: "כף היד על כף הרגל, וכך שניהם בו זמנית" - the palm flat on the back
+    // of the foot, the right on the right and the left on the left, at once; not over it in the air and not on the shin): "מניח ידו הימנית
+    // על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש" (Zevachim 19b, 130:754), "ושוחה ומקדש" (the Rambam, Biat HaMikdash
+    // 5:16, 340:93). For a figure with a waist (both houses: f.bend at the waist, f.L / f.R = { sh, el, wr }, f.A = the arm's { sx, sy,
+    // up, fo } in amot): his feet together (x +-FX) and a little forward from under the hem (DZ); he bows at the waist as far as both
+    // hands need (th - the least); each hand on its foot's forepart, the palm down, the fingers toward the toes (turned out with the foot),
+    // the thumb inward. setArm(A, [x, abduct, elbow], side) - the house's own (the same in both). Found once per figure (f.kidH):
+    // { th, arm: { 1, -1 }, wq: { 1, -1 } (the wrists' turns), fx, dz } - in amot. How far forward, how close - model choices.
+    const KID_FX = 0.064, KID_DZ = 0.06;
+    const kidHZ = (0.095 + KID_DZ + 0.05 * Math.cos(0.22)) * FS;   // the hands' middle before him (amot) - where the stream falls (55-tamid.js KID.flatSpot)
+    const kidHands = (f, setArm) => {
+      if (f.kidH) return f.kidH;
+      const A = f.A, WY = f.bend.position.y, a = A.up, b = A.fo;
+      const cl = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+      const reach = (sp, tp, side) => {   // as 55-tamid.js reach: the shoulder's two turns and the elbow's, the wrist at tp
+        const vx = tp[0] - sp[0], vy = tp[1] - sp[1], vz = tp[2] - sp[2], D3 = Math.hypot(vx, vy, vz) || 1e-6;
+        const al = Math.asin(cl(vx / D3, -0.9, 0.9)), ca = Math.cos(al);
+        const Dp = Math.min(Math.hypot(vy, vz), (a + b) * ca - 1e-4), a2 = a * ca, b2 = b * ca;
+        const be = Math.acos(cl((a2 * a2 + Dp * Dp - b2 * b2) / (2 * a2 * Dp), -1, 1)), ga = Math.acos(cl((a2 * a2 + b2 * b2 - Dp * Dp) / (2 * a2 * b2), -1, 1));
+        return [Math.atan2(-vz, -vy) + be, side * al, -(Math.PI - ga)];
+      };
+      const fin = {}, palmN = {}, wrist = {};
+      for (const sd of [1, -1]) {
+        const ry = sd * 0.22, cy = Math.cos(ry), sy = Math.sin(ry);   // the foot turned out (footGeo)
+        const F = new Vector3(0.95 * sy, -0.3, 0.95 * cy).normalize();
+        const N = new Vector3(-0.3 * sy, -1, -0.3 * cy).normalize();
+        N.addScaledVector(F, -N.dot(F)).normalize();
+        fin[sd] = F; palmN[sd] = N;
+        // the palm's middle on the forefoot (kit units: the foot's middle z 0.095 + DZ, 0.05 before it; its top 0.05 there)
+        const P = new Vector3(sd * (KID_FX + 0.008 + 0.05 * sy), 0.066, 0.095 + KID_DZ + 0.05 * cy);
+        wrist[sd] = P.addScaledVector(F, -0.045).multiplyScalar(FS);
+      }
+      const toBend = (p, th) => { const dy = p.y - WY, c = Math.cos(th), s2 = Math.sin(th); return [p.x, dy * c + p.z * s2, -dy * s2 + p.z * c]; };
+      let th = 0.9;
+      for (; th < 2.2; th += 0.02) {
+        let ok = true;
+        for (const sd of [1, -1]) { const t = toBend(wrist[sd], th), sp = [sd * A.sx, A.sy - WY, 0]; if (Math.hypot(t[0] - sp[0], t[1] - sp[1], t[2] - sp[2]) > (a + b) * 0.97) ok = false; }
+        if (ok) break;
+      }
+      const res = { th, arm: {}, wq: {}, fx: KID_FX * FS, dz: KID_DZ * FS };
+      for (const sd of [1, -1]) res.arm[sd] = reach([sd * A.sx, A.sy - WY, 0], toBend(wrist[sd], th), sd);
+      // the wrists: the hand's own axes (the fingers down its -y, the palm toward the body - handRaw) to the wanted ones, in the frame of
+      // the forearm as it is in this pose
+      const lr = f.lean.rotation.x, br = [f.bend.rotation.x, f.bend.rotation.z];
+      f.lean.rotation.x = 0; f.bend.rotation.set(th, 0, 0);
+      for (const sd of [1, -1]) setArm(sd > 0 ? f.L : f.R, res.arm[sd], sd);
+      f.g.updateMatrixWorld(true);
+      const qG = f.g.getWorldQuaternion(new Quaternion()).invert(), M1 = new Matrix4(), M2 = new Matrix4();
+      for (const sd of [1, -1]) {
+        const Fh = new Vector3(0, -1, 0), Nh = new Vector3(-sd * Math.sin(0.95), 0, -Math.cos(0.95)), Bh = new Vector3().crossVectors(Fh, Nh);
+        const Ft = fin[sd], Nt = palmN[sd], Bt = new Vector3().crossVectors(Ft, Nt);
+        M1.makeBasis(Fh, Nh, Bh); M2.makeBasis(Ft, Nt, Bt);
+        const qT = new Quaternion().setFromRotationMatrix(M2.multiply(M1.transpose()));
+        const qE = qG.clone().multiply((sd > 0 ? f.L : f.R).el.getWorldQuaternion(new Quaternion()));
+        res.wq[sd] = qE.invert().multiply(qT);
+      }
+      f.lean.rotation.x = lr; f.bend.rotation.set(br[0], 0, br[1]);
+      return (f.kidH = res);
+    };
     const gCap = sph(HR[0] * 1.1, HR[1] * 1.1, HR[2] * 1.1, 16, 5, 0, TAU, 0, 1.15);   // the elder's cap
     const gFlame = new ConeGeometry(0.2, 0.7, 8); gFlame.translate(0, 0.35, 0);
     const gArrowHead = new ConeGeometry(0.2, 0.4, 12); gArrowHead.rotateX(Math.PI);   // the point down
