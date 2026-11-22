@@ -1808,6 +1808,185 @@
         set: (on) => { if (on) start(); else stop(); }
       });
     }
+    // ---------- ARAVAH_B2 (fix-b2, 22.11.2026 - the user's decisions 56 and 80): THE WILLOW'S COMMANDMENT AND THE CIRCUIT OF THE ALTAR ----------
+    // Mishnah Sukkah 4:5 (56:44): "מצות ערבה כיצד, מקום היה למטה מירושלים, ונקרא מוצא. יורדין לשם ומלקטין משם מרביות של ערבה, ובאין וזוקפין
+    // אותן בצדי המזבח, וראשיהן כפופין על גבי המזבח. תקעו והריעו ותקעו. בכל יום מקיפין את המזבח פעם אחת, ואומרים, אנא ה' הושיעה נא, אנא ה'
+    // הצליחה נא... ואותו היום מקיפין את המזבח שבע פעמים"; Sukkah 45a (108:1165-1166): eleven amot long, "כדי שיהו גוחות על גבי המזבח אמה".
+    // From Rav Chaim Kanievsky, as brought in Chalamish ("אלחנן וחיים שמחים בירושלים", the list of sources, on pp. 25, 30): "יש ערבות רבות
+    // שממלאות את צדי המזבח, ולא מעטות"; "הערבות צריכות להיות מנחות ישירות על היסוד ולא בתוך כלי, וכנראה היו לערבות גזעים עבים"; "הערבות מנחות
+    // רק במקום שיש יסוד, וזה נקרא להקיף את המזבח" - and perhaps not in the east and the south. So: many willows, thick at the foot, standing
+    // on the yesod - all along the north and the west - eleven amot high, their heads bent an amah over the altar's top. THE CIRCUIT
+    // (SH.aravah.circuit, the row "הקפת המזבח"): "priests" (the default) - priests alone go round (Rashi, Sukkah 43b, 2163:2025: "אבל ישראל לא
+    // היה נכנס בין האולם ולמזבח"; the Tosafot, the Ritva, the Meiri, the Ran, the Gra; Kelim 1:8-9); "all" - Israelites too (the Or Zarua,
+    // part 2, 315 - 3930:3793 - in the name of the Yerushalmi). The figures go round the altar and its ramp, a branch in each hand, while the
+    // demonstration is shown (a place's feature, untimed). No tefillin - Chol HaMoed (SH.tefOff). MODEL CHOICES: the willows' number and form,
+    // the way round (outside the ramp too), the walkers' number, pace and what they hold (a willow branch).
+    {
+      const AG = grp("aravahDemo", false);
+      const altDz = () => { const AP = SH.altarPlace; return AP && AP.dz && typeof AP.dz[AP.current] === "number" ? AP.dz[AP.current] : 12.5; };
+      const F = LV.KOH, YT = F + 1;   // the yesod's top
+      const AR = { circuit: "priests", built: false, walkers: { priests: [], all: [] }, t0: 0 };
+      const trunkM = new MeshStandardMaterial({ color: 0x6d6a3e, roughness: 0.85 });
+      const leafM = new MeshStandardMaterial({ color: 0x6f9a52, roughness: 0.8, side: DoubleSide });
+      const leafIM = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.75, side: DoubleSide });
+      const WG = {};   // the willows for each altar's measure (32, or R. Yose's 28), built when first shown
+      const curW = () => (SH.altarMeasures && SH.altarMeasures.mode === "yose") ? 28 : 32;
+      const willows = (W) => {
+        if (WG[W]) return WG[W];
+        const WGr = WG[W] = new Group(); WGr.name = "aravahWillows" + W; AG.add(WGr);
+        const x0 = 71.5 - W, z1 = -19.5 + W;   // the altar's frame (40-altar.js): its north-east corner fixed at (71.5, -19.5)
+        const trunks = [], leaves = [];
+        let q = 22112026;
+        const rr = () => (q = (q * 1664525 + 1013904223) >>> 0) / 4294967296;
+        // a willow: [foot x, z], the inward direction [ix, iz]
+        // a willow ("מרביות של ערבה" - long branches, the Bartenura's "נטיעות"): a thick foot on the yesod, a long stem bending at its head over
+        // the altar's top (Sukkah 45a: "כדי שיהו גוחות על המזבח אמה"), a few side shoots, and narrow hanging leaves on the upper two thirds
+        const tubeOf = (pts, r0, r1, segs) => {
+          const curve = new CatmullRomCurve3(pts), tube = new TubeGeometry(curve, segs, 1, 6, false), pos = tube.attributes.position;
+          for (let i = 0; i < pos.count; i++) {   // taper: each ring of the tube round its own centre
+            const ring = Math.floor(i / 7), u = ring / segs, c = curve.getPointAt(u), r = r0 + (r1 - r0) * Math.pow(u, 0.6);
+            pos.setXYZ(i, c.x + (pos.getX(i) - c.x) * r, c.y + (pos.getY(i) - c.y) * r, c.z + (pos.getZ(i) - c.z) * r);
+          }
+          trunks.push(tube);
+          return curve;
+        };
+        const leafAlong = (curve, u0, n, spread) => {
+          for (let k = 0; k < n; k++) {
+            const u = u0 + (1 - u0) * Math.sqrt(rr()), p = curve.getPoint(Math.min(1, u)), a = rr() * Math.PI * 2, s = 0.04 + rr() * spread;
+            leaves.push([p.x + Math.cos(a) * s, p.y + (rr() - 0.3) * 0.2, p.z + Math.sin(a) * s, rr() * Math.PI * 2, 0.25 + rr() * 0.75, rr()]);
+          }
+        };
+        const willow = (fx, fz, ix, iz) => {
+          const H = 10.6 + rr() * 0.8, reach = 2.5 + rr() * 0.6, px = -iz, pz = ix, sw = (rr() - 0.5) * 0.5, pts = [];
+          for (let i = 0; i <= 10; i++) {
+            const u = i / 10, y = YT + H * (u < 0.8 ? u : 0.8 + (u - 0.8) * 0.55);
+            const bend = u < 0.72 ? 0.1 * u : 0.072 + Math.pow((u - 0.72) / 0.28, 1.5) * reach;   // the head bends over the altar
+            pts.push(new Vector3(fx + ix * bend + px * sw * u, y, fz + iz * bend + pz * sw * u));
+          }
+          const main = tubeOf(pts, 0.17 + rr() * 0.05, 0.035, 16);   // "וכנראה היו לערבות גזעים עבים"
+          leafAlong(main, 0.38, 60, 0.3);
+          const nb = 3 + Math.floor(rr() * 3);
+          for (let b = 0; b < nb; b++) {
+            const u0 = 0.3 + rr() * 0.4, p0 = main.getPoint(u0), side = (b % 2 ? 1 : -1) * (0.5 + rr() * 0.6), len = 1.8 + rr() * 1.8, inw = 0.3 + rr() * 0.6;
+            const P = (t, up) => new Vector3(p0.x + px * side * t + ix * inw * t * t, p0.y + up, p0.z + pz * side * t + iz * inw * t * t);
+            const bc = tubeOf([P(0, 0), P(0.45, len * 0.5), P(0.85, len * 0.85), P(1.2, len * 0.9 - 0.5)], 0.05, 0.015, 8);
+            leafAlong(bc, 0.25, 32, 0.22);
+          }
+        };
+        for (let x = x0 + 0.5, k = 0; x < 71.2; x += 0.95 + (rr() - 0.5) * 0.35, k++) willow(x, k % 2 ? -18.85 : -19.2, 0, 1);       // along the north, on the yesod
+        for (let z = -18.2, k = 0; z < z1 - 0.5; z += 0.95 + (rr() - 0.5) * 0.35, k++) willow(k % 2 ? x0 + 0.65 : x0 + 0.3, z, 1, 0);   // along the west
+        const tm = new Mesh(mergeGeometries(trunks), trunkM); tm.castShadow = true; tm.userData.noPick = true; WGr.add(tm);
+        const lg = new PlaneGeometry(0.075, 0.46).translate(0, -0.23, 0);   // a narrow leaf, hanging from its stalk
+        const im = new InstancedMesh(lg, leafIM, leaves.length);
+        const mm = new Matrix4(), qq = new Quaternion(), e = new Euler(), vp = new Vector3(), vs = new Vector3(1, 1, 1), col = new Color();
+        leaves.forEach(([x, y, z, a, t, c], i) => {
+          qq.setFromEuler(e.set(t, a, 0, "YXZ")); mm.compose(vp.set(x, y, z), qq, vs); im.setMatrixAt(i, mm);
+          im.setColorAt(i, col.setHSL(0.23 + c * 0.06, 0.34 + c * 0.16, 0.24 + c * 0.12));   // willow's grey-green, lighter and darker leaves
+        });
+        if (im.instanceColor) im.instanceColor.needsUpdate = true;
+        im.castShadow = true;
+        im.instanceMatrix.needsUpdate = true; im.userData.noPick = true; WGr.add(im);
+        WGr.userData.x0 = x0;
+        return WGr;
+      };
+      const LB = [];   // the labels, in the altar's frame (z without the place's shift): moved with it
+      const build = () => {
+        if (AR.built) return;
+        AR.built = true;
+        // the walkers: priests in white; with the reading "all", Israelites in their own clothes too
+        try {
+          const PP = tm_people(ctx2), branchG = new CylinderGeometry(0.02, 0.03, 1.6, 5).translate(0, 0.8, 0);
+          // the priests: a willow's branch in the right hand (Rashi, Sukkah 43b: "ביד נוטלין אותה ומנענעים ומקיפין בה הכהנים את המזבח");
+          // the Israelites (the Or Zarua's Yerushalmi): "נוטלים את לולביהן בידיהן ימנית ואתרוגיהן בידיהן השמאלית"
+          const lulavG = new CylinderGeometry(0.018, 0.026, 1.9, 5).translate(0, 0.95, 0), etrogG = new SphereGeometry(0.1, 10, 8).scale(1, 1.35, 1);
+          const lulavM = new MeshStandardMaterial({ color: 0x5f7a3a, roughness: 0.8 }), etrogM = new MeshStandardMaterial({ color: 0xd9c23a, roughness: 0.6 });
+          const twig = new BoxGeometry(0.04, 0.3, 0.006);
+          const mk = (kind, robe, list, n, name, israel) => {
+            for (let i = 0; i < n; i++) {
+              const G = new Group(); G.visible = false; AG.add(G);
+              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: Array.isArray(robe) ? robe[i % robe.length] : robe, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name });
+              if (israel) {
+                const l = new Mesh(lulavG, lulavM); l.position.set(-0.36, 1.15, 0.3); l.rotation.x = 0.12; G.add(l);
+                const e = new Mesh(etrogG, etrogM); e.position.set(0.36, 1.3, 0.32); G.add(e);
+              } else {
+                const b = new Mesh(branchG, leafM); b.position.set(-0.36, 1.15, 0.3); b.rotation.z = 0.25; G.add(b);
+                for (let j = 0; j < 7; j++) { const t = new Mesh(twig, leafM); t.position.set(-0.36 + 0.25 * (0.4 + j * 0.09) + (j % 2 ? 0.06 : -0.06), 1.15 + 1.6 * (0.4 + j * 0.09), 0.3); t.rotation.z = j % 2 ? -0.6 : 0.6; G.add(t); }
+              }
+              list.push(G);
+            }
+          };
+          mk("kohen", 0xf1ede2, AR.walkers.priests, 14, "aravahPriest", false);
+          mk("worker", [0x6b5a3e, 0x4a4f5a, 0x5c4a3a, 0x3e4a5e, 0x7a6a50], AR.walkers.all, 18, "aravahIsraelite", true);
+        } catch (_) {}
+      };
+      // the labels are pushed at once (the labels' layer is drawn once, at the start), and follow the altar's place
+      for (const [text, x, y, z, size] of [
+        ["״ובאין וזוקפין אותן בצדי המזבח, וראשיהן כפופין על גבי המזבח״ (סוכה ד, ה)", 55.5, F + 15, -21.5, 1.6],
+        ["הערבות על היסוד בלבד — מפי הגר״ח קניבסקי, כפי שהובא בחלמיש", 36.5, F + 13.2, -3.5, 1.2],
+        ["״בכל יום מקיפין את המזבח פעם אחת, ואומרים, אנא ה׳ הושיעה נא״ (סוכה ד, ה)", 55.5, F + 17.2, 6, 1.5]]) {
+        const l = { text, x, y, z: z + 12.5, size, layer: "aravahDemo" };
+        ctx2.labels.push(l); LB.push([l, z]);
+      }
+      let lbDz = 12.5;
+      const moveLabels = (dz) => {
+        if (dz === lbDz) return;
+        lbDz = dz;
+        let lg = null; try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {}
+        for (const [l, z] of LB) {
+          const oz = l.z; l.z = z + dz;
+          if (lg) for (const spr of lg.children) {
+            if ((spr.userData && spr.userData.label === l) || (Math.abs(spr.position.x - l.x) < 1e-3 && Math.abs(spr.position.y - l.y) < 1e-3 && Math.abs(spr.position.z - oz) < 1e-3)) { spr.position.z = l.z; break; }
+          }
+        }
+      };
+      // the way round, in the altar's frame: a rounded rectangle round the altar and its ramp (x 36.5..74.5, z -22.5..45.5)
+      const PATH = (() => {
+        const X0 = 36.5, X1 = 74.5, Z0 = -22.5, Z1 = 45.5, R = 3, P = [];
+        const arc = (cx, cz, a0) => { for (let i = 0; i <= 6; i++) { const a = a0 + (Math.PI / 2) * i / 6; P.push([cx + R * Math.cos(a), cz + R * Math.sin(a)]); } };
+        arc(X1 - R, Z0 + R, -Math.PI / 2); arc(X1 - R, Z1 - R, 0); arc(X0 + R, Z1 - R, Math.PI / 2); arc(X0 + R, Z0 + R, Math.PI);
+        const L = [0]; for (let i = 1; i <= P.length; i++) { const a = P[i - 1], b = P[i % P.length]; L.push(L[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1])); }
+        return { P, L, len: L[P.length] };
+      })();
+      const at = (s) => {   // a point on the way at arc length s
+        const { P, L, len } = PATH; s = ((s % len) + len) % len;
+        let i = 1; while (i < L.length && L[i] < s) i++;
+        const a = P[(i - 1) % P.length], b = P[i % P.length], u = (s - L[i - 1]) / Math.max(1e-6, L[i] - L[i - 1]);
+        return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, Math.atan2(a[0] - b[0], a[1] - b[1])];   // walking toward smaller s
+      };
+      // the way's direction: on the south side eastward, then north on the east side - the altar on the left, as one who turns to the
+      // right from the ramp and goes round (a model choice: the Mishnah does not say). The walkers are in AG, which carries the place's shift
+      const pose = () => {
+        const t = (performance.now() - AR.t0) / 1000, sp = 2.4;
+        const list = AR.circuit === "all" ? AR.walkers.priests.concat(AR.walkers.all) : AR.walkers.priests;
+        for (const G of AR.walkers.priests.concat(AR.walkers.all)) if (!list.includes(G)) G.visible = false;
+        const gap = PATH.len / list.length;
+        list.forEach((G, i) => {
+          const [x, z, yaw] = at(-t * sp + i * gap);
+          G.position.set(x, F + Math.abs(Math.sin(t * 4.2 + i * 1.3)) * 0.05, z); G.rotation.y = yaw; G.visible = true;
+        });
+      };
+      const sync = () => {
+        const dz = altDz(), W = curW();
+        AG.position.z = dz; moveLabels(dz);
+        const WGr = willows(W);
+        for (const k in WG) WG[k].visible = WG[k] === WGr;
+      };
+      const tefOn = (on) => { const TO = SH.tefOff || (SH.tefOff = new Set()); if (on) TO.add("aravah"); else TO.delete("aravah"); };
+      SH.aravah = {
+        get circuit() { return AR.circuit; },
+        setCircuit(m) { AR.circuit = m === "all" ? "all" : "priests"; if (AG.visible) pose(); return AR.circuit; },
+        show() { const F2 = SH.features && SH.features.aravah; if (F2 && !F2.isOn()) F2.on(); }
+      };
+      SH.features = SH.features || {};
+      SH.features.aravah = { key: "aravah", timed: false, isOn: () => AG.visible,
+        on: () => { build(); sync(); AR.t0 = performance.now(); AG.visible = true; tefOn(true); pose(); },
+        off: () => { AG.visible = false; tefOn(false); } };
+      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => {
+        if (!AG.visible) return;
+        sync();
+        pose();
+      });
+    }
     // ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 16 and 24: "בסדר היום" in the Second Temple's cards): a place -> the stage of the
     // morning service done in it (55-tamid.js, its stages' ids); the card's link starts the presentation "סדר עבודת הבוקר" at that stage
     // (70-ui.js renderLinks). The choice of the stage for each place - a model choice.
