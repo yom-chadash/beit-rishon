@@ -862,7 +862,7 @@
           }
           g[1] = out.concat(left);
         }
-        const CITY_RE = /עיר דוד|המלוא|מעי?ין|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/;
+        const CITY_RE = /עיר דוד|המלוא|מעי?ין(?! עיטם)|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/;
         const isCity = (g) => CITY_RE.test(g[0]);
         const first = PLACES.find((g) => g[0] === "שערי הר הבית וחצרות");
         if (first) {
@@ -2135,7 +2135,7 @@
 //@@begin buildUI.after-GROUPS
           // MENU_149_D (fix-d - the user's decision 149 ג): the rows of each group along the route of the places (from outside in); the
           // first group takes agent C's rows of the City of David by their words (none yet - an empty group is not shown)
-          ["עיר דוד", OPS.filter((r) => r && r.id && /עיר דוד|המלוא|מעי?ין|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/.test(String(r.cap || "") + " " + String(r.short || ""))).map((r) => r.id)],
+          ["עיר דוד", OPS.filter((r) => r && r.id && /עיר דוד|המלוא|מעי?ין(?! עיטם)|שילוח|גיחון|קברי בית דוד|גן המלך|המצודה/.test(String(r.cap || "") + " " + String(r.short || ""))).map((r) => r.id)],
           ["הר הבית והחיל", ["sh0", "sh73", "sh61", "sh55", "sh1", "sh2", "sh90", "sh3"]],
           ["עזרת נשים", ["sh4", "sh5", "sh70", "sh60", "sh8", "sh6"]],
           ["העזרה", ["sh10", "sh9", "sh54", "sh72", "sh91", "sh76"]],
