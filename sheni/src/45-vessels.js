@@ -1085,7 +1085,7 @@
       g.add(sg);
       ctx2.layers = ctx2.layers || {};
       ctx2.layers.solomonVessels = sg;
-      const FLx = (x) => LV.HEI + houseRise(x);
+      const FLx = (x) => LV.HEI;   // SLOPE2_D (fix-d): the vessels' group is sheared when the floor slopes (50-heichal.js) - built level here
       const id10 = () => Array.from({ length: 10 }, () => int_part(0, -50, 0, 0, 0, 0, 0));
       const mk = (geo, mat, sh) => int_inst(sg, geo, mat, id10(), sh);
       SOL.tBody = mk(tableGeo.body, tblBody.material, true);

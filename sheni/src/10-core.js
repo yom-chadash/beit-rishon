@@ -11,8 +11,12 @@
   // FLOOR SLOPES - Rashi Menachot 99a "כתלמיד היושב לפני רבו - נמוך הימנו, כך אותם של שלמה נמוכין משל משה, דבית המקדש היה משופע ולצד מערב
   // מגביה יותר" (2186, line 4703). From the heichal's door (x -4.5) to the west wall of the Holy of Holies (x -65.5). How much is not
   // stated: 4 amot on the 61 (the user, 20:12: "שיפוע 4 אמות מספיק"; 1.5 was hardly seen) - a model choice. houseRise(x) = the floor's rise at x.
-  var HOUSE_SLOPE = { x0: -4.5, x1: -65.5, rise: 4 };
-  var houseRise = function (x) { return HOUSE_SLOPE.rise * Math.max(0, Math.min(1, (HOUSE_SLOPE.x0 - x) / (HOUSE_SLOPE.x0 - HOUSE_SLOPE.x1))); };
+  // SLOPE2_D (fix-d, 22.11.2026 - the user's decision 145 א): the floor is LEVEL by default in this house - the Rambam, Beit HaBechirah 6:4
+  // "והאולם וההיכל כלו בשוה" - and slopes only in the reading of Rashi (the row "רצפת ההיכל — משופעת או שטוחה"; 50-heichal.js, the end
+  // of build4). HOUSE_SLOPE.on: houseRise(x) is 0 while it is off; what stands on the floor is built level and is lifted by a shear
+  // (50-heichal.js) when the reading is chosen, and what walks (the figures, the walk) asks houseRise at its moment.
+  var HOUSE_SLOPE = { x0: -4.5, x1: -65.5, rise: 4, on: false };
+  var houseRise = function (x) { if (!HOUSE_SLOPE.on) return 0; return HOUSE_SLOPE.rise * Math.max(0, Math.min(1, (HOUSE_SLOPE.x0 - x) / (HOUSE_SLOPE.x0 - HOUSE_SLOPE.x1))); };
   var CO = {
     azE: 93.5,
     azW: -93.5,

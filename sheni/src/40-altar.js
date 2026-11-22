@@ -2322,7 +2322,10 @@
       inst(hookGeo, iron, pillarAt, lay.bartenura, false, true);
       // "meiri": the same places, a taller stone, a short beam from pillar to pillar along each row, three hooks a span on each side and under it
       {
-        const by = 3.4, bh = 0.6, bw = 0.6, span = colXs[1] - colXs[0];
+        // MEIRI_LOW_D (fix-d, 22.11.2026 - the user's decision 143 א): the stone LOW, far under a man's height, as the Bartenura's (1.4) -
+        // the Yachin on Middot 3:5 (819:421) "הרבה פחות מקומת איש המפשיט"; Rabbenu Shemaya (645:106) "קצרים ולא גבוהים"; the beams and
+        // their hooks on it, as the Meiri says. (Until now 3.4.)
+        const by = 1.4, bh = 0.6, bw = 0.6, span = colXs[1] - colXs[0];
         inst(H2.uvWorld(new CylinderGeometry(0.35, 0.42, by, 12), 2.5, by).translate(0, by / 2, 0), M2.stoneSmooth, pillarAt, lay.meiri);
         const beamAt = [], beamHookAt = [];
         for (const nz of nanZs) for (let i = 0; i + 1 < colXs.length; i++) {

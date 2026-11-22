@@ -487,23 +487,35 @@
     // choices. Shushan's picture is not drawn.
     {
       const A1 = 1, FNG = A1 / 24;
-      // UPRIGHT_D (fix-d, 22.11.2026 - the user's decision 136 א): the rods stand UPRIGHT, one in the north-eastern corner and one in the
-      // south-eastern, in both readings - Rabbenu Gershom (Menachot 98a, in the Kovetz Shitot Kamai, book 7577 line 32573): "ב' מדות של
-      // אמות. ב' קנים. היו בשושן הבירה... אחת. היתה זקופה באותה לשכה על קרן מזרחית צפונית ואחת על קרן וכו'"; Rabbenu Chananel (Pesachim
-      // 86a, 7577 line 32575): "מדת ב' אמות של כסף או של זהב כגון שרביט"; the Riban (7577 line 32480): "אחת בקרן מזרחית צפונית ואחת בקרן
-      // מזרחית דרומית". (Until now they lay along the wall on marble plates.) y = the rod's foot.
-      const rod = (grp, x, y, z, len, face) => {   // an upright rod on a marble plate, on a wall's face (face: +1 - the face looks east, -1 - west)
-        H2.box(grp, 0.08, len + 0.5, 0.6, M2.marble, x + face * 0.04, y - 0.25, z).userData.noPick = true;
-        H2.box(grp, 0.1, len, 0.1, M2.bronze, x + face * 0.13, y, z);
-        for (const yy of [y, y + len]) H2.box(grp, 0.12, 0.04, 0.28, M2.bronze, x + face * 0.13, yy - 0.02, z);   // the two end marks
+      // UPRIGHT_D (fix-d, 22.11.2026 - the user's decision 136 א, and the coordinator's review): the rods are free-standing UPRIGHT
+      // RODS of gold, each on a small stone stand, one in the north-eastern corner and one in the south-eastern, in both readings -
+      // Rabbenu Gershom (Menachot 98a, in the Kovetz Shitot Kamai, book 7577 line 32573): "ב' מדות של אמות. ב' קנים. היו בשושן הבירה...
+      // אחת. היתה זקופה באותה לשכה על קרן מזרחית צפונית ואחת על קרן וכו'"; Rabbenu Chananel (Pesachim 86a, 7577 line 32575): "מדת ב'
+      // אמות של כסף או של זהב כגון שרביט"; the Riban (7577 line 32480): "אחת בקרן מזרחית צפונית ואחת בקרן מזרחית דרומית". (Until now
+      // they lay along the wall on marble plates.) Gold rather than silver, the stands and their height - model choices.
+      const rodMat = M2.gold || M2.gateGold || M2.bronze;
+      const rod = (grp, x, z, len, standH) => {   // a stand 0.6 x 0.6 x standH on the floor (y 0 of grp), the rod upright on it, a knob at each end
+        H2.box(grp, 0.6, standH, 0.6, M2.stoneSmooth, x, 0, z);
+        const r = new Mesh(new CylinderGeometry(0.035, 0.035, len, 10), rodMat);
+        r.position.set(x, standH + len / 2, z);
+        r.castShadow = true;
+        grp.add(r);
+        for (const yy of [standH, standH + len]) {
+          const k = new Mesh(new SphereGeometry(0.06, 10, 8), rodMat);
+          k.position.set(x, yy, z);
+          grp.add(k);
+        }
       };
       // the Rambam's: on the Shushan gate's jambs (20-mount.js gateTrim: they stand at z +-5.9, their east faces 3.3 east of the wall's line)
       const gR = new Group();
       gR.name = "shushanRodsGate";
       g.add(gR);
       const XJ = CO.harE + 3.3;
-      rod(gR, XJ, 3.6, -5.9, A1 + FNG / 2, 1);   // UPRIGHT_D: the gate's north-eastern corner (its north jamb)
-      rod(gR, XJ, 3.6, 5.9, A1 + FNG, 1);        //   and its south-eastern
+      // UPRIGHT_D: at the gateway's two eastern corners - the jambs (20-mount.js gateTrim) run z +-5..+-6.8, their east faces at XJ; the
+      // stands on the parah's way before the gate (10 wide, its top at the sill), against the jambs' faces by the opening's edges
+      const RC = 5 - 0.6, RS = 1.2;
+      rod(gR, XJ + 0.4, -RC, A1 + FNG / 2, RS);   // the north-eastern corner
+      rod(gR, XJ + 0.4, RC, A1 + FNG, RS);        // the south-eastern
       // Rashi's: the room on the wall's top over the women's court's east gate (the wall's cap ends at y 40.9; its merlons, 1.5 high,
       // are inside the room's floor slab)
       const gT = new Group();
@@ -519,22 +531,27 @@
       H2.box(gT, WT, RH - 4.5, 3, M2.stone, RX - RW / 2 + WT / 2, FL + 4.5, 0);
       const roof = H2.box(gT, RW + 0.6, 0.6, RL + 0.6, M2.stoneLight, RX, FL + RH, 0);
       ctx2.lishkotCut.push(roof);
-      const xin = RX + RW / 2 - WT, zc = RL / 2 - WT - 0.4;   // the east wall's inner face; UPRIGHT_D: the rods right in the room's corners (were 1.3 in)
-      rod(gT, xin, FL + 2.2, -zc, A1 + FNG / 2, -1);
-      rod(gT, xin, FL + 2.2, zc, A1 + FNG, -1);
+      const xin = RX + RW / 2 - WT, zc = RL / 2 - WT - 0.4;   // the east wall's inner face; UPRIGHT_D: the rods stand in the room's corners
+      {
+        const fl = new Group();
+        fl.position.y = FL;
+        gT.add(fl);
+        rod(fl, xin - 0.4, -zc, A1 + FNG / 2, 1.2);
+        rod(fl, xin - 0.4, zc, A1 + FNG, 1.2);
+      }
       ctx2.layers = ctx2.layers || {};
       ctx2.layers.shushanRodsGate = gR; ctx2.layers.shushanRoom = gT;
       const n0 = ctx2.labels.length;
       ctx2.labels.push(
         { text: "שתי האמות שבשושן הבירה (כלים יז, ט)", x: XJ + 1, y: 8.2, z: 0, size: 1.1, layer: "shushanRodsGate" },
-        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: XJ + 0.5, y: 5.2, z: -5.9, size: 0.6, layer: "shushanRodsGate" },
-        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: XJ + 0.5, y: 5.2, z: 5.9, size: 0.6, layer: "shushanRodsGate" }
+        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: XJ + 0.4, y: 3.0, z: -RC, size: 0.6, layer: "shushanRodsGate" },
+        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: XJ + 0.4, y: 3.0, z: RC, size: 0.6, layer: "shushanRodsGate" }
       );
       const n1 = ctx2.labels.length;
       ctx2.labels.push(
         { text: "שושן הבירה — חדר על גבי השער (רש״י)", x: RX, y: 40.9 + FL + RH + 2.6, z: 0, size: 1.8, layer: "shushanRoom" },
-        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: xin - 0.5, y: 40.9 + FL + 3.8, z: -zc + 0.6, size: 0.6, layer: "shushanRoom" },
-        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: xin - 0.5, y: 40.9 + FL + 3.8, z: zc - 0.6, size: 0.6, layer: "shushanRoom" }
+        { text: "אמה יתרה חצי אצבע — קרן מזרחית צפונית", x: xin - 0.4, y: 40.9 + FL + 3.0, z: -zc, size: 0.6, layer: "shushanRoom" },
+        { text: "אמה יתרה אצבע — קרן מזרחית דרומית", x: xin - 0.4, y: 40.9 + FL + 3.0, z: zc, size: 0.6, layer: "shushanRoom" }
       );
       const roomLbl = ctx2.labels.slice(n1);
       ctx2.shared.shushanRods = {
@@ -1099,12 +1116,27 @@
     const MW0 = MOKED_X - 15, MW1 = MOKED_X + 15;   // MOKED_WIDE_211: the hall 30 wide (22 until 2.0.1)
     const wallPart = (grp, x0, x1, opsW) => H2.wall(grp, { axis: "x", length: x1 - x0, height: 26.5, thickness: 5, mat: M2.stone, cx: (x0 + x1) / 2, cz: -67.5, y: 13.5,
       openings: opsW.filter((o) => o.center > x0 && o.center < x1).map((o) => Object.assign({}, o, { center: o.center - (x0 + x1) / 2 })) });
+    // WEST2_D (fix-d, 22.11.2026 - the user's decision 147 א): "ושנים במערב שלא היה להם שם" - two readings, the row "שני השערים שבמערב"
+    // (ctx2.shared.westGates.set("tyt" | "kaftor")). "tyt" (the default, as until now) - the Tosafot Yom Tov, Tzurat Beit HaMikdash 12:7
+    // (book 3190 line 116): "הכי נמי במערב סבירא ליה שהיו עוד שני שערים שאין להם שם. ולאחורי הכפרת היו, ולא שער אולם והיכל, שהוא דחק
+    // גדול" - two small gates in the court's west wall, behind the house. "kaftor" - the Kaftor vaFerach, as the TYT quotes him on Shekalim
+    // 6:3 (893 line 149): "שעל שער האולם ושער ההיכל הוא דקאמר" - no gate in the west wall; the gates of the ulam and of the heichal are "the
+    // two in the west", marked by labels and discs. Each group of thirteen gates keeps both west walls (WEST_T / WEST_K).
+    const WEST_T = new Map(), WEST_K = new Map();
     for (const [grp, extra, extraN] of [[g7, false, null], [g13, true, NASHIM_X], [g13r, true, SHIR_R_X]]) {
       const opsN = ops(gN).concat([{ center: 79, width: 20, height: 16 }, { center: 65.5, width: 2, height: 9.5 }], extraN != null ? [small(extraN)] : []);   // 1.9.5 THREE_CHAMBERS_195: the hall in the north-east (centre 60, 22 wide until 1.9.4) and the wood chamber's door to the Hel
       wallPart(grp, -96, MW0, opsN);
       wallPart(grp, MW1, 96, opsN);   // 1.8.0: the wall is open over בית המוקד's hall (its own walls close it)
       H2.wall(grp, { axis: "x", length: 192, height: 26.5, thickness: 5, mat: M2.stone, cx: 0, cz: 67.5, y: 13.5, openings: ops(gS).concat(extra ? [small(SMALL_X)] : []) });
-      H2.wall(grp, { axis: "z", length: 135, height: 26.5, thickness: 5, mat: M2.stone, cx: -93.5, cz: 0, y: 13.5, openings: extra ? SMALL_Z.map(small) : [] });
+      if (!extra) H2.wall(grp, { axis: "z", length: 135, height: 26.5, thickness: 5, mat: M2.stone, cx: -93.5, cz: 0, y: 13.5, openings: [] });
+      else {   // WEST2_D
+        const wt = new Group(), wk = new Group();
+        wt.name = "westGatesTyt"; wk.name = "westGatesKaftor"; wk.visible = false;
+        grp.add(wt, wk);
+        WEST_T.set(grp, wt); WEST_K.set(grp, wk);
+        H2.wall(wt, { axis: "z", length: 135, height: 26.5, thickness: 5, mat: M2.stone, cx: -93.5, cz: 0, y: 13.5, openings: SMALL_Z.map(small) });
+        H2.wall(wk, { axis: "z", length: 135, height: 26.5, thickness: 5, mat: M2.stone, cx: -93.5, cz: 0, y: 13.5, openings: [] });
+      }
     }
     // MOKED_VAULT_A2 (the user's decision 26: "החומה נקטעת מעל בית המוקד"): the court's wall is broken over the hall - its vault rises
     // in the gap and is seen from without. (Until now a bridge of wall, 2.5 high, with its coping and battlements, ran over it.)
@@ -1119,10 +1151,10 @@
       H2.box(grp, 7, 13.5, 4, M2.stoneSmooth, -87.5, 0, 72);
       platRail(grp, -91, -84, 70, 74, 13.5, ["s", "w"]);
       for (const z of SMALL_Z) {
-        const sg = Math.sign(z);
-        H2.box(grp, 4, 13.5, 6, M2.stoneSmooth, -98, 0, z);
-        platRail(grp, -100, -96, z - 3, z + 3, 13.5, ["w", sg > 0 ? "n" : "s"]);
-        stairsR(grp, { width: 4, totalRise: 13.5, steps: 27, dir: sg > 0 ? "N" : "S", x: -98, y: 0, z: z + sg * 16.5, tread: 0.5 });
+        const sg = Math.sign(z), wt = WEST_T.get(grp);   // WEST2_D: the TYT's west gates' landings and flights
+        H2.box(wt, 4, 13.5, 6, M2.stoneSmooth, -98, 0, z);
+        platRail(wt, -100, -96, z - 3, z + 3, 13.5, ["w", sg > 0 ? "n" : "s"]);
+        stairsR(wt, { width: 4, totalRise: 13.5, steps: 27, dir: sg > 0 ? "N" : "S", x: -98, y: 0, z: z + sg * 16.5, tread: 0.5 });
       }
     }
     H2.box(g13, 8.5, 13.5, 4, M2.stoneSmooth, -37.75, 0, -72);
@@ -1135,8 +1167,9 @@
         H2.doors(grp, { axis: "x", cx: sx, cz: 67.5 * s, y: 13.5, width: 4, height: 8, inward: -s, mat: M2.gateGold, open: 1.1, inset: 2, thick: 0.3 });
       }
       for (const z of SMALL_Z) {
-        H2.occ(H2.box(grp, 6.2, 0.9, 5.6, M2.stoneLight, -93.5, 21.5, z));
-        H2.doors(grp, { axis: "z", cx: -93.5, cz: z, y: 13.5, width: 4, height: 8, inward: 1, mat: M2.gateGold, open: 0, inset: 2, thick: 0.3 });
+        const wt = WEST_T.get(grp);   // WEST2_D
+        H2.occ(H2.box(wt, 6.2, 0.9, 5.6, M2.stoneLight, -93.5, 21.5, z));
+        H2.doors(wt, { axis: "z", cx: -93.5, cz: z, y: 13.5, width: 4, height: 8, inward: 1, mat: M2.gateGold, open: 0, inset: 2, thick: 0.3 });
       }
     }
     ctx2.labels.push(
@@ -1146,15 +1179,39 @@
       { text: "לאבא יוסי בן חנן: שער יכניה", x: -78, y: 31, z: -71, size: 2, layer: "gates13" },
       { text: "לאבא יוסי בן חנן: שער הקרבן", x: -48, y: 31, z: -71, size: 2, layer: "gates13" },
       { text: "לאבא יוסי בן חנן: שער השיר (תפארת ישראל)", x: MOKED_X, y: 31, z: -56, size: 1.6, layer: "gates13" },   // by its gate to the court (the counted one)
-      { text: "שני שערים במערב שלא היה להם שם", x: -97, y: 24.5, z: 0, size: 1.6, layer: "gates13" },
+      { text: "שני שערים במערב שלא היה להם שם", x: -97, y: 24.5, z: 0, size: 1.6, layers: ["gates13", "westTyt"] },
       // 1.9.1: the rejected reading (g13r)
       { text: "שער העליון — שער קטן (אבא יוסי בן חנן)", x: SMALL_X, y: 24.5, z: 71, size: 1.6, layer: "gates13r" },
       { text: "שער השיר — שער קטן למזרח בית המוקד (האפשרות שתפארת ישראל דוחה)", x: SHIR_R_X, y: 26, z: -71, size: 2.6, layer: "gates13r" },
       { text: "לאבא יוסי בן חנן: שער יכניה", x: -78, y: 31, z: -71, size: 2, layer: "gates13r" },
       { text: "לאבא יוסי בן חנן: שער הקרבן", x: -48, y: 31, z: -71, size: 2, layer: "gates13r" },
       { text: "לאבא יוסי בן חנן: שער הנשים — בית המוקד (האפשרות הנדחית)", x: MOKED_X, y: 31, z: -56, size: 1.6, layer: "gates13r" },
-      { text: "שני שערים במערב שלא היה להם שם", x: -97, y: 24.5, z: 0, size: 1.6, layer: "gates13r" }
+      { text: "שני שערים במערב שלא היה להם שם", x: -97, y: 24.5, z: 0, size: 1.6, layers: ["gates13r", "westTyt"] },
+      // WEST2_D: the Kaftor vaFerach's reading - the ulam's gate (its east face x 17.5) and the heichal's (x -4.5, inside the ulam)
+      { text: "כפתור ופרח: ״שנים במערב״ — שער האולם", x: 19, y: 66, z: 0, size: 2.2, layers: ["gates13", "westKaftor"] },
+      { text: "כפתור ופרח: ״שנים במערב״ — שער ההיכל", x: -3, y: 45, z: 0, size: 1.6, layers: ["gates13", "westKaftor"] },
+      { text: "כפתור ופרח: ״שנים במערב״ — שער האולם", x: 19, y: 66, z: 0, size: 2.2, layers: ["gates13r", "westKaftor"] },
+      { text: "כפתור ופרח: ״שנים במערב״ — שער ההיכל", x: -3, y: 45, z: 0, size: 1.6, layers: ["gates13r", "westKaftor"] }
     );
+    {   // WEST2_D: the switch; two empty groups stand for the two readings in the labels' layers
+      const fT = new Group(), fK = new Group();
+      fK.visible = false;
+      g.add(fT, fK);
+      ctx2.layers = ctx2.layers || {};
+      ctx2.layers.westTyt = fT; ctx2.layers.westKaftor = fK;
+      ctx2.shared.westGates = {
+        mode: "tyt",
+        set(m) {
+          this.mode = m === "kaftor" ? "kaftor" : "tyt";
+          const k = this.mode === "kaftor";
+          for (const w of WEST_T.values()) w.visible = !k;
+          for (const w of WEST_K.values()) w.visible = k;
+          fT.visible = !k; fK.visible = k;
+          if (ctx2.requestRender) ctx2.requestRender();
+          return this.mode;
+        }
+      };
+    }
     // GATES_FAR_205 b: the names that the readings give differently are 2.6 high (the others 2)
     // GATES_FAR_205 (the user, 12.11.2026: "שערי בית המקדש עפ"י המבטים לא מצליחים להבין את המח'" - from the row's own view, over the whole
     // court, a small gate of four amot could not be made out): in the readings of thirteen gates a disc stands over every gate - gold
@@ -1171,7 +1228,11 @@
         disc(grp, 93.5, -12, true); disc(grp, 93.5, 12, true);   // its two wickets
         disc(grp, SMALL_X, 67.5, true);                       // the Upper Gate
         disc(grp, nx, -67.5, true);                           // the small gate of the north (its place by the reading)
-        for (const z of SMALL_Z) disc(grp, -93.5, z, true);   // the two of the west
+        for (const z of SMALL_Z) disc(WEST_T.get(grp), -93.5, z, true);   // the two of the west (WEST2_D: the TYT's)
+        disc(WEST_K.get(grp), 19, 64, true);                  // WEST2_D: the Kaftor vaFerach's - over the ulam's gate,
+        { const d = FARG[FARG.length - 1]; d.position.set(19, 64, 0); }
+        disc(WEST_K.get(grp), -3, 43.5, true);                //   and over the heichal's (inside the ulam)
+        { const d = FARG[FARG.length - 1]; d.position.set(-3, 43.5, 0); }
       }
       if (ctx2.animated) ctx2.animated.push(() => {
         if (!g13.visible && !g13r.visible) return;

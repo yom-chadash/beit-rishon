@@ -3908,7 +3908,10 @@
 
       // ---------- 2. THE GOLDEN STANDS (Mishnah Yoma 5:3-4, 55:40-41: "יצא והניחו על כן הזהב שבהיכל... יצא והניחו על כן השני שהיה
       // בהיכל. רבי יהודה אומר, לא היה שם אלא כן אחד בלבד"; Yoma 55b, 107:1444). Where in the heichal, their form and height are not
-      // stated - before the parochet, a little south of the middle: model choices. ctx2.shared.kanim.set(1 | 2).
+      // stated in the Mishnah. KANIM_NORTH_D (fix-d, 22.11.2026 - the user's decision 138 א): IN THE NORTH of the heichal, before the
+      // parochet - the Tosafot Yom Tov, Tzurat Beit HaMikdash HaSheni, siman 55 (book 6028 line 66): "שני כני זהב היו בהיכל שכ"ג היה מניח
+      // עליהם ביה"כ דם הפר ודם השעיר בצאתו מבית קדש הקדשים (יומא פ"ה מ"ג ד). ומסתברא דבצפון היו (ע"ש מ"ה)". (Until now a little south of
+      // the middle.) Their distance from the middle, form and height - model choices. ctx2.shared.kanim.set(1 | 2).
       {
         const KN = new Group(), second = new Group(), oneG = new Group();
         KN.name = "kanim";
@@ -3919,15 +3922,15 @@
         ctx2.layers.kanim = KN;
         ctx2.layers.kanimTwo = second;
         ctx2.layers.kanimOne = oneG;
-        const KX = -42, KZ = [2.3, 3.9], KH = 1.5, ky = FY(KX);
+        const KX = -42, KZ = [-2.3, -3.9], KH = 1.5, ky = FY(KX);   // KANIM_NORTH_D: z -2.3 / -3.9 (were +2.3 / +3.9)
         const stand = (parent, z) => {
           noP(H2.lathe(parent, [[0, 0], [0.34, 0], [0.36, 0.05], [0.2, 0.12], [0.09, 0.2], [0.07, KH * 0.5], [0.11, KH * 0.56], [0.07, KH * 0.62], [0.08, KH - 0.14], [0.22, KH - 0.05], [0.27, KH], [0, KH]], M2.gold, KX, ky, z, 22));
           mizrak(parent, KX, ky + KH, z);
         };
         stand(KN, KZ[0]);
         stand(second, KZ[1]);
-        lblY("כן הזהב — דם הפר", KX, ky + KH + 0.95, KZ[0] - 0.9, 0.8, ["kanim", "kanimTwo"]);   // NOTE 9 (U-57, 3): nearer the stands
-        lblY("הכן השני — דם השעיר", KX, ky + KH + 0.6, KZ[1] + 1.0, 0.8, ["kanim", "kanimTwo"]);
+        lblY("כן הזהב — דם הפר", KX, ky + KH + 0.95, KZ[0] + 0.9, 0.8, ["kanim", "kanimTwo"]);   // NOTE 9 (U-57, 3): nearer the stands
+        lblY("הכן השני — דם השעיר", KX, ky + KH + 0.6, KZ[1] - 1.0, 0.8, ["kanim", "kanimTwo"]);
         lblY("כן אחד בלבד — רבי יהודה", KX, ky + KH + 0.8, KZ[0], 0.8, ["kanim", "kanimOne"]);
         ctx2.shared.kanim = { count: 2, set(n) { this.count = n === 1 ? 1 : 2; second.visible = this.count === 2; oneG.visible = this.count === 1; } };
         feat("kanim", KN);
@@ -4266,6 +4269,65 @@
           }
         }
       };
+    }
+    // SLOPE2_D (fix-d, 22.11.2026 - the user's decision 145 א): THE FLOOR - LEVEL (the default here) OR SLOPING, the row "רצפת ההיכל —
+    // משופעת או שטוחה" (ctx2.shared.floorSlope.set("rambam" | "rashi")). "rambam" - Beit HaBechirah 6:4 (book 337 line 97) "והאולם וההיכל
+    // כלו בשוה"; the Kaftor vaFerach (7576 line 244) "והאולם וההיכל הכל שוה ובמישור"; the Torat HaOlah (3167 line 298) "עד שהגיעו לאולם
+    // שהיה עם ההיכל בשוה במישור ההר". "rashi" - Menachot 99a (2186 line 4703) "דבית המקדש היה משופע ולצד מערב מגביה יותר" (4 amot on the 61,
+    // a model choice, as until now). Everything was built level (10-core.js, HOUSE_SLOPE.on false); the sloping reading shears the
+    // vessels' group (45-vessels.js: all of it stands in the heichal) and a group of what stands on the heichal's floor in this module
+    // (found by its bounds: inside the house, its foot on the floor, no higher than 12 - the stone, the golden stands, the sotah's slab),
+    // shows the floor's wedge, and lifts the names that stand low in the house; what walks asks houseRise (HOUSE_SLOPE.on) at its moment.
+    // The parochot and what is fixed to the building stay - their feet are covered by the rising floor.
+    {
+      const HSx0 = HOUSE_SLOPE.x0, HSx1 = HOUSE_SLOPE.x1, k = HOUSE_SLOPE.rise / (HSx0 - HSx1);
+      const SHM = new Matrix4().set(1, 0, 0, 0, -k, 1, 0, k * HSx0, 0, 0, 1, 0, 0, 0, 0, 1), IDM = new Matrix4();
+      const rise = (x) => HOUSE_SLOPE.rise * Math.max(0, Math.min(1, (HSx0 - x) / (HSx0 - HSx1)));
+      const sg = new Group();
+      sg.name = "houseSlopeGroup";
+      sg.matrixAutoUpdate = false;
+      g.add(sg);
+      g.updateMatrixWorld(true);
+      const bb = new Box3(), HW2 = 10.6;
+      for (const o of g.children.slice()) {
+        if (o === sg || o.isLight || o.isSprite || o.name === "houseSlope") continue;
+        try { bb.makeEmpty(); bb.setFromObject(o); } catch (_) { continue; }
+        if (bb.isEmpty()) continue;
+        const inside = bb.max.x <= HSx0 + 0.6 && bb.min.x >= HSx1 - 0.6 && bb.min.z >= -HW2 && bb.max.z <= HW2;
+        const low = bb.min.y >= F - 0.3 && bb.min.y <= F + 1.3 && bb.max.y - bb.min.y <= 12;
+        if (inside && low) sg.add(o);
+      }
+      const ves = ctx2.root.getObjectByName("vessels");
+      if (ves) ves.matrixAutoUpdate = false;
+      const wedgeM = g.getObjectByName("houseSlope");
+      const lowL = ctx2.labels.filter((l) => l && typeof l.x === "number" && typeof l.y === "number" && l.x <= HSx0 && l.x >= HSx1 && Math.abs(l.z || 0) <= HW2 && l.y <= F + 13);
+      const apply = (on) => {
+        sg.matrix.copy(on ? SHM : IDM); sg.matrixWorldNeedsUpdate = true;
+        if (ves) { ves.matrix.copy(on ? SHM : IDM); ves.matrixWorldNeedsUpdate = true; }
+        if (wedgeM) wedgeM.visible = on;
+      };
+      ctx2.shared.floorSlope = {
+        current: "rambam", keys: ["rambam", "rashi"],
+        set(m) {
+          const on = m === "rashi";
+          this.current = on ? "rashi" : "rambam";
+          if (on === HOUSE_SLOPE.on) return this.current;
+          HOUSE_SLOPE.on = on;
+          apply(on);
+          const grp = ctx2.root.getObjectByName("labels");
+          for (const l of lowL) {
+            const dy = (on ? 1 : -1) * rise(l.x);
+            if (!dy) continue;
+            l.y += dy;
+            const spr = grp ? grp.children.find((q) => q.userData && q.userData.label === l) : null;
+            if (spr) spr.position.y += dy;
+          }
+          try { const S = ctx2.shared.solomonLayout; if (S && typeof S.refresh === "function") S.refresh(); } catch (_) {}
+          if (ctx2.requestRender) ctx2.requestRender();
+          return this.current;
+        }
+      };
+      apply(false);
     }
     NEDOOR.ready();   // 1.9.2: the house is whole - the door of the north-east cell finds the pieces it cuts
     LULHOLE.ready();   // 1.9.3

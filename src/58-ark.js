@@ -505,7 +505,7 @@
       if (A) {
         const box = new Group();
         for (const o of A.body) { const c = o.clone(true); c.visible = true; box.add(c); }
-        box.position.set(-A.x, -A.y0, 0);
+        box.position.set(-(A.x0 != null ? A.x0 : A.x), -A.y0, 0);   // ARK_PLACE_D: the pieces' own (built) line
         ark.add(box);
         const sg = new CylinderGeometry(0.11, 0.11, 1, 10);
         sg.rotateZ(Math.PI / 2);
@@ -552,9 +552,18 @@
     // SEU_SHEARIM_208 (the user, 13.11.2026 00:53: "תחפש את השיר שאו שערים ותוסיף בקטע של הכתוביות שאו שערים"): the whole of
     // "שאו שערים" as the Gemara tells it (Shabbat 30a; Psalms 24:7-10) - 7.5 seconds more at the king, every time after them later by as much
     const T = { walk1: 19.5, open0: 53.8, open1: 56.3, enter1: 62.8, lower1: 64.3, ext0: 67.0, ext1: 70.0, cloud0: 72.5, cloud1: 79.5, end: 86.5 };
-    const X0 = 16.8, XS = (CO.xKodeshW || -43.5) + 2.7, AX = A ? A.x : -58.5;
+    const X0 = 16.8, XS = (CO.xKodeshW || -43.5) + 2.7;
+    let AX = A ? A.x : -58.5;   // ARK_PLACE_D (fix-d): the ark's place of this moment (ctx.shared.arkPlace) - read again at every start (enter)
     const arkX = (t) => (t < T.open1 ? glide(X0, XS, 0, T.walk1, t, 1.4) : glide(XS, AX, T.open1, T.enter1, t, 1.2));
     const D = { built: false, run: false, cloudWas: true, saved: null, apply: null };
+    const setPath = (p) => {   // ARK_PLACE_D: the priests' way out, from the ark's place of this moment
+      const front = p.front, s = p.s;
+      p.path = front
+        ? [[AX - 1.6, s * 1.1], [AX - 3.6, s * 1.1], [AX - 3.6, s * 2.3], [8.0, s * 2.3], [8.6, s * 3.4]]
+        : [[AX + 1.6, s * 1.1], [AX + 2.8, s * 0.62], [9.6, s * 0.62], [10.4, s * 1.6]];
+      p.len = [0];
+      for (let i = 1; i < p.path.length; i++) p.len.push(p.len[i - 1] + Math.hypot(p.path[i][0] - p.path[i - 1][0], p.path[i][1] - p.path[i - 1][1]));
+    };
     const build = () => {
       if (D.built || !A) return;
       D.built = true;
@@ -563,13 +572,13 @@
       arkM.name = "arkGatesArk";
       const box = new Group();
       for (const o of A.body) { const c = o.clone(true); c.visible = true; box.add(c); }
-      box.position.set(-A.x, -A.y0, 0);
+      box.position.set(-(A.x0 != null ? A.x0 : A.x), -A.y0, 0);   // ARK_PLACE_D: the pieces' own (built) line
       arkM.add(box);
       const sg = new CylinderGeometry(0.11, 0.11, 1, 10);
       sg.rotateZ(Math.PI / 2);
       for (const s of [-1, 1]) { const m = new Mesh(sg, A.staffMat); m.position.set(0, A.h / 2, s * A.staffZ); m.scale.x = CARRY; m.castShadow = true; arkM.add(m); }
       g.add(arkM);
-      const P = [];
+      const P = D.P = [];   // ARK_PLACE_D: kept, for the way out from another place (enter)
       let n = 0;
       for (const front of [true, false]) for (const s of [-1, 1]) {
         const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
@@ -580,11 +589,7 @@
         p.side = s > 0 ? 1 : -1;
         // the way out (after the ark is set down): the pair behind it straight out between the staffs; the pair before it round the
         // staffs' west ends and out beside them; at the end they stand in the ulam, turned to the house
-        p.path = front
-          ? [[AX - 1.6, s * 1.1], [AX - 3.6, s * 1.1], [AX - 3.6, s * 2.3], [8.0, s * 2.3], [8.6, s * 3.4]]
-          : [[AX + 1.6, s * 1.1], [AX + 2.8, s * 0.62], [9.6, s * 0.62], [10.4, s * 1.6]];
-        p.len = [0];
-        for (let i = 1; i < p.path.length; i++) p.len.push(p.len[i - 1] + Math.hypot(p.path[i][0] - p.path[i - 1][0], p.path[i][1] - p.path[i - 1][1]));
+        setPath(p);
         p.v = front ? 3.8 : 3.5;   // EXIT_BACK_304: "מהלך אחורנית מעט מעט" - a little slower than the walk in (4.4 / 4.0 until 1.4.12)
         g.add(p.g);
         P.push(p);
@@ -783,6 +788,7 @@
     // the model before and after: saved at the start, given back at the end or at any stop
     const enter = () => {
       tagLabels();
+      { const ax = A ? A.x : AX; if (ax !== AX) { AX = ax; for (const p of D.P || []) setPath(p); } }   // ARK_PLACE_D
       const KL = ctx.shared.kodeshLayout, AI = ctx.shared.arkInside, AL = ctx.shared.arkLift;
       D.saved = { arkInside: !!(AI && AI.on), lift: !!(AL && typeof AL.get === "function" && AL.get()) };
       if (D.saved.arkInside) AI.set(false);
