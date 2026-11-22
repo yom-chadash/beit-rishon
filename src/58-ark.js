@@ -175,7 +175,7 @@
     // the tzitz on the forehead (under the tefillin), its cords of tekhelet to the back; the mitznefet over the crown
     {
       const hg = w.hg, R0 = K.HR[0] + 0.006;
-      const tz = new Mesh(new CylinderGeometry(K.HR[2] * 0.93, K.HR[2] * 0.93, 0.036, 24, 1, true, -1.25, 2.5), mGold);
+      const tz = new Mesh(new CylinderGeometry(K.HR[2] * 0.95, K.HR[2] * 0.95, 0.042, 24, 1, true, -1.25, 2.5), mGold);
       tz.scale.set(K.HR[0] / K.HR[2] * 1.02, 1, 1); tz.position.y = 0.062; tz.material.side = DoubleSide; hg.add(tz);
       for (const sd of [-1, 1]) { const cd = new Mesh(new TubeGeometry(new CatmullRomCurve3([new Vector3(sd * R0 * 0.95, 0.062, 0.04), new Vector3(sd * R0, 0.05, -0.06), new Vector3(sd * 0.03, 0.03, -K.HR[2] - 0.01)]), 10, 0.004, 4, false), mCord); hg.add(cd); }
       const mz = K.surf(40, 20, (u, v, o) => {
@@ -520,8 +520,10 @@
       ctx.root.add(PG);
       ctx.layers.priestGarments = PG;
       let built = false;
-      ctx.labels.push({ text: "כהן הדיוט — ארבעה בגדים", x: 37, y: 6 + 4.6, z: 12.4, size: 0.8, layer: "priestGarments" },
-        { text: "כהן גדול — שמונה בגדים", x: 37, y: 6 + 3.95, z: 15.6, size: 0.8, layer: "priestGarments" });
+      // (LABEL_NEAR_A2: each caption over its own figure, at a height of its own, and it keeps shrinking as the eye comes near - kMin)
+      const PGI = { info: "בגדי הכהנים — הפירוט בתפריט, תחת ״הכהנים״: ״בגדי הכהנים — כהן הדיוט וכהן גדול״.", refs: [["רמב״ם כלי המקדש ח, א", { book: 338, index: 123 }], ["רמב״ם כלי המקדש ח, ב", { book: 338, index: 124 }]] };
+      ctx.labels.push(Object.assign({ text: "כהן הדיוט — ארבעה בגדים", x: 37, y: 6 + 3.9, z: 12.6, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI),
+        Object.assign({ text: "כהן גדול — שמונה בגדים", x: 37, y: 6 + 4.35, z: 15.4, size: 0.5, kMin: 0.32, layer: "priestGarments" }, PGI));
       ctx.shared.priestGarments = {
         get on() { return PG.visible; },
         set(on) {

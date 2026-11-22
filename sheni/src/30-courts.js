@@ -1887,12 +1887,14 @@
           for (const [zw, sz] of [[-54, 1], [65, -1]]) for (const y of [18, 20.5, 23, 25.5, 28.5, 31.5]) H2.box(iB, 0.45, 0.45, 1.6, M2.cedar, 85, y, zw + sz * 0.8);
           const sub = new Group(); sub.rotation.y = HP; sub.position.set(85.25, 0, 0); iR.add(sub);
           lat(sub, -65, 54, 0, 13.5, 0.5);   // local x -> the world's -z: z -54 .. 65
-          ctx2.labels.push({ text: "ראשי פספסין — בין עזרת ישראל לעזרת כהנים (ברטנורא מידות ב, ו)", x: 85, y: 33, z: 60, size: 1.1, layer: "pisIB" },
-            { text: "פשפש — שבכה ברצפה בין עזרת ישראל לעזרת כהנים (הרמב״ם)", x: 86.5, y: 15.6, z: 40, size: 1.0, layer: "pisIR" });
+          const PI = { info: "**ראשי פספסין** (מידות ב, ו): ״וראשי פספסין מבדילין בין עזרת ישראל לעזרת הכהנים״. ברטנורא: ״ראשי קורות בולטים ויוצאים מן הכתל להבדיל בין עזרת ישראל לעזרת כהנים״; ולפירוש המשניות לרמב״ם — שבכה נמוכה ברצפה (ראו בבית המוקד). המתג — בתפריט, ״ראשי פספסין — קורות או שבכה ברצפה״.", refs: [["מידות ב, ו", { book: 89, index: 17 }], ["ברטנורא מידות ב, ו", { book: 643, index: 99 }], ["פירוש המשניות לרמב״ם מידות א, ו", { book: 573, index: 10 }]] };
+          ctx2.labels.push(Object.assign({ text: "ראשי פספסין — בין עזרת ישראל לעזרת כהנים (ברטנורא מידות ב, ו)", x: 85, y: 33, z: 60, size: 1.1, layer: "pisIB" }, PI),
+            Object.assign({ text: "פשפש — שבכה ברצפה בין עזרת ישראל לעזרת כהנים (הרמב״ם)", x: 86.5, y: 15.6, z: 40, size: 1.0, layer: "pisIR" }, PI));
           ctx2.layers.pisIB = iB; ctx2.layers.pisIR = iR;
         }
-        ctx2.labels.push({ text: "ראשי פספסין — מכאן לדרום קודש, לצפון חול", x: X, y: 32.5, z: -65.2, size: 1.1, layer: "pisB" },
-          { text: "פשפש — שבכה ברצפה, מכאן לדרום קודש (פירוש המשניות לרמב״ם)", x: X, y: FL + 2.2, z: -65.2, size: 1.0, layer: "pisR" });
+        const PM = { info: "**ראשי פספסין** (מידות א, ו): ״וראשי פספסין מבדילין בין קדש לחל״. ברטנורא: ״ראשי קורות יוצאים מן הכתל עד המקום שהוא קדש״; פירוש המשניות לרמב״ם: ״עשו בקרקעיתם ממעל שבכות להבדיל קרקע השתים של הקדש מקרקע שתים של חול״. המתג — בתפריט, ״ראשי פספסין — קורות או שבכה ברצפה״.", refs: [["מידות א, ו", { book: 89, index: 7 }], ["ברטנורא מידות א, ו", { book: 643, index: 36 }], ["פירוש המשניות לרמב״ם מידות א, ו", { book: 573, index: 10 }]] };
+        ctx2.labels.push(Object.assign({ text: "ראשי פספסין — מכאן לדרום קודש, לצפון חול", x: X, y: 32.5, z: -65.2, size: 1.1, layer: "pisB" }, PM),
+          Object.assign({ text: "פשפש — שבכה ברצפה, מכאן לדרום קודש (פירוש המשניות לרמב״ם)", x: X, y: FL + 2.2, z: -65.2, size: 1.0, layer: "pisR" }, PM));
         ctx2.layers = ctx2.layers || {}; ctx2.layers.pisB = pB; ctx2.layers.pisR = pR;
       }
       lbl("בית המוקד", X, 13.5 + Hh + 7.5, Z, 3);
@@ -2131,8 +2133,9 @@
         }
         ctx2.shared.rovdin = { mode: "rosh", set(m) { this.mode = m === "mefaresh" ? "mefaresh" : "rosh"; rR.visible = this.mode === "rosh"; rM.visible = this.mode === "mefaresh"; return this.mode; } };
         ctx2.layers = ctx2.layers || {}; ctx2.layers.rovdinR = rR; ctx2.layers.rovdinM = rM;
-        ctx2.labels.push({ text: "רובדין של אבן — זקני בית אב ישנים שם", x: X, y: FL + 3.5, z: Z, size: 1.2, layer: "rovdinR" },
-          { text: "רובדין — גומחות בכותל ואבנים לעלות אליהן (המפרש)", x: X, y: FL + 6.2, z: Z, size: 1.1, layer: "rovdinM" });
+        const RV = { info: "**רובדין של אבן** (מידות א, ח): ״ומקף רובדין של אבן, וזקני בית אב ישנים שם״. להרא״ש ולתפארת ישראל — מדרגות של אבן לאורך הכתלים; למפרש — גומחות בכותל כעין מטות, ורובדין לעלות אליהן. המתג — בתפריט, ״רובדין של אבן בבית המוקד״.", refs: [["מידות א, ח", { book: 89, index: 9 }], ["פירוש הרא״ש תמיד כה:", { book: 2224, index: 9 }], ["המפרש תמיד כה:", { book: 2105, index: 9 }]] };
+        ctx2.labels.push(Object.assign({ text: "רובדין של אבן — זקני בית אב ישנים שם", x: X, y: FL + 3.5, z: Z, size: 1.2, layer: "rovdinR" }, RV),
+          Object.assign({ text: "רובדין — גומחות בכותל ואבנים לעלות אליהן (המפרש)", x: X, y: FL + 6.2, z: Z, size: 1.1, layer: "rovdinM" }, RV));
       }
       // 1.5.0 (the user: "צייר את פנים בית המוקד"): the hearth - "בית המוקד" is named for the great fire kept there, by which the priests warmed
       // themselves (Tamid 1:1 with the Rambam's commentary; Shabbat 20a): a stone ring, logs and a flame in the middle of the hall; and in the

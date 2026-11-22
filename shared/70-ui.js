@@ -816,7 +816,8 @@ body.tm-measuring canvas{cursor:crosshair}
         for (const spr of labelGroup.children) {
           const d = cp.distanceTo(spr.position);
           const sz = spr.userData.base.y;
-          const k = Math.min(1.5, Math.max(0.3, d / 170));
+          const kMin = spr.userData.label && typeof spr.userData.label.kMin === "number" ? spr.userData.label.kMin : 0.3;   // LABEL_NEAR_A2: a label may keep shrinking as the eye comes near (a figure's caption)
+          const k = Math.min(1.5, Math.max(kMin, d / 170));
           spr.scale.set(spr.userData.base.x * k, spr.userData.base.y * k, 1);
           // 1.3.7 / 1.9.5: a label may name its own reach (`far`, amot) - the captions of a switch that is looked at from the whole
           // Mount's view (the gatekeepers' sides); without it the reach goes by the label's size, as before
