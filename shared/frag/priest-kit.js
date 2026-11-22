@@ -160,6 +160,10 @@
         c.save(); c.translate(x, y); c.scale(rx, ry); c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 1, 0, TAU); c.fill(); c.restore();
       };
       blob(cx, 100, 58, 22, "rgba(222,186,152,0.45)");
+      // FACE_REAL_A2: fine lines - three across the forehead, and a soft line under each eye
+      c.strokeStyle = "rgba(104,64,44,0.28)"; c.lineWidth = 1.4;
+      for (const [y, w] of [[88, 34], [96, 40], [104, 36]]) { c.beginPath(); c.moveTo(cx - w, y + 2); c.quadraticCurveTo(cx, y - 3, cx + w, y + 2); c.stroke(); }
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(cx + sd * 18, ey + 9); c.quadraticCurveTo(cx + sd * 29, ey + 13, cx + sd * 40, ey + 9); c.stroke(); }
       for (const sd of [-1, 1]) {
         blob(cx + sd * 29, ey, 25, 15, "rgba(92,52,34,0.26)");     // FACE_A2: the sockets deeper
         blob(cx + sd * 60, 112, 16, 26, "rgba(96,58,40,0.18)");    // the temples
@@ -204,7 +208,7 @@
     const SASHES = [];   // every avnet's mesh: dyed in the Rambam's reading, white in "של בוץ"
     // ---------- the head (its middle at HEAD_Y): an egg, narrower at the chin; the nose with its wings, the lids, the lips and the
     // ears are pieces of its skin
-    const HEAD_Y = 2.075, HR = [0.128, 0.16, 0.14], EYE = [0.047, 0.014, 0.1075], ER = 0.0206, HS = 1.045;   // FACE_A2: the eyes 0.0206 (0.0222), set in 0.002
+    const HEAD_Y = 2.075, HR = [0.128, 0.16, 0.14], EYE = [0.044, 0.014, 0.1155], ER = 0.0158, HS = 1.045;   // FACE_REAL_A2 (the user: "פרצופים אמיתיים יותר" - not a doll's): the eyes smaller (0.0206 until now), a little closer, set in to the skin   // FACE_A2: the eyes 0.0206 (0.0222), set in 0.002
     // (the skull's distance from its axis at the angle ph - 0 is the front - and the height y)
     const headR = (ph, y) => {
       const yn = Math.max(-0.999, Math.min(0.999, y / HR[1])), j = yn < 0 ? yn * yn : 0;
@@ -218,14 +222,14 @@
       }
       k.computeVertexNormals();
       const skin = (q) => flatUV(q, 0.75, 0.3), parts = [k];
-      parts.push(skin(at(sph(0.013, 0.034, 0.02, 8, 6), 0, -0.012, 0.133)));                 // the nose: its bridge,
-      parts.push(skin(at(sph(0.019, 0.017, 0.022, 10, 8), 0, -0.041, 0.146)));               // its tip,
+      parts.push(skin(at(sph(0.0105, 0.032, 0.017, 8, 6), 0, -0.014, 0.131)));                // the nose (FACE_REAL_A2: of a natural size): its bridge,
+      parts.push(skin(at(sph(0.0135, 0.0125, 0.016, 10, 8), 0, -0.04, 0.1405)));             // its tip,
       for (const sd of [-1, 1]) {
-        parts.push(skin(at(sph(0.011, 0.01, 0.012, 6, 5), sd * 0.017, -0.047, 0.134)));      // its wings
+        parts.push(skin(at(sph(0.0085, 0.008, 0.009, 6, 5), sd * 0.0135, -0.045, 0.1325)));  // its wings
         parts.push(skin(at(sph(0.012, 0.03, 0.02, 6, 6), sd * 0.126, 0, -0.004)));           // the ear
         // the lids: the upper one over the top of the iris, the lower one under it
-        parts.push(skin(at(rot(sph(ER * 1.07, ER * 1.07, ER * 1.07, 12, 6, 0, TAU, 0, 0.76), 0.5), sd * EYE[0], EYE[1], EYE[2])));
-        parts.push(skin(at(rot(sph(ER * 1.06, ER * 1.06, ER * 1.06, 12, 5, 0, TAU, 0, 0.6), Math.PI - 0.42), sd * EYE[0], EYE[1], EYE[2])));
+        parts.push(skin(at(rot(sph(ER * 1.08, ER * 1.08, ER * 1.08, 12, 6, 0, TAU, 0, 0.74), 0.5), sd * EYE[0], EYE[1], EYE[2])));
+        parts.push(skin(at(rot(sph(ER * 1.07, ER * 1.07, ER * 1.07, 12, 5, 0, TAU, 0, 0.6), Math.PI - 0.42), sd * EYE[0], EYE[1], EYE[2])));
       }
       parts.push(flatUV(at(sph(0.021, 0.0052, 0.01, 10, 6), 0, -0.0865, 0.1215), 0.766, 0.2));   // the lips
       return mergeGeometries(parts);
@@ -258,7 +262,7 @@
         o.tv = v;
       }, true));
       for (const sd of [-1, 1]) {
-        parts.push(white(at(rot(sph(0.031, 0.0078, 0.011, 8, 5), 0, 0, -sd * 0.04), sd * EYE[0], 0.0545, 0.1255)));   // the brow
+        parts.push(white(at(rot(sph(0.026, 0.0062, 0.01, 8, 5), 0, 0, -sd * 0.04), sd * EYE[0], 0.05, 0.1262)));   // the brow (FACE_REAL_A2: finer)
         parts.push(white(at(rot(sph(0.037, 0.0125, 0.016, 10, 6), 0, 0, -sd * 0.4), sd * 0.027, -0.066, 0.127)));     // the moustache
       }
       parts.push(white(sph(HR[0] * HS, HR[1] * HS, HR[2] * HS, 20, 6, 0, TAU, 0, 1.08)));
@@ -367,18 +371,18 @@
     // Shulchan Aruch OC 27:4, 382:231: "לא יהא דבר חוצץ בין תפילין לבשרו"; "גם רצועה לא עוברת מעל" - the strap round the head under its
     // edge). Its measures, the tilt and the bands - model choices. Until now: a cone of six level bands, its edge round the head at
     // one height. Its origin stays HAT_Y (the figures place it there).
-    const MIG = { y0: 0.012, H: 0.4, rx: 0.12, rz: 0.13, top: 0.74, back: -0.014, bands: 7, starts: 3, lift: 0.06, tilt: 0.14 };
+    const MIG = { y0: 0.012, H: 0.41, rx: 0.122, rz: 0.132, top: 0.58, back: -0.014, bands: 5.5, starts: 2, lift: 0.06, tilt: 0.12 };
     const hatSurf = (P, bandsOn) => (u, v, o) => {
       const a = u * TAU + Math.PI, body = 0.86, k = v < body ? v / body : 1, fr = Math.pow(Math.max(0, Math.cos(a)), 2);
-      let R = 1 - (1 - P.top) * Math.pow(k, 1.2), y = P.y0 + P.lift * fr * Math.pow(1 - k, 1.4) + v * P.H;
-      if (v > body) { const w = (v - body) / (1 - body); R = P.top * Math.sqrt(Math.max(0, 1 - w * w)); y = P.y0 + body * P.H + w * P.top * P.rz * 0.75; }
+      let R = 1 - (1 - P.top) * Math.pow(k, 0.95), y = P.y0 + P.lift * fr * Math.pow(1 - k, 1.4) + v * P.H;   // MIGBAAT_CONE_A2: a cone narrowing upward
+      if (v > body) { const w = (v - body) / (1 - body); R = P.top * Math.sqrt(Math.max(0, 1 - w * w)); y = P.y0 + body * P.H + w * P.top * P.rz * 1.0; }
       const t = (((v / body) * P.bands + u * P.starts) % 1 + 1) % 1, on = bandsOn ? (v < body ? sstep(0.0, 0.04, v) : 1 - sstep(body, 0.97, v)) : 0;
-      const r = R * (1 + on * (0.032 * (1 - t) * (1 - t) - 0.008));
+      const r = R * (1 + on * (0.045 * (1 - t) * (1 - t) - 0.01));
       const x = r * P.rx * Math.sin(a), z = r * P.rz * Math.cos(a) + P.back, c = Math.cos(P.tilt), sn = Math.sin(P.tilt);
       o.x = x;
       o.y = y * c + z * sn;            // tilted back: the front up, the top back
       o.z = -y * sn + z * c;
-      o.c = 1 - on * (Math.exp(-t / 0.07) * 0.26 + 0.05 * Math.pow(t, 3));
+      o.c = 1 - on * (Math.exp(-t / 0.07) * 0.36 + 0.06 * Math.pow(t, 3));
     };
     const gHat = surf(48, 44, hatSurf(MIG, true));
     // TEFILLIN_A2 (fix-a2; the user's decision 67, 22.11.2026): THE HEAD'S TEFILLIN on every priest - Zevachim 19a (130:737-743):

@@ -179,8 +179,8 @@
         nr.setXYZ(b, x / l, y / l, z / l);
       }
       const parts = [shade(k, 1)];
-      parts.push(skinPart(at(sph(0.013, 0.034, 0.02, 5, 3), 0, -0.012, 0.133)));
-      parts.push(skinPart(at(sph(0.019, 0.017, 0.022, 6, 4), 0, -0.041, 0.146)));
+      parts.push(skinPart(at(sph(0.0105, 0.032, 0.017, 5, 3), 0, -0.014, 0.131)));   // FACE_REAL_A2: the nose of a natural size (as priest-kit.js)
+      parts.push(skinPart(at(sph(0.0135, 0.0125, 0.016, 6, 4), 0, -0.04, 0.1405)));
       for (const sd of [-1, 1]) parts.push(skinPart(at(sph(0.012, 0.03, 0.02, 4, 3), sd * 0.126, 0, -0.004)));
       return parts;
     };
@@ -243,16 +243,16 @@
     // in fewer faces, and the mid level's without its bands. Until now the egg of PAYIS_FIGURE4D.
     // MIGBAAT_CHALAMISH_A2: as priest-kit.js now (the booklet's tall wound cylinder, set back and tilted, rising in front over the
     // tefillin) - the same measures
-    const MIGP = { y0: 0.012, H: 0.4, rx: 0.12, rz: 0.13, top: 0.74, back: -0.014, bands: 7, starts: 3, lift: 0.06, tilt: 0.14 };
+    const MIGP = { y0: 0.012, H: 0.41, rx: 0.122, rz: 0.132, top: 0.58, back: -0.014, bands: 5.5, starts: 2, lift: 0.06, tilt: 0.12 };
     const hatK = (ws, hs) => at(surf(ws || 32, hs || 30, (u, v, o) => {
       const P = MIGP, a = u * TAU + Math.PI, body = 0.86, k = v < body ? v / body : 1, fr = Math.pow(Math.max(0, Math.cos(a)), 2), bands = !ws;
-      let R = 1 - (1 - P.top) * Math.pow(k, 1.2), y = P.y0 + P.lift * fr * Math.pow(1 - k, 1.4) + v * P.H;
-      if (v > body) { const w = (v - body) / (1 - body); R = P.top * Math.sqrt(Math.max(0, 1 - w * w)); y = P.y0 + body * P.H + w * P.top * P.rz * 0.75; }
+      let R = 1 - (1 - P.top) * Math.pow(k, 0.95), y = P.y0 + P.lift * fr * Math.pow(1 - k, 1.4) + v * P.H;   // MIGBAAT_CONE_A2: a cone narrowing upward
+      if (v > body) { const w = (v - body) / (1 - body); R = P.top * Math.sqrt(Math.max(0, 1 - w * w)); y = P.y0 + body * P.H + w * P.top * P.rz * 1.0; }
       const t = (((v / body) * P.bands + u * P.starts) % 1 + 1) % 1, on = bands ? (v < body ? sstep(0, 0.04, v) : 1 - sstep(body, 0.97, v)) : 0;
-      const r = R * (1 + on * (0.032 * (1 - t) * (1 - t) - 0.008));
+      const r = R * (1 + on * (0.045 * (1 - t) * (1 - t) - 0.01));
       const x = r * P.rx * Math.sin(a), z = r * P.rz * Math.cos(a) + P.back, c = Math.cos(P.tilt), sn = Math.sin(P.tilt);
       o.x = x; o.y = y * c + z * sn; o.z = -y * sn + z * c;
-      o.c = 1 - on * (Math.exp(-t / 0.07) * 0.26 + 0.05 * Math.pow(t, 3));
+      o.c = 1 - on * (Math.exp(-t / 0.07) * 0.36 + 0.06 * Math.pow(t, 3));
     }), 0, 0.06, 0);
     // TEFILLIN_A2 (the user's decision 67): the head's tefillin on the priests and the Levites of a crowd (kind "kohen" / "levi") -
     // the box at the start of the hair, the strap round the head (priest-kit.js gTefR, in fewer faces); their own instanced mesh in
