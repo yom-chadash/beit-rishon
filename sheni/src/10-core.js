@@ -362,13 +362,14 @@
       opts
     ));
   }
+  //@@include copper
   var M = {
     stone: std(TEX.stone, { roughness: 0.72, envMapIntensity: 0.55, bumpScale: 0.7 }),
     stoneLight: std(TEX.stoneLight, { roughness: 0.66, envMapIntensity: 0.6, bumpScale: 0.6 }),
     stoneSmooth: std(TEX.stoneSmooth, { roughness: 0.55, envMapIntensity: 0.7, bumpScale: 0.4 }),
     marble: std(TEX.marble, { roughness: 0.22, metalness: 0.06, bumpScale: 0, envMapIntensity: 1.1 }),
     gold: std(TEX.gold, { color: 0xFFF1C8, metalness: 0.5, roughness: 0.32, envMapIntensity: 1.3, emissive: 0x5a400f, emissiveIntensity: 0.45 }),   // 1.3.0: the First Temple's gold recipe (1.0.1-K: cream, not brown in the shade)
-    bronze: new MeshStandardMaterial({ color: 10645550, roughness: 0.34, metalness: 0.95, envMapIntensity: 1.1 }),
+    bronze: tm_copper(0xa2702e, 0.34, { glow: 0.35 }),   // COPPER_C (fix-c, 22.11.2026): the book's copper, one for both houses (shared/frag/copper.js); until now 0xa2702e, metalness .95
     // 1.5.0: the gates' doors - gold (Middot 2:3 "כל השערים שהיו שם נשתנו להיות של זהב"), and Nikanor's bronze "שנחשתן מצהיב" - a bronze
     // that yellows like gold (Yoma 38a), a little darker and warmer than the gold
     gateGold: new MeshStandardMaterial({ color: 0xF2D27A, metalness: 0.85, roughness: 0.3, envMapIntensity: 1.3, emissive: 0x4a3608, emissiveIntensity: 0.3 }),

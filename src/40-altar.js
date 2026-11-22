@@ -65,10 +65,10 @@
     const PL = M2.bronze.clone();
     PL.metalness = 0.55;
     PL.roughness = 0.5;
-    PL.emissive.set(0x4a2610);
+    PL.emissive.set(tm_copperHex(0x4a2610));   // COPPER_C: the copper's hue
     PL.emissiveIntensity = 0.55;
     const PLD = PL.clone();
-    PLD.color.set(0x8f5f30);
+    PLD.color.set(tm_copperHex(0x8f5f30));
     PLD.emissiveIntensity = 0.4;
     // 1.0.2 (add-on): bandParts now holds the yesod (the darker tone sets the lowest step apart from the body; model choice)
     const bodyParts = [], bandParts = [];   // the meshes the look switch re-dresses (body, sovev, lip, horns / yesod); the ramps are not among them

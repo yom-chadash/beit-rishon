@@ -1892,8 +1892,8 @@
     // knob and a ring (the rope takes it there), the row of taps round it; it stands on a tall ribbed base - "חבית על גבי חבית". The
     // colour, the faces, the lid and the ribs - as the booklet: model choices.
     const HB = 1.5, LAVER_H = 2.62 * HB, LAVER_TOP = LAVER_H + 1.3;   // the body taller than its breadth, as drawn (HB); its height; the ring on the lid's knob (the rope's hook)
-    const copperM = new MeshStandardMaterial({ color: 0xb4602c, roughness: 0.36, metalness: 0.62 });
-    const copperD = new MeshStandardMaterial({ color: 0x8e4520, roughness: 0.45, metalness: 0.55 });
+    const copperM = tm_copper(0xb4602c, 0.36, { metalness: 0.62 });   // COPPER_C (fix-c): the book's copper, shared/frag/copper.js (until now 0xb4602c)
+    const copperD = tm_copper(0x8e4520, 0.45, { metalness: 0.55 });   // COPPER_C: the darker parts, in the same hue (until now 0x8e4520)
     // a body of revolution whose round is shaped by rf(angle) (faces, ribs): prof [[r, y], ...], nU segments round
     const revG = (prof, nU, rf) => {
       const pos = [], uv = [], idx = [], nV = prof.length;
@@ -1959,7 +1959,7 @@
     mochR.visible = false;
     bowlG.add(mochR);
     {
-      const cm = new MeshStandardMaterial({ color: 0x8c5a3c, roughness: 0.45, metalness: 0.45, side: DoubleSide });
+      const cm = tm_copper(0x8c5a3c, 0.45, { metalness: 0.45 }); cm.side = DoubleSide;   // COPPER_C (fix-c): the Rambam's mochani, a copper vessel - the book's copper (until now 0x8c5a3c)
       H2.lathe(mochR, [[2.72, 3.05], [2.72, 1.85], [3.35, 1.85], [3.35, 3.05], [3.25, 3.05], [3.25, 1.95], [2.82, 1.95], [2.82, 3.05], [2.72, 3.05]], cm, 0, 0, 0, 48);
       const ring = new Mesh(new RingGeometry(2.82, 3.25, 48), new MeshStandardMaterial({ color: 3104873, roughness: 0.15, metalness: 0.1, side: DoubleSide }));
       ring.rotation.x = -Math.PI / 2;
@@ -2478,6 +2478,7 @@
     // ctx2.shared.rampTables = { marble: [x, z], silver: [x, z], top } in mv's frame (the Mishnah's altar) - for the demonstration.
     {
       const silver = M2.bronze.clone();
+      silver.emissiveIntensity = 0;   // COPPER_C: not the copper's warm glow (M.bronze is now tm_copper)
       silver.color.set(13421772);
       silver.metalness = 0.9;
       silver.roughness = 0.3;

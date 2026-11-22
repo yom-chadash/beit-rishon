@@ -1304,6 +1304,7 @@
       // silver on the recipe of GOLD_OPTS (10-core.js): a light colour, metalness 0.5 so the diffuse light counts and a faint cool emissive -
       // with metalness 0.9 the table read dark grey inside the closed ulam (headless picture), as the old gold read brown
       const silver = M.bronze.clone();
+      silver.emissive.set(0x2a2a2e);   // COPPER_C: not the copper's warm glow (a clone of M.bronze)
       silver.color.set(0xf4f6f8);
       silver.metalness = 0.5;
       silver.roughness = 0.3;
@@ -1603,14 +1604,10 @@
       // ---- materials: warm polished copper like the book (clones of M.bronze), the cuts darker. Tested in headless pictures: with
       //      M.bronze's metalness 0.95 and a saturated colour the shafts read dark maroon inside the closed ulam (lit by the environment
       //      and the hemisphere only); a light copper colour, metalness 0.75 and a faint warm emissive keep them bright orange-copper ----
+      // COPPER_C (fix-c, 22.11.2026 - the user: the book's copper): through tm_copper (shared/frag/copper.js) - each part's tone in the
+      // copper's hue, its lightness kept (the dark basin, the light pomegranates); white (the atlas's carrier) stays white
       const copper = (hex, rough, extra) => {
-        const m = M.bronze.clone();
-        m.color.set(hex);
-        m.roughness = rough;
-        m.metalness = 0.75;
-        m.envMapIntensity = 1.4;
-        m.emissive.set(0x3a1a0a);
-        m.emissiveIntensity = 0.6;
+        const m = tm_copper(hex, rough, { glow: 0.6, raw: hex === 0xffffff });
         return Object.assign(m, extra || {});
       };
       const shaftMat = copper(0xf2a477, 0.28);                  // the smooth shaft (the book)
@@ -1618,15 +1615,15 @@
         ? copper(0xffffff, 0.36, { map: atlasMap, bumpMap: atlasBump, bumpScale: 2.2, emissiveMap: atlasMap })
         : copper(0xd98a55, 0.4);
       if (atlasMap) {
-        capMat.emissive.set(0x6a4030);
+        capMat.emissive.set(tm_copperHex(0x6a4030));
         capMat.emissiveIntensity = 1;
       }
       const basinMat = copper(0x8a4a22, 0.5, { metalness: 0.7 });   // the lower basin between the roses (the book: dark)
-      basinMat.emissive.set(0x2a1006);
+      basinMat.emissive.set(tm_copperHex(0x2a1006));
       basinMat.emissiveIntensity = 1;
       const pomMat = copper(0xf5ad80, 0.3);                     // the pomegranates
       const chainMat = copper(0xb06030, 0.42);                  // the chains
-      chainMat.emissive.set(0x2a1006);
+      chainMat.emissive.set(tm_copperHex(0x2a1006));
       // ---- geometry ----
       const remapUV = (geo, tiles, v0, v1) => {                 // a lathe's (u round it, v along the profile) -> its atlas region
         const uv = geo.attributes.uv;

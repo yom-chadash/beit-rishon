@@ -398,6 +398,7 @@
   function goldStd(tex, extra) {
     return std(tex, Object.assign({}, GOLD_OPTS, extra || {}));
   }
+  //@@include copper
   var M = {
     stone: std(TEX.stone, { roughness: 0.72, envMapIntensity: 0.55, bumpScale: 0.7 }),
     stoneLight: std(TEX.stoneLight, { roughness: 0.66, envMapIntensity: 0.6, bumpScale: 0.6 }),
@@ -408,7 +409,7 @@
     // 1.0.1-K (integration): the warm polished bronze of 45-vessels.js's vsl_bronze for every bronze - with 1.0.1's colour 0xA26F2E and
     // metalness 0.95 the altar's shaded faces rendered black; metalness 0.75 lets the hemisphere light count and a faint warm emissive keeps
     // the shade from sinking to black (the idea of GOLD_OPTS). The clones (the altar, the doors, vessels, Yachin and Boaz) keep their overrides.
-    bronze: new MeshStandardMaterial({ color: 0xb87a3e, roughness: 0.34, metalness: 0.75, envMapIntensity: 1.3, emissive: 0x351a08, emissiveIntensity: 0.35 }),
+    bronze: tm_copper(0xb87a3e, 0.34, { glow: 0.35 }),   // COPPER_C (fix-c, 22.11.2026): the book's copper, one for both houses (shared/frag/copper.js); until now 0xb87a3e, metalness .75, emissive 0x351a08
     cedar: std(TEX.cedar, { roughness: 0.8 }),
     pave: std(TEX.pave, { roughness: 0.7, envMapIntensity: 0.5 }),
     paveFine: std(TEX.paveFine, { roughness: 0.7, envMapIntensity: 0.5 }),

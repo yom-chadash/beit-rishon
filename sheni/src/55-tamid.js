@@ -256,7 +256,7 @@
         skin: std(0xc4946c, { roughness: 0.8 }), cap: std(0x2a2520, { roughness: 1 }),
         gold: std(0xe6c05a, { metalness: 0.85, roughness: 0.3, emissive: 0x3a2a06, emissiveIntensity: 0.4 }),
         silver: std(0xd9dee4, { metalness: 0.9, roughness: 0.25, emissive: 0x202428, emissiveIntensity: 0.3 }),
-        bronze: std(0xb7823e, { metalness: 0.8, roughness: 0.35 }), wood: std(0x7c5130, { roughness: 0.95 }),
+        bronze: tm_copper(0xb7823e, 0.35, { metalness: 0.8 }),   // COPPER_C (fix-c): the book's copper (shared/frag/copper.js; until now std(0xb7823e)) wood: std(0x7c5130, { roughness: 0.95 }),
         woodNew: std(0xd2a46c, { roughness: 0.9, emissive: 0xff5a10, emissiveIntensity: 0 }),
         ash: std(0x77726c, { roughness: 1 }), wool: std(0xf1ece0, { roughness: 1 }), woolDark: std(0x8c8072, { roughness: 1 }),
         portion: std(0xc79a8c, { roughness: 0.85 }), flour: std(0xf8f5ec, { roughness: 1 }), cake: std(0xd8ad62, { roughness: 0.85 }),
