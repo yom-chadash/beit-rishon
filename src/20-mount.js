@@ -362,107 +362,119 @@
       // (its vertices stay: 60-palace.js reads them) and drawn again in VAL_SUB x VAL_SUB small cells (about 5.9 amot), in blocks of
       // 8 x 8 cells (each its own mesh - a downward ray tests one block, not all). The small cells' vertices on an edge shared with a
       // cell that was not cut lie on that edge's straight line, with its colour and normal - no crack, no seam.
+      // Built AFTER the load, in the model's frames: a few rows of small cells in each frame (up to about 12 ms), then the cut and the
+      // blocks in one frame; until then the terrain's own cells show the valleys (their vertices are on the carved ground). So the load
+      // is not made longer (the small grid's heights are some 36,000 points: about 140 ms if done at once).
       try {
-        const t188 = performance.now();
+        const RK = [0.76, 0.65, 0.5], FLc = [0.7, 0.71, 0.52];   // the valleys' colours (below)
         const VAL_SUB = 4, cell = SIZE / SEG, W1 = SEG + 1, ox = CX - SIZE / 2, oz = CZ - SIZE / 2, fc = cell / VAL_SUB;
         const ix0 = Math.max(0, Math.floor((-430 - ox) / cell)), ix1 = Math.min(SEG - 1, Math.ceil((650 - ox) / cell));
         const iz0 = Math.max(0, Math.floor((430 - oz) / cell)), iz1 = Math.min(SEG - 1, Math.ceil((1470 - oz) / cell));
         const NX = (ix1 - ix0 + 1) * VAL_SUB + 1, NZ = (iz1 - iz0 + 1) * VAL_SUB + 1;
         const FH = new Float32Array(NX * NZ), FC = new Float32Array(NX * NZ);   // the small grid: height, carving
-        for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
-          const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc, h0 = terrainH0(x, z), c = valCarve(x, z, h0);
-          FH[j * NX + i] = h0 - c; FC[j * NX + i] = c;
-        }
-        const CW = ix1 - ix0 + 1, CHn = iz1 - iz0 + 1, cut = new Uint8Array(CW * CHn);
-        for (let cj = 0; cj < CHn; cj++) for (let ci = 0; ci < CW; ci++) {
-          let mx = 0;
-          for (let b = 0; b <= VAL_SUB; b++) for (let a = 0; a <= VAL_SUB; a++) mx = Math.max(mx, FC[(cj * VAL_SUB + b) * NX + ci * VAL_SUB + a]);
-          if (mx > 0.02) cut[cj * CW + ci] = 1;
-        }
-        const isCut = (ci, cj) => ci >= 0 && cj >= 0 && ci < CW && cj < CHn && cut[cj * CW + ci] === 1;
-        let nCut = 0; for (const v of cut) nCut += v;
-        if (nCut) {
-          // the terrain without the cut cells
-          const idx = geo.index.array, keep = [];
-          for (let iy = 0; iy < SEG; iy++) for (let ix = 0; ix < SEG; ix++) {
-            const ci = ix - ix0, cj = iy - iz0;
-            if (isCut(ci, cj)) continue;
-            const o = (iy * SEG + ix) * 6; for (let k = 0; k < 6; k++) keep.push(idx[o + k]);
+        const rowOf = (j) => { for (let i = 0; i < NX; i++) { const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc, h0 = terrainH0(x, z), c = valCarve(x, z, h0); FH[j * NX + i] = h0 - c; FC[j * NX + i] = c; } };
+        const finish = () => {
+          const CW = ix1 - ix0 + 1, CHn = iz1 - iz0 + 1, cut = new Uint8Array(CW * CHn);
+          for (let cj = 0; cj < CHn; cj++) for (let ci = 0; ci < CW; ci++) {
+            let mx = 0;
+            for (let b = 0; b <= VAL_SUB; b++) for (let a = 0; a <= VAL_SUB; a++) mx = Math.max(mx, FC[(cj * VAL_SUB + b) * NX + ci * VAL_SUB + a]);
+            if (mx > 0.02) cut[cj * CW + ci] = 1;
           }
-          geo.setIndex(keep);
-          // the small grid's vertices on an edge between a cut cell and one that was not: on the coarse edge's line
-          const nrm = geo.attributes.normal, CV = (ix, iy) => iy * W1 + ix;
-          const FN = new Float32Array(NX * NZ * 3), FCol = new Float32Array(NX * NZ * 3), fixed = new Uint8Array(NX * NZ);
-          const onCoarse = (i, j) => {   // a small vertex on a coarse edge whose two cells are not both cut -> the coarse edge's line
-            const a = i % VAL_SUB, b = j % VAL_SUB, ci = Math.floor(i / VAL_SUB), cj = Math.floor(j / VAL_SUB);
-            if (a !== 0 && b !== 0) return null;
-            let A, B, t;
-            if (a === 0 && b === 0) {   // a coarse vertex: fixed if any of its four cells is not cut
-              if (isCut(ci - 1, cj - 1) && isCut(ci, cj - 1) && isCut(ci - 1, cj) && isCut(ci, cj)) return null;
-              A = B = CV(ix0 + ci, iz0 + cj); t = 0;
-            } else if (a === 0) {   // on a vertical coarse edge (along z): cells (ci-1, cj) and (ci, cj)
-              if (isCut(ci - 1, cj) && isCut(ci, cj)) return null;
-              A = CV(ix0 + ci, iz0 + cj); B = CV(ix0 + ci, iz0 + cj + 1); t = b / VAL_SUB;
-            } else {   // on a horizontal coarse edge (along x): cells (ci, cj-1) and (ci, cj)
-              if (isCut(ci, cj - 1) && isCut(ci, cj)) return null;
-              A = CV(ix0 + ci, iz0 + cj); B = CV(ix0 + ci + 1, iz0 + cj); t = a / VAL_SUB;
+          const isCut = (ci, cj) => ci >= 0 && cj >= 0 && ci < CW && cj < CHn && cut[cj * CW + ci] === 1;
+          let nCut = 0; for (const v of cut) nCut += v;
+          if (nCut) {
+            // the terrain without the cut cells
+            const idx = geo.index.array, keep = [];
+            for (let iy = 0; iy < SEG; iy++) for (let ix = 0; ix < SEG; ix++) {
+              const ci = ix - ix0, cj = iy - iz0;
+              if (isCut(ci, cj)) continue;
+              const o = (iy * SEG + ix) * 6; for (let k = 0; k < 6; k++) keep.push(idx[o + k]);
             }
-            return [A, B, t];
-          };
-          for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
-            const k = j * NX + i, x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc, e = onCoarse(i, j);
-            if (e) {
-              const [A, B, t] = e; fixed[k] = 1;
-              FH[k] = pos.getY(A) * (1 - t) + pos.getY(B) * t;
-              for (let q = 0; q < 3; q++) { FCol[k * 3 + q] = col[A * 3 + q] * (1 - t) + col[B * 3 + q] * t; FN[k * 3 + q] = nrm.array[A * 3 + q] * (1 - t) + nrm.array[B * 3 + q] * t; }
-            } else colAt(x, z, FH[k], FCol, k * 3);
-          }
-          for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {   // the normals of the free vertices: from the small grid's heights
-            const k = j * NX + i; if (fixed[k]) continue;
-            const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc;
-            const hx0 = FH[j * NX + Math.max(0, i - 1)], hx1 = FH[j * NX + Math.min(NX - 1, i + 1)], hz0 = FH[Math.max(0, j - 1) * NX + i], hz1 = FH[Math.min(NZ - 1, j + 1) * NX + i];
-            const dx = (hx1 - hx0) / (fc * ((i > 0 && i < NX - 1) ? 2 : 1)), dz = (hz1 - hz0) / (fc * ((j > 0 && j < NZ - 1) ? 2 : 1)), L = Math.hypot(dx, 1, dz);
-            FN[k * 3] = -dx / L; FN[k * 3 + 1] = 1 / L; FN[k * 3 + 2] = -dz / L;
-            // the valleys' colour (so their shape reads from afar): a little darker with the depth, and the steep banks toward the colour of
-            // earth and rock; nothing where nothing was carved (the cells' edges keep the terrain's own colour)
-            // the floor - toward a dull olive-brown (earth that holds water), the banks - toward earth and rock
-            const cv = FC[k], kk = 0.86 + fbm(x * 0.02, z * 0.02) * 0.2, sl = Math.hypot(dx, dz);
-            const st = val_sstep((sl - 0.18) / 0.35) * 0.55 * val_sstep(cv / 4), fl = val_sstep((cv - 6) / 10) * (1 - val_sstep((sl - 0.08) / 0.2)) * 0.42;
-            const dk = 1 - 0.12 * val_sstep(cv / 16), RK = [0.76, 0.65, 0.5], FL = [0.7, 0.71, 0.52];
-            for (let q = 0; q < 3; q++) FCol[k * 3 + q] = (FCol[k * 3 + q] * (1 - st - fl) + RK[q] * kk * st + FL[q] * kk * fl) * dk;
-          }
-          const BLK = 8, fineG = new Group(); fineG.name = "terrainFine188"; g.add(fineG);
-          for (let bj = 0; bj < CHn; bj += BLK) for (let bi = 0; bi < CW; bi += BLK) {
-            const map = new Map(), P = [], N = [], C = [], U = [], I = [];
-            const vid = (i, j) => {
-              const k = j * NX + i; let v = map.get(k);
-              if (v === undefined) {
-                v = P.length / 3; map.set(k, v);
-                const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc;
-                P.push(x, FH[k], z); N.push(FN[k * 3], FN[k * 3 + 1], FN[k * 3 + 2]); C.push(FCol[k * 3], FCol[k * 3 + 1], FCol[k * 3 + 2]); U.push(x - ox, SIZE - (z - oz));
+            geo.setIndex(keep);
+            // the small grid's vertices on an edge between a cut cell and one that was not: on the coarse edge's line
+            const nrm = geo.attributes.normal, CV = (ix, iy) => iy * W1 + ix;
+            const FN = new Float32Array(NX * NZ * 3), FCol = new Float32Array(NX * NZ * 3), fixed = new Uint8Array(NX * NZ);
+            const onCoarse = (i, j) => {   // a small vertex on a coarse edge whose two cells are not both cut -> the coarse edge's line
+              const a = i % VAL_SUB, b = j % VAL_SUB, ci = Math.floor(i / VAL_SUB), cj = Math.floor(j / VAL_SUB);
+              if (a !== 0 && b !== 0) return null;
+              let A, B, t;
+              if (a === 0 && b === 0) {   // a coarse vertex: fixed if any of its four cells is not cut
+                if (isCut(ci - 1, cj - 1) && isCut(ci, cj - 1) && isCut(ci - 1, cj) && isCut(ci, cj)) return null;
+                A = B = CV(ix0 + ci, iz0 + cj); t = 0;
+              } else if (a === 0) {   // on a vertical coarse edge (along z): cells (ci-1, cj) and (ci, cj)
+                if (isCut(ci - 1, cj) && isCut(ci, cj)) return null;
+                A = CV(ix0 + ci, iz0 + cj); B = CV(ix0 + ci, iz0 + cj + 1); t = b / VAL_SUB;
+              } else {   // on a horizontal coarse edge (along x): cells (ci, cj-1) and (ci, cj)
+                if (isCut(ci, cj - 1) && isCut(ci, cj)) return null;
+                A = CV(ix0 + ci, iz0 + cj); B = CV(ix0 + ci + 1, iz0 + cj); t = a / VAL_SUB;
               }
-              return v;
+              return [A, B, t];
             };
-            for (let cj = bj; cj < Math.min(CHn, bj + BLK); cj++) for (let ci = bi; ci < Math.min(CW, bi + BLK); ci++) {
-              if (!isCut(ci, cj)) continue;
-              for (let b = 0; b < VAL_SUB; b++) for (let a = 0; a < VAL_SUB; a++) {
-                const i = ci * VAL_SUB + a, j = cj * VAL_SUB + b;
-                const va = vid(i, j), vb = vid(i, j + 1), vc = vid(i + 1, j + 1), vd = vid(i + 1, j);   // as PlaneGeometry's faces: (a, b, d), (b, c, d)
-                I.push(va, vb, vd, vb, vc, vd);
-              }
+            for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+              const k = j * NX + i, x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc, e = onCoarse(i, j);
+              if (e) {
+                const [A, B, t] = e; fixed[k] = 1;
+                FH[k] = pos.getY(A) * (1 - t) + pos.getY(B) * t;
+                for (let q = 0; q < 3; q++) { FCol[k * 3 + q] = col[A * 3 + q] * (1 - t) + col[B * 3 + q] * t; FN[k * 3 + q] = nrm.array[A * 3 + q] * (1 - t) + nrm.array[B * 3 + q] * t; }
+              } else colAt(x, z, FH[k], FCol, k * 3);
             }
-            if (!I.length) continue;
-            const fg = new BufferGeometry();
-            fg.setAttribute("position", new BufferAttribute(new Float32Array(P), 3));
-            fg.setAttribute("normal", new BufferAttribute(new Float32Array(N), 3));
-            fg.setAttribute("color", new BufferAttribute(new Float32Array(C), 3));
-            fg.setAttribute("uv", new BufferAttribute(new Float32Array(U), 2));
-            fg.setIndex(I);
-            fg.computeBoundingSphere();
-            const fm = new Mesh(fg, tm); fm.receiveShadow = true; fm.name = "terrainFine188"; fineG.add(fm);
+            for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {   // the normals of the free vertices: from the small grid's heights
+              const k = j * NX + i; if (fixed[k]) continue;
+              const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc;
+              const hx0 = FH[j * NX + Math.max(0, i - 1)], hx1 = FH[j * NX + Math.min(NX - 1, i + 1)], hz0 = FH[Math.max(0, j - 1) * NX + i], hz1 = FH[Math.min(NZ - 1, j + 1) * NX + i];
+              const dx = (hx1 - hx0) / (fc * ((i > 0 && i < NX - 1) ? 2 : 1)), dz = (hz1 - hz0) / (fc * ((j > 0 && j < NZ - 1) ? 2 : 1)), L = Math.hypot(dx, 1, dz);
+              FN[k * 3] = -dx / L; FN[k * 3 + 1] = 1 / L; FN[k * 3 + 2] = -dz / L;
+              // the valleys' colour (so their shape reads from afar): a little darker with the depth, and the steep banks toward the colour of
+              // earth and rock; nothing where nothing was carved (the cells' edges keep the terrain's own colour)
+              // the floor - toward a dull olive-brown (earth that holds water), the banks - toward earth and rock
+              const cv = FC[k], kk = 0.86 + fbm(x * 0.02, z * 0.02) * 0.2, sl = Math.hypot(dx, dz);
+              const st = val_sstep((sl - 0.18) / 0.35) * 0.55 * val_sstep(cv / 4), fl = val_sstep((cv - 6) / 10) * (1 - val_sstep((sl - 0.08) / 0.2)) * 0.42;
+              const dk = 1 - 0.12 * val_sstep(cv / 16);
+              for (let q = 0; q < 3; q++) FCol[k * 3 + q] = (FCol[k * 3 + q] * (1 - st - fl) + RK[q] * kk * st + FLc[q] * kk * fl) * dk;
+            }
+            const BLK = 8, fineG = new Group(); fineG.name = "terrainFine188"; g.add(fineG);
+            for (let bj = 0; bj < CHn; bj += BLK) for (let bi = 0; bi < CW; bi += BLK) {
+              const map = new Map(), P = [], N = [], C = [], U = [], I = [];
+              const vid = (i, j) => {
+                const k = j * NX + i; let v = map.get(k);
+                if (v === undefined) {
+                  v = P.length / 3; map.set(k, v);
+                  const x = ox + ix0 * cell + i * fc, z = oz + iz0 * cell + j * fc;
+                  P.push(x, FH[k], z); N.push(FN[k * 3], FN[k * 3 + 1], FN[k * 3 + 2]); C.push(FCol[k * 3], FCol[k * 3 + 1], FCol[k * 3 + 2]); U.push(x - ox, SIZE - (z - oz));
+                }
+                return v;
+              };
+              for (let cj = bj; cj < Math.min(CHn, bj + BLK); cj++) for (let ci = bi; ci < Math.min(CW, bi + BLK); ci++) {
+                if (!isCut(ci, cj)) continue;
+                for (let b = 0; b < VAL_SUB; b++) for (let a = 0; a < VAL_SUB; a++) {
+                  const i = ci * VAL_SUB + a, j = cj * VAL_SUB + b;
+                  const va = vid(i, j), vb = vid(i, j + 1), vc = vid(i + 1, j + 1), vd = vid(i + 1, j);   // as PlaneGeometry's faces: (a, b, d), (b, c, d)
+                  I.push(va, vb, vd, vb, vc, vd);
+                }
+              }
+              if (!I.length) continue;
+              const fg = new BufferGeometry();
+              fg.setAttribute("position", new BufferAttribute(new Float32Array(P), 3));
+              fg.setAttribute("normal", new BufferAttribute(new Float32Array(N), 3));
+              fg.setAttribute("color", new BufferAttribute(new Float32Array(C), 3));
+              fg.setAttribute("uv", new BufferAttribute(new Float32Array(U), 2));
+              fg.setIndex(I);
+              fg.computeBoundingSphere();
+              const fm = new Mesh(fg, tm); fm.receiveShadow = true; fm.name = "terrainFine188"; fineG.add(fm);
+            }
+            ctx.shared.valleys188.cells = nCut;
           }
-          ctx.shared.valleys188.cells = nCut; ctx.shared.valleys188.ms = Math.round(performance.now() - t188);   // the fine ground's build time
-        }
+        };
+        const ST = { j: 0, done: false, ms: 0, frames: 0 };
+        ctx.shared.valleys188.state = ST;   // { j: the rows done, done, ms: the build's own time, frames }
+        ctx.animated.push(() => {
+          if (ST.done) return;
+          const t0 = performance.now();
+          for (let n = 0; ST.j < NZ && n < 48 && (n === 0 || performance.now() - t0 < 12); n++) rowOf(ST.j++);
+          ST.frames++;
+          if (ST.j >= NZ) { ST.done = true; try { finish(); } catch (e) { console.warn("[mount] valleys' fine ground:", e && e.message); } }
+          ST.ms += performance.now() - t0;
+        });
       } catch (e) { console.warn("[mount] valleys' fine ground skipped:", e && e.message); }
     } catch (e) {
       console.warn("[mount] terrain skipped:", e);
