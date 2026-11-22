@@ -2739,6 +2739,97 @@
       (SH.demoStops || (SH.demoStops = [])).push({ id: "bikkurimDemo", running: () => BK.run, stop, pause: () => { const w = wk(); if (w) w.pause(); }, resume: () => { const w = wk(); if (w) w.resume(); }, paused: () => { const w = wk(); return !!(w && w.paused()); }, restart: () => { stop(); start(); } });
       SH.bikkurim = { start, stop, at: (t) => { build(); prime(); T = mkT(BK.reading); BG.visible = true; apply(t); }, keys, get reading() { return BK.reading; }, setReading: (r) => { BK.reading = r === "rj" ? "rj" : "tk"; if (BK.run) { stop(); start(); } return BK.reading; }, get on() { return BK.run; } };
     }
+    // ---------- AQUEDUCTS_B2 (fix-b2, 22.11.2026 - the user's decisions 170 and 171 a): THE TWO WATER CHANNELS ----------
+    // (1) the channel under the court from the shitin to the Kidron - Middot 3:2 (89:20): "ובקרן מערבית דרומית היו שני נקבים, כמין שני
+    // חטמין דקין, שהדמים הנתנין על יסוד מערבי ועל יסוד דרומי, יורדין בהן ומתערבין באמה, ויוצאין לנחל קדרון": a covered channel under
+    // the court's floor from the shitin south to the court's wall, down through its foundation, under the mount south-east to its eastern
+    // wall, and out of an opening in the wall's foot, the water running down the slope toward the Kidron. (2) the channel from Ein Eitam -
+    // Rashi, Yoma 31a (2157:1138): "עין עיטם - ממנו באה אמת המים לבית טבילת שער המים שעל החומה ולפי ענין המקראות נראה לי שהוא מעיין מי
+    // נפתוח"; Rashi, Yoma 19a (2157:606): "מעיין משוך שם באמה מעין עיטם"; Yoma 31a (107:740): "עין עיטם גבוה מקרקע עזרה עשרים ושלש
+    // אמות": from the west, on a low embankment outside the mount, into its western wall, under its surface, and up inside the court's
+    // wall to the bath on the Water Gate (30-courts.js: x -30, y 40.3, z 67.5 - 24 amot over the court's floor). At the drawn part's western
+    // end (x -340) a sign with an arrow. The hidden parts are seen through the ground by the places' features (as the mesibah's way, 30-courts.js
+    // MESIBAH_303: ghosts drawn where they are hidden). The ways, the forms, the exit and the sign - model choices. Built after the first
+    // seconds, or when a place's feature turns on (rays to the ground).
+    {
+      const AQ = grp("aqueducts", true), XRK = [], XRE = [];
+      const stoneM = new MeshStandardMaterial({ color: 0x9a8c74, roughness: 0.95 }), capM = new MeshStandardMaterial({ color: 0x857862, roughness: 0.95 });
+      const waterM = new MeshStandardMaterial({ color: 0x5f9fd6, roughness: 0.12, metalness: 0.05, emissive: 0x16324c, emissiveIntensity: 0.3 });
+      const darkM = new MeshStandardMaterial({ color: 0x140d08, roughness: 1 });
+      const gm = new Map(), ghostM = (m) => { let g = gm.get(m); if (!g) { g = m.clone(); g.transparent = true; g.opacity = 0.62; g.depthWrite = false; g.depthTest = true; g.depthFunc = GreaterDepth; gm.set(m, g); } return g; };
+      const ghost = (m, list) => { const t = new Mesh(m.geometry, ghostM(m.material)); t.visible = false; t.renderOrder = 30; t.userData.noPick = true; t.raycast = () => {}; m.add(t); list.push(t); };
+      const V = (a) => new Vector3(a[0], a[1], a[2]);
+      // a straight piece from a to b: a box w x h along it (its local z), optionally a strip of water on its top or inside, optionally hidden (its ghost)
+      const piece = (a, b, w, h, m, list) => { const A = V(a), B = V(b), L = A.distanceTo(B); if (L < 1e-3) return null; const o = new Mesh(new BoxGeometry(w, h, L), m); o.position.copy(A).add(B).multiplyScalar(0.5); o.lookAt(B); o.castShadow = o.receiveShadow = true; o.userData.noPick = true; AQ.add(o); if (list) ghost(o, list); return o; };
+      const line = (P, w, h, m, list) => { for (let i = 1; i < P.length; i++) piece(P[i - 1], P[i], w, h, m, list); };
+      let built = false, t0 = -1, seeK = false, seeE = false;
+      const SHI = [40, 24.55], F0 = LV.KOH;   // the shitin (40-altar.js SHITIN_LABEL: mv's frame 40, 12.05 + the altar's 12.5)
+      const EXZ = 300, WALL_E = 356, WALL_W = -150, EZ = 67.5, BATH = [-30, 40.2, 67.5];
+      const R = {};
+      const build = () => {
+        if (built) return; built = true;
+        const dz = (() => { const AP = SH.altarPlace; return AP && AP.dz && typeof AP.dz[AP.current] === "number" ? AP.dz[AP.current] : 12.5; })();
+        const sx = SHI[0], sz = SHI[1] - 12.5 + dz;
+        // ---- (1) to the Kidron: the ground outside the eastern wall first (rays, before anything of ours is there)
+        const gX = groundAt(WALL_E + 2.5, EXZ, 20, -14), yX = gX + 0.7;
+        const SP = [];   // the stream down the slope
+        for (let k = 0; k <= 14; k++) { const x = WALL_E + 0.6 + k * 5, z = EXZ + Math.sin(k * 0.7) * 1.6, y = k ? groundAt(x, z, yX + 6, yX - k) : yX - 0.35; SP.push([x, y + 0.07, z]); }
+        const K1 = [[sx, F0 - 0.25, sz], [sx, F0 - 2.6, sz]];   // the shaft under the shitin
+        const K2 = [[sx, F0 - 2.6, sz], [sx + 1.5, F0 - 3.2, 66], [sx + 3, -2.6, 76], [150, -3.4, 140], [300, -4.6, 262], [WALL_E - 11, Math.max(-6, yX - 1), EXZ], [WALL_E + 0.3, yX, EXZ]];
+        line(K1, 0.5, 0.5, capM, XRK);
+        line(K2, 1.1, 0.9, stoneM, XRK);
+        for (let i = 1; i < K2.length; i++) { const a = K2[i - 1], b = K2[i]; piece([a[0], a[1] + 0.47, a[2]], [b[0], b[1] + 0.47, b[2]], 0.56, 0.06, waterM, XRK); }   // the water in it, seen with it
+        // the exit: an arched opening in the wall's foot, a sill, and the small stream down to the valley
+        { const ex = WALL_E + 0.08; const hole = new Mesh(new CircleGeometry(1.05, 18, 0, Math.PI), darkM); hole.rotation.y = Math.PI / 2; hole.position.set(ex, yX - 0.05, EXZ); AQ.add(hole);
+          const low = new Mesh(new PlaneGeometry(2.1, 0.45), darkM); low.rotation.y = Math.PI / 2; low.position.set(ex, yX - 0.27, EXZ); AQ.add(low);
+          const arch = new Mesh(new TorusGeometry(1.18, 0.2, 6, 14, Math.PI), stoneM); arch.rotation.y = Math.PI / 2; arch.position.set(ex + 0.05, yX - 0.05, EXZ); arch.castShadow = true; AQ.add(arch);
+          piece([ex, yX - 0.5, EXZ], [ex + 1.8, yX - 0.62, EXZ], 2.1, 0.22, stoneM, null);   // the sill
+          for (let i = 1; i < SP.length; i++) { const a = SP[i - 1], b = SP[i]; const w = 0.7 + i * 0.03; piece(a, b, w, 0.06, waterM, null); }
+          R.exit = [ex, yX, EXZ]; R.streamEnd = SP[SP.length - 1]; }
+        // ---- (2) from Ein Eitam: outside the mount on a low embankment, from the drawn part's western end (x -340, within the eye's reach) to the wall
+        const OUT = [];
+        for (let x = WALL_W - 2; x >= -340; x -= 12) { const y = groundAt(x, EZ, 80, NaN); if (!isFinite(y)) break; OUT.push([x, y + 0.85, EZ]); }
+        if (OUT.length < 2) OUT.push([WALL_W - 2, 0.85, EZ], [WALL_W - 60, 0.85, EZ]);
+        OUT.reverse();   // west to east
+        for (let i = 1; i < OUT.length; i++) { const a = OUT[i - 1], b = OUT[i];
+          piece([a[0], a[1] - 0.9, a[2]], [b[0], b[1] - 0.9, b[2]], 2.0, 1.4, capM, null);            // the embankment
+          piece([a[0], a[1] - 0.05, a[2]], [b[0], b[1] - 0.05, b[2]], 1.3, 0.5, stoneM, null);         // the channel's walls
+          piece([a[0], a[1] + 0.17, a[2]], [b[0], b[1] + 0.17, b[2]], 0.75, 0.06, waterM, null); }     // its water
+        const yW = OUT[OUT.length - 1][1];
+        const E2 = [[WALL_W - 2, yW, EZ], [WALL_W + 7, Math.min(yW, -2.5), EZ], [BATH[0] - 3, -2.5, EZ], [BATH[0], -2.5, EZ]];
+        line(E2, 1.0, 0.8, stoneM, XRE);
+        piece([BATH[0], -2.5, EZ], [BATH[0], BATH[1] - 0.2, EZ], 0.6, 0.6, capM, XRE);   // up inside the court's wall to the bath on the Water Gate
+        piece([BATH[0], -2.2, EZ], [BATH[0], BATH[1] - 0.25, EZ], 0.26, 0.26, waterM, XRE);
+        // the sign at the western edge: "לעין עיטם — מי נפתוח (רש״י)", the arrow to the west
+        { const w0 = OUT[0], cv = document.createElement("canvas"); cv.width = 512; cv.height = 192; const c2 = cv.getContext("2d");
+          c2.fillStyle = "#efe4c8"; c2.fillRect(0, 0, 512, 192); c2.strokeStyle = "#6b4a24"; c2.lineWidth = 8; c2.strokeRect(4, 4, 504, 184);
+          c2.fillStyle = "#3a2a14"; c2.font = "bold 46px Arial"; c2.direction = "rtl"; c2.textAlign = "center"; c2.fillText("לעין עיטם", 300, 72); c2.font = "bold 34px Arial"; c2.fillText("מי נפתוח (רש״י)", 300, 140);
+          c2.beginPath(); c2.moveTo(30, 96); c2.lineTo(92, 50); c2.lineTo(92, 76); c2.lineTo(150, 76); c2.lineTo(150, 116); c2.lineTo(92, 116); c2.lineTo(92, 142); c2.closePath(); c2.fill();   // the arrow - to the left, the west
+          const tex = new CanvasTexture(cv); tex.colorSpace = SRGBColorSpace;
+          const yS = groundAt(w0[0] + 3, EZ + 3, 80, w0[1] - 0.85);
+          const board = new Mesh(new PlaneGeometry(4.2, 1.6), new MeshStandardMaterial({ map: tex, roughness: 0.8, side: DoubleSide })); board.position.set(w0[0] + 3, yS + 2.6, EZ + 3); AQ.add(board);   // facing south: the west on its left
+          for (const dx of [-1.7, 1.7]) mesh(AQ, new BoxGeometry(0.16, 2.6, 0.16), capM, w0[0] + 3 + dx, yS + 1.3, EZ + 2.95);
+          R.sign = [w0[0] + 3, yS + 2.6, EZ + 3];
+          if (SH.viewLimits && typeof SH.viewLimits.include === "function") SH.viewLimits.include([w0[0] - 6, yS - 2, EZ + 14]); }   // the eye may reach the sign
+        R.wallW = [WALL_W - 2, yW, EZ];
+        AQ.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+        { const lo = Math.min(yX, R.streamEnd[1], ...OUT.map((q) => q[1] - 0.85)) - 3; if (!(typeof SH.camLow === "number" && SH.camLow <= lo)) SH.camLow = lo; }   // the eye may go down to the exit, the stream and the sign
+      };
+      const setK = (v) => { if (v) build(); seeK = !!v; for (const t of XRK) t.visible = seeK; };
+      const setE = (v) => { if (v) build(); seeE = !!v; for (const t of XRE) t.visible = seeE; };
+      if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (built || typeof SH.floorY !== "function") return; const now = performance.now(); if (t0 < 0) t0 = now; if (now - t0 > 4000) { try { build(); } catch (e) { console.warn("[aqueducts]", e && e.message); built = true; } } });
+      SH.features = SH.features || {};
+      SH.features.aqueductKidron = { key: "aqueductKidron", timed: false, isOn: () => seeK, on: () => setK(true), off: () => setK(false) };
+      SH.features.aqueductEitam = { key: "aqueductEitam", timed: false, isOn: () => seeE, on: () => setE(true), off: () => setE(false) };
+      SH.aqueducts = { build, R, get built() { return built; } };
+      const INFO_K = "לשון המשנה (מדות ג, ב): ״ובקרן מערבית דרומית היו שני נקבים, כמין שני חטמין דקין, שהדמים הנתנין על יסוד מערבי ועל יסוד דרומי, יורדין בהן ומתערבין באמה, ויוצאין לנחל קדרון״.\n**ומים מנין לעזרה** — מאמת המים שמעין עיטם (ראו ״אמת המים מעין עיטם״); ״אמר אביי: שמע מיניה עין עיטם גבוה מקרקע עזרה עשרים ושלש אמות״ (יומא לא.).\n**במודל:** תעלה מקורה מתחת לרצפת העזרה — מן השיתין שבקרן המערבית־הדרומית של המזבח דרומה אל כותל העזרה, ויורדת ביסודו; משם בשיפוע מתחת להר הבית אל החומה המזרחית, ובתחתית החומה פתח גלוי, שממנו המים יוצאים בזרם קטן במורד אל נחל קדרון. בעזרה ובהר התעלה נראית מבעד לקרקע (כשהמקום נבחר). מסלול התעלה, צורתה ומקום היציאה — בחירת מודל: המשנה אומרת רק ״ויוצאין לנחל קדרון״.\n**בבית ראשון לא צוירה** — רש״י (זבחים סא:): ״ובימי שלמה היה כמין בור כרוי אצל המזבח באותה זוית לירד הנסכים בתוכו״.";
+      const REFS_K = [["מדות ג, ב", { book: 89, index: 20 }], ["יומא לא.", { book: 107, index: 740 }], ["רש״י זבחים סא: — בימי שלמה", { book: 2191, index: 2950 }]];
+      const INFO_E = "**רש״י** (יומא לא.): ״עין עיטם - ממנו באה אמת המים לבית טבילת שער המים שעל החומה ולפי ענין המקראות נראה לי שהוא מעיין מי נפתוח האמור בספר יהושע (טו) שמשם הגבול משפע ויורד למזרח ולמערב״.\n**רש״י** (יומא יט.): ״התם על גב שער המים שהיא על גבה בעובי החומה מתוקן בית טבילת חול ומעיין משוך שם באמה מעין עיטם״.\n**הגמרא** (יומא לא.): ״חוץ מראשונה שהיתה בחול על גבי שער המים, ובצד לשכתו היתה. אמר אביי: שמע מיניה עין עיטם גבוה מקרקע עזרה עשרים ושלש אמות״.\n**בזבחים** (נד:): ״סבור למבנייה בעין עיטם – דמדלי״; ורש״י שם: ״נראה בעיני שהוא מעין מי נפתוח האמור שם אחר עליית ההר אשר על פני גיא בן הינום״.\n**במודל:** תעלה שמגיעה ממערב — מחוץ להר על גבי סוללה נמוכה — נכנסת בחומה המערבית של הר הבית, עוברת מתחת לפני השטח, ועולה בתוך כותל העזרה אל בית הטבילה שעל גבי שער המים (כעשרים וארבע אמות מעל רצפת העזרה; ״עין עיטם גבוה מקרקע עזרה עשרים ושלש אמות״). בתוך ההר התעלה נראית מבעד לקרקע (כשהמקום נבחר). בקצה המודל, במערב, שלט וחץ: ״לעין עיטם — מי נפתוח (רש״י)״; המעיין עצמו אינו מצויר. מסלול התעלה, צורתה ומקום השלט — בחירת מודל.";
+      const REFS_E = [["רש״י יומא לא.", { book: 2157, index: 1138 }], ["רש״י יומא יט.", { book: 2157, index: 606 }], ["יומא לא.", { book: 107, index: 740 }], ["זבחים נד:", { book: 130, index: 1886 }], ["רש״י זבחים נד:", { book: 2191, index: 2627 }]];
+      SH.aqueductInfo = { kidron: { info: INFO_K, refs: REFS_K }, eitam: { info: INFO_E, refs: REFS_E } };
+      ctx2.labels.push({ text: "אמת המים — היציאה לנחל קדרון (מדות ג, ב)", x: WALL_E + 6, y: -19, z: EXZ, size: 2.2, info: INFO_K, refs: REFS_K },
+        { text: "אמת המים מעין עיטם — אל בית הטבילה שעל שער המים", x: WALL_W - 14, y: -18, z: EZ, size: 2.2, info: INFO_E, refs: REFS_E });
+    }
     // ORDER_B2 (fix-b2, 22.11.2026 - the user's decisions 16 and 24: "בסדר היום" in the Second Temple's cards): a place -> the stage of the
     // morning service done in it (55-tamid.js, its stages' ids); the card's link starts the presentation "סדר עבודת הבוקר" at that stage
     // (70-ui.js renderLinks). The choice of the stage for each place - a model choice.
