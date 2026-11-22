@@ -2102,6 +2102,9 @@
     // The spots and the times: model choices. Every ascent on the ramp's east side (EAST_UP_211).
     const T_PYRE = () => A(61.9, 7.0), BRO = [[59.3, 8.6], [60.9, 9.0], [62.9, 9.0], [64.5, 8.6]];
     SC.maarachah = (a) => {
+      // SALT_A2 (the user's decision 51): before the wood goes up - "בוזקין מלח על גבי כבש בשביל שלא יחליקו" (Eruvin 104a, 105:3801), "בהולכת
+      // עצים למערכה" (3807); the salt strewn on the ramp is the altar's own (40-altar.js SALT_A2) - here it is said
+      a.tag("t", "״בוזקין מלח על גבי כבש בשביל שלא יחליקו״ — בהולכת עצים למערכה (עירובין קד.)", 0.2, 3.6);
       const tp = T_PYRE(), t0 = a.from("t", A(64.4, 33.4));
       a.walk("t", [t0, A(64.6, 42.3), A(60.9, 41.9)], 0.3, 2.0, { yaw: -HP });
       a.hold("t", "carryT", "R", 2.1);

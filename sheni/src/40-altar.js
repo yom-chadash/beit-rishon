@@ -321,6 +321,47 @@
       ctx2.shared.features = ctx2.shared.features || {};
       ctx2.shared.features.rampWays = { key: "rampWays", timed: false, isOn: () => WG.visible, on: () => { WG.visible = true; }, off: () => { WG.visible = false; } };
     }
+    // LUL_A2 (the user's decision 60): THE LITTLE LUL - "לול קטן היה בין כבש למזבח במערבו של כבש, ואחת לשבעים שנה פרחי כהונה יורדין
+    // לשם, ומלקטין משם יין קרוש" (Sukkah 49a, 108:1263); Rashi there (2163:2318): "ולול היה באותו אויר במערבו של כבש, בשמונה אמות
+    // מערבית של כבש... ואותו חלל שהנסכים יורדין לתוכו... ומוקף ארבע מחיצות עד קרקעיתו". A small opening in the floor with its lid,
+    // against the altar's base (z 12.5), at the ramp's west side - where it can be seen (Rashi places it in the air between them, in the
+    // ramp's western half). Its size and the lid - model choices. In rampG: it goes with the altar's place.
+    {
+      const LG = new Group();
+      LG.position.set(ACX - 8.6, F, 13.0);
+      rampG.add(LG);
+      H2.box(LG, 1.1, 0.06, 1.1, M2.stoneSmooth, 0, 0, 0);                                       // its curb
+      const hole = new Mesh(new BoxGeometry(0.7, 0.03, 0.7), new MeshStandardMaterial({ color: 0x120c08, roughness: 1 })); hole.position.y = 0.05; LG.add(hole);
+      const lid = new Mesh(new BoxGeometry(0.66, 0.05, 0.66), M2.bronze); lid.position.set(0.12, 0.09, 0.08); lid.rotation.y = 0.18; lid.castShadow = true; LG.add(lid);   // the lid, a little aside
+      const rg = new Mesh(new TorusGeometry(0.08, 0.018, 6, 12), M2.bronze); rg.rotation.x = Math.PI / 2; rg.position.set(0.12, 0.12, 0.08); LG.add(rg);
+      ctx2.labels.push({ text: "הלול הקטן — ״לול קטן היה בין כבש למזבח במערבו של כבש״ (סוכה מט.)", x: ACX - 8.6, y: F + 1.6, z: 13.4, size: 1.0, moveWithAltar: true,
+        info: "**הלול הקטן** (סוכה מט.): ״אמר רבי אלעזר בר צדוק: לול קטן היה בין כבש למזבח במערבו של כבש, ואחת לשבעים שנה פרחי כהונה יורדין לשם, ומלקטין משם יין קרוש״.\n**רש״י** (שם): ״ולול היה באותו אויר במערבו של כבש, בשמונה אמות מערבית של כבש... ואותו חלל שהנסכים יורדין לתוכו... ומוקף ארבע מחיצות עד קרקעיתו״.\nבמודל: פתח קטן ומכוסה ברצפה, צמוד ליסוד המזבח, במערב הכבש — במקום שנראה מן העזרה (לרש״י — באויר שבין הכבש למזבח, בחציו המערבי של הכבש). גודלו והמכסה — בחירת מודל.",
+        refs: [["סוכה מט.", { book: 108, index: 1263 }], ["רש״י סוכה מט.", { book: 2163, index: 2318 }]] });
+    }
+    // SALT_A2 (the user's decision 51): THE SALT - "בשלשה מקומות המלח נתונה: בלשכת המלח, ועל גבי הכבש, ובראשו של מזבח... על גבי הכבש
+    // – ששם מולחים את האברים, בראשו של מזבח – ששם מולחין הקומץ והלבונה והקטורת... ועולת העוף" (Menachot 21b, 131:727; the Rambam,
+    // Issurei HaMizbeach 5:13, 339:80) - a heap of salt on the ramp's west half, by its top, and one on the altar's top by its south
+    // edge; and "בוזקין מלח על גבי כבש בשביל שלא יחליקו" (Eruvin 104a, 105:3801) - a little salt strewn on the ramp's face. The heaps'
+    // size and places - model choices. In rampG (the ramp's) and mv (the top's): they go with the altar's place.
+    {
+      const SM = new MeshStandardMaterial({ color: 0xf4f2ec, roughness: 0.75 });
+      const heap = (parent, x, y, z, r) => { const m = new Mesh(new SphereGeometry(r, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.42, 1), SM); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
+      const slope = Math.atan2(9, 32);
+      const onR = (x, z, r) => { const m = heap(rampG, x, F + RAMP_H(z), z, r); m.rotation.x = slope; return m; };
+      onR(ACX - 6.2, 13.6, 0.6);                                                  // the limbs' salt, on the ramp's west half by its top
+      heap(mv, ACX - 4.5, F + 9, 7.2, 0.55);                                      // on the altar's top, by its south edge
+      // strewn on the face, the length of the ramp: a scatter of small grains (one instanced mesh)
+      const gg = new SphereGeometry(0.035, 4, 3), N = 260, grains = new InstancedMesh(gg, SM, N), m4 = new Matrix4(), ps = new Vector3(), one = new Vector3(1, 1, 1), q0 = new Quaternion();
+      let seed = 7;
+      const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+      for (let i = 0; i < N; i++) { const z = 12 + rnd() * 30, x = ACX - 7.5 + rnd() * 15; m4.compose(ps.set(x, F + RAMP_H(z) + 0.02, z), q0, one); grains.setMatrixAt(i, m4); }
+      grains.userData.noPick = true;
+      rampG.add(grains);
+      const saltInfo = "**המלח** (מנחות כא:): ״נמצאת אתה אומר, בשלשה מקומות המלח נתונה: בלשכת המלח, ועל גבי הכבש, ובראשו של מזבח. בלשכת המלח – ששם מולחין עורות קדשים, על גבי הכבש – ששם מולחים את האברים, בראשו של מזבח – ששם מולחין הקומץ והלבונה והקטורת, ומנחת כהנים ומנחת כהן משיח ומנחת נסכים, ועולת העוף״; וכן ברמב״ם (איסורי המזבח ה, יג).\nועוד (עירובין קד.): ״בוזקין מלח על גבי כבש בשביל שלא יחליקו״ — ובגמרא: ״בהולכת עצים למערכה, דלאו עבודה היא״.\nבמודל: ערמת מלח על הכבש, בחציו המערבי סמוך לראשו; ערמה בראש המזבח, סמוך לשפתו הדרומית; ומעט מלח פזור על פני הכבש. גודל הערמות ומקומן — בחירת מודל.";
+      const saltRefs = [["מנחות כא:", { book: 131, index: 727 }], ["רמב״ם איסורי המזבח ה, יג", { book: 339, index: 80 }], ["עירובין קד.", { book: 105, index: 3801 }], ["עירובין קד. — בהולכת עצים", { book: 105, index: 3807 }]];
+      ctx2.labels.push({ text: "מלח — ״על גבי הכבש, ששם מולחים את האברים״ (מנחות כא:)", x: ACX - 6.2, y: F + RAMP_H(13.6) + 1.4, z: 13.6, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs },
+        { text: "מלח — ״ובראשו של מזבח״ (מנחות כא:)", x: ACX - 4.5, y: F + 10.3, z: 7.2, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs });
+    }
     const RAMP_HEADS = { hair: 10.6, tosafot: 11.0, chaim: 11.75 };
     // 1.9.3 (the user, of the kuntres, point 10: "חריצין"): THE THREE ROVDIN - R. Hai Gaon (Beit Yosef OC 123; 3900 line 2000): "ובין כבש
     // למזבח היו שלש רובדין של אבן, ויורד בהם ג' פסיעות על עקב"; Binyan Tzion 12 (5791 line 51): one where the ramp floats over the sovev,

@@ -1071,12 +1071,8 @@
       H2.wall(grp, { axis: "x", length: 192, height: 26.5, thickness: 5, mat: M2.stone, cx: 0, cz: 67.5, y: 13.5, openings: ops(gS).concat(extra ? [small(SMALL_X)] : []) });
       H2.wall(grp, { axis: "z", length: 135, height: 26.5, thickness: 5, mat: M2.stone, cx: -93.5, cz: 0, y: 13.5, openings: extra ? SMALL_Z.map(small) : [] });
     }
-    {
-      const br = H2.wall(g, { axis: "x", length: MW1 - MW0, height: 2.5, thickness: 5, mat: M2.stone, cx: MOKED_X, cz: -67.5, y: 37.5 });
-      const brC = H2.occ(H2.box(g, MW1 - MW0, 0.9, 6.5, M2.stoneLight, MOKED_X, 40, -67.5));
-      const brK = H2.crenellate(g, { x1: MW0 + 0.5, z1: -67.5, x2: MW1 - 0.5, z2: -67.5, y: 40.9, mat: M2.stoneLight });
-      ctx2.lishkotCut.push(br, brC, brK);
-    }
+    // MOKED_VAULT_A2 (the user's decision 26: "החומה נקטעת מעל בית המוקד"): the court's wall is broken over the hall - its vault rises
+    // in the gap and is seen from without. (Until now a bridge of wall, 2.5 high, with its coping and battlements, ran over it.)
     // CHEL_211: the small gates' landings in the chel. The Upper Gate (x -88) - a landing joined to the first south gate's; the north's
     // small gate of Tiferet Yisrael (x -36) - joined to the Korban gate's; the rejected reading's (x 4) - a landing and a flight of its
     // own; the two of the west - a landing each and a flight along the west wall. In the reading of seven gates the two great gates'
@@ -1832,8 +1828,26 @@
         H2.box(mokedRosh, 1.4, 0.8, 6.4, M2.stoneSmooth, XE, 23.5, -73.3);                    // its lintel
         H2.box(mokedRosh, 10, 20, 1, M2.stoneLight, X, 13.5, Z - D / 2 + 0.5);                // the north doorway walled up
       }
-      const roof = H2.box(g, W + 1.4, 0.7, D + 1.4, M2.stoneSmooth, X, 13.5 + Hh, Z);
+      // MOKED_VAULT_A2 (the user's decision 26): "ובית המוקד כיפה" (Tamid 1:1, 88:2) - the Bartenura (634:7): "בנין של בית המוקד לא
+      // היתה עליה אלא כפה, ארקוולט"ו בלע"ז, עשויה בארץ"; the Yachin, Middot 1 (819:110): "בית המוקד היה מקורה עם גג עגול" - a vault
+      // over the hall (its axis along the hall's length, a segment of a circle: five amot of rise over its twenty), the court's wall
+      // broken over it, so that the vault is seen from without. Until now a flat roof with a small dome on a drum. Its rise and its
+      // thickness - model choices.
+      const VR = 5, VS = D / 2 + 0.7, VRad = (VS * VS + VR * VR) / (2 * VR), VA = Math.asin(VS / VRad), VC = 13.5 + Hh - (VRad - VR);
+      const roof = H2.box(g, W + 1.4, 0.5, D + 1.4, M2.stoneSmooth, X, 13.5 + Hh - 0.5, Z);   // the springing course round the top of the walls
       ctx2.lishkotCut.push(roof);
+      {
+        const vg = new CylinderGeometry(VRad, VRad, W + 1.4, 40, 1, true, -VA, 2 * VA);
+        vg.rotateZ(-Math.PI / 2); vg.rotateX(-Math.PI / 2);   // its axis along x; the arc up (+y), across z
+        const vm = M2.stoneSmooth.clone(); vm.side = DoubleSide;
+        const vault = new Mesh(vg, vm); vault.position.set(X, VC, Z); vault.castShadow = vault.receiveShadow = true; g.add(vault);
+        const sh = new Shape(); sh.moveTo(-VS, 0);
+        for (let i = 0; i <= 24; i++) { const a = -VA + (2 * VA * i) / 24; sh.lineTo(VRad * Math.sin(a), VC + VRad * Math.cos(a) - (13.5 + Hh)); }
+        sh.lineTo(-VS, 0);
+        const ends = [-1, 1].map((sx) => { const m = new Mesh(new ShapeGeometry(sh), vm); m.rotation.y = HP; m.position.set(X + sx * (W / 2 + 0.7), 13.5 + Hh, Z); g.add(m); return m; });   // the two lunettes
+        ctx2.lishkotCut.push(vault, ...ends);
+        ctx2.shared.mokedVault = { top: 13.5 + Hh + VR, x: X, z: Z };
+      }
       for (const sz of [-1, 1]) H2.occ(H2.box(g, 12, 1, 1.4, M2.stoneSmooth, X, sz > 0 ? 36 : 33.5, Z + sz * (D / 2 - 0.5)));   // the lintels
       const courtGate = H2.doors(g, { axis: "x", cx: X, cz: Z + D / 2 - 0.5, y: FL, width: 10, height: 20, inward: 1, mat: M2.gateGold, open: 1.0, inset: 0.6 });    // to the court
       H2.doors(mokedDef, { axis: "x", cx: X, cz: Z - D / 2 + 0.5, y: 13.5, width: 10, height: 20, inward: -1, mat: M2.gateGold, open: 0.25, inset: 0.6 }); // to the chel (the default reading)
@@ -2657,17 +2671,7 @@
         }
       }
     }
-    const drum = H2.cyl(g, 8.2, 8.6, 1.3, M2.stoneLight, MOKED_X, 38.2, -67.5);   // 1.8.0: on the roof at 37.5 (29.2 until 1.7.1)
-    const dome = H2.lathe(
-      g,
-      [[8.1, 0], [7.7, 1.7], [6.4, 3.1], [4.4, 4.2], [2.2, 4.9], [0, 5.15]],
-      M2.stoneLight,
-      MOKED_X,
-      39.5,
-      -67.5,
-      28
-    );
-    ctx2.lishkotCut.push(drum, dome);
+    // (MOKED_VAULT_A2: the drum and the small dome on the flat roof (1.8.0) are gone - the hall's own vault, above)
     // 1.8.0: the four corner blocks of the solid house (until 1.3.0) removed - they stood inside the corner rooms
     // 1.9.5 (THREE_CHAMBERS_195): the Golah chamber stood here alone until 1.9.4 (annex at x 20, 14 x 14.5), with a second, unlabelled
     // well outside the wall at (32, -74) - both gone: the chamber is part of the one building of the three chambers, below
