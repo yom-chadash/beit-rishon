@@ -996,20 +996,18 @@
         g.add(mesh(new CylinderGeometry(0.04, 0.04, 0.95, 6).rotateX(HP), MAT.wood, 0, 0, 0.5));
         return g;
       })(), { p: [0, 0, 0], r: [1.0, 0, 0] }, false);   // held by its handle, the box forward and down
-      prop("mizrak", (() => {   // the bowl of the blood, pointed below (model choice)
-        const g = new Group();
+      prop("mizrak", (() => {   // the bowl of the blood
         // MIZRAK_SILVER_A2 (the user, on picture 37: black, as a funnel - "כלי שרת — מתכת: כסף או זהב, עם ברק"): silver that shines in the
-        // dawn too - less mirror (it reflected the dark sky), its own light a little; inside and out, a rim
+        // dawn too - less mirror (it reflected the dark sky), its own light a little; inside and out
         const mzM = std(0xe4e8ee, { metalness: 0.5, roughness: 0.22, emissive: 0x5a6068, emissiveIntensity: 0.55, side: DoubleSide });
-        g.add(mesh(new LatheGeometry([V2(0.001, -0.14), V2(0.12, 0.02), V2(0.22, 0.12), V2(0.24, 0.16)], 24), mzM));
-        g.add(mesh(new TorusGeometry(0.24, 0.012, 6, 28).rotateX(HP), mzM, 0, 0.16, 0));
-        const b = mesh(new CircleGeometry(0.21, 14).rotateX(-HP), MAT.blood.clone(), 0, 0.13, 0);
-        b.material.opacity = 0.95;
-        b.visible = false;
-        g.add(b);
-        g.userData.blood = b;
-        return g;
-      })(), { p: [0, -0.05, 0.1], r: [0, 0, 0] });   // BLOOD_THROW_A2: its point in the palm (it floated above the hand: 0.18)
+        // MIZRAK_A2 (the user: "הוא נראה כספל מאורך, רק מחודד בסופו"; held "ביד אחת, בידית או בגוף, איך שנראה טבעי"): the shared cone with
+        // its rod (shared/frag/mizrak.js), held in one hand by the rod's end, the cone before him and a little inward; until now a broad
+        // bowl with a short point, its point in the palm
+        //@@include mizrak
+        const bm = MAT.blood.clone();
+        bm.opacity = 0.95;
+        return tm_mizrak(mzM, { r: 0.17, at: "rod", handleYaw: 1.92, bloodMat: bm });
+      })(), { p: [0, 0, 0.02], r: [0, 0, 0] });   // MIZRAK_A2: the rod's end in the hand
       // KNIFE_A2 (the user's decision 72 e - a model choice): the slaughterer's knife in his hand - a long blade, straight, without a point,
       // and a wooden handle; along the hand's way (its -y)
       prop("knife", (() => {
@@ -2996,7 +2994,7 @@
       const put = (x, y, z, r) => { if (n >= B.drops.instanceMatrix.count) return; _bm4.compose(_bs.set(x, y, z), _bq, _bv[2].set(r, r * 1.15, r)); B.drops.setMatrixAt(n++, _bm4); };
       if (mz && mz.visible) {
         mz.updateWorldMatrix(true, false);
-        const src = mz.localToWorld(_bv[0].set(0, 0.15, 0.18));
+        const src = mz.userData.lip ? mz.localToWorld(_bv[0].copy(mz.userData.lip(0)).setY(mz.userData.rimY - 0.02)) : mz.localToWorld(_bv[0].set(0, 0.15, 0.18));   // MIZRAK_A2: its rim before him
         for (const k of ["ne", "sw"]) {
           const v = N.blood[k];
           if (!(v > 0.001 && v < 0.999)) continue;

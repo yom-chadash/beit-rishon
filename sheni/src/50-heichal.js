@@ -3688,9 +3688,16 @@
       const coalM = new MeshStandardMaterial({ color: 0x6b1a08, emissive: 0xff4a12, emissiveIntensity: 0.95, roughness: 0.9 });
       const bloodM = new MeshStandardMaterial({ color: 0x7a0f12, roughness: 0.35 });
       const incM = new MeshStandardMaterial({ color: 0xf1ead8, roughness: 0.95 });
-      const mizrak = (parent, x, y, z) => {   // a golden bowl and the blood in it
-        noP(H2.lathe(parent, [[0, 0], [0.07, 0], [0.1, 0.03], [0.2, 0.16], [0.215, 0.17], [0.19, 0.17], [0.09, 0.045], [0, 0.04]], M2.gold, x, y, z, 20));
-        noP(H2.cyl(parent, 0.172, 0.172, 0.012, bloodM, x, y + 0.13, z, 18));
+      // MIZRAK_A2 (the user: "הוא נראה כספל מאורך, רק מחודד בסופו"): the shared cone with its rod (shared/frag/mizrak.js), of gold, and
+      // the blood in it; (x, y, z) - its point. Until now a broad bowl with a flat foot
+      //@@include mizrak
+      const mizrak = (parent, x, y, z, yaw = 0) => {
+        const m = tm_mizrak(M2.gold, { r: 0.15, handleYaw: yaw, bloodMat: bloodM, seg: 28 });
+        m.userData.blood.visible = true;
+        m.traverse(noP);
+        m.position.set(x, y, z);
+        parent.add(m);
+        return m;
       };
       // an open pan: w across (x), d along (z), h high, its walls th thick; (x, y, z) - the middle of its floor's underside
       const pan = (grp, mat, w, h, d, th, x, y, z) => {
@@ -3731,8 +3738,8 @@
           PPL.crowd(figA, [[5, 0, WEST]], { y: UF, s: 1.4, pose: "stand", kind: "kohen", robe: 0xf1ede2, tone: () => 1, name: "memares-a" });
           PPL.crowd(figB, [[21, 0, WEST]], { y: F, s: 1.4, pose: "stand", kind: "kohen", robe: 0xf1ede2, tone: () => 2, name: "memares-b" });
         }
-        mizrak(figA, 5 - 0.5, UF + 1.9, 0);
-        mizrak(figB, 21 - 0.5, F + 1.9, 0);
+        mizrak(figA, 5 - 0.62, UF + 1.75, 0, 0);   // held before him, its point down, the rod toward his hands (MIZRAK_A2: it cannot stand)
+        mizrak(figB, 21 - 0.62, F + 1.75, 0, 0);
         const stepsNow = () => { const r = !!(ctx2.shared.ulamSteps && ctx2.shared.ulamSteps.mode === "rambam"); bRam.visible = r; bFlat.visible = !r; figB.position.set(r ? -0.25 : 0, r ? -3.0 : 0, 0); };
         stepsNow();
         if (ctx2.shared.ulamSteps) { const s0 = ctx2.shared.ulamSteps.set; ctx2.shared.ulamSteps.set = function (m) { s0.call(this, m); stepsNow(); }; }
@@ -3796,8 +3803,12 @@
         ctx2.layers.kanimOne = oneG;
         const KX = -42, KZ = [2.3, 3.9], KH = 1.5, ky = FY(KX);
         const stand = (parent, z) => {
-          noP(H2.lathe(parent, [[0, 0], [0.34, 0], [0.36, 0.05], [0.2, 0.12], [0.09, 0.2], [0.07, KH * 0.5], [0.11, KH * 0.56], [0.07, KH * 0.62], [0.08, KH - 0.14], [0.22, KH - 0.05], [0.27, KH], [0, KH]], M2.gold, KX, ky, z, 22));
-          mizrak(parent, KX, ky + KH, z);
+          // MIZRAK_A2: its top a narrow ring with a hollow under it, the mizrak's point down in it, held by its sides at the ring ("שוליהן
+          // חדין" - it cannot stand on a flat top), most of it seen above; until now a broad flat top and the bowl on it. The ring and the
+          // hollow - model choices
+          noP(H2.lathe(parent, [[0, 0], [0.34, 0], [0.36, 0.05], [0.2, 0.12], [0.09, 0.2], [0.07, KH * 0.5], [0.11, KH * 0.56], [0.07, KH * 0.62], [0.08, KH - 0.16], [0.105, KH - 0.05],
+            [0.095, KH], [0.066, KH - 0.004], [0.03, KH - 0.12], [0, KH - 0.125]], M2.gold, KX, ky, z, 22));
+          mizrak(parent, KX, ky + KH - 0.004 - 0.066 * 2.6, z, -Math.PI / 2);   // where its side meets the ring (radius 0.066; 2.6 - its height to its radius)
         };
         stand(KN, KZ[0]);
         stand(second, KZ[1]);
