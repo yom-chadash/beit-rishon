@@ -385,7 +385,6 @@
             }
             return texOf(cv);
           })() }),
-          tefillin: std(0x141414, { roughness: 0.45 }),
           shoham: std(0x1f6450, { roughness: 0.14, metalness: 0.1 }),
           pom: std(0x86304a, { roughness: 0.8 })
         };
@@ -509,7 +508,7 @@
           for (const [t, y] of [["לה׳", 17], ["קדש", 48]]) { c.fillStyle = "rgba(90,60,10,0.8)"; c.fillText(t, w / 2 + 1, y + 1.5); c.fillStyle = "#fff3c0"; c.fillText(t, w / 2, y); }
         });
         mk(new CylinderGeometry(1, 1, 0.078, 36, 1, true, -HP, Math.PI).scale(0.174, 1, 0.194), std(0xffffff, { map: tz, metalness: 0.75, roughness: 0.3, side: DoubleSide }), 0, 3.085, HZ, L);
-        mk(new BoxGeometry(0.056, 0.056, 0.056), M.tefillin, 0, 3.172, 0.164 + HZ, L).rotation.x = -0.55;
+        // TEF_ONE_A2 (the coordinator: two boxes in one place): the head's tefillin are the kit's (figure: K.tefOn) - no box of its own here
         // the mitznefet sits back on the head (model choice: its frame hd tilted 0.3 back about the head's centre): its front edge above the
         // hair and the tefillin, its back over the nape; loc() = a point of the figure in that frame
         const TILT = -0.3, cT = Math.cos(TILT), sT = Math.sin(TILT);

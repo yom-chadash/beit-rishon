@@ -393,7 +393,9 @@
     // In the head's frame (its middle at 0). Their size (a little over four fingers) and the straps' length - model choices.
     const TEF = { on: true, list: [] };
     const tefSet = (on) => { TEF.on = !!on; for (const m of TEF.list) m.visible = TEF.on; };
-    const mTef = mat(0x111111, { roughness: 0.42, metalness: 0.0 });
+    // TEF_MATTE_A2 (the coordinator: the box's base "מחזיר אור ונראה בהיר מקרוב"): black and matte, the box, its base and the straps alike -
+    // rough, and hardly any light of the sky on it (until now roughness 0.42: at a slant the flat base shone pale)
+    const mTef = mat(0x0b0b0b, { roughness: 0.92, metalness: 0.0, envMapIntensity: 0.15 });
     // TEFILLIN_PLACE_A2 (the user: "תעשה במקומם, גם מבחינת הרצועות שסביב הראש. אל תחרטט"; the box smaller): Shulchan Aruch OC 27:9
     // (382:236) "מהתחלת עיקרי השער ממצחו עד סוף המקום שמוחו של תינוק רופס" - the box's foot at the start of the hair (the hair's edge
     // here at y 0.079 over the head's middle), in the middle, over between the eyes; 27:10 (382:237) "צריך שיהיה הקשר מאחורי הראש למעלה

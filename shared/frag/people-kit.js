@@ -258,7 +258,7 @@
     // the box at the start of the hair, the strap round the head (priest-kit.js gTefR, in fewer faces); their own instanced mesh in
     // the near level, black, hidden by night or on a festival: the reasons in ctx.shared.tefOff, the High Priest's Yom Kippur and the
     // night of the water-drawing (tefOK). The Levite's cap is set back for it (kippahBack).
-    const mTefP = new MeshStandardMaterial({ color: 0x111111, roughness: 0.42 });
+    const mTefP = new MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.92, envMapIntensity: 0.15 });   // TEF_MATTE_A2: black and matte (as priest-kit.js)
     const tefG = (HY) => {
       const TY = 0.1, TB = 0.04, zs = HR[2] * Math.sqrt(1 - (TY / HR[1]) * (TY / HR[1])), n = new Vector3(0, TY / (HR[1] * HR[1]), zs / (HR[2] * HR[2])).normalize();
       const tilt = Math.atan2(n.y, n.z), place = (q, d) => { q.rotateX(-tilt); q.translate(0, TY + n.y * d, zs + n.z * d); return q; }, parts = [];
