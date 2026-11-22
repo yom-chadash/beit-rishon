@@ -450,7 +450,7 @@
     const hairEdge = (th, kind, w2 = 0) => {
       const a = Math.abs(th), ySide = kind === "none" ? 0.0 : -0.034;   // (with a beard the side-locks run down over its top: their thinning lies on the beard)
       return (a < 0.3 ? 0.086 : a < 0.8 ? lerp(0.086, 0.06, sm(0.3, 0.8, a)) : a < 1.25 ? lerp(0.06, ySide, sm(0.8, 1.25, a)) : a < 1.49 ? ySide : a < 1.55 ? lerp(ySide, 0.024, sm(1.49, 1.55, a))
-        : a < 1.74 ? 0.024 : a < 1.98 ? lerp(0.024, -0.1, sm(1.74, 1.98, a)) : lerp(-0.1, -0.108, sm(1.98, 2.6, a))) + 0.0032 * Math.sin(a * 13 + w2) + 0.002 * Math.sin(a * 31 + 2 * w2);
+        : a < 1.72 ? 0.024 : a < 2.14 ? lerp(0.024, -0.1, Math.pow(sm(1.72, 2.14, a), 0.75)) : lerp(-0.1, -0.108, sm(2.14, 2.7, a))) + 0.0032 * Math.sin(a * 13 + w2) + 0.002 * Math.sin(a * 31 + 2 * w2);
     };
     const yStrap = (th) => -0.056 + (0.1 - 0.04 * 0.45 + 0.056) * Math.pow(0.5 + 0.5 * Math.cos(th), 0.35);   // the tefillin's strap (priest-kit.js tefRing)
     // the hair's thickness over the skin: full at the sides and behind, below the strap and the hat; thin over the crown (under the hats
@@ -486,7 +486,7 @@
         else if (j < NA + SB.length) { sv = 0.4 + (j - NA) / (SB.length - 1) * 0.1; y = yS + SB[j - NA]; under = true; }
         else { const t = (j - NA - SB.length + 1) / NB; sv = 0.5 + 0.5 * t; y = lerp(yS + SB[SB.length - 1], yE, Math.pow(t, 0.6)); }
         y = Math.max(y, yE);
-        const [lk, tone] = lockAt(th * 3.6, sv, w2 + sh, 0.35), fade = sm(0.6, 1, sv), low = sm(yS - 0.006, yS - 0.022, y);   // low: below the strap (the outer layer only there - under the hats nothing stands out)
+        const behind = sm(1.68, 1.85, a) * sm(2.4, 2.1, a), [lk, tone] = lockAt(th * 3.6, sv, w2 + sh, 0.35), fade = sm(0.6 - 0.22 * behind, 1, sv), low = sm(yS - 0.006, yS - 0.022, y);   // (behind the ear the hair thins over a longer way down)   // low: below the strap (the outer layer only there - under the hats nothing stands out)
         const th2 = under ? 0.0024 : (0.0014 + hairBulk(th, y) * (0.7 + 0.5 * lk) + sh * (0.0022 + 0.0024 * lk) * low) * (1 - 0.88 * fade);   // thinning out to its edge
         const R = j === 0 ? 0 : skinR(th, y, "face", true) + th2, p = pt(th, R, y);
         const fz = clamp(fade + 0.3 * nz(th * 11 + w2, sv * 5 + sh) * sm(0.45, 0.8, sv), 0, 1);   // the edge's thinning, uneven
