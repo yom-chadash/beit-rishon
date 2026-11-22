@@ -1005,7 +1005,15 @@
         g.add(b);
         g.userData.blood = b;
         return g;
-      })(), { p: [0, -0.12, 0.18], r: [0, 0, 0] });
+      })(), { p: [0, -0.05, 0.1], r: [0, 0, 0] });   // BLOOD_THROW_A2: its point in the palm (it floated above the hand: 0.18)
+      // KNIFE_A2 (the user's decision 72 e - a model choice): the slaughterer's knife in his hand - a long blade, straight, without a point,
+      // and a wooden handle; along the hand's way (its -y)
+      prop("knife", (() => {
+        const g = new Group();
+        g.add(mesh(new BoxGeometry(0.05, 0.2, 0.06), MAT.wood, 0, 0.02, 0));
+        g.add(mesh(new BoxGeometry(0.012, 0.5, 0.075), std(0xc9cdd3, { metalness: 0.45, roughness: 0.3 }), 0, -0.33, 0.004));
+        return g;
+      })(), { p: [0, 0.02, 0.0], r: [0, 0, 0] }, false);
       prop("cup", mesh(new LatheGeometry([V2(0.001, 0), V2(0.07, 0.01), V2(0.06, 0.08), V2(0.09, 0.2)], 12), MAT.gold), { p: [0, -0.1, 0.08], r: [0, 0, 0] });
       const torch = (k) => {   // "ושתי אבוקות של אור בידם" (1:3)
         const g = new Group();
@@ -1205,10 +1213,56 @@
       // the blood's marks: the two corners above the yesod and below the red line (40-altar.js: the body x 40.5..70.5, z -18.5..11.5,
       // the line at F + 4.925) - "מתנה אחת שהן שתים", one on each face of the corner; the remainder on the southern yesod (its top F + 1)
       const blood = {};
-      const bmark = (key, w, h, x, y, z, ry) => { const m = new Mesh(new PlaneGeometry(w, h), MAT.blood.clone()); m.position.set(x, y, z); m.rotation.y = ry; m.renderOrder = 3; m.visible = false; altarG.add(m); (blood[key] = blood[key] || []).push(m); };
-      bmark("ne", 1.6, 2.4, 69.6, F + 2.9, -18.53, Math.PI); bmark("ne", 1.6, 2.4, 70.53, F + 2.9, -17.6, HP);
-      bmark("sw", 1.6, 2.4, 41.4, F + 2.9, 11.53, 0); bmark("sw", 1.6, 2.4, 40.47, F + 2.9, 10.6, -HP);
-      { const m = new Mesh(new CircleGeometry(0.5, 14).rotateX(-HP), MAT.blood.clone()); m.position.set(41.2, F + 1.015, 12.0); m.renderOrder = 3; m.visible = false; altarG.add(m); blood.ys = [m]; }
+      // BLOOD_THROW_A2 (the user via the coordinator: "בזריקת הדם — שפיכה של דם ממש, כולל טיפות"): the marks are stains - a splash with
+      // drops round it and runs down from it (the corners' faces), a pool on the yesod and its runs down the yesod's face - not plain
+      // rectangles; the throw itself, the drops and the pouring of the remainder: bloodFx (below). Their forms - model choices.
+      const stainTex = (seed, kind) => {
+        const W2 = 128, H2 = kind === "pool" ? 128 : 192, cv = document.createElement("canvas");
+        cv.width = W2; cv.height = H2;
+        const c = cv.getContext("2d");
+        let sd = seed * 977 + 31;
+        const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+        const blob = (cx, cy, R, n, wob) => {
+          c.beginPath();
+          for (let i = 0; i <= n; i++) { const a = (i / n) * Math.PI * 2, r = R * (1 + wob * (rnd() - 0.5) + 0.12 * Math.sin(a * 3 + seed)); const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r; if (i) c.lineTo(x, y); else c.moveTo(x, y); }
+          c.closePath(); c.fill();
+        };
+        const cy = kind === "pool" ? 64 : kind === "drip" ? 8 : 62;
+        const g = c.createRadialGradient(64, cy, 4, 64, cy, kind === "pool" ? 58 : 46);
+        g.addColorStop(0, "rgba(72,4,6,0.98)"); g.addColorStop(0.7, "rgba(102,10,12,0.95)"); g.addColorStop(1, "rgba(122,18,18,0.9)");
+        c.fillStyle = g;
+        if (kind !== "drip") blob(64, cy, kind === "pool" ? 46 : 34, 28, 0.55);
+        for (let i = 0; i < (kind === "pool" ? 10 : 16); i++) {   // the drops thrown round it
+          const a = rnd() * Math.PI * 2, d = (kind === "pool" ? 50 : 40) + rnd() * 22, r = 1.5 + rnd() * 4.5;
+          blob(64 + Math.cos(a) * d, cy + Math.sin(a) * d * (kind === "pool" ? 1 : 0.8), r, 10, 0.4);
+        }
+        if (kind !== "pool") {   // the runs down from it
+          const n = kind === "drip" ? 7 : 6;
+          for (let i = 0; i < n; i++) {
+            const x = 64 + (rnd() - 0.5) * (kind === "drip" ? 100 : 54), y0 = cy + (kind === "drip" ? 0 : 18 + rnd() * 10), L = (kind === "drip" ? 60 : 40) + rnd() * (kind === "drip" ? 110 : 90), w = 3 + rnd() * 5;
+            c.beginPath(); c.moveTo(x - w / 2, y0); c.lineTo(x - w * 0.3, y0 + L); c.arc(x, y0 + L, w * 0.42, Math.PI, 0, true); c.lineTo(x + w / 2, y0); c.closePath(); c.fill();
+          }
+        }
+        const t = new CanvasTexture(cv); t.colorSpace = SRGBColorSpace; t.anisotropy = 4;
+        return t;
+      };
+      const bmark = (key, w, h, x, y, z, ry, kind = "wall", seed = 1) => {
+        const m = new Mesh(new PlaneGeometry(w, h), new MeshStandardMaterial({ map: stainTex(seed, kind), color: 0xffffff, emissive: 0x2a0204, transparent: true, opacity: 0, depthWrite: false, roughness: 0.22, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
+        m.position.set(x, y, z); m.rotation.y = ry; m.renderOrder = 3; m.visible = false; m.userData.kind = kind; altarG.add(m); (blood[key] = blood[key] || []).push(m);
+      };
+      bmark("ne", 1.5, 2.25, 69.75, F + 2.75, -18.53, Math.PI, "wall", 1); bmark("ne", 1.5, 2.25, 70.53, F + 2.75, -17.75, HP, "wall", 2);
+      bmark("sw", 1.5, 2.25, 41.25, F + 2.75, 11.53, 0, "wall", 3); bmark("sw", 1.5, 2.25, 40.47, F + 2.75, 10.75, -HP, "wall", 4);
+      { const m = new Mesh(new PlaneGeometry(1.3, 1.3).rotateX(-HP), new MeshStandardMaterial({ map: stainTex(5, "pool"), emissive: 0x2a0204, transparent: true, opacity: 0, depthWrite: false, roughness: 0.15, polygonOffset: true, polygonOffsetFactor: -2 })); m.position.set(41.2, F + 1.016, 12.0); m.renderOrder = 3; m.visible = false; m.userData.kind = "pool"; altarG.add(m); blood.ys = [m]; }
+      bmark("ys", 1.4, 0.9, 41.2, F + 0.55, 12.515, 0, "drip", 6);   // the runs down the yesod's south face (its face z 12.5)
+      blood.corner = { ne: [70.5, F + 3.1, -18.5], sw: [40.5, F + 3.1, 11.5], ys: [41.2, F + 1.03, 12.0] };   // where the throw strikes (altarG's frame)
+      { // the jet and its drops (instanced), the poured stream (pieces of a tube)
+        const bm = new MeshStandardMaterial({ color: 0x6a080b, emissive: 0x3a0305, emissiveIntensity: 1, roughness: 0.2, metalness: 0 });   // (its own glow a little: red, not black, in the dawn's shade)
+        const drops = new InstancedMesh(new SphereGeometry(1, 8, 6), bm, 72);
+        drops.frustumCulled = false; drops.count = 0; drops.userData.noPick = true; group.add(drops);
+        const pour = [];
+        for (let i = 0; i < 8; i++) { const q = new CylinderGeometry(1, 1, 1, 7, 1, true); q.translate(0, 0.5, 0); const m = new Mesh(q, bm); m.visible = false; m.userData.noPick = true; group.add(m); pour.push(m); }
+        blood.fx = { drops, pour };
+      }
       // the trumpets, the cymbals, the flags, the lyres
       const trumpet = () => { const g = new Group(); g.add(mesh(new CylinderGeometry(0.03, 0.03, 1.6, 8).rotateX(HP), MAT.silver, 0, 0, 0.7)); g.add(mesh(new ConeGeometry(0.13, 0.3, 12, 1, true).rotateX(HP), MAT.silver, 0, 0, 1.55)); return g; };
       prop("tru1", trumpet(), { p: [0, 0, 0], r: [-1.1, 0, 0] }, false);
@@ -2067,6 +2121,8 @@
       a.hold("s2", "mizrak", "R", 8.2);
       a.tag("s2", "המקבל — הזורק", 9);
       a.tag("s1", "השוחט", 9);
+      a.hold("s1", "knife", "R", 3.4);   // KNIFE_A2
+      a.pose("s1", "hold", 3.6);
     };
     SC.dam = (a) => {
       const [rx, rz] = RING2;
@@ -2074,11 +2130,11 @@
       a.set("mizrak", 1, 1.6);
       const ne = A(72.4, -20.4), sw = A(38.2, 13.6), ys = A(41.4, 13.9);
       a.walk("s2", [a.from("s2", [rx - 0.9, rz + 1.2]), [rx - 0.6, -9.6], A(71.6, -21.4), ne], 2.2, 5.6, { hold: true, yaw: -Math.PI / 4 });
-      a.pose("s2", "throw", 5.8, 7.4);
-      a.blood("ne", 6.6, 7.4);
+      a.pose("s2", "throw", 5.8, 7.6);
+      a.blood("ne", 6.0, 7.6);   // BLOOD_THROW_A2: the jet seen (6.6 .. 7.4 until now)
       a.walk("s2", [ne, A(71.6, -21.4), A(38.2, -21.2), sw], 7.8, 11, { hold: true, yaw: Math.PI * 0.75 });
-      a.pose("s2", "throw", 11.2, 12.8);
-      a.blood("sw", 12, 12.8);
+      a.pose("s2", "throw", 11.2, 13.0);
+      a.blood("sw", 11.4, 13.0);
       a.walk("s2", [sw, ys], 14, 15.2, { yaw: Math.PI });
       a.pose("s2", "pour", 16, 19);
       a.blood("ys", 16.6, 18.6);
@@ -2100,6 +2156,7 @@
     SC.evarim = (a) => {
       a.lambGone(0.5);
       a.gone("mizrak", 0);
+      a.gone("knife", 0);   // KNIFE_A2
       NINE.forEach((k, i) => {
         const row = [44.4 + i * 1.3, -33.4];
         a.walk(k, [a.from(k, row), row], 0, 0.8 + i * 0.25, { yaw: Math.PI });   // NINE_215: a walk to the row (until 2.0.14 set there at once)
@@ -2898,6 +2955,58 @@
         o.visible = true;
       }
     };
+    // BLOOD_THROW_A2: the throw - out of the mizrak in a dark red jet, in an arc onto the corner (N.blood.ne / .sw rising 0..1: the jet
+    // to 0.45, its drops striking by 0.75; drops thrown back off the stone and falling); the remainder poured onto the southern yesod
+    // (N.blood.ys): a stream out of the tilted bowl down to the yesod, a few drops splashing there. Zevachim 5:4 "ושירים היה שופך על
+    // יסוד דרומי"; the forms and the timing - model choices
+    const _bv = [new Vector3(), new Vector3(), new Vector3()], _bm4 = new Matrix4(), _bq = new Quaternion(), _bs = new Vector3();
+    const bhash = (i, k) => { const q = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return q - Math.floor(q); };
+    const bloodFx = () => {
+      const B = W.blood && W.blood.fx;
+      if (!B) return;
+      const mz = W.props.mizrak && W.props.mizrak.o;
+      let n = 0;
+      for (const m of B.pour) m.visible = false;
+      const put = (x, y, z, r) => { if (n >= B.drops.instanceMatrix.count) return; _bm4.compose(_bs.set(x, y, z), _bq, _bv[2].set(r, r * 1.15, r)); B.drops.setMatrixAt(n++, _bm4); };
+      if (mz && mz.visible) {
+        mz.updateWorldMatrix(true, false);
+        const src = mz.localToWorld(_bv[0].set(0, 0.15, 0.18));
+        for (const k of ["ne", "sw"]) {
+          const v = N.blood[k];
+          if (!(v > 0.001 && v < 0.999)) continue;
+          const c = W.blood.corner[k], T = W.altarG.localToWorld(_bv[1].set(c[0], c[1], c[2]));
+          const out = [T.x - src.x, 0, T.z - src.z], ol = Math.hypot(out[0], out[2]) || 1;   // away from the stone: back toward the thrower
+          for (let i = 0; i < 40; i++) {   // the jet: drops launched one after another, each flying 0.3 of the way
+            const u0 = (i / 40) * 0.45, p = (v - u0) / 0.3;
+            if (p <= 0) continue;
+            if (p < 1) {
+              const j1 = bhash(i, 1) - 0.5, j2 = bhash(i, 2) - 0.5;
+              put(lerp(src.x, T.x, p) + j1 * 0.12 * p, lerp(src.y, T.y, p) + Math.sin(Math.PI * p) * 0.45 + j2 * 0.1 * p, lerp(src.z, T.z, p) - j1 * 0.08 * p, 0.014 + 0.018 * bhash(i, 3));
+            } else if (p < 1.9 && i % 3 !== 0) {   // thrown back off the stone, and falling
+              const q = (p - 1) / 0.9, a = (bhash(i, 4) - 0.5) * 2.2, sp = 0.5 + 0.7 * bhash(i, 5), ux = -out[0] / ol, uz = -out[2] / ol;
+              const dx = ux * Math.cos(a) - uz * Math.sin(a), dz = ux * Math.sin(a) + uz * Math.cos(a);
+              put(T.x + dx * sp * q, T.y + (0.6 * bhash(i, 6)) * q - 2.6 * q * q, T.z + dz * sp * q, 0.018 + 0.015 * bhash(i, 7));
+            }
+          }
+          if (v < 0.42) {   // the jet's body: a tube along the arc behind its head
+            const head = Math.min(1, v / 0.3), tail = Math.max(0, (v - 0.2) / 0.3);
+            for (let s2 = 0; s2 < 6; s2++) {
+              const pa = lerp(tail, head, s2 / 6), pb = lerp(tail, head, (s2 + 1) / 6), at = (pp) => [lerp(src.x, T.x, pp), lerp(src.y, T.y, pp) + Math.sin(Math.PI * pp) * 0.45, lerp(src.z, T.z, pp)];
+              const m = B.pour[s2]; seg(m, at(pa), at(pb)); m.scale.x = m.scale.z = 0.02; m.visible = pb > pa + 1e-3;
+            }
+          }
+        }
+        const v = N.blood.ys;
+        if (v > 0.02 && v < 0.92) {   // the remainder poured out: a stream from the lip down to the yesod
+          const c = W.blood.corner.ys, T = W.altarG.localToWorld(_bv[1].set(c[0], c[1], c[2]));
+          const at = (t) => [lerp(src.x, T.x, t), src.y - (src.y - T.y) * t * t, lerp(src.z, T.z, t)];
+          for (let s2 = 0; s2 < 8; s2++) { const m = B.pour[s2]; seg(m, at(s2 / 8), at((s2 + 1) / 8)); m.scale.x = m.scale.z = 0.022 + 0.012 * (s2 / 8); m.visible = true; }
+          for (let i = 0; i < 10; i++) { const ph = (v * 9 + bhash(i, 8)) % 1, a = bhash(i, 9) * 6.283, d = 0.1 + 0.35 * ph; put(T.x + Math.cos(a) * d, T.y + 0.25 * Math.sin(Math.PI * ph), T.z + Math.sin(a) * d, 0.014 + 0.01 * bhash(i, 10)); }
+        }
+      }
+      B.drops.count = n;
+      B.drops.instanceMatrix.needsUpdate = true;
+    };
     let roofAt = 0;
     const applyWorld = () => {
       W.altarG.position.z = D;
@@ -2923,7 +3032,12 @@
         const ag = W.props.ashGold;
         if (N.ashGold > 0.02) { Object.assign(ag.st, { vis: true, fig: null, x: g.x, y: g.top + 0.01, z: g.z - 0.13 }); ag.o.scale.setScalar(Math.max(0.05, N.ashGold)); } else ag.st.vis = false;
       }
-      for (const k of ["ne", "sw", "ys"]) for (const m of W.blood[k]) { m.visible = N.blood[k] > 0.01; m.material.opacity = 0.85 * N.blood[k]; }
+      for (const k of ["ne", "sw", "ys"]) for (const m of W.blood[k]) {   // BLOOD_THROW_A2: a stain shows when the blood reaches it, and grows
+        const v = N.blood[k], kd = m.userData.kind, a = kd === "drip" ? clamp((v - 0.55) / 0.4, 0, 1) : kd === "pool" ? clamp((v - 0.12) / 0.5, 0, 1) : clamp((v - 0.32) / 0.25, 0, 1);
+        m.visible = a > 0.01; m.material.opacity = 0.95 * a;
+        const sc = kd === "drip" ? 1 : 0.55 + 0.45 * smooth(a); m.scale.set(sc, kd === "drip" ? 0.4 + 0.6 * smooth(a) : sc, sc);
+        if (kd === "drip") m.position.y = F + 1.0 - 0.45 * m.scale.y;
+      }
       W.props.machtaS.o.userData.coals.visible = N.coalsS > 0.5;
       W.props.machtaG.o.userData.coals.visible = N.coalsG > 0.5;
       W.props.teni.o.userData.ash.visible = N.teniAsh > 0.5;
@@ -3100,6 +3214,7 @@
       applyLamb();
       applyWorld();
       applyProps();
+      bloodFx();   // BLOOD_THROW_A2
       applySky(skyAt(list, i, sec));
       // the moving eye of a stage (CAMK), after the slide's own flight (sec > 0) and never while the viewer holds the presentation
       const ck = CAMK[list[i]];
