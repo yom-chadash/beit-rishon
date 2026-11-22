@@ -345,7 +345,7 @@
     // שחידשו והוסיפו על קדושתו"; Zevachim 32b "נכח החצר החדשה - הר הבית שחידשו בה בהלכותיה"), and Rashi has no comment on II Chr 20:5
     // (Metzudat David there: "אולי תקנו אותה וחדשו הבנין"). The earlier identification outer court = new court was a model choice, now dropped.
     // No measure in the sources (all model choice): 135 x 135 east of the inner court (x 93.5..228.5, z +-67.5), floor 3 above the
-    // platform (6 steps), paved, enclosed by a low wall 4 high (3 stone courses of 1 + 1 cedar course, the I Kings 6:36 pattern) 2 thick,
+    // platform (6 steps), paved, enclosed by a low wall 4 high (a plain stone wall - OUTER_PLAIN_C below; until 22.11.2026 banded as 6:36) 2 thick,
     // with an open gate 10 wide in the middle of its east side (named "השער המזרחי של החצר החיצונה", 1.0.1). The chambers, the king's עמוד and
     // the donation chest (1.0.1) are built after the gate; no gallery. Its west side is the inner court's podium
     // (3 above this floor) and wall; the 6 steps from here up to the inner court's east gate are built in 30-courts.js.
@@ -355,7 +355,10 @@
     const wcDepth = MNT_WC_SIZE + WC.t; // z -68.5..68.5: the podium reaches under the low north / south walls
     H2.box(g, wcPodE - WC.x0, WC.y - 0.15, wcDepth, M2.stone, (WC.x0 + wcPodE) / 2, LV2.HAR, 0);     // podium y 0..2.85 (overlaps into the inner podium, hidden)
     H2.box(g, wcPodE - WC.x0, 0.15, wcDepth, M2.paveFine, (WC.x0 + wcPodE) / 2, WC.y - 0.15, 0);     // paving, top at 3
-    const wcOpts = { height: WC.h, thickness: WC.t, y: WC.y, stoneH: MNT_STONE_BAND, cedarH: MNT_CEDAR_BAND, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
+    // OUTER_PLAIN_C (fix-c, 22.11.2026 - the user's 172 b): the outer court's low wall is a plain wall of hewn stone, as the great court's
+    // (WALL_PLAIN_C) - no source was found for a cedar course in this court; "שלשה טורי גזית וטור כרתת ארזים" is said of the inner court
+    // (I Kings 6:36, 10:221 - 30-courts.js keeps it) and of the king's court (7:12). One course band the wall's whole height = no cedar course.
+    const wcOpts = { height: WC.h, thickness: WC.t, y: WC.y, stoneH: WC.h, cedarH: 0, stoneMat: stoneC, cedarMat: M2.cedar, H: H2 };
     const wcPierD = 1.5; // model choice: the gate piers are 1.5 deep along the wall (1.5 x 5 x 2.6)
     mnt_bandWall(g, Object.assign({ axis: "x", length: wcPodE - wcPodW, cx: (wcPodW + wcPodE) / 2, cz: WC.z0 }, wcOpts)); // north low wall, x 98.5..229.5 (covers the corner)
     mnt_bandWall(g, Object.assign({ axis: "x", length: wcPodE - wcPodW, cx: (wcPodW + wcPodE) / 2, cz: WC.z1 }, wcOpts)); // south low wall
