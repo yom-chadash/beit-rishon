@@ -176,6 +176,9 @@
   }
 
   //@@include rose-garden
+  // SHILOACH_KIT_B2: tm_shiloach (shared/frag/shiloach.js) - the spring of the Shiloach, one build for both houses; brought in here so the
+  // First Temple's build reads it (its caller in this house - agent C's src/59-parallels.js; until then it is not called here)
+  //@@include shiloach
   async function buildMount(ctx) {
     const M2 = ctx.M, H2 = ctx.H, CO2 = ctx.CO, LV2 = ctx.LV;
     const g = new Group();

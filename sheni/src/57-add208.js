@@ -6,6 +6,7 @@
   // HaEven), "8" (the ulam's courses in the Rambam's reading of the steps), "ב' שתיהן" (a door to the lepers' chamber, in both readings).
   // Every quotation in the cards (tools/cards_208.py, tools/rows_208.py) read in his library. Sizes, materials and exact places that the
   // sources do not give - model choices, said so in the cards.
+  //@@include shiloach
   async function buildAdd208(ctx2) {
     const { H: H2, M: M2, LV } = ctx2;
     const SH = ctx2.shared;
@@ -768,143 +769,34 @@
       SG.name = "shiloach";
       ctx2.root.add(SG);
       let built = false, Y0 = -55;
-      const mStone = new MeshStandardMaterial({ color: 0xbfae8c, roughness: 0.95 }), mStone2 = new MeshStandardMaterial({ color: 0xa8987a, roughness: 0.95 });
-      const mWater = new MeshStandardMaterial({ color: 0x3e7fb8, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.86 });
-      const mStream = new MeshStandardMaterial({ color: 0x8fc3ec, roughness: 0.1, transparent: true, opacity: 0.85 });
       const mPath = new MeshStandardMaterial({ color: 0xcbbd9a, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
       // CHULDA_RAMPS_B2 (decision 103): from the foot of the western gate of Chulda's ramp (20-mount.js, ctx2.shared.chuldaRamp)
       const RP = SH.chuldaRamp || { z0: 335, zf: 364.5, yf: -28, yAt: (z) => -28 * Math.min(1, Math.max(0, (z - 335) / 29.5)) };
       const PATH = [[0, RP.zf + 1]].concat([[2, 392], [7, 425], [14, 460], [21, 495], [26, 522], [29, 538]].filter((q) => q[1] > RP.zf + 6));
-      const streamTo = (yb) => { const SP = SHL.SP; if (!SP.st) return; const h = Math.max(0.05, SP.y - yb); SP.st.position.set(SP.x, yb + h / 2, SP.zT); SP.st.scale.y = h; };
+      const streamTo = (yb) => { const SP = SHL.SP; if (SHL.kit) { SHL.kit.setBottom(yb); return; } if (!SP.st) return; const h = Math.max(0.05, SP.y - yb); SP.st.position.set(SP.x, yb + h / 2, SP.zT); SP.st.scale.y = h; };   // SHILOACH_KIT_B2: the kit's fall
       const buildPool = () => {
         if (built) return;
         built = true;
         try { const D0 = buildDemo(); SHL.offF = measure(D0, ARM.fill, FILL_LEAN, 0); SHL.offP = measure(D0, ARM.pour, POUR_LEAN, TILT); } catch (e) { console.warn("[shiloach]", e && e.message); }
-        const [px, pz] = SHL.POOL, W2 = SHL.PW / 2, D2 = SHL.PD / 2;
-        let lo = Infinity;
-        for (const dx of [-W2, 0, W2]) for (const dz of [-D2, 0, D2]) lo = Math.min(lo, groundY(px + dx, pz + dz, 20));
-        Y0 = isFinite(lo) ? lo : -55;
-        const RIM = Y0 + 1.3, WL = Y0 + 0.95;
-        const box = (w, h, d, m, x, y, z) => { const b = new Mesh(new BoxGeometry(w, h, d), m); b.position.set(x, y + h / 2, z); b.castShadow = b.receiveShadow = true; SG.add(b); return b; };
-        // the basin's four walls (1 thick), from 1.5 under the ground's lowest point to the rim, and its floor
-        box(SHL.PW + 2, RIM - Y0 + 1.5, 1, mStone, px, Y0 - 1.5, pz - D2 - 0.5);
-        box(SHL.PW + 2, RIM - Y0 + 1.5, 1, mStone, px, Y0 - 1.5, pz + D2 + 0.5);
-        box(1, RIM - Y0 + 1.5, SHL.PD, mStone, px - W2 - 0.5, Y0 - 1.5, pz);
-        box(1, RIM - Y0 + 1.5, SHL.PD, mStone, px + W2 + 0.5, Y0 - 1.5, pz);
-        box(SHL.PW, 0.2, SHL.PD, mStone2, px, Y0 - 1.6, pz);
-        const water = new Mesh(new PlaneGeometry(SHL.PW, SHL.PD).rotateX(-Math.PI / 2), mWater);
-        water.position.set(px, WL, pz);
-        water.renderOrder = 2;
-        SG.add(water);
         // the spring's mouth (the user, 01:56, over the picture of the pouring: "הוא לא מוזג לתוך הספל למה" - and a flask held over a pool
-        // that it could not reach would be the same fault): a block of stone on the pool's north side, at the path's end, with a spout
-        // toward the path; its thin stream ("כאיסר") falls into a small basin at its foot (the water goes on to the pool under the block).
-        // The spout's height: over the mouth of the flask held out under it - measured on the priest's own figure (SHL.offF). Its form - a
-        // model choice
+        // that it could not reach would be the same fault): its height over the mouth of the flask held out under it - measured on the
+        // priest's own figure (SHL.offF)
         const SP = SHL.SP, gy = groundY(SP.x, SP.z - 0.9, 20), offF = SHL.offF || { y: 1.2 };
         SP.gy = gy;
-        SP.y = gy + Math.max(1.15, offF.y + 0.34);   // the spout's tip
-        box(2.6, SP.y - gy + 0.65, 1.6, new MeshStandardMaterial({ color: 0xa8683a, roughness: 0.95 }), SP.x, gy - 0.4, SP.z + 0.8);   // (SPRING_CAVE_B2: lower - the cave over it)   // SHILOACH_CHALAMISH_B2: the mouth's block - part of the rock face
-        const spout = new Mesh(new CylinderGeometry(0.045, 0.07, 0.48, 10), new MeshStandardMaterial({ color: 0x7a4626, roughness: 0.95 }));   // SPRING_ROAR_B2: a small opening in the rock ("כאיסר")
-        spout.rotation.x = Math.PI / 2;
-        spout.position.set(SP.x, SP.y + 0.03, SP.z - 0.24);
-        spout.castShadow = true;
-        SG.add(spout);
-        box(1.4, 0.85, 1.0, mStone2, SP.x, gy - 0.45, SP.z - 0.52);   // the basin
-        const bw = new Mesh(new PlaneGeometry(1.15, 0.78).rotateX(-Math.PI / 2), mWater);
-        bw.position.set(SP.x, gy + 0.36, SP.z - 0.52);
-        SG.add(bw);
+        SP.y = gy + Math.max(1.15, offF.y + 0.34);   // the opening
         SP.base = gy + 0.36;
-        SP.st = new Mesh(new CylinderGeometry(0.026, 0.032, 1, 8, 1, true), mStream);
-        SG.add(SP.st);
+        // SHILOACH_KIT_B2 (fix-b2, 22.11.2026 - the coordinator: "להוציא את כל בניית המעין... לקטע משותף, shared/frag/shiloach.js"): the
+        // cliff, the small opening, the fall, the basin, the great pool, the green, the lights and the roar - one build for both houses
+        // (tm_shiloach). Until now here: the pool's walls and water, a block of stone with a spout, a stone basin and a thin stream, a
+        // hillside of rough rocks with a cave of churning water over the opening (SPRING_CAVE_B2), boulders, ferns and the rill
+        SHL.kit = tm_shiloach(ctx2, { x: SP.x, z: SP.z, mouthY: SP.y, yaw: 0, ground: (x, z) => groundY(x, z, 20), parent: SG, seed: 5507, name: "shiloachSpring",
+          basinY: SP.base, basinDz: 0.55, fallZ: SP.z - SP.zT, pool: { dx: SHL.POOL[0] - SP.x, dz: SHL.POOL[1] - SP.z, w: SHL.PW, d: SHL.PD },
+          lights: { torch: 85, moon: 34 }, sfx: (n, op) => { if (typeof SH.sfx === "function") SH.sfx(n, op); }, roar: { name: "water", dur: 4.5, gain: 3.2 } });
+        Y0 = SHL.kit.pool ? SHL.kit.pool.y0 : gy;
+        SHL.springLight = SHL.kit.lights.torch;
         streamTo(SP.base);
-        // SHILOACH_CHALAMISH_B2 (pp. 12-13): the spring as Chalamish draws it - the water comes out of a rock face (reddish-brown) into a pool
-        // among grey boulders and green ferns. The stream stays thin: "שילוח היה מוציא מים כאיסר" (the Yerushalmi; Chalamish draws it
-        // gushing - a question for the user). The rocks' and the plants' forms and places - model choices
-        try {
-          let q = 5506;
-          const rr = () => (q = (q * 1664525 + 1013904223) >>> 0) / 4294967296;
-          const rockGeo = (n) => { const g2 = new IcosahedronGeometry(1, 2), ps = g2.attributes.position; for (let i = 0; i < ps.count; i++) { const v = new Vector3(ps.getX(i), ps.getY(i), ps.getZ(i)), k = 1 + 0.22 * Math.sin(v.x * 3.1 + n) * Math.cos(v.y * 2.7 + n * 1.7) + 0.12 * Math.sin(v.z * 5.3 + n * 0.6); ps.setXYZ(i, v.x * k, v.y * k, v.z * k); } g2.computeVertexNormals(); return g2; };
-          const cliffM = new MeshStandardMaterial({ color: 0xb4703a, roughness: 0.95, flatShading: true }), bould = new MeshStandardMaterial({ color: 0x8e8b86, roughness: 0.95, flatShading: true });
-          const fernM = new MeshStandardMaterial({ color: 0x3f7a32, roughness: 0.8, side: DoubleSide });
-          const add2 = (geo, m, x, y, z, sx, sy, sz, ry) => { const r = new Mesh(geo, m); r.position.set(x, y, z); r.scale.set(sx, sy, sz); r.rotation.y = ry || 0; r.castShadow = r.receiveShadow = true; SG.add(r); return r; };
-          // SPRING_CAVE_B2 (the coordinator, 22.11.2026, after the pictures, as Chalamish p. 13: "מערה בצלע הר סלעית, עם סלעים אפורים, שרכים,
-          // והבריכה בין הסלעים"; the user's decision 101: "המים נובעים בקול גדול, ורק בסוף יוצא כאיסר"): A HILLSIDE OF ROCK south of the
-          // mouth and the pool - two rows of great reddish rocks, the nearer 6-10 amot high, the farther higher, lower toward their ends -
-          // and in it, over the small opening, a CAVE: a dark hollow in which white water churns (moving spray), loud; out of it only the
-          // small opening and its thin stream ("שילוח היה מוציא מים כאיסר"), into the basin, and from the basin a rill to the pool. The rocks,
-          // the cave, the water's look - model choices
-          const CAV = { x: SP.x, y: SP.y + 1.5, z: SP.z + 0.95, r: 1.3 };
-          const clearOf = (x, y, z, sx, sy) => !(Math.abs(x - CAV.x) < 1.6 + sx && y - sy < CAV.y + 1.6 && z - 2.2 < CAV.z);
-          for (let row = 0; row < 2; row++) {
-            for (let k = 0; k < 15; k++) {
-              const dx = -12 + k * 2.6 + (rr() - 0.5) * 0.9, mid = Math.exp(-(((dx - 3) / 13) ** 2));
-              const h = (row ? 7 : 3.5) + mid * (row ? 7 : 6.5) + rr() * 1.6, sx = 1.7 + rr() * 0.8, sz = 1.6 + rr() * 0.7;
-              const x = SP.x + dx, z = SP.z + (row ? 6.2 : 2.6) + rr() * 1.4 + Math.abs(dx) * 0.06, y = groundY(x, z, 20) - 0.8 + h * 0.5;
-              if (!row && Math.abs(dx) < 2.2) { add2(rockGeo(70 + k), cliffM, x, CAV.y + 1.6 + h * 0.35, z + 0.6, sx * 1.1, h * 0.45, sz, rr() * 3); continue; }   // over the cave: its roof
-              add2(rockGeo(70 + k + row * 20), cliffM, x, y, z, sx, h * 0.55, sz, rr() * 3);
-            }
-          }
-          // the cave: a hollow (the back of a sphere, seen from inside), rocks round its mouth
-          const caveM = new MeshStandardMaterial({ color: 0x1c130e, roughness: 1, side: BackSide });
-          const cave = new Mesh(new SphereGeometry(1, 24, 14, 0, Math.PI), caveM); cave.scale.set(CAV.r * 1.15, CAV.r, CAV.r * 1.1); cave.position.set(CAV.x, CAV.y, CAV.z); cave.userData.noPick = true; SG.add(cave);
-          for (const sx of [-1, 1]) add2(rockGeo(60 + sx), cliffM, SP.x + sx * 1.8, gy + 0.6, SP.z + 0.7, 0.9, 1.3, 1.0, sx);   // the opening's block wrapped in rock on its two sides
-          for (const [ax, ay, sx, sy] of [[-1.75, 0.2, 0.75, 1.5], [1.75, 0.1, 0.8, 1.5], [0, 1.55, 1.7, 0.6], [-1.2, 1.25, 0.8, 0.7], [1.25, 1.2, 0.8, 0.7]]) add2(rockGeo(90 + ax), cliffM, CAV.x + ax, CAV.y + ay, CAV.z - 0.1, sx, sy, 0.9, ax);
-          // the water in it: churning white spray (points that whirl and fall back), a foaming floor, and a mist at the mouth
-          {
-            const N = 700, pos = new Float32Array(N * 3), P = [];
-            for (let k = 0; k < N; k++) P.push({ a: rr() * Math.PI * 2, r: 0.2 + rr() * 1.0, y: rr(), sp: 1.2 + rr() * 2.6, ph: rr() * 6.3, out: k < 120 });
-            const pg = new BufferGeometry(); pg.setAttribute("position", new Float32BufferAttribute(pos, 3));
-            const pts = new Points(pg, new PointsMaterial({ color: 0xffffff, size: 0.3, transparent: true, opacity: 0.95, depthWrite: false }));
-            pts.frustumCulled = false; pts.userData.noPick = true; SG.add(pts);
-            const foamG = new PlaneGeometry(CAV.r * 2.0, CAV.r * 1.6, 14, 10).rotateX(-Math.PI / 2), fpos = foamG.attributes.position, fbase = Float32Array.from(fpos.array);
-            const foam = new Mesh(foamG, new MeshStandardMaterial({ color: 0xf2f8fc, roughness: 0.25, emissive: 0x6a8aa0, emissiveIntensity: 0.8 }));
-            foam.position.set(CAV.x, CAV.y - CAV.r * 0.62, CAV.z + 0.35); foam.userData.noPick = true; SG.add(foam);
-            const tick = (tt) => {
-              for (let k = 0; k < N; k++) {
-                const q2 = P[k], u = (q2.y + tt * q2.sp * 0.35) % 1;
-                if (q2.out) {   // the mist at the mouth: thrown out a little and falling
-                  pos[k * 3] = CAV.x + Math.cos(q2.a) * 0.9 * q2.r + Math.sin(tt * 3 + q2.ph) * 0.05;
-                  pos[k * 3 + 1] = CAV.y - 0.5 + 0.9 * Math.sin(u * Math.PI) - u * 0.6;
-                  pos[k * 3 + 2] = CAV.z - 0.3 - u * 1.1;
-                } else {   // the churning inside: round and up, and down again
-                  const a = q2.a + tt * q2.sp, r = q2.r * (0.75 + 0.25 * Math.sin(tt * 2.3 + q2.ph));
-                  pos[k * 3] = CAV.x + Math.cos(a) * r * CAV.r * 0.85;
-                  pos[k * 3 + 1] = CAV.y - CAV.r * 0.6 + Math.abs(Math.sin(u * Math.PI)) * CAV.r * 1.1;
-                  pos[k * 3 + 2] = CAV.z + 0.25 + Math.abs(Math.sin(a)) * r * CAV.r * 0.6;
-                }
-              }
-              pg.attributes.position.needsUpdate = true;
-              for (let k = 0; k < fpos.count; k++) { const x = fbase[k * 3], z = fbase[k * 3 + 2]; fpos.array[k * 3 + 1] = 0.12 * Math.sin(x * 5 + tt * 7) * Math.cos(z * 6 - tt * 5) + 0.06 * Math.sin((x + z) * 9 + tt * 11); }
-              fpos.needsUpdate = true; foamG.computeVertexNormals();
-            };
-            tick(0);
-            const cam = ctx2.camera, V3 = new Vector3(CAV.x, CAV.y, CAV.z);
-            if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (!SHL.run && !(cam && cam.position.distanceTo(V3) < 60)) return; tick(performance.now() / 1000); });
-          }
-          // the pool among grey boulders (as Chalamish p. 13), the way to the mouth left open
-          const [px2, pz2] = SHL.POOL, W2b = SHL.PW / 2 + 0.5, D2b = SHL.PD / 2 + 0.5;
-          {
-            for (let i = 0; i < 46; i++) {
-              const side = i % 4, u = rr() * 2 - 1;
-              const x = side < 2 ? px2 + u * W2b : px2 + (side === 2 ? -W2b : W2b), z = side < 2 ? pz2 + (side === 0 ? -D2b : D2b) : pz2 + u * D2b;
-              if (Math.hypot(x - SP.x, z - SP.zT) < 2.4) continue;
-              const sc = 0.7 + rr() * 1.0;
-              add2(rockGeo(10 + i), bould, x, RIM - 0.1 + sc * 0.35, z, sc * 1.3, sc * 0.7, sc * 1.1, rr() * 3);
-            }
-            for (const [dx, dz] of [[-1.9, -0.7], [2.0, -0.6], [-2.6, 0.5]]) add2(rockGeo(40 + dx), bould, SP.x + dx, gy + 0.2, SP.zT + dz, 0.8, 0.55, 0.7, dx); }
-          // the rill from the basin to the pool
-          { const ax = SP.x + 0.6, az = SP.z - 0.6, [bx2, bz2] = SHL.POOL, ex = bx2 - SHL.PW / 2, ez = Math.min(bz2 + SHL.PD / 2 - 1, az - 1.5), L = Math.hypot(ex - ax, ez - az);
-            const rill = new Mesh(new PlaneGeometry(0.45, L).rotateX(-Math.PI / 2), mStream); rill.position.set((ax + ex) / 2, Math.max(groundY((ax + ex) / 2, (az + ez) / 2, 20), RIM - 0.4) + 0.07, (az + ez) / 2); rill.rotation.y = Math.atan2(ex - ax, ez - az); rill.userData.noPick = true; SG.add(rill); }
-          // the torches' light on the place while the procession is there (SHILOACH_CHALAMISH_B2 extraApply turns it on)
-          { const tl = new PointLight(0xffa04a, 0, 34, 1.4); tl.position.set(SP.x + 2.5, SP.y + 3.2, SP.z - 5); SG.add(tl); SHL.springLight = tl;
-            const cl = new PointLight(0xcfe6ff, 0, 5, 1.5); cl.position.set(CAV.x, CAV.y + 0.2, CAV.z - 0.2); SG.add(cl); SHL.caveLight = cl; }   // and a pale light on the white water in the cave
-          // ferns: clumps of long narrow fronds
-          const frond = new PlaneGeometry(0.22, 1.3, 1, 3).translate(0, 0.65, 0);
-          const clump = (x, y, z, s2) => { for (let k = 0; k < 7; k++) { const f = new Mesh(frond, fernM); f.position.set(x, y, z); f.rotation.set(-0.5 - rr() * 0.5, k * 0.9 + rr() * 0.4, 0, "YXZ"); f.scale.setScalar(s2 * (0.8 + rr() * 0.4)); f.userData.noPick = true; SG.add(f); } };
-          for (let i = 0; i < 16; i++) { const a = rr() * Math.PI * 2, r = 4 + rr() * 6; const x = SP.x + Math.cos(a) * r, z = SP.zT + 1.5 + Math.sin(a) * r * 0.5; clump(x, groundY(x, z, 20), z, 0.8 + rr() * 0.7); }
-          for (let i = 0; i < 12; i++) { const side = i % 2 ? 1 : -1, x = px2 + side * (W2b + 0.8), z = pz2 + (rr() - 0.5) * SHL.PD; clump(x, groundY(x, z, 20), z, 0.7 + rr() * 0.5); }
-        } catch (e) { console.warn("[shiloach rocks]", e && e.message); }
+        { const KT = SHL.kit, cam = ctx2.camera, V3 = new Vector3(SP.x, SP.y, SP.z);
+          if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => { if (!SHL.run && !(cam && cam.position.distanceTo(V3) < 70)) return; KT.tick(performance.now() / 1000); }); }
         // the path: a strip on the ground from the stairs' foot to the steps (sampled every 2 amot, 3.2 wide)
         const pts = [], pos = [], idx = [];
         for (let i = 0; i < PATH.length - 1; i++) { const a = PATH[i], b = PATH[i + 1], n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2); for (let k = 0; k < n; k++) pts.push([lerp(a[0], b[0], k / n), lerp(a[1], b[1], k / n)]); }
@@ -1322,11 +1214,11 @@
           F.G.rotation.y = tf >= w.t[1] && w.endYaw != null && w === wp ? w.endYaw : yaw;
           if (F.fl) F.fl.scale.set(fl, 0.9 + 0.2 * Math.sin(t * 23 + F.lag * 3), fl);
         }
-        if (SHL.springLight) { const on = SHL.run && t >= T.path1 - 1.2 && t < T.back0 + 2.4; SHL.springLight.intensity = on ? 38 : 0; if (SHL.caveLight) SHL.caveLight.intensity = on ? 9 : 0; }   // SPRING_CAVE_B2
+        if (SHL.kit) { const on = SHL.run && t >= T.path1 - 1.2 && t < T.back0 + 2.4; SHL.kit.setLit(on ? 1 : 0); }   // SHILOACH_KIT_B2: the torches and the moon   // SPRING_CAVE_B2
         // the Levite with the lyre, by the spring while they are there
         const SP = SHL.SP, lvOn = t >= T.path1 - 1 && t < T.back0 + 1.6 && SP.gy != null;
         D2.lev.visible = lvOn;
-        if (lvOn) { const lx = SP.x - 3.4, lz = SP.zT - 2.6; D2.lev.position.set(lx, yAt(D2, lx, lz, 20), lz); D2.lev.rotation.y = 0.9; }
+        if (lvOn) { const lx = SP.x - 2.6, lz = SP.zT - 3.6; D2.lev.position.set(lx, yAt(D2, lx, lz, 20), lz); D2.lev.rotation.y = 0.9; }
         // the libation (Chalamish pp. 27-28): the priest of the wine with him up the ramp, to the eastern bowl; the deputy on the horn
         const w2 = D2.w, wOn = t >= T.in1 - 1.2 && t < T.end;
         w2.g.visible = wOn;
@@ -1389,7 +1281,7 @@
           [T.par1 + 1.2, [772, 14, 152], [730, -8, 162]], [T.par1 + 4.5, [562, 12, 328], [524, -22, 372]], [T.stairs1 - 3.2, [342, 12, 508], [298, -34, 446]],
           [T.stairs1 - 0.6, [42, RP.yf + 14, RP.zf + 48], [18, RP.yf, RP.zf + 12]], [T.stairs1 + 1.6, [19, RP.yf + 13, RP.zf + 22], [3, RP.yf, RP.zf + 2]],
           [T.path1 - 2.2, [36, wy + 9, 506], [28, wy + 4, 540]], [T.path1 - 0.4, [33, sy + 4.2, 526], [27, sy + 2.5, 543]],   // SPRING_CAVE_B2: the rock, the cave and the pool, at a man's height
-          [T.rim1, [sf[0] - 3.4, sy + 2.2, sf[1] - 3.0], [SP.x + 0.4, SP.y + 1.0, SP.z + 0.9]], [T.fill1, [sf[0] - 3.0, sy + 2.0, sf[1] - 2.7], [SP.x + 0.4, SP.y + 1.0, SP.z + 0.9]],
+          [T.rim1, [SP.x - 3.8, sy + 1.8, SP.z - 1.9], [SP.x + 0.6, SP.y - 0.1, SP.z - 0.5]], [T.fill1, [SP.x - 3.4, sy + 1.7, SP.z - 1.7], [SP.x + 0.6, SP.y - 0.1, SP.z - 0.5]],   // SHILOACH_KIT_B2: closer, from the side, at a man's height
           [T.back0 + 1.0, [sf[0] - 6, sy + 10, sf[1] - 6], [sf[0] + 4, sy - 2, sf[1] - 30]], [T.back0 + 2.6, [40, wy + 34, 600], [12, RP.yf, RP.zf + 10]],
           [T.back1 - 0.6, [22, RP.yAt(360) + 10, RP.zf - 5], [0, -6, 345]],
           // up over the wall and the mount again, to the Water Gate
@@ -1461,7 +1353,7 @@
         try {
           if (sndT >= 0 && t > sndT && fnc(SH.sfx)) {
             if (sndT < 0.8 && t >= 0.8) SH.sfx("trumpets");   // the opening, at the Nikanor gate
-            for (const ts of [T.path1 - 1.2, T.rim1 + 1.5, T.fill0 + 2.5]) if (sndT < ts && t >= ts) SH.sfx("water", { dur: 4.5, gain: 3.2 });   // SPRING_ROAR_B2: "נובעים בקול גדול"
+            for (const ts of [T.path1 - 1.2, T.rim1 + 1.5, T.fill0 + 2.5]) if (sndT < ts && t >= ts) { if (SHL.kit) SHL.kit.roar(); }   // SHILOACH_KIT_B2: the kit's roar (the house's sfx)   // SPRING_ROAR_B2: "נובעים בקול גדול"
             if (sndT < T.fill0 + 0.4 && t >= T.fill0 + 0.4) SH.sfx("water", { dur: 2.2, gain: 0.7 });
             if (sndT < T.blow0 && t >= T.blow0) SH.sfx("trumpets");
             if (sndT < T.pour0 + 0.5 && t >= T.pour0 + 0.5) SH.sfx("water", { dur: 2.0, gain: 0.6 });
@@ -1478,9 +1370,9 @@
         "**שער המים** (מידות ב, ו): ״ולמה נקרא שמו שער המים. שבו מכניסין צלוחית של מים של נסוך בחג. רבי אליעזר בן יעקב אומר, ובו המים מפכים, ועתידין להיות יוצאין מתחת מפתן הבית״; וכן בתוספתא (סוכה ג, ג).\n" +
         "**שערי חולדה** (מידות א, ג): ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״.\n" +
         "**השילוח** — תני, רבן שמעון בן גמליאל אומר: ״שילוח היה מוציא מים כאיסר. אמרו: נרחיבנו וירבו מימיו. הרחיבוהו ונתמעטו מימיו. חזרו וגדרוהו וחזר לכמות שהיה״ (ירושלמי סוכה ה, ו).\n" +
-        "**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. הבריכה מצוירת בתחתית העמק שבדרום ההר, כמאתיים ועשרים אמה מחומתו, והשביל אליה יוצא מרגלי הכבש שלפני שער חולדה המערבי — בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): בפתיחה שני כהנים תוקעים בשער ניקנור, יורדים במעלות ותוקעים בהליכה עד שער עזרת נשים, ושם הופכים פניהם למערב (סוכה ה, ד); יוצאים מהר הבית בשער המזרחי — שער שושן — ובלפידים, יורדים בכבש הפרה (״וכבש היו עושים מהר הבית להר המשחה״, פרה ג, ו), ומסופו פונים דרומה אל הכבש הדרומי של הר הבית, ומשם אל מעין השילוח; ובחזרה, עם עלות השחר, ״עולה בכבש הדרומי של הר הבית״ ונכנסת בשער חולדה אל שער המים. במשנה נאמר רק ״הגיעו לשער המים״ — הדרך, ובפרט הדרך מסוף כבש הפרה אל הכבש הדרומי, בחירת מודל; ההליכה מחוץ להר הבית מואצת. **הכבש הדרומי**: לפני שני שערי חולדה כבש משופע (במקום מדרגות) — כפי שהוא נקרא בחלמיש; שיפועו ורוחבו — בחירת מודל. **המעין**: המים נובעים בתוך הסלע בקול גדול, ורואים בו מערבולת, ויוצאים בפתח קטן, בזרם דק — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו). **התוקעים בשעת הניסוך** — לשון המשנה (תמיד ז, ג): ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו״; **הרמב״ם** (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״. במודל — על שלחן החלבים. **הסגן והסודר** — ״הסגן עומד על הקרן והסודרים בידו״, ״והניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם). צורת הבריכה והסלע, הפתח, צורת הכד, מספר ההולכים והלפידים, ומקומות התוקעים והסגן — בחירות מודל. בהדגמה הכהן ממלא את הכד מתחת לזרם, ומנסך ביד מורמת לתוך הספל המערבי, וכהן היין בספל המזרחי. ההליכה בהדגמה מואצת, ובשני מקומות היא מדולגת.";
+        "**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. הבריכה מצוירת בתחתית העמק שבדרום ההר, כמאתיים ועשרים אמה מחומתו, והשביל אליה יוצא מרגלי הכבש שלפני שער חולדה המערבי — בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): בפתיחה שני כהנים תוקעים בשער ניקנור, יורדים במעלות ותוקעים בהליכה עד שער עזרת נשים, ושם הופכים פניהם למערב (סוכה ה, ד); יוצאים מהר הבית בשער המזרחי — שער שושן — ובלפידים, יורדים בכבש הפרה (״וכבש היו עושים מהר הבית להר המשחה״, פרה ג, ו), ומסופו פונים דרומה אל הכבש הדרומי של הר הבית, ומשם אל מעין השילוח; ובחזרה, עם עלות השחר, ״עולה בכבש הדרומי של הר הבית״ ונכנסת בשער חולדה אל שער המים. במשנה נאמר רק ״הגיעו לשער המים״ — הדרך, ובפרט הדרך מסוף כבש הפרה אל הכבש הדרומי, בחירת מודל; ההליכה מחוץ להר הבית מואצת. **הכבש הדרומי**: לפני שני שערי חולדה כבש משופע (במקום מדרגות) — כפי שהוא נקרא בחלמיש; שיפועו ורוחבו — בחירת מודל. **המעין**: המים נובעים בקול גדול ויוצאים בפתח קטן שבתחתית צוק — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו) — ונופלים במפל לבן צר אל גומא קטנה שבין סלעים אפורים, ובה קצף ומערבולת; משם פלג קטן אל הבריכה. כמו בחלמיש (עמ׳ 13): צוק כתום־חום, הרבה שרכים ושיחים, אור הלפידים ואור ירח כחלחל. צורת הצוק, רוחב המפל, הגומא והצמחייה — בחירת מודל. **התוקעים בשעת הניסוך** — לשון המשנה (תמיד ז, ג): ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו״; **הרמב״ם** (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״. במודל — על שלחן החלבים. **הסגן והסודר** — ״הסגן עומד על הקרן והסודרים בידו״, ״והניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם). צורת הבריכה והסלע, הפתח, צורת הכד, מספר ההולכים והלפידים, ומקומות התוקעים והסגן — בחירות מודל. בהדגמה הכהן ממלא את הכד מתחת לזרם, ומנסך ביד מורמת לתוך הספל המערבי, וכהן היין בספל המזרחי. ההליכה בהדגמה מואצת, ובשני מקומות היא מדולגת.";
       const REFS = [["סוכה ד, ט", { book: 56, index: 48 }], ["סוכה ד, י", { book: 56, index: 49 }], ["מידות ב, ו", "Mishnah_Middot.2.6"], ["מידות א, ג", "Mishnah_Middot.1.3"], ["רמב״ם כלי המקדש ז, ו", { book: 338, index: 107 }], ["תמיד ז, ג", { book: 88, index: 40 }], ["סוכה ה, ד", { book: 56, index: 54 }]];
-      SH.shiloach = { demo: start, stop, T, info: INFO, refs: REFS, POOL: SHL.POOL, at: (t) => { buildPool(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); return { Y0 }; },
+      SH.shiloach = { demo: start, stop, T, info: INFO, refs: REFS, POOL: SHL.POOL, kit: () => SHL.kit, at: (t) => { buildPool(); const D2 = buildDemo(); D2.DG.visible = true; apply(t); return { Y0 }; },
         leave: () => { if (SHL.D) SHL.D.DG.visible = false; }, dbg: () => ({ offF: SHL.offF, offP: SHL.offP, SP: { x: SHL.SP.x, y: SHL.SP.y, gy: SHL.SP.gy, zT: SHL.SP.zT }, standF: standF(), standP: standP(), bowl: BOWL(), bowlY: bowlY() }) };
       SH.modelButtons = SH.modelButtons || [];
       SH.modelButtons.push({
