@@ -266,12 +266,12 @@
     // the nose and the ears a little redder; the lips; the eyes drawn (seen in "lo"; in "hi" the ball stands before them) and the
     // lashes on the lids' margins; the nostrils
     const texSkin = (() => {
-      const W = 1024, Hh = 1024, cv = canvas(W, Hh), c = cv.getContext("2d");
+      const W = 768, Hh = 768, cv = canvas(W, Hh), c = cv.getContext("2d");
       const X = (th) => (th / TH * 0.5 + 0.5) * TU * W, Y = (y) => (1 - (y - YT0) / (YT1 - YT0)) * Hh;
       const BASE = [180, 121, 96];
-      // the relief's shade and the colour's places, at a sixth of the size (smoothed up): the relief d and, from it, its hollows (where it
-      // is lower than about it - darker) and its ridges (a little lighter)
-      const S = 192, sc = canvas(S, S), sx = sc.getContext("2d"), img = sx.createImageData(S, S), Dd = img.data;
+      // the relief's shade and the colour's places, on a small grid (smoothed up - they are soft; the load time): the relief d and, from
+      // it, its hollows (where it is lower than about it - darker) and its ridges (a little lighter)
+      const S = 80, sc = canvas(S, S), sx = sc.getContext("2d"), img = sx.createImageData(S, S), Dd = img.data;
       const dv = new Float32Array(S * S), wv = new Float32Array(S * S);
       for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
         const u = (px + 0.5) / S, v = 1 - (py + 0.5) / S, k = py * S + px;
@@ -293,7 +293,7 @@
         }
         return a;
       };
-      const db = blur(dv, 5);
+      const db = blur(dv, 2);
       for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
         const k = py * S + px, o = k * 4, w = wv[k];
         let r = BASE[0], g = BASE[1], b = BASE[2];
@@ -308,7 +308,7 @@
       }
       sx.putImageData(img, 0, 0);
       c.imageSmoothingEnabled = true;
-      c.imageSmoothingQuality = "high";
+      c.imageSmoothingQuality = "low";
       c.drawImage(sc, 0, 0, W, Hh);
       { // a fine mottling over all: a tile of 128 (its own noise; the figures' fixed sequence untouched), laid over twice in two sizes
         const T = canvas(128, 128), tc = T.getContext("2d"), im = tc.createImageData(128, 128), d = im.data;
@@ -328,11 +328,11 @@
         path((t) => { const a = t * TAU, x = Math.cos(a) * w2, yy = y0 + Math.sin(a) * h * (Math.sin(a) > 0 ? 1 : 0.9) * (1 - 0.25 * Math.pow(Math.abs(Math.cos(a)), 3)); return [thX(x, yy), yy]; }, 48);
         c.fillStyle = col; c.fill();
       };
-      c.filter = "blur(2px)";
+      c.filter = "blur(1.5px)";
       lip(-0.0812, 0.0042, 0.0205, "rgba(150,86,74,0.75)");
       lip(-0.0918, 0.0052, 0.0185, "rgba(168,98,84,0.8)");
       c.filter = "none";
-      c.strokeStyle = "rgba(92,44,36,0.85)"; c.lineWidth = 2.2;
+      c.strokeStyle = "rgba(92,44,36,0.85)"; c.lineWidth = 1.7;
       path((t) => { const x = lerp(-0.0215, 0.0215, t), yy = -0.0866 - 0.0008 * Math.cos(Math.PI * (t - 0.5)); return [thX(x, yy), yy]; }, 24); c.stroke();
       c.fillStyle = "rgba(255,226,206,0.22)";
       path((t) => { const a = t * TAU, x = Math.cos(a) * 0.009, yy = -0.0905 + Math.sin(a) * 0.0013; return [thX(x, yy), yy]; }, 24); c.fill();
@@ -355,14 +355,14 @@
         c.fillStyle = gr; c.fillRect(X(T(-1.2)) - 40, Y(EY + HU) - 2, Math.abs(X(T(1.2)) - X(T(-1.2))) + 80, Y(EY - HL) - Y(EY + HU) + 4);
         c.restore();
         c.lineCap = "round";
-        c.strokeStyle = "rgba(38,22,14,0.95)"; c.lineWidth = 3.4;
+        c.strokeStyle = "rgba(38,22,14,0.95)"; c.lineWidth = 2.6;
         path((t) => [T(lerp(-0.92, 1, t)), lidUp(lerp(-0.92, 1, t)) + 0.0002], 32); c.stroke();
-        c.strokeStyle = "rgba(70,42,30,0.6)"; c.lineWidth = 1.6;
+        c.strokeStyle = "rgba(70,42,30,0.6)"; c.lineWidth = 1.2;
         path((t) => [T(lerp(-0.85, 0.95, t)), lidLo(lerp(-0.85, 0.95, t)) - 0.0002], 32); c.stroke();
-        c.strokeStyle = "rgba(92,52,36,0.42)"; c.lineWidth = 2.4;
+        c.strokeStyle = "rgba(92,52,36,0.42)"; c.lineWidth = 1.8;
         path((t) => { const u = lerp(-0.75, 0.85, t); return [T(u), lidUp(u) + 0.0052 * Math.pow(1 - u * u, 0.5) + 0.0006]; }, 32); c.stroke();
         c.fillStyle = "rgba(196,120,112,0.6)";   // the inner corner, pink
-        c.beginPath(); c.ellipse(X(T(-0.97)), Y(lidUp(-0.97) * 0.5 + lidLo(-0.97) * 0.5), 3, 2.4, 0, 0, TAU); c.fill();
+        c.beginPath(); c.ellipse(X(T(-0.97)), Y(lidUp(-0.97) * 0.5 + lidLo(-0.97) * 0.5), 2.3, 1.8, 0, 0, TAU); c.fill();
       }
       // the brows - a soft shade of their hairs (the brows themselves are the hair's, over it)
       c.lineWidth = 1.4;
@@ -372,7 +372,7 @@
         const t = rr(), x = 0.019 + 0.054 * t, yy = EY + 0.0262 + 0.0044 * Math.sin(Math.PI * Math.pow(t, 0.85)) - 0.0035 * t * t + (rr() - 0.5) * 0.009 * (1 - 0.55 * t);
         c.strokeStyle = "rgba(90,66,52," + (0.12 + rr() * 0.12).toFixed(2) + ")";
         const th = thX(s * x, yy);
-        c.beginPath(); c.moveTo(X(th), Y(yy)); c.lineTo(X(th) + s * (5 + rr() * 5), Y(yy) - 2 - rr() * 2); c.stroke();
+        c.beginPath(); c.moveTo(X(th), Y(yy)); c.lineTo(X(th) + s * (4 + rr() * 4), Y(yy) - 1.5 - rr() * 1.5); c.stroke();
       }
       // the patches: plain skin, the ear (dark within, to skin), parchment
       const px = TU * W + 8;
@@ -414,20 +414,23 @@
     const texHairA = (() => {
       const W = 128, Hh = 512, cv = canvas(W, Hh), c = cv.getContext("2d"), img = c.createImageData(W, Hh), d = img.data;
       const hsh = (n) => { const h = Math.sin(n * 127.1 + 311.7) * 43758.5453; return h - Math.floor(h); };
-      // a strand: its column, a little waving down its way (each lock of ~6 strands its own wave); its alpha (where the hair thins only
-      // the strands of high alpha are left), its tone (its lock's and its own), where it begins and where it ends
+      // a strand: its column, a little waving down its way (each lock of ~9 px its own wave); its alpha (where the hair thins only the
+      // strands of high alpha are left), its tone (its lock's and its own), where it begins and where it ends. (Tables: the load time)
+      const NI = Math.ceil(W * 0.85) + 2, NL = Math.ceil(W / 9) + 1, SIN = Array.from({ length: 64 }, (_, i) => Math.sin((i / 64) * TAU));
+      const st = [], en = [], al0 = [], tn = [], ph = [], lt = [];
+      for (let i = 0; i < NI; i++) { st.push(hsh(i * 3.1) * 0.11); en.push(0.84 + hsh(i * 7.7) * 0.16); al0.push(0.52 + 0.48 * hsh(i * 1.37)); tn.push(35 * hsh(i * 9.1)); ph.push((hsh(i * 2.3) * 64) | 0); }
+      for (let k = 0; k < NL; k++) lt.push(150 + 70 * hsh(k * 5.3));
       for (let y = 0; y < Hh; y++) {
-        const v = y / Hh;
+        const v = y / Hh, wave = [];
+        for (let k = 0; k < NL; k++) wave.push(Math.sin(y * 0.017 + k * 1.9) * 2.6 + Math.sin(y * 0.041 + k * 0.45) * 0.8);
         for (let x = 0; x < W; x++) {
-          const lockW = Math.sin(y * 0.017 + Math.floor(x / 9) * 1.9) * 2.6 + Math.sin(y * 0.041 + x * 0.05) * 0.8, xs = (x + lockW + W) % W, id = Math.floor(xs * 0.85), lock = Math.floor(xs / 9);
-          const fr = xs * 0.85 - id, core = 1 - Math.pow(Math.abs(fr - 0.5) * 2, 3);   // the strand's middle a little stronger
-          const start = hsh(id * 3.1) * 0.11, end = 0.84 + hsh(id * 7.7) * 0.16;
-          let al = (0.52 + 0.48 * hsh(id * 1.37)) * (0.92 + 0.08 * core);   // (at the full alpha of the vertices every strand is seen: no holes)
-          if (v < start || v > end) al = 0;
-          else al *= sm(start, start + 0.025, v) * sm(end, end - 0.03, v);
-          const tone = (150 + 70 * hsh(lock * 5.3) + 35 * hsh(id * 9.1)) * (0.88 + 0.12 * core) * (0.9 + 0.1 * Math.sin(y * 0.09 + id));
+          const xs = (x + wave[(x / 9) | 0] + W) % W, id = (xs * 0.85) | 0, lock = (xs / 9) | 0, fr = xs * 0.85 - id, e = Math.abs(fr - 0.5) * 2, core = 1 - e * e * e;
+          const s0 = st[id], e0 = en[id];
+          let al = 0;
+          if (v >= s0 && v <= e0) al = al0[id] * (0.92 + 0.08 * core) * sm(s0, s0 + 0.025, v) * sm(e0, e0 - 0.03, v);   // (at the full alpha of the vertices every strand is seen: no holes)
+          const tone = (lt[lock] + tn[id]) * (0.88 + 0.12 * core) * (0.9 + 0.1 * SIN[(y * 0.09 * 64 / TAU + ph[id]) & 63 | 0]);
           const o = (y * W + x) * 4;
-          d[o] = d[o + 1] = d[o + 2] = clamp(tone, 0, 255); d[o + 3] = Math.round(clamp(al, 0, 1) * 255);
+          d[o] = d[o + 1] = d[o + 2] = tone > 255 ? 255 : tone; d[o + 3] = Math.round((al > 1 ? 1 : al) * 255);
         }
       }
       c.putImageData(img, 0, 0);
