@@ -345,11 +345,48 @@
     // size and places - model choices. In rampG (the ramp's) and mv (the top's): they go with the altar's place.
     {
       const SM = new MeshStandardMaterial({ color: 0xf4f2ec, roughness: 0.75 });
-      const heap = (parent, x, y, z, r) => { const m = new Mesh(new SphereGeometry(r, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.42, 1), SM); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
+      // SALT_HEAP_A2 (the user on picture 29: "ערמה גדולה ועבה. נראה לי שגם לא כל כך מסודר כמו שעשית"): a big, thick heap, not neat - a
+      // lumpy mound, its rim uneven, a smaller lump or two leaning on it and loose grains round its foot; white with a little grey. Its
+      // size (about two and a half amot across, more than an amah high) and its form - model choices.
+      const SMH = new MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.9, flatShading: true });
+      const heap = (parent, x, y, z, r, seed0 = 1) => {
+        let sd = seed0 * 7919 + 13;
+        const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+        const g = new Group();
+        g.position.set(x, y, z);
+        parent.add(g);
+        const mound = (R, H, cx, cz) => {
+          const geo = new SphereGeometry(1, 44, 14, 0, Math.PI * 2, 0, Math.PI / 2), P = geo.attributes.position, col = [];
+          const ph = [rnd() * 6.3, rnd() * 6.3, rnd() * 6.3], lumps = Array.from({ length: 9 }, () => [rnd() * 6.3, 0.25 + rnd() * 0.6, 0.12 + rnd() * 0.2, 0.08 + rnd() * 0.12]);
+          const c0 = new Color(0xf7f6f1), c1 = new Color(0xc6c4bd), c = new Color();
+          for (let i = 0; i < P.count; i++) {
+            const vx = P.getX(i), vy = P.getY(i), vz = P.getZ(i), a = Math.atan2(vx, vz), k = Math.hypot(vx, vz);
+            const rim = 1 + 0.16 * Math.sin(3 * a + ph[0]) + 0.09 * Math.sin(5 * a + ph[1]) + 0.05 * Math.sin(11 * a + ph[2]);   // the uneven foot
+            let up = vy;
+            for (const [la, lr, lw, lh] of lumps) { const da = Math.atan2(Math.sin(a - la), Math.cos(a - la)), d = Math.hypot(da * k, k - lr); up += lh * Math.exp(-(d * d) / (lw * lw)) * (vy > 0.02 ? 1 : 0); }
+            const n = 0.035 * (Math.sin(vx * 17 + vz * 11) + Math.sin(vz * 23 - vx * 7));   // its face rough
+            P.setXYZ(i, cx + vx * R * rim * (1 + n), Math.max(0, up * H * (1 + n * 2)), cz + vz * R * rim * (1 + n));
+            c.copy(c0).lerp(c1, Math.max(0, Math.min(1, 0.35 + 3 * n + 0.25 * (rnd() - 0.5))) * 0.55);
+            col.push(c.r, c.g, c.b);
+          }
+          geo.setAttribute("color", new Float32BufferAttribute(col, 3));
+          geo.computeVertexNormals();
+          const m = new Mesh(geo, SMH); m.castShadow = true; m.receiveShadow = true; g.add(m);
+        };
+        mound(r, r * 0.82, 0, 0);
+        mound(r * 0.45, r * 0.42, r * 0.82, -r * 0.35);
+        mound(r * 0.3, r * 0.22, -r * 0.7, r * 0.6);
+        // loose grains round its foot
+        const gg = new IcosahedronGeometry(0.045, 0), NG = 90, gm = new InstancedMesh(gg, SM, NG), m4 = new Matrix4(), ps = new Vector3(), sc = new Vector3(), q = new Quaternion(), e = new Euler();
+        for (let i = 0; i < NG; i++) { const a = rnd() * 6.283, d = r * (1.05 + rnd() * 0.55), s2 = 0.6 + rnd() * 1.2; m4.compose(ps.set(Math.sin(a) * d, 0.015, Math.cos(a) * d), q.setFromEuler(e.set(rnd() * 3, rnd() * 3, rnd() * 3)), sc.set(s2, s2 * 0.7, s2)); gm.setMatrixAt(i, m4); }
+        gm.userData.noPick = true;
+        g.add(gm);
+        return g;
+      };
       const slope = Math.atan2(9, 32);
-      const onR = (x, z, r) => { const m = heap(rampG, x, F + RAMP_H(z), z, r); m.rotation.x = slope; return m; };
-      onR(ACX - 6.2, 13.6, 0.6);                                                  // the limbs' salt, on the ramp's west half by its top
-      heap(mv, ACX - 4.5, F + 9, 7.2, 0.55);                                      // on the altar's top, by its south edge
+      const onR = (x, z, r) => { const m = heap(rampG, x, F + RAMP_H(z), z, r, 3); m.rotation.x = slope; return m; };
+      onR(ACX - 6.6, 14.4, 1.15);                                                 // the limbs' salt, on the ramp's west half by its top
+      heap(mv, ACX - 4.3, F + 9, 6.9, 1.25, 5);                                   // on the altar's top, by its south edge
       // strewn on the face, the length of the ramp: a scatter of small grains (one instanced mesh)
       const gg = new SphereGeometry(0.035, 4, 3), N = 260, grains = new InstancedMesh(gg, SM, N), m4 = new Matrix4(), ps = new Vector3(), one = new Vector3(1, 1, 1), q0 = new Quaternion();
       let seed = 7;
@@ -359,8 +396,8 @@
       rampG.add(grains);
       const saltInfo = "**המלח** (מנחות כא:): ״נמצאת אתה אומר, בשלשה מקומות המלח נתונה: בלשכת המלח, ועל גבי הכבש, ובראשו של מזבח. בלשכת המלח – ששם מולחין עורות קדשים, על גבי הכבש – ששם מולחים את האברים, בראשו של מזבח – ששם מולחין הקומץ והלבונה והקטורת, ומנחת כהנים ומנחת כהן משיח ומנחת נסכים, ועולת העוף״; וכן ברמב״ם (איסורי המזבח ה, יג).\nועוד (עירובין קד.): ״בוזקין מלח על גבי כבש בשביל שלא יחליקו״ — ובגמרא: ״בהולכת עצים למערכה, דלאו עבודה היא״.\nבמודל: ערמת מלח על הכבש, בחציו המערבי סמוך לראשו; ערמה בראש המזבח, סמוך לשפתו הדרומית; ומעט מלח פזור על פני הכבש. גודל הערמות ומקומן — בחירת מודל.";
       const saltRefs = [["מנחות כא:", { book: 131, index: 727 }], ["רמב״ם איסורי המזבח ה, יג", { book: 339, index: 80 }], ["עירובין קד.", { book: 105, index: 3801 }], ["עירובין קד. — בהולכת עצים", { book: 105, index: 3807 }]];
-      ctx2.labels.push({ text: "מלח — ״על גבי הכבש, ששם מולחים את האברים״ (מנחות כא:)", x: ACX - 6.2, y: F + RAMP_H(13.6) + 1.4, z: 13.6, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs },
-        { text: "מלח — ״ובראשו של מזבח״ (מנחות כא:)", x: ACX - 4.5, y: F + 10.3, z: 7.2, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs });
+      ctx2.labels.push({ text: "מלח — ״על גבי הכבש, ששם מולחים את האברים״ (מנחות כא:)", x: ACX - 6.6, y: F + RAMP_H(14.4) + 2.1, z: 14.4, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs },
+        { text: "מלח — ״ובראשו של מזבח״ (מנחות כא:)", x: ACX - 4.3, y: F + 10.9, z: 7.0, size: 0.9, moveWithAltar: true, info: saltInfo, refs: saltRefs });
     }
     const RAMP_HEADS = { hair: 10.6, tosafot: 11.0, chaim: 11.75 };
     // 1.9.3 (the user, of the kuntres, point 10: "חריצין"): THE THREE ROVDIN - R. Hai Gaon (Beit Yosef OC 123; 3900 line 2000): "ובין כבש
