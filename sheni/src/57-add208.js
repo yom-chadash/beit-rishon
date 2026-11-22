@@ -948,8 +948,8 @@
           const box = new Mesh(new BoxGeometry(0.3, 0.1, 0.06), wood); L.add(box);
           for (let k = -3; k <= 3; k++) { const sm = new Mesh(new CylinderGeometry(0.003, 0.003, 0.46, 3), str); sm.position.set(k * 0.03, 0.26, 0.02); L.add(sm); }
         }
-        // the Levites on the duchan with the song of the day, flutes among them (Arachin 2:3: "ובשמונת ימי החג... החליל מכה לפני המזבח...
-        // באבוב של קנה"; Tamid 7:3 "ודברו הלוים בשיר"); their places as the morning's singers', south of the middle
+        // the Levites on the duchan with the song of the day, flutes among them (Arachin 2:3, 84:9: "ובשנים עשר יום בשנה החליל מכה לפני המזבח... ובשמונת ימי
+        // החג, ולא היה מכה באבוב של נחשת אלא באבוב של קנה"; Tamid 7:3 "ודברו הלוים בשיר"); their places as the morning's singers', south of the middle
         const duch = new Group(); DG.add(duch); duch.visible = false;
         const LZ = [3.6, 6.0, 8.4, 10.8, 13.2, 15.6, 18.0, 20.4], flutes = [1, 3, 5];
         const yD = groundY(86.3, 6, 20);
@@ -1308,7 +1308,7 @@
         [T.in1 - 0.4, "״עלה בכבש ופנה לשמאלו, שני ספלים של כסף היו שם״ (סוכה ד, ט)"],
         [T.top1 - 0.6, "״הסגן עומד על הקרן והסודרים בידו״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם)"],
         [T.pour0 - 0.3, "״מערבי של מים, מזרחי של יין״; ״ולמנסך אומרים לו, הגבה ידך״ (סוכה ד, ט); ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם״ (תמיד ז, ג)"],
-        [T.pour0 + 2.0, "״והניף הסגן בסודרין... ודברו הלוים בשיר״ (תמיד ז, ג); ״ובשמונת ימי החג... החליל מכה לפני המזבח״ (ערכין ב, ג); היין והמים יורדים בנקבים אל השיתין"]
+        [T.pour0 + 2.0, "״והניף הסגן בסודרין... ודברו הלוים בשיר״ (תמיד ז, ג); ״ובשנים עשר יום בשנה החליל מכה לפני המזבח... ובשמונת ימי החג״ (ערכין ב, ג); היין והמים יורדים בנקבים אל השיתין"]
       ];
       const finish = () => {
         SHL.run = false;
