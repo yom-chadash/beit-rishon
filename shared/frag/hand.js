@@ -61,10 +61,20 @@
         // joints found so that it lies on the handle, not in it and not off it (by a search); the thumb round the handle's other side,
         // its last joint on the middle finger's middle bone, by the first finger's
         grip: { f: [[1.2, 1.25, 0.6], [1.5, 1.1, 0.9], [1.55, 1.0, 0.9], [1.45, 0.8, 0.7]], s: [0.04, 0.0, -0.03, -0.07],
-          t: [[0.221, -0.747, -0.627], [-0.015, -0.294, -0.956], [-0.403, -0.862, -0.307]], tn: [0.44, 0.61, -0.65], ring: [0, -0.085, -0.0385] },
+          t: [[0.221, -0.747, -0.627], [-0.015, -0.294, -0.956], [-0.403, -0.862, -0.307]], tn: [0.44, 0.61, -0.65], ring: [0, -0.085, -0.0385], rh: 0.02 },
         // fist: closed (round a thin rod - the mizrak's - radius 0.006), the thumb across the first and the middle fingers' middle bones
         fist: { f: [[1.15, 1.85, 1.15], [1.55, 1.85, 1.2], [1.55, 1.85, 1.15], [1.55, 1.8, 0.95]], s: [0.03, 0.0, -0.03, -0.06],
-          t: [[0.31, -0.887, -0.342], [0.098, -0.494, -0.864], [-0.945, -0.165, -0.284]], tn: [0.2, 0.15, -0.96], ring: [0, -0.0975, -0.0245] },
+          t: [[0.31, -0.887, -0.342], [0.098, -0.494, -0.864], [-0.945, -0.165, -0.284]], tn: [0.2, 0.15, -0.96], ring: [0, -0.0975, -0.0245], rh: 0.006 },
+        // gripW: on a thick staff (the ark's, 0.11 amah in radius - 0.0786 here): the palm against it under the knuckles, the fingers
+        // lying on it round its far side (by the same search), the thumb along it on its near side
+        gripW: { f: [[0.3, 0.4, 0.3], [0.45, 0.45, 0.2], [0.45, 0.45, 0.2], [0.3, 0.4, 0.25]], s: [0.04, 0.0, -0.03, -0.07],
+          t: [[0.623, -0.685, -0.379], [0.933, 0.096, -0.346], [0.693, 0.204, -0.691]], tn: [0.19, 0.86, 0.47], ring: [0, -0.1075, -0.0971], rh: 0.0786 },
+        // bless (BIRKAT_V_A2 - the priestly blessing, Shulchan Aruch OC 128:12, 382:1024: "ופושטים ידיהם וחולקים אצבעותיהם ומכוונים לעשות
+        // ה' אוירים בין ב' אצבעות לב' אצבעות אויר אחד ובין אצבע לגודל ובין גודל לגודל"): the fingers straight, the first and the middle
+        // together and the ring and the little together, a space between the two pairs (as a V); the thumb straight and apart from the
+        // first finger. (The two hands side by side, the thumbs near each other - the fifth space: 55-tamid.js)
+        bless: { f: [[0.02, 0.02, 0.01], [0.02, 0.02, 0.01], [0.02, 0.02, 0.01], [0.02, 0.02, 0.01]], s: [0.15, 0.15, -0.15, -0.15],
+          t: [[0.78, -0.6, -0.12], [0.72, -0.68, -0.08], [0.66, -0.75, -0.05]], tn: [0.3, 0.2, 0.93] },
         // point: the fist with the first finger out, the thumb across the middle and the ring fingers' middle bones
         point: { f: [[0.04, 0.06, 0.04], [1.55, 1.85, 1.2], [1.55, 1.85, 1.15], [1.55, 1.8, 0.95]], s: [0.03, 0.0, -0.03, -0.06],
           t: [[0.386, -0.465, -0.797], [-0.641, -0.736, -0.218], [-0.983, -0.18, -0.042]], tn: [0.15, 0.1, -0.98] }
@@ -358,7 +368,7 @@
           for (let it = 0; it < 14; it++) { const m = (a + b) / 2; if (H.field(X, y, m) > 0) b = m; else a = m; }
           return (a + b) / 2;
         };
-        return { geo, sk: { PL, PM: PL * 0.5, grip, gripAx, ring: P.ring ? (P === POSE.grip ? 0.02 : 0.006) : 0, fingers, thumb: H.tj.map((p) => V3(p, mx)), back } };
+        return { geo, sk: { PL, PM: PL * 0.5, grip, gripAx, ring: P.rh || 0, fingers, thumb: H.tj.map((p) => V3(p, mx)), back } };
       };
       // o.low: the crowds' (the fingers together, a coarse grid); o.mid: the same hand in fewer faces (from a few amot - 55-tamid.js)
       return (o = {}) => {

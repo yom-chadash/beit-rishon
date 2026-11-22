@@ -697,7 +697,7 @@
           mLev: K.mat(COL.levite, { vertexColors: true, roughness: 0.9 }), mLevCap: K.mat(COL.levCap, { roughness: 0.9 }),
           // HAND_A2 (the user: "הידיים נראות מזעזע"): the kit's hand (shared/frag/hand.js) in its poses - rest, open (the blessing), flat
           // (kiddush), grip (round a handle), point ("הצביעו") - in the wrist's frame; the grip's place: the middle of the closed hand
-          hands: K.handWr ? Object.fromEntries(["rest", "open", "flat", "grip", "fist", "point"].map((k) => [k, { 1: K.handWr(1, k), "-1": K.handWr(-1, k) }])) : null,
+          hands: K.handWr ? Object.fromEntries(["rest", "open", "flat", "grip", "fist", "point", "bless"].map((k) => [k, { 1: K.handWr(1, k), "-1": K.handWr(-1, k) }])) : null,
           gripAt: K.handAt ? { 1: K.handAt(1, "grip"), "-1": K.handAt(-1, "grip") } : null,
           // HAND_GRIP_A2: the closed hand's rings - round a handle (grip) and round a thin rod (fist): their middles and their ways
           ring: K.handAt ? Object.fromEntries(["grip", "fist"].map((k) => [k, { at: { 1: K.handAt(1, k), "-1": K.handAt(-1, k) }, ax: { 1: K.handAt(1, k + "Ax"), "-1": K.handAt(-1, k + "Ax") } }])) : null
@@ -2340,6 +2340,7 @@
         a.hold(k, p, "R", 18.9);
       });
       for (const k of [...others, "s3", "s4", "mc", "f", "k"]) a.pose(k, "raise", 10, 18.5);
+      a.tag("s5", "״וחולקים אצבעותיהם... ה׳ אוירים״, ״תוך כפיהם כנגד הארץ״ (שו״ע או״ח קכח, יב)", 10.6, 18.5);   // BIRKAT_V_A2 (382:1024)
       // HP_TAMID_A2: Tamid 7:1 (88:38) "בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו, אחד בימינו, ואחד בשמאלו, ואחד באבנים טובות... נכנס
       // והשתחוה ויצא" - he goes into the heichal with three priests holding him (b1 at his right, b2 at his left, b3 before him by the
       // stones of the breastplate), bows and comes out; at the blessing he stands in the middle, his hands not above the tzitz - "חוץ מכהן
@@ -2351,7 +2352,7 @@
         a.pose("hp", "prostrate", 5.4, 7.2);
         a.walk("hp", [[-12, 0], [-6.2, 0], [2.6, 0], [8, 0], [15, 0], [21.6, 0]], 7.4, 10, { yaw: HP });
         [["b1", 7.6, 1.6], ["b2", 7.6, -1.6], ["b3", 7.6, 3.2]].forEach(([k, t, z]) => a.walk(k, [[-12, z * 0.6], [2.6, z * 0.6], [15, z], [21.6, z * 6]], t, 10.2, { yaw: HP }));
-        a.pose("hp", "offer", 10.4, 18.5);
+        a.pose("hp", "raiseHP", 10.4, 18.5);   // BIRKAT_V_A2: blessing, his hands not over the tzitz (until now "offer" - held before him)
         a.tag("hp", "״בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו״ (תמיד ז, א)", 0.5, 7.2);
         a.tag("hp", "״חוץ מכהן גדול שאינו מגביה את ידיו למעלה מן הציץ״ (תמיד ז, ב)", 10.4, 18.5);
       }
@@ -2502,7 +2503,7 @@
       fingers: [[-1.25, 0.05, -0.45], [0.05, 0.08, -0.15], 0], knock: [[-1.4, 0.05, -1.3], [0.05, 0.08, -0.15], 0.05], wash: [[-0.95, -0.12, -0.55], [-0.95, -0.12, -0.55], 0.18],
       scoop: [[-0.95, 0.05, -0.35], [-0.95, 0.05, -0.35], 0.42], shovel: [[-0.85, -0.1, -0.5], [-0.75, -0.25, -0.7], 0.3], place: [[-0.9, -0.1, -0.4], [-0.9, -0.1, -0.4], 0.35],
       pour: [[-1.15, 0.05, -0.35], [0.05, 0.08, -0.15], 0.22], offer: [[-1.0, -0.05, -0.6], [-0.6, -0.1, -0.8], 0.15], point: [[-1.7, 0.1, -0.05], [0.05, 0.08, -0.15], 0],
-      reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.5, 0.07, -0.04], [-2.5, 0.07, -0.04], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12],
+      reach: [[-1.95, -0.05, -0.55], [-1.65, -0.08, -0.7], 0], raise: [[-2.53, -0.17, -0.04], [-2.43, -0.17, -0.04], 0], raiseHP: [[-1.82, -0.15, -0.04], [-1.78, -0.15, -0.04], 0], greet: [[-0.6, 0.05, -1.2], [-0.6, 0.05, -1.2], 0.12],
       trumpet: [[-1.5, -0.25, -1.45], [-1.45, -0.3, -1.55], 0], cymbal: [[-1.0, 0.5, -1.2], [-1.0, 0.5, -1.2], 0], wave: [[-2.6, 0.35, -0.2], [0.05, 0.08, -0.15], 0],
       play: [[-0.75, -0.15, -1.15], [-0.2, -0.12, -1.35], 0], throw: [[-1.5, 0.05, -0.2], [0.05, 0.08, -0.15], 0.1], prostrate: [[-2.9, 0.4, 0], [-2.9, 0.4, 0], 1.48],
       // KIDDUSH_211 (the user, 14.11.2026 23:36; Zevachim 19b, 130:754): "מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו
@@ -2849,6 +2850,7 @@
       return [0.055 * k * Math.sin(t * 2.4 + ph), k * (0.04 + 0.035 * Math.sin(t * 4.8 + ph))];
     };
     const _qI = new Quaternion();   // KIDDUSH_FLAT_A2
+    const BLESS_PALM = 1, _qW1 = new Quaternion(), _qW2 = new Quaternion(), _qW3 = new Quaternion(), _vX = new Vector3(1, 0, 0), _vY = new Vector3(0, 1, 0), _vZ = new Vector3(0, 0, 1);   // BIRKAT_V_A2
     const applyFig = (f) => {
       const s = f.st;
       f.g.visible = !!s.vis;
@@ -2926,14 +2928,29 @@
       // about 55 degrees over the level, side by side (POSES.raise); the hands turned so that the palms face forward, to the people, and
       // bent back at the wrist - the fingers up. Elsewhere the hand straight on the arm
       if (f.id === "sg" && W.props.flags && W.props.flags.o.userData.tick) { const fl = W.props.flags.o; if (fl.visible) fl.userData.tick(p === "wave" ? (s.t || 0) : performance.now() / 1000, p === "wave" ? 1 : 0); }   // SUDAR_A2
-      if (f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) { if (p === "raise") A2.wr.rotation.set(-0.64, -sd * Math.PI / 2, 0); else A2.wr.rotation.set(0, 0, 0); }
+      // BIRKAT_V_A2 (the user, via the coordinator: "שגב היד כלפי השמיים, אבל תנוחת היד יותר לכיוון העם"; Shulchan Aruch OC 128:12, 382:1024
+      // "כדי שיהא תוך כפיהם כנגד הארץ ואחורי ידיהם כנגד השמים", "ומגביהים יד ימנית קצת למעלה מהשמאלית"; the Rambam, Tefillah 14:9, 302:238
+      // "ומגביהין ידיהם למעלה על גבי ראשיהן... חוץ מכהן גדול שאין מגביה ידיו למעלה מן הציץ"): the arms forward to the people, some 37
+      // degrees from the upright, the hands over the heads (the high priest's lower - raiseHP: not over the tzitz), drawn in so that the two
+      // hands are side by side, the thumbs near each other (the fifth space), the right a little higher; the palms toward the earth, the
+      // fingers forward. BLESS_PALM: 1 - the palms toward the earth (the Shulchan Aruch); 0 - toward the people, the fingers up (until now).
+      // MODEL CHOICES: the arms 35 (the right) and 41 (the left) degrees from the upright, drawn in 0.17 rad - the hands' tops 3.33 and 3.27
+      // amot over the feet, 0.025 apart (the thumbs); the high priest's 1.82 / 1.78 rad from hanging, 0.15 in - their tops 3.06 / 3.01, the
+      // tzitz's top 3.12; the fingers' spread in the V (hand.js "bless": 0.15 rad each pair)
+      if (f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) {
+        if (p === "raise" || p === "raiseHP") {
+          const th = A2.sh.rotation.x + A2.el.rotation.x, ph = (Math.PI - th) + (-Math.PI / 2 - th - (Math.PI - th)) * BLESS_PALM;
+          _qW1.setFromAxisAngle(_vZ, -A2.sh.rotation.z); _qW2.setFromAxisAngle(_vX, ph); _qW3.setFromAxisAngle(_vY, -sd * 0.95);
+          A2.wr.quaternion.copy(_qW1).multiply(_qW2).multiply(_qW3);   // (the shoulder's turn outward undone, then the wrist's bend and turn)
+        } else A2.wr.rotation.set(0, 0, 0);
+      }
       if (kidH && f.R.wr) for (const [A2, sd] of [[f.R, -1], [f.L, 1]]) A2.wr.quaternion.slerpQuaternions(_qI, kidH.wq[sd], kidU);   // KIDDUSH_FLAT_A2: the palms down on the feet
       // HAND_A2: the hands' pose - open in the blessing and the greeting, flat on the feet in kiddush and on the floor in prostration and
       // on the fellow's side (support), the first finger out in the lotteries and in pointing, a fist in knocking; else at rest (a little
       // bent). A held vessel closes its hand round it (applyProps, after this)
       if (f.R.wr && W.hands) {
         const hk = { R: "rest", L: "rest" };
-        if (p === "raise") hk.R = hk.L = "open";
+        if (p === "raise" || p === "raiseHP") hk.R = hk.L = "bless";   // BIRKAT_V_A2
         else if (p === "hail") hk.R = "open";
         else if ((p === "kiddush" && kidH) || p === "prostrate" || p === "support") hk.R = hk.L = "flat";
         else if (p === "fingers" || p === "point") hk.R = "point";

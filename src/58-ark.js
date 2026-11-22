@@ -31,7 +31,7 @@
     // HAND_A2 (the user: "הידיים נראות מזעזע"): the kit's new hand (shared/frag/hand.js) - at rest; closed round the staff (gripP); flat on
     // the foot in kiddush (handF)
     return (ark_kitArms.kg = { P, upP: upper(P.up), foP: fore(P.fo), handP: { 1: hand(1, P.fo), "-1": hand(-1, P.fo) }, handW: { 1: handW(1), "-1": handW(-1) }, foot: { 1: foot(1), "-1": foot(-1) },
-      gripP: { 1: hand(1, P.fo, "grip"), "-1": hand(-1, P.fo, "grip") }, handF: K.handWr ? { 1: K.handWr(1, "flat"), "-1": K.handWr(-1, "flat") } : null,
+      gripP: { 1: hand(1, P.fo, "gripW"), "-1": hand(-1, P.fo, "gripW") },   // HAND_GRIP_A2: on the thick staff (gripW; "grip" until now) handF: K.handWr ? { 1: K.handWr(1, "flat"), "-1": K.handWr(-1, "flat") } : null,
       neck: K.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0),
       // KIDDUSH_FOOT_213: the leg that rises - the thigh under the kutonet (along +y, 1 long: scaled to its length), the knee, the shin
       thigh: W1(new CylinderGeometry(0.084 * FS, 0.1 * FS, 1, 12, 1, true).translate(0, 0.5, 0)),
@@ -42,6 +42,48 @@
   // staff that lies on the shoulder, before it (solved for a staff 0.3 off the body's middle, 2.62 over the floor - "בכתף ישאו", Numbers 7:9)
   const ARK_POSE = { stand: [0.05, 0.08, -0.15], staff: [-0.93, -0.2, -2.25] };
   function ark_setArm(A, v, side) { A.sh.rotation.x = v[0]; A.sh.rotation.z = side * v[1]; A.el.rotation.x = v[2]; }
+  // HAND_GRIP_A2 (the coordinator: "להתאים את מקום המוט לטבעת של היד הסגורה... בלי חדירה ובלי רווח"): the staff arm's pose found so that the
+  // closed hand (hand.js "gripW" - on a staff 0.11 amah in radius) holds the staff: the ring's middle on the staff's axis and its way along
+  // the staff - the shoulder, the abduction and the elbow, and the hand turned about the forearm (psi) - near the old pose (a search, once
+  // per side). The staff in the figure's frame: x = side * off (0.3 off his middle), y over his feet, along his z. -> { v, psi, beta }
+  // MODEL CHOICES: the hand 0.4 before the shoulder along the staff; the elbow out; the bounds of the bend (the elbow 2.5 rad, the wrist
+  // 0.7); the staff's thickness is the model's own (0.11 - 55-interior.js), the hand lies on it (it does not close round it)
+  function ark_staffFit(side, off, sy) {
+    const key = side + "|" + off.toFixed(3) + "|" + sy.toFixed(3), C = ark_staffFit.c || (ark_staffFit.c = {});
+    if (C[key]) return C[key];
+    const K = ark_kit(), KG = ark_kitArms(), P = KG.P, G = K.handAt(side, "gripW"), AXv = K.handAt(side, "gripWAx");
+    const mS = new Matrix4(), mE = new Matrix4(), mH = new Matrix4(), mB = new Matrix4(), eu = new Euler(), c = new Vector3(), a = new Vector3();
+    const err = (x) => {
+      mS.makeRotationFromEuler(eu.set(x[0], 0, side * x[1])).setPosition(side * P.sx, P.sy, 0);
+      mE.makeRotationX(x[2]).setPosition(0, -P.up, 0);
+      mH.makeRotationY(x[3]).setPosition(0, -P.fo, 0).multiply(mB.makeRotationX(x[4]));   // the wrist: turned (psi) and bent (beta) at the forearm's end
+      const m = mS.multiply(mE).multiply(mH);
+      c.copy(G).applyMatrix4(m);
+      a.copy(AXv).transformDirection(m);
+      const dx = c.x - side * off, dy = c.y - sy, d0 = [-0.93, -0.2, -2.25];
+      // the ring's middle on the staff's axis, its way along it; the hand before the shoulder; the elbow and the wrist within a man's bend
+      return (dx * dx + dy * dy) * 4000 + (1 - a.z * a.z) * 40 + 0.5 * (c.z - 0.4) ** 2 + 0.01 * ((x[0] - d0[0]) ** 2 + (x[1] - d0[1]) ** 2 + (x[2] - d0[2]) ** 2)
+        + 4 * Math.max(0, -x[2] - 2.5) ** 2 + 4 * Math.max(0, -x[1] - 0.3) ** 2 + 4 * Math.max(0, Math.abs(x[4]) - 0.7) ** 2;
+    };
+    const solve = (x0) => {
+      let x = x0.slice(), e = err(x);
+      for (const st of [0.4, 0.2, 0.1, 0.05, 0.02, 0.01, 0.004]) for (let it = 0; it < 60; it++) {
+        let moved = false;
+        for (let k = 0; k < 5; k++) for (const sg of [1, -1]) { const y = x.slice(); y[k] += sg * st; const ey = err(y); if (ey < e) { x = y; e = ey; moved = true; } }
+        if (!moved) break;
+      }
+      return { x, e };
+    };
+    let best = null;
+    for (const s0 of [[-0.93, -0.2, -2.25], [-1.3, -0.2, -2.2], [-1.6, -0.1, -2.0], [-1.1, 0.1, -2.3]]) for (const p0 of [0, 0.6, -0.6, 1.2, -1.2, 2.0, -2.0, 3.0]) for (const b0 of [0, 0.5, -0.5]) {
+      const r = solve([...s0, p0, b0]);
+      if (!best || r.e < best.e) best = r;
+    }
+    const x = best.x;
+    // the miss, for the tests: the ring's middle off the staff's axis, and its way off the staff's (radians)
+    err(x); const miss = Math.hypot(c.x - side * off, c.y - sy), tilt = Math.acos(Math.min(1, Math.abs(a.z)));
+    return (C[key] = { v: x.slice(0, 3), psi: x[3], beta: x[4], miss, tilt });
+  }
   // a priest (the lotteries' priest): white kutonet, the avnet of colours, the migba'at; n - which of the beards
   // waist (KIDDUSH_BEND_212): the robe in two at K.WAIST, all above it in `bend` (turned there: the legs stay upright)
   // TEFILLIN_A2: noTef - no tefillin (the ark is brought in on the festival, I Kings 8:2 "בחג"); every other priest has the head's
@@ -194,11 +236,15 @@
   // 55-tamid.js); u 0..1 - how far into it. Until now (KIDDUSH_BEND_212) the legs upright, bent at the waist by kb, each hand on the
   // front of its leg as low as it reached.
   // HAND_A2: an arm's hand (ark_priestFig without a waist) closed round the staff, or at rest
-  function ark_staffHand(A2, on) {
+  const _ahq = new Quaternion(), _ahq2 = new Quaternion(), _ahp = new Vector3(), _ahX = new Vector3(1, 0, 0), _ahY = new Vector3(0, 1, 0);
+  function ark_staffHand(A2, on, fit) {
     const KG = ark_kitArms();
     if (!A2 || !A2.hand || !KG.gripP) return;
     const gq = (on ? KG.gripP : KG.handP)[A2.side];
     if (A2.hand.geometry !== gq) A2.hand.geometry = gq;
+    // HAND_GRIP_A2: on the staff the wrist turned (psi) and bent (beta) at the forearm's end - the hand's mesh turned about the wrist
+    if (on && fit) { _ahq.setFromAxisAngle(_ahY, fit.psi).multiply(_ahq2.setFromAxisAngle(_ahX, fit.beta)); A2.hand.quaternion.copy(_ahq); _ahp.set(0, -KG.P.fo, 0); A2.hand.position.copy(_ahp).sub(_ahp.clone().applyQuaternion(_ahq)); }
+    else { A2.hand.quaternion.identity(); A2.hand.position.set(0, 0, 0); }
   }
   function ark_kiddush(w, u, mode = "tk") {
     const K = ark_kit(), FS = K.FS;
@@ -534,13 +580,15 @@
         const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
         p.g.position.set(X + dx, Y, s * 1.1);
         p.g.rotation.y = -Math.PI / 2;
-        ark_setArm(s > 0 ? p.L : p.R, ARK_POSE.staff, s > 0 ? 1 : -1);
-        ark_staffHand(s > 0 ? p.L : p.R, true);   // HAND_A2: the hand closed round the staff
+        const fit = ark_staffFit(s > 0 ? 1 : -1, A ? A.staffZ - 1.1 : 0.3, A ? 1.87 + A.h / 2 : 2.62);   // HAND_GRIP_A2
+        ark_setArm(s > 0 ? p.L : p.R, fit.v, s > 0 ? 1 : -1);
+        ark_staffHand(s > 0 ? p.L : p.R, true, fit);   // HAND_A2: the hand closed round the staff
         pv.add(p.g);
       }
     };
     ctx.shared.arkGates = {
-      preview(on) { if (on && !pvBuilt) buildPreview(); pv.visible = !!on; return pv.visible; }
+      preview(on) { if (on && !pvBuilt) buildPreview(); pv.visible = !!on; return pv.visible; },
+      fit: (side) => { const AP = ctx.shared.arkParts; return ark_staffFit(side, AP ? AP.staffZ - 1.1 : 0.3, AP ? 1.87 + AP.h / 2 : 2.62); }   // (tests)
     };
     // ======================= THE DEMONSTRATION =======================
     // A walk of the eye (ctx.shared.walk, 50-heichal.js: keys, captions, pause) and, on its clock, the scene: the four priests carry a copy
@@ -692,9 +740,9 @@
     const walkPose = (p, ph, moving, holding, hold01) => {
       const FS = 1.4, sw = Math.sin(ph) * moving;
       if (holding) {
-        const st = ARK_POSE.staff, sd = ARK_POSE.stand, k = hold01;
+        const fit = ark_staffFit(p.side, A ? A.staffZ - 1.1 : 0.3, SH), st = fit.v, sd = ARK_POSE.stand, k = hold01;   // HAND_GRIP_A2
         ark_setArm(p.staffArm, [st[0] + (sd[0] - st[0]) * (1 - k), st[1] + (sd[1] - st[1]) * (1 - k), st[2] + (sd[2] - st[2]) * (1 - k)], p.side);
-        ark_staffHand(p.staffArm, k > 0.5);   // HAND_A2
+        ark_staffHand(p.staffArm, k > 0.5, fit);   // HAND_A2
       } else { ark_setArm(p.staffArm, [0.32 * sw, 0.08, -0.25 * moving - 0.15 * (1 - moving)], p.side); ark_staffHand(p.staffArm, false); }
       ark_setArm(p.freeArm, [-0.32 * sw, 0.08, -0.25 * moving - 0.15 * (1 - moving)], -p.side);
       p.lean.position.y = Math.abs(Math.cos(ph)) * 0.035 * moving;

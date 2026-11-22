@@ -338,10 +338,10 @@
     const HWR = {};
     const handWr = (sd, pose = "rest", mid = false) => { const k = (sd > 0 ? 1 : -1) + pose + (mid ? "m" : ""); return HWR[k] || (HWR[k] = handRaw(sd, pose, false, mid).translate(0, -HAND_W, 0).scale(FS, FS, FS)); };   // HAND_SDF_A2: mid - in fewer faces
     // places on the hand, in its wrist's frame (amot): the middle of the closed hand's ring - where a handle lies (grip) - and the palm's middle
-    // HAND_GRIP_A2: what - "grip" (round a handle) or "fist" (round a thin rod): the ring's middle; "gripAx" / "fistAx": the handle's way
+    // HAND_GRIP_A2: what - "grip" (round a handle), "fist" (round a thin rod) or "gripW" (on the ark's thick staff): the ring's middle; "gripAx" / "fistAx": the handle's way
     // through it (a unit vector, from the little finger's side to the first finger's); else the palm's middle
     const handAt = (sd, what) => {
-      const ax = /Ax$/.test(what), pose = what.replace(/Ax$/, ""), closed = pose === "grip" || pose === "fist", H = tm_hand({ sd, pose: closed ? pose : "rest" });
+      const ax = /Ax$/.test(what), pose = what.replace(/Ax$/, ""), closed = pose === "grip" || pose === "fist" || pose === "gripW", H = tm_hand({ sd, pose: closed ? pose : "rest" });
       const v = ax ? H.sk.gripAx.clone() : closed ? H.sk.grip.clone() : new Vector3(0, -H.sk.PM, -0.012);
       v.applyAxisAngle(new Vector3(0, 1, 0), sd * 0.95);
       return ax ? v : v.multiplyScalar(FS);
