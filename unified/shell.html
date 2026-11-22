@@ -62,6 +62,9 @@
   .house .sub{font-size:1rem;color:var(--tm-ink-soft);line-height:1.35}
   .house .back{font-family:var(--font-ui);font-size:0.78rem;color:var(--tm-ink-dim);opacity:0;transition:opacity .2s}
   .house.visited .back{opacity:1}
+  #rights{margin:2px 0 0;padding:8px 18px;border-radius:var(--radius-lg);font-family:var(--font-main);font-size:1.12rem;line-height:1.4;color:var(--tm-ink);background:var(--tm-card);border:1.5px solid var(--color-primary);text-align:center;box-shadow:0 6px 20px var(--tm-shade-card)}
+  #rights b{font-size:1.45rem;font-weight:800;color:var(--tm-gold);margin-inline-end:6px}
+  @media(max-width:640px){#rights{font-size:.98rem}#rights b{font-size:1.2rem}}
   @media(max-width:640px){
     #pick h1{font-size:1.6rem}
     #pick .row{flex-direction:column;align-items:center;gap:12px}
@@ -201,6 +204,7 @@ __BACKGROUND_SVG__
           <span class="back">חוזר למקום שבו עזבת</span>
         </button>
       </div>
+      <p id="rights"><b>כל הזכויות שמורות.</b> אין לשנות את התוסף. פרטים ברישיון שבמאגר.</p>
     </div>
   </div>
   <footer id="uni-bar" hidden>
