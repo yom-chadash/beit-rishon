@@ -3875,31 +3875,56 @@ body.tm-measuring canvas{cursor:crosshair}
           nav.appendChild(wb);
           const sg = document.createElement("span");
           sg.className = "tm-grp tm-sec";
-          //@@slot buildUI.after-sg
+          tip(sg, "חתך חי: מישור חיתוך שעובר במודל — כל מה שמדרום לו (בציר צפון–דרום) או ממזרח לו (בציר מזרח–מערב) נחתך, ורואים את הפנים כמו בחתך אדריכלי. המישור מתחיל במקום שאליו מביטים; הגרירה מזיזה אותו (80 אמה לכל צד), הכפתור מחליף ציר, ״חתך״ מפעיל ומכבה. פני החתך אינם ממולאים — בחירת מודל.");
           const sb = document.createElement("button");
           sb.type = "button";
           sb.className = "tm-txt";
           sb.textContent = "חתך";
           const sr = document.createElement("input");
           sr.type = "range";
-          //@@slot buildUI.after-sr
+          sr.min = "-80"; sr.max = "80"; sr.step = "0.5"; sr.value = "0";
           sr.className = "tm-range";
           const ax = document.createElement("button");
           ax.type = "button";
           ax.className = "tm-txt";
-          //@@slot buildUI.HALF
+          const HALF = 80;
+          // 1.3.4 (from the Second Temple plugin; the user: "כל סעיף 3 לעשות"): a third axis, the height - a plan, everything above the slider cut
+          const center = (axis) => { const t = ctx.controls && ctx.controls.target; const c = t ? (axis === "x" ? t.x : axis === "y" ? t.y + 6 : t.z) : 0; return Math.round(c * 2) / 2; };
+          const span = (c, axis) => { if (axis === "y") { sr.min = "-10"; sr.max = "150"; } else { sr.min = String(c - HALF); sr.max = String(c + HALF); } sr.value = String(c); };
           const paintSec = () => {
             const S = ctx.shared.section || {};
             sb.classList.toggle("on", !!S.on);
             sr.disabled = !S.on;
             ax.textContent = S.axis === "x" ? "מזרח–מערב" : S.axis === "y" ? "גובה" : "צפון–דרום";
-            //@@slot paintSec
+            wb.classList.toggle("on", !!(ctx.shared.walkMode || {}).on);
+          };
+          sb.addEventListener("click", () => {
+            const S = ctx.shared.section;
+            if (!S) return;
+            if (!S.on) { const c = center(S.axis); span(c, S.axis); S.set(true, S.axis, c); } else S.set(false, S.axis, +sr.value);
+            paintSec();
+            pillsFrame();
+          });
+          sr.addEventListener("input", () => { const S = ctx.shared.section; if (!S || !S.on) return; S.set(true, S.axis, +sr.value); pillsFrame(); });
+          ax.addEventListener("click", () => {
+            const S = ctx.shared.section;
+            if (!S) return;
+            const axis = S.axis === "z" ? "x" : S.axis === "x" ? "y" : "z", c = center(axis);   // 1.3.4: south -> east -> height
+            span(c, axis);
+            S.set(S.on, axis, c);
+            paintSec();
+            pillsFrame();
+          });
           sg.appendChild(sb);
           sg.appendChild(sr);
           sg.appendChild(ax);
           nav.appendChild(sg);
           paintSec();
-          //@@slot buildUI.after-axis
+          // UI_UNIFY_A2 (the user's decision 55/13): the live section of both houses - the First Temple's (its slider 80 amot each side of the
+          // point looked at, re-centred when it is switched on or its axis changes; the height -10 .. 150); a row of the opinions table or a
+          // place may turn it on at a value of its own (the Second Temple's 1.9.0 - sectionPaint): the slider is centred on that value
+          ctx.shared.sectionPaint = () => { const S = ctx.shared.section || {}; if (Number.isFinite(S.v)) span(S.v, S.axis); paintSec(); pillsFrame(); };
+          ctx.shared.navRepaint = paintSec;   // "↺ החזר הכל" and the engine repaint the box
         }
         // 1.0.1-K (Yossi): the wall fade - on / off, and its distance
         const fs = ctx.shared.fadeState;

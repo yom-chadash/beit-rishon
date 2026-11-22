@@ -2033,31 +2033,6 @@
 //@@begin buildUI.after-rb-note-2
           // 1.9.1: the pills' frame() lives in another block; a call to it from here threw a ReferenceError (and stopped the rows that open a section)
 //@@end buildUI.after-rb-note-2
-//@@begin buildUI.after-sg
-          tip(sg, "חתך חי: מישור חיתוך שעובר במודל — כל מה שמדרום לו (בציר צפון–דרום) או ממזרח לו (בציר מזרח–מערב) נחתך, ורואים את הפנים כמו בחתך אדריכלי. הגרירה מזיזה את המישור; הכפתור מחליף ציר; ״חתך״ מפעיל ומכבה. פני החתך אינם ממולאים — בחירת מודל.");
-//@@end buildUI.after-sg
-//@@begin buildUI.after-sr
-          sr.min = "-70"; sr.max = "70"; sr.step = "0.5"; sr.value = "0";
-//@@end buildUI.after-sr
-//@@begin buildUI.HALF
-//@@end buildUI.HALF
-//@@begin paintSec
-            // 1.9.1: a place may cut by height (the mesibah of the Rambam's reading - everything above its storey goes)
-            if (S.axis === "x") { sr.min = "-95"; sr.max = "95"; } else if (S.axis === "y") { sr.min = "14"; sr.max = "130"; } else { sr.min = "-70"; sr.max = "70"; }
-            wb.classList.toggle("on", !!(ctx.shared.walkMode || {}).on);   // 1.9.3
-          };
-          // 1.9.3 (as the First Temple plugin): switched on, the cut starts where the eye looks (it stood at the slider's last place, often far from the view)
-          const center = (axis) => { const t = ctx.controls && ctx.controls.target; const c = t ? (axis === "x" ? t.x : axis === "y" ? t.y + 6 : t.z) : 0; return Math.max(+sr.min, Math.min(+sr.max, Math.round(c * 2) / 2)); };
-          sb.addEventListener("click", () => { const S = ctx.shared.section; if (!S) return; if (!S.on) { paintSec(); const c = center(S.axis); sr.value = String(c); S.set(true, S.axis, c); } else S.set(false, S.axis, +sr.value); paintSec(); pillsFrame(); });
-          sr.addEventListener("input", () => { const S = ctx.shared.section; if (!S || !S.on) return; S.set(true, S.axis, +sr.value); pillsFrame(); });
-          // 1.9.2: the axis button goes round all three - south, east and the height (a plan; until 1.9.1 only the places used it)
-          ax.addEventListener("click", () => { const S = ctx.shared.section; if (!S) return; const a = S.axis === "z" ? "x" : S.axis === "x" ? "y" : "z"; const t = ctx.controls && ctx.controls.target; const v = a === "y" ? Math.round(((t ? t.y : 40) + 6) * 2) / 2 : a === "x" ? Math.round((t ? t.x : 0) * 2) / 2 : Math.round((t ? t.z : 0) * 2) / 2; S.set(S.on, a, v); paintSec(); sr.value = String(v); pillsFrame(); });
-//@@end paintSec
-//@@begin buildUI.after-axis
-          // 1.9.0: a row of the opinions table may turn the section on (the cells' readings) - the box follows
-          ctx.shared.sectionPaint = () => { paintSec(); const S = ctx.shared.section || {}; if (Number.isFinite(S.v)) sr.value = String(S.v); pillsFrame(); };
-          ctx.shared.navRepaint = paintSec;   // 1.9.3 (as the First Temple plugin): "↺ החזר הכל" and the engine repaint the box
-//@@end buildUI.after-axis
 //@@begin stepDist
           lsSet("tm1.fade.dist", fs.dist);
 //@@end stepDist

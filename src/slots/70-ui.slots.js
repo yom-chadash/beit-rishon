@@ -2606,42 +2606,6 @@
 //@@begin buildUI.after-rb-note-2
           // 1.3.3: the pills' frame() lives in another block (the pills); a call to it from here threw a ReferenceError after the switch was made
 //@@end buildUI.after-rb-note-2
-//@@begin buildUI.after-sg
-          tip(sg, "חתך חי: מישור חיתוך שעובר במודל — כל מה שמדרום לו (בציר צפון–דרום) או ממזרח לו (בציר מזרח–מערב) נחתך, ורואים את הפנים כמו בחתך אדריכלי. המישור מתחיל במקום שאליו מביטים; הגרירה מזיזה אותו (80 אמה לכל צד), הכפתור מחליף ציר, ״חתך״ מפעיל ומכבה. פני החתך אינם ממולאים — בחירת מודל.");
-//@@end buildUI.after-sg
-//@@begin buildUI.after-sr
-          sr.min = "-80"; sr.max = "80"; sr.step = "0.5"; sr.value = "0";
-//@@end buildUI.after-sr
-//@@begin buildUI.HALF
-          const HALF = 80;
-          // 1.3.4 (from the Second Temple plugin; the user: "כל סעיף 3 לעשות"): a third axis, the height - a plan, everything above the slider cut
-          const center = (axis) => { const t = ctx.controls && ctx.controls.target; const c = t ? (axis === "x" ? t.x : axis === "y" ? t.y + 6 : t.z) : 0; return Math.round(c * 2) / 2; };
-          const span = (c, axis) => { if (axis === "y") { sr.min = "-10"; sr.max = "150"; } else { sr.min = String(c - HALF); sr.max = String(c + HALF); } sr.value = String(c); };
-//@@end buildUI.HALF
-//@@begin paintSec
-            wb.classList.toggle("on", !!(ctx.shared.walkMode || {}).on);
-          };
-          sb.addEventListener("click", () => {
-            const S = ctx.shared.section;
-            if (!S) return;
-            if (!S.on) { const c = center(S.axis); span(c, S.axis); S.set(true, S.axis, c); } else S.set(false, S.axis, +sr.value);
-            paintSec();
-            pillsFrame();
-          });
-          sr.addEventListener("input", () => { const S = ctx.shared.section; if (!S || !S.on) return; S.set(true, S.axis, +sr.value); pillsFrame(); });
-          ax.addEventListener("click", () => {
-            const S = ctx.shared.section;
-            if (!S) return;
-            const axis = S.axis === "z" ? "x" : S.axis === "x" ? "y" : "z", c = center(axis);   // 1.3.4: south -> east -> height
-            span(c, axis);
-            S.set(S.on, axis, c);
-            paintSec();
-            pillsFrame();
-          });
-//@@end paintSec
-//@@begin buildUI.after-axis
-          ctx.shared.navRepaint = paintSec;   // "↺ החזר הכל" repaints after switching both off
-//@@end buildUI.after-axis
 //@@begin stepDist
           lsSet("tm1.fade.dist", fs.dist);
 //@@end stepDist
