@@ -1551,7 +1551,18 @@
       },
       trumpets(a, t, k, o) {
         if (o.pattern === "long") { brass(a, t, 2.6, k, 466); brass(a, t + 0.03, 2.6, k * 0.8, 470); return; }
-        //@@slot trumpets
+        if (o.pattern === "drawn") {   // TERUAH_305: Rashi's - the tekia, the teruah and the tekia drawn out over o.dur seconds
+          const d = Math.max(4.5, +o.dur || 20) / 3;
+          brass(a, t, d - 0.25, k);
+          for (let i = 0, n = Math.max(9, Math.round((d - 0.3) / 0.2)); i < n; i++) brass(a, t + d + i * 0.2, 0.13, k * 1.1);
+          brass(a, t + 2 * d + 0.15, d - 0.15, k);
+          return;
+        }
+        brass(a, t, 1.4, k);
+        // TERUAH_305 (the user, 21:10: "ונראה לי יש תרועה שם גם"): the teruah's nine short blasts, each long enough to be heard as one
+        // (0.08 s every 0.16 until 2.0.13 - one rattle)
+        for (let i = 0; i < 9; i++) brass(a, t + 1.75 + i * 0.2, 0.13, k * 1.1);
+        brass(a, t + 3.75, 1.4, k);
       },
       cymbals(a, t, k) {
         for (let i = 0; i < 3; i++) {

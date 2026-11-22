@@ -555,12 +555,9 @@
     ["1.0.3", ["מבט חופשי למעלה ולמטה בכל מקום, וגובה העין בחצים או ב-Shift עם הגלגלת.", "באברבנאל גם הכבש מצופה נחושת.", "תוויות הדגמת המכונה בתוך התמונה."]],
     ["1.0.2", ["כפתור ״פתח בתוסף בית ראשון״ בספרי מלכים א ודברי הימים ב.", "השיתין, ומזבח הנחושת מאבנים או מצופה נחושת (אברבנאל).", "היסוד, הסובב וחוט הסיקרא; הכבשים הקטנים — כרש״י או כתוספות.", "טשטוש חומות: גם קיר שמסתיר את המקום נעשה שקוף.", "השיטות בתוך כרטיסי ההסבר.", "המקורות שבסוגריים נפתחים באוצריא בלחיצה.", "הדפסה או שמירה כ-PDF.", "סיבוב 360 מעלות בתוך הבית ובכל מקום מקורה.", "הדגמת המכונה מקרוב.", "סרגל הכותרת קבוע, גם בזמן הטעינה.", "דיווח על טעות או תקלה מתוך התוסף."]]
 //@@end UI_NEWS
-//@@begin ui_CSS
-//@@end ui_CSS
 //@@begin buildUI.CO
       // fallback = the 10-core.js CO values (used only if ctx.CO is missing): 1.0.1-L the Sea in the court's CORNER x 80, z -54 (Rashi) /
       // +54 (L.7), the block of bases round x 30 in the rows z 33 / 45 with Moses' laver between them at z 39 (L.77; vessels-2.md), the house wall 7 / 6 / 5 / 4 (K.2)
-      const CO = ctx.CO || { seaX: 80, seaZ: 54, seaZRashi: -54, kiyorX: 30, mechX: 30, mechZ: [38, 50], xUlamE: 18.5, xHouseE: 2.5, HOUSE_WALL: [7, 6, 5, 4], zHouseS: 27, xHeiW: -80.5 };
 //@@end buildUI.CO
 //@@begin applyHidden
         if (ctx.shared && ctx.shared.ulamCeiling && ctx.shared.ulamCeiling.mode === "none") for (const m of cutList(ctx.ulamCeilCut)) hide.add(m);   // 1.3.5: the ulam with no ceiling (50-heichal.js)
@@ -639,9 +636,6 @@
       sub.className = "s";
       sub.textContent = "מלכים א ו–ז · דברי הימים ב ג–ד · חז״ל ומפרשים";
 //@@end buildUI.after-title
-//@@begin opRow
-        bb.className = "bb" + (row.options.length === 3 ? " c3" : "");   // 1.0.1-L: three in a row; two and four in two columns
-//@@end opRow
 //@@begin opRow-note
             // CHIP_CLOSEAUTO_211 (the user, 15.11.2026: after the place "לשכת הכלים" a reading's view came out EMPTY - that place's section
             // of the house stayed, since only a place put back what the place before it had opened): a reading does the same first - the
@@ -713,9 +707,6 @@
         altarMeasures: "altarYose", altarM_chronicles: "altarYose", altarM_yose: "altarYose", yatziaRambam: "yatziaShape", yatziaRashi: "yatziaShape" };   // 1.3.3: the numbers of the altar's frames
       // subj = { view?, title?, label?, layers? } -> the row ids (kept unfiltered: the rows are built after the places and the labels)
 //@@end buildUI.UI_OPS_V
-//@@begin opsChip
-        return s.length > 34 ? s.slice(0, 32) + "…" : s;
-//@@end opsChip
 //@@begin pickFromCard
           try { if (typeof ctx.shared.closeAuto === "function") ctx.shared.closeAuto(); } catch (_) {}   // CHIP_CLOSEAUTO_211: a card's chip that flies, too
 //@@end pickFromCard
@@ -1663,13 +1654,6 @@
         // 1.1.0 (the user: no doubles): the last three of the grid too - the grid keeps "מבט כללי" alone
         heichalFront: "הבית (בית ה׳)", yachinBoazFull: "יכין ובועז — מבט מפתח האולם", kodeshHakodashim: "קודש הקדשים — הדביר" };
 //@@end buildUI.after-PLACES
-//@@begin uiMergedCard.seenP
-        // DEDUPE_211 (the understandability review, U-53): each of the joined texts came with the "בקצרה" block of the card's switches -
-        // the card of "שולחן משה מקרוב" showed it twice. A paragraph that already stands in the card is not repeated.
-        const seenP = new Set(), outP = [];
-        for (const par of parts.filter(Boolean).join("\n\n").split("\n")) { const k = par.trim(); if (k.length > 40 && seenP.has(k)) continue; if (k) seenP.add(k); outP.push(par); }
-        return { text: outP.join("\n").replace(/\n{3,}/g, "\n\n"), refs };
-//@@end uiMergedCard.seenP
 //@@begin buildUI.after-b
               // DEMO_FLY_301 (the user, 18.11.2026: "ואני גם לב שכנראה בעוד הדגמות"): a pill whose own switch leaves the view where it is
               // (pressed on the model, one stands by it already - the witnesses' scene) started from this group ran out of sight, wherever

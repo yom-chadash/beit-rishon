@@ -404,9 +404,6 @@
           return;
         }
 //@@end beginAnim
-//@@begin enter
-          try { if (ctx.ui && ctx.ui.autoOff) ctx.ui.autoOff.flush(); } catch (_) {}   // TOUR_FLUSH_211: the zones, the see-through house
-//@@end enter
 //@@begin restore
         for (const [row, key] of sv.rows) if (!isTamidRow(row)) setRow(row, key);
 //@@end restore

@@ -618,7 +618,9 @@ body.tm-measuring canvas{cursor:crosshair}
 #tm-xcard .r{flex:none;margin-top:6px;padding-top:5px;border-top:1px solid rgba(201,168,76,.25);font-size:11px;max-height:120px;overflow-y:auto}
 #tm-xcard .r a{display:inline-block;color:#f3dc9a;margin:2px 0 2px 5px;padding:3px 8px;border:1px solid rgba(201,168,76,.45);border-radius:6px;background:rgba(201,168,76,.12);text-decoration:none;cursor:pointer}
 #tm-xcard .r a:hover{background:rgba(201,168,76,.3)}
-//@@slot ui_CSS
+#tm-xcard .r a{white-space:normal;max-width:100%;line-height:1.35}
+#tm-panel,#tm-topbar,#tm-nav,.tm-pill,#tm-xcard .h,#tm-xcard .r,#tm-help,#tm-news .x{user-select:none;-webkit-user-select:none}
+#tm-xcard .b{user-select:text;-webkit-user-select:text}
 #tm-panel,#tm-topbar,#tm-nav,.tm-pill,#tm-xcard .h,#tm-xcard .r,#tm-help,#tm-news .x{user-select:none;-webkit-user-select:none}
 #tm-xcard .b{user-select:text;-webkit-user-select:text}
 #tm-xcard .b{white-space:pre-line}
@@ -709,6 +711,7 @@ body.tm-measuring canvas{cursor:crosshair}
       if (!ctx.shared) ctx.shared = {};
       if (!ctx.layers) ctx.layers = {};
       //@@slot buildUI.CO
+      const CO = ctx.CO || { seaX: 80, seaZ: 54, seaZRashi: -54, kiyorX: 30, mechX: 30, mechZ: [38, 50], xUlamE: 18.5, xHouseE: 2.5, HOUSE_WALL: [7, 6, 5, 4], zHouseS: 27, xHeiW: -80.5 };   // UNIFY_A2 (decision 63): one line for both houses (the Second's mechZ [33, 45] was never used - ctx.CO is always given)
       const LVL = ctx.LV || { HAR: 0, AZ: 6, HEI: 12 };
       // 1.0.1-L: the one phone rule (ui_PHONE_MAX; the CSS media rule is built from the same number)
       const isPhone = (w) => (w == null ? window.innerWidth || 0 : w) <= ui_PHONE_MAX;
@@ -1070,6 +1073,22 @@ body.tm-measuring canvas{cursor:crosshair}
                 hideHits.length = 0;
               }
             }
+            // GAZE_WALL_A2 (fix-a2; the user's decision 62: "כשהמטרה היא לראות את החומה עצמה (שער וכד'), אסור שתהיה שקיפות"): the wall the
+            // view is aimed at - the first thing the line from the eye meets within two amot of the target - is never see-through; only what
+            // stands between the eye and it fades
+            if (blocked.size || hideBlocked.size) {
+              const cp = ctx.camera.position, tgp = ctx.controls.target, Lt = cp.distanceTo(tgp);
+              if (Lt > 2.5) {
+                dd.subVectors(tgp, cp).normalize();
+                ray.set(cp, dd); ray.near = 0; ray.far = Lt + 2;
+                const cand = [...blocked, ...hideBlocked];
+                for (const h of ray.intersectObjects(cand, false)) {
+                  if (h.distance < Lt - 2) continue;
+                  blocked.delete(h.object); hideBlocked.delete(h.object);
+                  break;
+                }
+              }
+            }
             for (const m of OCCL) m.userData.fade.tgt = blocked.has(m) ? UI_FADE_OPACITY : 1;
             for (const m of OCCL) {
               const fw = m.userData.fadeWith;
@@ -1224,7 +1243,7 @@ body.tm-measuring canvas{cursor:crosshair}
         box.appendChild(cap);
         // 1.1.0 (the user): no sources in the tree - the row's refs stay on the card of its subject (the chips) and in the presentation
         const bb = document.createElement("div");
-        //@@slot opRow
+        bb.className = "bb" + (row.options.length % 3 === 0 ? " c3" : "");   // 1.0.1-L: three in a row; two and four in two columns (1.8.0: six - two rows of three)
         const bts = [];
         const mark = (key) => {
           row.cur = key;
@@ -1359,7 +1378,7 @@ body.tm-measuring canvas{cursor:crosshair}
         const i = s.indexOf(":");
         if (i > 0 && i < 40) s = s.slice(0, i);
         s = s.replace(/\s*\([^()]*\)\s*$/, "").trim();
-        //@@slot opsChip
+        return s.length > 72 ? s.slice(0, 70) + "…" : s;   // 1.5.0: the chips wrap, not cut
       };
       const pickFromCard = (row, key) => {
         row.mark(key);
@@ -2476,7 +2495,11 @@ body.tm-measuring canvas{cursor:crosshair}
           if (tx && parts.indexOf(tx) < 0) parts.push((d.t ? d.t + ": " : "") + tx);
           for (const r of uiItemRefs(d)) if (!seen.has(r[0])) { seen.add(r[0]); refs.push(r); }
         }
-        //@@slot uiMergedCard.seenP
+        // DEDUPE_211 (the understandability review, U-53): each of the joined texts came with the "בקצרה" block of the card's switches -
+        // the card of "שולחן משה מקרוב" showed it twice. A paragraph that already stands in the card is not repeated.
+        const seenP = new Set(), outP = [];
+        for (const par of parts.filter(Boolean).join("\n\n").split("\n")) { const k = par.trim(); if (k.length > 40 && seenP.has(k)) continue; if (k) seenP.add(k); outP.push(par); }
+        return { text: outP.join("\n").replace(/\n{3,}/g, "\n\n"), refs };
       };
       // 1.0.1-L (the contract with 75-tour.js): every place button in the panel's order, for ctx.ui.places()
       const placeList = [];

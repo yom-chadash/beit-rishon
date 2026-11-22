@@ -556,16 +556,10 @@
     ["1.2.0", ["הלוח נבנה מחדש כמו בבית ראשון: עץ אחד של מקומות עם שורת חיפוש למעלה, וקבוצות מכווצות.", "כרטיס ההסבר בצד שמאל, עם צ׳יפים לשיטות ולמקורות; המקורות נפתחים באוצריא.", "בקר ניווט על המודל: מצפן, סיבוב במקום בתוך הבית, הליכה במקלדת.", "כפתורים על המודל: ״פתח את ההיכל״, ״פתח את הלשכות״, ״פתח את הסטיו״, ״↺ החזר הכל״.", "סרגל עליון: מצגת, ניווט, הדפסה, דיווח, מה חדש.", "המצגת בשלושה מצבים — לפי הנושאים, רציפה, ולפי סדר המשניות במסכת מידות.", "כפתור ״פתח בתוסף בית שני״ במסכת מידות וברמב״ם הלכות בית הבחירה.", "טבלת ״שיטות ומחלוקות״ עם כל הדעות; כל דעה גם כצ׳יפ על הכרטיס של נושאה."]],
     ["1.1.0", ["השם ״בית שני״; טעינה מהירה בהרבה (הציור מתחיל רק אחרי שהכול מוכן).", "הליכה במקלדת: חצים למעלה ולמטה מתקדמים, PageUp/PageDown מגביהים, Shift עם חץ מטה את המבט.", "כפתור ״ניווט״ עם כל הוראות העכבר, המגע והמקלדת.", "המקורות נפתחים באוצריא גם ברמב״ם (בית הבחירה, תמידין ומוספין), במשנה תמיד ובגמרא (יומא, זבחים, סוכה ועוד) — לא רק במסכת מידות.", "מצגת גם לפי סדר המשניות במסכת מידות.", "תיקונים לפי המשנה והרמב״ם — ראו בקבוצה ״תיקונים לפי המשנה״ בלוח."]]
 //@@end UI_NEWS
-//@@begin ui_CSS
-#tm-xcard .r a{white-space:normal;max-width:100%;line-height:1.35}
-#tm-panel,#tm-topbar,#tm-nav,.tm-pill,#tm-xcard .h,#tm-xcard .r,#tm-help,#tm-news .x{user-select:none;-webkit-user-select:none}
-#tm-xcard .b{user-select:text;-webkit-user-select:text}
-//@@end ui_CSS
 //@@begin buildUI.CO
       // fallback = the 10-core.js CO values (used only if ctx.CO is missing): 1.0.1-L the Sea in the court's CORNER x 80, z -54 (Rashi) /
       // +54 (L.7), the block of bases round x 30 in the rows z 33 / 45 with Moses' laver between them at z 39 (L.77; vessels-2.md), the house wall 7 / 6 / 5 / 4 (K.2)
       ctx.shared.refIndex = refIndex;   // Beit Sheni: for the checks (tools/dump) and other modules
-      const CO = ctx.CO || { seaX: 80, seaZ: 54, seaZRashi: -54, kiyorX: 30, mechX: 30, mechZ: [33, 45], xUlamE: 18.5, xHouseE: 2.5, HOUSE_WALL: [7, 6, 5, 4], zHouseS: 27, xHeiW: -80.5 };
 //@@end buildUI.CO
 //@@begin applyHidden
         if (boardsOff) for (const m of cutList(ctx.forestBoardsCut)) hide.add(m);
@@ -587,9 +581,9 @@
 //@@begin buildUI.HL
 //@@end buildUI.HL
 //@@begin buildUI.fs0
-        const fs0 = ctx.shared.fadeState, sOn = lsGet("tm2.fade.on"), sDist = +lsGet("tm2.fade.dist");
+        const fs0 = ctx.shared.fadeState, lsF = (k) => { const v = lsGet("tm1.fade." + k); return v != null && v !== "" ? v : lsGet("tm2.fade." + k); }, sOn = lsF("on"), sDist = +lsF("dist");   // UNIFY_A2 (decision 62): the fade's settings are both houses' (tm1.fade.*)
         if (sOn === "0" || sOn === "1") fs0.on = sOn === "1";
-        fs0.hide = !!fs0.on && lsGet("tm2.fade.hide") === "1";   // 1.0.2 (D): the second mode "טשטוש: גם קיר מסתיר" (default off: the fade as before)
+        fs0.hide = !!fs0.on && lsF("hide") === "1";   // 1.0.2 (D): the second mode "טשטוש: גם קיר מסתיר" (default off: the fade as before)
 //@@end buildUI.fs0
 //@@begin buildUI.HIDE_GROUPS
         // ===== 1.0.2 (D, the mode "טשטוש: גם קיר מסתיר", chosen from the same button): besides the court and mount walls above, a wall of a
@@ -631,9 +625,6 @@
       sub.className = "s";
       sub.textContent = "מסכת מידות · רמב״ם הלכות בית הבחירה · חז״ל ומפרשים";
 //@@end buildUI.after-title
-//@@begin opRow
-        bb.className = "bb" + (row.options.length % 3 === 0 ? " c3" : "");   // 1.0.1-L: three in a row; two and four in two columns (1.8.0: six - two rows of three)
-//@@end opRow
 //@@begin opRow-note
             // CHIP_CLOSEAUTO_211: the roof, the section or the zone that a place or a row opened for a while goes back at once
 //@@end opRow-note
@@ -665,9 +656,6 @@
       const UI_OPS_LAYER = {};
       // subj = { view?, title?, label?, layers? } -> the row ids (kept unfiltered: the rows are built after the places and the labels)
 //@@end buildUI.UI_OPS_V
-//@@begin opsChip
-        return s.length > 72 ? s.slice(0, 70) + "…" : s;   // 1.5.0: the chips wrap, not cut
-//@@end opsChip
 //@@begin pickFromCard
           try { if (typeof ctx.shared.closeAuto === "function") ctx.shared.closeAuto(); } catch (_) {}   // CHIP_CLOSEAUTO_211
 //@@end pickFromCard
@@ -861,9 +849,6 @@
       const UI_MERGE = {};
       const UI_VIEW_HOME = {"harHabayit": "הר הבית", "shushanGate": "שער שושן", "royalStoa": "הסטיו המלכותי", "ezratNashim": "עזרת נשים", "nikanor": "שער ניקנור", "azarah": "העזרה", "mizbeach": "המזבח", "heichalFront": "ההיכל מבחוץ", "heichalInside": "ההיכל", "ulam": "האולם", "kodesh": "הקודש", "kodeshHakodashim": "קודש הקדשים ואבן השתייה"};
 //@@end buildUI.after-PLACES
-//@@begin uiMergedCard.seenP
-        return { text: parts.filter(Boolean).join("\n\n"), refs };
-//@@end uiMergedCard.seenP
 //@@begin buildUI.after-b
 //@@end buildUI.after-b
 //@@begin buildUI.after-box
@@ -2017,11 +2002,11 @@
           ctx.shared.navRepaint = paintSec;   // 1.9.3 (as the First Temple plugin): "↺ החזר הכל" and the engine repaint the box
 //@@end buildUI.after-axis
 //@@begin stepDist
-          lsSet("tm2.fade.dist", fs.dist);
+          lsSet("tm1.fade.dist", fs.dist);
 //@@end stepDist
 //@@begin buildUI.after-i
-          lsSet("tm2.fade.on", fs.on ? "1" : "0");
-          lsSet("tm2.fade.hide", fs.hide ? "1" : "0");
+          lsSet("tm1.fade.on", fs.on ? "1" : "0");
+          lsSet("tm1.fade.hide", fs.hide ? "1" : "0");
 //@@end buildUI.after-i
 //@@begin buildUI.after-reg
           title: "קודש הקדשים מכוסה בענן במודל, מפני כבוד המקום (בחירת מודל). הסרת הענן מבקשת אישור.",
