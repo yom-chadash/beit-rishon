@@ -2296,6 +2296,10 @@
       SH.features.aravah = { key: "aravah", timed: false, isOn: () => AG.visible,
         on: () => { build(); sync(); AR.t0 = performance.now(); AG.visible = true; tefOn(true); pose(); },
         off: () => { AG.visible = false; tefOn(false); } };
+      // DEMO_STOP_G (the user, 23.11.2026 01:18: "הדגמת הערבה לא נעצרה, למרות שאני בכרכוב בכלל"): the circuit is a demonstration like the others -
+      // any switch, place or view (90-entry.js: the click that calls stopDemos) ends it and takes its figures away; its own place and row turn
+      // it on again after that click
+      (SH.demoStops || (SH.demoStops = [])).push({ id: "aravahDemo", running: () => AG.visible, stop: () => SH.features.aravah.off() });
       if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => {
         if (!AG.visible) return;
         sync();
