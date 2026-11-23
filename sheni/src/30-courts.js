@@ -2322,20 +2322,35 @@
       {
         const rR = new Group(), rM = new Group();
         g.add(rR); g.add(rM); rM.visible = false;
+        // ROVDIN_SHAPES_N2 (fix-n2, 23.11.2026 - the user: "לא ניכר הבדל כלל" between the two readings): they differ in the SHAPE now. On each
+        // end wall, in the free stretch between the corner chambers (five amot, z -2.5..+2.5 from the hall's axis):
+        //   the Rosh, the Bartenura, the Rambam and the Tiferet Yisrael - "אצטבאות" one on another, each shorter than the one under it,
+        //   "כעין מדריגות": five whole-length terraces (a stone stair up the wall, four and a half amot deep at the foot, to five amot high);
+        //   the Mefaresh - no terrace: separate bed-niches "בתוך כניסת החומה כעין מטות" in two levels, two beds in each, each bed in a stone
+        //   frame with a dark back, a mattress and a pillow, and under it its own stone standing out of the wall, "שמן הרובדין היו עולין
+        //   ע"ג מטותיהן". Their number, sizes and the niches' frames standing out of the wall (not cut into it) - model choices.
+        const clothM = new MeshStandardMaterial({ color: 0xd9ccac, roughness: 0.95 }), pillowM = new MeshStandardMaterial({ color: 0xf0e8d4, roughness: 0.95 });
+        const dark = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
         for (const sx of [-1, 1]) {
-          H2.box(rR, 2, 1, D - 16, M2.stoneSmooth, X + sx * (W / 2 - 2), FL, Z);
-          H2.box(rR, 1, 1, D - 16, M2.stoneSmooth, X + sx * (W / 2 - 1.5), FL + 1, Z);
-          // the Mefaresh: two recesses in the wall, one over another, each with a step of stone standing out under it
-          const xi = X + sx * (W / 2 - 1.02), dark = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
-          for (const [y, zc] of [[FL + 1.6, Z], [FL + 4.0, Z]]) {
-            const rc = new Mesh(new BoxGeometry(0.06, 1.3, D - 17), dark); rc.position.set(xi, y + 0.65, zc); rM.add(rc);                      // the recess's shadow
-            H2.box(rM, 1.2, 0.18, D - 17, M2.stoneSmooth, X + sx * (W / 2 - 1.6), y - 0.18, zc);                                              // its bed's edge
-            H2.box(rM, 0.7, 0.35, D - 17, M2.stoneSmooth, X + sx * (W / 2 - 1.35), y - 0.95, zc);                                             // the stone to go up by
+          const wallX = X + sx * (W / 2 - 1);   // the end wall's inner face
+          const at = (d) => wallX - sx * d / 2;   // the centre of a block d deep, standing on the wall
+          for (let k = 0; k < 5; k++) H2.box(rR, 4.5 - 0.9 * k, 1, 4.8, M2.stoneSmooth, at(4.5 - 0.9 * k), FL + k, Z);
+          for (const y0 of [FL + 1.6, FL + 4.4]) {
+            H2.box(rM, 1.5, 0.25, 4.8, M2.stoneSmooth, at(1.5), y0 - 0.25, Z);                                  // the floor of the niches
+            H2.box(rM, 1.5, 0.25, 4.8, M2.stoneSmooth, at(1.5), y0 + 1.5, Z);                                   // their roof
+            for (const dz of [-2.4, 0, 2.4]) H2.box(rM, 1.5, 1.5, 0.25, M2.stoneSmooth, at(1.5), y0, Z + dz);   // the posts
+            const back = new Mesh(new BoxGeometry(0.06, 1.5, 4.6), dark); back.position.set(wallX - sx * 0.04, y0 + 0.75, Z); rM.add(back);
+            for (const dz of [-1.2, 1.2]) {
+              H2.box(rM, 1.2, 0.22, 2.0, clothM, at(1.2) , y0, Z + dz);                                          // the mattress
+              H2.box(rM, 0.4, 0.14, 1.0, pillowM, at(0.5), y0 + 0.22, Z + dz);                                    // the pillow
+              H2.box(rM, 1.1, 0.7, 1.4, M2.stoneSmooth, at(1.1), y0 - 1.2, Z + dz);                               // the stone that stands out of the wall, under the bed
+            }
           }
+          for (const dz of [-1.2, 1.2]) H2.box(rM, 1.9, 0.8, 1.4, M2.stoneSmooth, at(1.9), FL, Z + dz);          // the stone to go up by from the floor
         }
         ctx2.shared.rovdin = { mode: "rosh", set(m) { this.mode = m === "mefaresh" ? "mefaresh" : "rosh"; rR.visible = this.mode === "rosh"; rM.visible = this.mode === "mefaresh"; return this.mode; } };
         ctx2.layers = ctx2.layers || {}; ctx2.layers.rovdinR = rR; ctx2.layers.rovdinM = rM;
-        const RV = { info: "**רובדין של אבן** (מידות א, ח): ״מקף רובדין של אבן, וזקני בית אב ישנים שם״. להרא״ש ולתפארת ישראל — מדרגות של אבן לאורך הכתלים; למפרש — גומחות בכותל כעין מטות, ורובדין לעלות אליהן. המתג — בתפריט, ״רובדין של אבן בבית המוקד״.", refs: [["מידות א, ח", { book: 89, index: 9 }], ["פירוש הרא״ש תמיד כה:", { book: 2224, index: 9 }], ["המפרש תמיד כה:", { book: 2105, index: 9 }]] };   // QUOTES_Q: מידות א, ח (89:9): 'מקף' בלי ו׳
+        const RV = { info: "**רובדין של אבן** (מידות א, ח): ״מקף רובדין של אבן, וזקני בית אב ישנים שם״. להרא״ש, לברטנורא, לרמב״ם ולתפארת ישראל — אצטבאות של אבן זו על גבי זו, כעין מדריגות; למפרש — גומחות בכותל כעין מטות, ואבנים בולטות מן הכותל לעלות אליהן. המתג — בתפריט, ״רובדין של אבן בבית המוקד״.", refs: [["מידות א, ח", { book: 89, index: 9 }], ["פירוש הרא״ש תמיד כה:", { book: 2224, index: 9 }], ["המפרש תמיד כה:", { book: 2105, index: 9 }]] };   // QUOTES_Q: מידות א, ח (89:9): 'מקף' בלי ו׳
         ctx2.labels.push(Object.assign({ text: "רובדין של אבן — זקני בית אב ישנים שם", x: X, y: FL + 3.5, z: Z, size: 1.2, layer: "rovdinR" }, RV),
           Object.assign({ text: "רובדין — גומחות בכותל ואבנים לעלות אליהן (המפרש)", x: X, y: FL + 6.2, z: Z, size: 1.1, layer: "rovdinM" }, RV));
         // ROVDIN_SEE_S2 (fix-s2, 23.11.2026 - the user's decision 199 ב): A VIEWING SWITCH, not a reading - the pill "כל הרובדין" on בית
