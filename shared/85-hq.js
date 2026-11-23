@@ -790,8 +790,9 @@
       const dt = new DepthTexture(4, 4);
       dt.type = UnsignedIntType;
       pre = new WebGLRenderTarget(4, 4, { minFilter: NearestFilter, magFilter: NearestFilter, depthTexture: dt });
-      aoRT = new WebGLRenderTarget(4, 4, { type: HalfFloatType });
-      pdRT = new WebGLRenderTarget(4, 4, { type: HalfFloatType });
+      // Full-screen passes only write colour; depth testing/writing are disabled in both materials.
+      aoRT = new WebGLRenderTarget(4, 4, { type: HalfFloatType, depthBuffer: false });
+      pdRT = new WebGLRenderTarget(4, 4, { type: HalfFloatType, depthBuffer: false });
       const G = L.GTAOShader;
       gtaoM = new ShaderMaterial({ defines: Object.assign({}, G.defines), uniforms: UniformsUtils.clone(G.uniforms), vertexShader: G.vertexShader,
         fragmentShader: G.fragmentShader, blending: NoBlending, depthTest: false, depthWrite: false });
