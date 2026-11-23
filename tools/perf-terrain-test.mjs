@@ -52,6 +52,21 @@ function compare(mesh, r) {
 const bounds = (m) => { const p = m.geometry.attributes.position; return [p.getX(0), p.getX(p.count - 1), p.getZ(0), p.getZ(p.count - 1)]; };
 const refresh = (m) => { m.geometry.computeVertexNormals(); m.geometry.computeBoundingBox(); m.geometry.computeBoundingSphere(); };
 const coordinate = (m, nx, x, z) => { const p = m.geometry.attributes.position, i = z * (nx + 1) + x; return [p.getX(i), p.getZ(i)]; };
+// Sample the actual displaced triangles, rather than just the original grid cells:
+// a vertex can move many cells away and create additional overlapping floor hits.
+const warpedSamples = (m, moved) => {
+  const p = m.geometry.attributes.position, index = m.geometry.index, samples = [];
+  for (let i = 0; i < index.count; i += 3) {
+    const ids = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
+    if (!ids.some((v) => moved.has(v))) continue;
+    for (const weights of [[1 / 3, 1 / 3, 1 / 3], [0.8, 0.1, 0.1], [0.1, 0.8, 0.1], [0.1, 0.1, 0.8],
+      [1, 0, 0], [0, 1, 0], [0, 0, 1], [0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5]]) {
+      samples.push({ x: ids.reduce((s, v, j) => s + p.getX(v) * weights[j], 0),
+        z: ids.reduce((s, v, j) => s + p.getZ(v) * weights[j], 0), face: i / 3, interior: weights.every((w) => w > 0) });
+    }
+  }
+  return samples;
+};
 
 check('512 random vertical rays against the real 220 × 220 grid, with complete hit metadata', () => {
   const m = make(220, 220, 5200, 5200), [x0, x1, z0, z1] = bounds(m);
@@ -94,7 +109,7 @@ check('removed cells, reordered cell blocks and index replacement/version change
   g.setIndex([]); sample();
 });
 
-check('height mutation, replaced/interleaved attributes and invalid horizontal-grid fallback', () => {
+check('height mutation, replaced/interleaved attributes and horizontal-grid changes', () => {
   const nx = 6, nz = 6, m = make(nx, nz), g = m.geometry, p = g.attributes.position;
   const [x, z] = coordinate(m, nx, 2, 3); compare(m, ray(x, z));
   for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) + 17 + Math.sin(i));
@@ -109,6 +124,72 @@ check('height mutation, replaced/interleaved attributes and invalid horizontal-g
   data.needsUpdate = true; refresh(m); compare(m, ray(x + 12, z));
   interleaved.setX(2 * (nx + 1) + 2, x + 0.3); data.needsUpdate = true; refresh(m);
   compare(m, ray(x, z));
+});
+
+check('sparse horizontal warps preserve distant, overlapping and out-of-grid triangle hits after cache mutations', () => {
+  const nx = 32, nz = 24, m = make(nx, nz, 320, 240), g = m.geometry, p = g.attributes.position;
+  const first = 4 * (nx + 1) + 3, second = 14 * (nx + 1) + 9, moved = new Set([first, second]);
+  const [x0, x1, z0, z1] = bounds(m), originalPositions = p.array.slice();
+  compare(m, ray(...coordinate(m, nx, 3, 4))); // warm the regular-grid cache before the position version changes
+  const sample = () => {
+    for (const s of warpedSamples(m, moved)) {
+      const hits = compare(m, ray(s.x, s.z));
+      if (s.interior) assert.ok(hits.some((h) => h.faceIndex === s.face), 'the ray must reach the displaced triangle, not just the grid beneath it');
+      compare(m, ray(s.x, s.z, true));
+    }
+    for (const v of moved) for (const [dx, dz] of [[1e-7, 0], [-1e-7, 0], [0, 1e-7], [0, -1e-7]]) {
+      compare(m, ray(p.getX(v) + dx, p.getZ(v) + dz));
+    }
+  };
+  // One vertex folds across most of the lattice; another extends beyond both original axes.
+  p.setXYZ(first, x1 - 18, p.getY(first) + 31, z1 - 23);
+  p.setXYZ(second, x1 + 110, p.getY(second) + 17, z0 - 80);
+  p.needsUpdate = true; refresh(m); sample();
+  // Reuse the same BufferAttribute and mutate its version after the warped map was already cached.
+  p.setXYZ(first, x0 - 70, p.getY(first) - 9, z1 + 95);
+  p.setXYZ(second, x0 + 65, p.getY(second) + 13, z1 - 35);
+  p.needsUpdate = true; refresh(m); sample();
+  p.array.set(originalPositions); p.needsUpdate = true; refresh(m); sample();
+});
+
+check('warped cells preserve holes, reordered indices, material sides and the original draw range', () => {
+  const nx = 18, nz = 16, m = make(nx, nz, 180, 160), g = m.geometry, p = g.attributes.position;
+  const a = 5 * (nx + 1) + 4, b = a + 1, moved = new Set([a, b]);
+  const [x0, x1, z0, z1] = bounds(m), oldIndex = [...g.index.array];
+  p.setXYZ(a, x1 + 35, p.getY(a) + 20, z1 - 25);
+  p.setXYZ(b, x0 + 25, p.getY(b) - 10, z0 - 30);
+  p.needsUpdate = true; refresh(m);
+  const sample = () => { for (const s of warpedSamples(m, moved)) compare(m, ray(s.x, s.z)); };
+  sample();
+  const blocks = Array.from({ length: nx * nz }, (_, i) => oldIndex.slice(i * 6, i * 6 + 6));
+  // Remove some of the deformed cells as well as unrelated cells, then reverse their index-block order.
+  g.setIndex(blocks.filter((_, i) => i % 5 !== 0).reverse().flat()); sample();
+  const swap = g.index.array.slice(0, 6);
+  g.index.array.copyWithin(0, g.index.count - 6); g.index.array.set(swap, g.index.count - 6);
+  g.index.needsUpdate = true; sample();
+  const samples = warpedSamples(m, moved), selected = samples.find((s) => s.interior);
+  assert.ok(selected, 'the hole pattern must retain displaced triangles');
+  for (const side of [T.FrontSide, T.BackSide, T.DoubleSide]) {
+    m.material.side = side;
+    for (const s of samples.filter((s) => s.interior)) for (const up of [false, true]) compare(m, ray(s.x, s.z, up));
+  }
+  for (const [start, count] of [[0, 0], [selected.face * 3, 3], [selected.face * 3, 4], [selected.face * 3 + 3, 13],
+    [0, Infinity], [3, g.index.count - 9], [1, 23], [-3, g.index.count]]) {
+    g.setDrawRange(start, count);
+    for (const s of samples) compare(m, ray(s.x, s.z));
+  }
+  g.setDrawRange(0, Infinity); g.setIndex(oldIndex); sample();
+});
+
+check('widespread horizontal deformation keeps the exact full-triangle fallback', () => {
+  const nx = 20, nz = 20, m = make(nx, nz, 200, 200), p = m.geometry.attributes.position;
+  compare(m, ray(...coordinate(m, nx, 10, 10)));
+  for (let z = 1; z < nz; z++) for (let x = 1; x < nx; x++) {
+    const i = z * (nx + 1) + x;
+    p.setX(i, p.getX(i) + (x % 2 ? 15 : -15)); p.setZ(i, p.getZ(i) + (z % 2 ? -12 : 12));
+  }
+  p.needsUpdate = true; refresh(m);
+  for (let z = 2; z < nz; z += 3) for (let x = 2; x < nx; x += 3) compare(m, ray(...coordinate(m, nx, x, z)));
 });
 
 check('parent translation/rotation/nonuniform and negative scale; angled-ray fallback', () => {
@@ -191,6 +272,24 @@ check('220-grid warm queries visit at most 18 triangles and allocate one 193,600
   assert.equal(T.gridAllocations.length, allocationStart + allocated.length, 'warm queries must reuse the cell map');
   console.log(JSON.stringify({ workload: 'one warm vertical ray on a 220 × 220 height grid', baselineTriangles: baselineVertices / 3,
     optimizedTriangles: optimizedVertices / 3, cellMapBytes: 193600, axisBytes: 3536, baselineMs, optimizedMs }, null, 2));
+  } finally { T.Mesh.prototype.getVertexPosition = get; }
+});
+
+check('eight locally shifted vertices retain a bounded fast path on the real 220 × 220 grid', () => {
+  const nx = 220, m = make(nx, nx, 5200, 5200), p = m.geometry.attributes.position, moved = new Set();
+  compare(m, ray(...coordinate(m, nx, 102, 106)));
+  for (let z = 105; z <= 108; z++) for (let x = 102; x <= 103; x++) {
+    const i = z * (nx + 1) + x; moved.add(i); p.setX(i, p.getX(i) + 11);
+  }
+  p.needsUpdate = true; refresh(m);
+  const s = warpedSamples(m, moved).find((s) => s.interior), r = ray(s.x, s.z), expected = compare(m, r);
+  let vertices = 0; const get = T.Mesh.prototype.getVertexPosition;
+  T.Mesh.prototype.getVertexPosition = function (i, v) { vertices++; return get.call(this, i, v); };
+  try {
+    assert.deepEqual(r.intersectObject(m, false).map(fullHit), expected.map(fullHit));
+    // Eight vertices in two columns/four rows touch 15 cells; at most nine other nominal cells are visited.
+    assert.ok(vertices > 0 && vertices <= (15 + 9) * 6, `sparse changes must not fall back to all 96,800 triangles (${vertices / 3} visited)`);
+    console.log(JSON.stringify({ workload: 'one warm 220-grid ray after eight vertices shift horizontally', optimizedTriangles: vertices / 3 }));
   } finally { T.Mesh.prototype.getVertexPosition = get; }
 });
 console.log(`${groups} terrain regression groups passed; ${queries} full-hit comparisons (Three.js r${T.REVISION}).`);
