@@ -296,8 +296,11 @@
       stone.position.set(55 + s * (2.5 + Math.sin(ang) * TH / 2), 20 + GH / 2 + Math.cos(ang) * TH / 2, CO.harN);
       stone.rotation.z = -s * ang;
     }
-    gateTrim({ axis: "x", gx: 0, gz: CO.harS, inward: -1, wl: wallS });
-    gateTrim({ axis: "x", gx: 110, gz: CO.harS, inward: -1, wl: wallS });
+    // CHULDA_LEAVES_G (fix-g, 23.11.2026): the two gates of Chulda have their gold leaves (1.5.0, H2.doors below, open into the Mount) - the old
+    // cedar pair of the trim stood almost shut inside the same opening, across the way (the processions of the libation and of the first fruits
+    // walked through them); left out, as Tadi's
+    gateTrim({ axis: "x", gx: 0, gz: CO.harS, inward: -1, wl: wallS, leaves: false });
+    gateTrim({ axis: "x", gx: 110, gz: CO.harS, inward: -1, wl: wallS, leaves: false });
     gateTrim({ axis: "z", gx: CO.harW, gz: 0, inward: -1, wl: wallW });
     const RUN = 36 * 0.8;
     // CHULDA_RAMPS_B2 (fix-b2, 22.11.2026 - the user's decision 103: "שערי חולדה — כבש משופע תמיד, במקום מדרגות"; Chalamish, "אלחנן וחיים
