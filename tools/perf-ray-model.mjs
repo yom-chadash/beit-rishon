@@ -22,13 +22,34 @@ const report = {
   reference: 'Same scene and queries, with the coarse terrain using Three.js original _computeIntersections.',
   roomReference: 'Same current scene and terrain accelerator; compare the indoor guard before and after prefiltering its tmPass surfaces.',
   environment: { node: process.version, platform: process.platform, arch: process.arch, cpu: os.cpus()[0]?.model },
-  workload: { warmQueriesPerBatch: 40, timingBatches: 3, statistic: 'median milliseconds per batch', randomSeed: 729418 },
+  workload: { warmQueriesPerBatch: 40, timingBatches: 3, statistic: 'median milliseconds per batch', randomSeed: 729418,
+    firstHouseReadings: 'Actual UI default Rashi and restored Rambam, before and after deferred valley refinement.' },
   states: [], rooms: []
 };
 const encode = (hits) => JSON.stringify(hits.map(h => ({
   object: h.object.id, instance: h.instanceId, face: h.faceIndex, distance: h.distance,
   point: h.point.toArray(), uv: h.uv?.toArray(), normal: h.normal?.toArray()
 })));
+
+function terrainDeformation(terrain, original) {
+  const p = terrain.mesh.geometry.attributes.position, width = terrain.nx + 1, vertices = [], cells = new Set();
+  const extent = () => ({ min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] });
+  const beforeBounds = extent(), afterBounds = extent(), delta = extent();
+  const include = (bounds, point) => point.forEach((v, i) => { bounds.min[i] = Math.min(bounds.min[i], v); bounds.max[i] = Math.max(bounds.max[i], v); });
+  for (let i = 0; i < p.count; i++) {
+    const before = Array.from(original.subarray(i * 3, i * 3 + 3)), after = [p.getX(i), p.getY(i), p.getZ(i)];
+    if (before.every((v, k) => v === after[k])) continue;
+    const column = i % width, row = Math.floor(i / width);
+    vertices.push({ vertex: i, column, row, before, after });
+    include(beforeBounds, before); include(afterBounds, after); include(delta, after.map((v, k) => v - before[k]));
+    for (const z of [row - 1, row]) for (const x of [column - 1, column]) {
+      if (x >= 0 && x < terrain.nx && z >= 0 && z < terrain.nz) cells.add(z * terrain.nx + x);
+    }
+  }
+  return { vertices, affectedCells: [...cells].sort((a, b) => a - b),
+    beforeBounds: vertices.length ? beforeBounds : null, afterBounds: vertices.length ? afterBounds : null,
+    coordinateDelta: vertices.length ? delta : null };
+}
 
 function roomBenchmark(ctx, house, entry, querySection) {
   ctx.scene.updateMatrixWorld(true);
@@ -103,12 +124,23 @@ for (const house of selected ? [selected] : ['rishon', 'sheni']) {
     }
   });
   assert.equal(terrains.length, 1, `${house}: expected the accelerated 220 x 220 coarse terrain`);
+  const originalPositions = terrains[0].mesh.geometry.attributes.position.array.slice();
+  let rashiDeformation = null;
   const setTerrain = (on) => {
     for (const t of terrains) t.mesh._computeIntersections = on ? t.accelerated : Mesh.prototype._computeIntersections;
   };
   try {
-    for (const state of argv.includes('--room-only') ? [] : house === 'rishon' ? ['coarse', 'refined-valleys'] : ['coarse']) {
-      if (state === 'refined-valleys') {
+    const states = house === 'rishon' ? [
+      { name: 'coarse-rashi', reading: 'rashi', refined: false },
+      { name: 'coarse-rambam', reading: 'rambam', refined: false },
+      { name: 'refined-valleys-rashi', reading: 'rashi', refined: true },
+      { name: 'refined-valleys-rambam', reading: 'rambam', refined: true }
+    ] : [{ name: 'coarse', reading: null, refined: false }];
+    for (const { name: state, reading, refined } of argv.includes('--room-only') ? [] : states) {
+      // buildUI.after-tg applies Rashi AFTER all builders. That setter also shifts eight coarse-terrain vertices beneath
+      // the house; benchmarking the builders' initial Rambam state alone misses the real browser's irregular grid.
+      if (reading) ctx.shared.traksin.set(reading);
+      if (refined && !ctx.shared.valleys188.state.done) {
         // Run only the real deferred valley builder, without advancing demonstrations or unrelated animations.
         const refine = ctx.animated.find(fn => String(fn).includes('rowOf(ST.j++)'));
         assert(refine, 'deferred valley builder not found');
@@ -117,6 +149,12 @@ for (const house of selected ? [selected] : ['rishon', 'sheni']) {
         assert(ctx.shared.valleys188.cells > 0, 'no coarse cells were replaced');
       }
       ctx.scene.updateMatrixWorld(true);
+      const deformation = terrainDeformation(terrains[0], originalPositions);
+      if (reading === 'rashi') {
+        assert(deformation.vertices.length > 0, 'Rashi default must exercise the terrain deformation present in the full UI');
+        if (rashiDeformation) assert.deepEqual(deformation, rashiDeformation, 'restoring Rashi changed its terrain deformation');
+        else rashiDeformation = deformation;
+      } else assert.equal(deformation.vertices.length, 0, `${house}/${state}: terrain vertices did not restore exactly`);
       // A fresh selector includes the newly added valley blocks immediately, independent of the live one-second cache.
       const query = makeQueries(), solids = query.solids('floor'), rays = [];
       assert.equal(typeof query.intersect.first, 'function', 'nearest-hit helper is required');
@@ -156,7 +194,7 @@ for (const house of selected ? [selected] : ['rishon', 'sheni']) {
       const random = () => ((seed = Math.imul(seed, 1664525) + 1013904223 | 0) >>> 0) / 4294967296;
       const probes = [...rays];
       for (let i = 0; i < 70; i++) probes.push(down(random() * 5000 - 2400, random() * 300 + 30, random() * 5000 - 2400, 600));
-      if (state === 'refined-valleys') {
+      if (refined) {
         for (let i = 0; i < 60; i++) probes.push(down(random() * 1080 - 430, 100, random() * 1040 + 430, 600));
       }
       const position = terrains[0].mesh.geometry.attributes.position;
@@ -167,6 +205,26 @@ for (const house of selected ? [selected] : ['rishon', 'sheni']) {
       for (let i = 0; i < 12; i++) {
         probes.push(new Raycaster(new Vector3(random() * 500 - 100, 120, random() * 500 - 100),
           new Vector3(random() * 0.4 - 0.2, -1, random() * 0.4 - 0.2).normalize(), 0, 600));
+      }
+      const warpProbeStart = probes.length;
+      if (rashiDeformation) {
+        // Probe both the old/new vertices and either side of their exact edges, then both triangle interiors in every
+        // affected cell. Keep these probes when returning to Rambam: geometry-version invalidation must undo the warp too.
+        const { mesh, nx } = terrains[0], width = nx + 1, p = mesh.geometry.attributes.position;
+        const points = new Map(), add = (x, z) => points.set(x + ':' + z, [x, z]);
+        for (const { before, after } of rashiDeformation.vertices) for (const q of [before, after]) {
+          for (const [dx, dz] of [[0, 0], [-1e-5, 0], [1e-5, 0], [0, -1e-5], [0, 1e-5]]) add(q[0] + dx, q[2] + dz);
+        }
+        for (const cell of rashiDeformation.affectedCells) {
+          const a = Math.floor(cell / nx) * width + cell % nx, b = a + width, d = a + 1;
+          for (const ids of [[a, b, d], [b, b + 1, d]]) {
+            add(ids.reduce((n, i) => n + p.getX(i), 0) / 3, ids.reduce((n, i) => n + p.getZ(i), 0) / 3);
+          }
+        }
+        for (const [x, z] of points.values()) {
+          const world = new Vector3(x, 200, z).applyMatrix4(mesh.matrixWorld);
+          probes.push(down(world.x, world.y, world.z, 600));
+        }
       }
       for (let i = 0; i < probes.length; i++) {
         const ray = probes[i], label = `${house}/${state} ray ${i}`;
@@ -180,13 +238,17 @@ for (const house of selected ? [selected] : ['rishon', 'sheni']) {
       const { nx, nz } = terrains[0];
       const result = {
         house, state, solids: solids.length, verifiedRays: probes.length, coldFirstQueryMs,
+        traksin: reading, uiDefault: reading === 'rashi' || house === 'sheni', targetedWarpRays: probes.length - warpProbeStart,
+        terrainDeformation: { changedVertices: deformation.vertices.length, affectedCellCount: deformation.affectedCells.length, ...deformation },
         gridIndexTypedArrayBytes: (nx + 1 + nz + 1) * Float64Array.BYTES_PER_ELEMENT + nx * nz * Int32Array.BYTES_PER_ELEMENT,
-        note: 'Index byte count excludes object/Map overhead; cold query includes ordinary ray initialization too.',
+        note: 'Base lattice typed-array count excludes sparse-cell and object/Map overhead; cold query includes ordinary ray initialization too.',
         timings, valleyCells: ctx.shared.valleys188?.cells || 0
       };
       report.states.push(result);
       console.log(JSON.stringify(result, null, 2));
     }
+    // The room selector and camera corrections must also run in the actual first-house UI default.
+    if (house === 'rishon') ctx.shared.traksin.set('rashi');
     const room = roomBenchmark(ctx, house, source, section);
     report.rooms.push(room);
     console.log(JSON.stringify(room, null, 2));
