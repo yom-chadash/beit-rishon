@@ -2197,6 +2197,7 @@
         // 1.9.2 (the user: "ההדגמה מציגה בכל פעם רק את א' מן השיטות ורק במעבר למתג השיטה השניה מוצגת ההדגמה הרלוונטית לו (כמו בכסא
         // שלמה)"): the reading now chosen only; a chip of the row chooses and runs. `walk` false: the doors alone (the pishpesh's walk leads in)
         demo(m, walk) {
+          if (this.t0 >= 0) SFX.stop();   // SCAN2_S4: a chip of "דלתות ההיכל" on the running demonstration's card runs it again from its start - the old run's sounds, timed ahead, do not play over the new
           if (m) this.set(m);
           this.prep(false);
           // 1.9.2 (the user: "רואים את שתי הדלתות אבל לא רואים את הקיפול עצמו"): the doors wait for the eye - the walk begins with a
@@ -2832,6 +2833,12 @@
           KOH.pose(o);
         };
         ctx2.shared.pishpeshDemo = (mode) => {
+          // SCAN2_S4 (the final scan, item 1: a chip of "המפתח שיורד לאמת השחי" / "הדרך מן הפשפש לשער הגדול" on the running demonstration's
+          // card left the camera walking alone, without the priest, until the great gate): a run that goes on is stopped HERE, before the
+          // new one is set - until now DW.run below stopped the old walk, and its end (pishpeshStop(true)) came after D.t0 of the new run
+          // was set: D.t0 = -1 (the priest gone, the doors back open) while the new walk went on. Now the whole demonstration from its
+          // start, the priest and the eye together (and the old run's sounds, timed ahead, silenced)
+          if (D.t0 >= 0 || DW.on) ctx2.shared.pishpeshStop();
           const W = ctx2.shared.pishpeshWay;
           if (W) W.set(mode || W.mode);
           D.mode = W ? W.mode : "rabbanan";
