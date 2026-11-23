@@ -8,9 +8,11 @@ The source baseline is `695456732c1d93db67268d13b7367cca76783aee`. Each independ
 
 ### Camera and terrain queries
 
-The coarse mountain is a 220 × 220 height grid containing 96,800 triangles. Previously, an ordinary downward floor query could test every triangle. `tm_terrainRaycast` validates its lattice and index topology once, locates the ray's cell, and delegates only that cell and its neighbours to the existing Three.js triangle implementation. At most 18 triangles are visited. Visiting neighbouring cells preserves exact edge and vertex hits; sorting the selected index ranges preserves equal-distance hit order.
+The coarse mountain is a 220 × 220 height grid containing 96,800 triangles. Previously, an ordinary downward floor query could test every triangle. `tm_terrainRaycast` validates its lattice and index topology once, locates the ray's cell, and delegates only that cell and its neighbours to the existing Three.js triangle implementation. In an unchanged part of the grid, at most 18 triangles are visited. Visiting neighbouring cells preserves exact edge and vertex hits; sorting the selected index ranges preserves equal-distance hit order.
 
-The accelerator supports the first house's refined valleys, which replace subsets of coarse terrain cells. It invalidates the lookup when position/index attributes or their versions change. Nonvertical rays, morphs, custom vertex positions, unsupported topology and material arrays retain the original path. The lookup uses 197,136 bytes of typed arrays per coarse mountain, plus small JavaScript object overhead; its first-use validation cost is reported separately.
+The first-house UI also selects the Rashi room-width reading after model construction, moving eight terrain vertices across 15 cells. A strict rectangular-grid accelerator would silently fall back everywhere in this actual default state. The final implementation additionally visits conservative bounds for these locally deformed cells, even when vertices move across many nominal cells. It combines and deduplicates those candidates before the same exact triangle routine. More than 256 deformed cells fall back to the full path rather than creating a large per-query linear scan.
+
+The accelerator supports the first house's refined valleys, which replace subsets of coarse terrain cells. It invalidates the lookup when position/index attributes or their versions change, including switching between Rashi and Rambam. Nonvertical rays, morphs, custom vertex positions, unsupported topology and material arrays retain the original path. The lookup uses 197,136 bytes of typed arrays per coarse mountain, plus small JavaScript object overhead and the bounded deformed-cell records; its first-use validation cost is reported separately.
 
 Camera picking also uses conservative world-space bounding boxes before the exact Three.js raycast. Boxes follow geometry, instances and parent transforms. Queries that only need the nearest result visit candidates in distance order and stop when the remaining boxes cannot beat it. Unbounded/custom/deformed objects retain their exact test. Zoom candidates exclude hidden and non-pickable branches before intersecting them, using the previous post-hit eligibility rules.
 
@@ -71,25 +73,25 @@ At a 1920 × 1080 drawing buffer, the existing half-resolution effects use 960 �
 
 ### Recorded CPU query results
 
-The committed [measurement snapshots](performance-results/) retain the workload, hardware and source revision. The terrain rows below are from the Linux CI runner (AMD EPYC, Node 24); the indoor rows are from the local Linux validation runner (Intel Xeon, Node 24). Each entry is the median of three warm batches. Compare the two columns within a row, not absolute times across machines.
+The committed [measurement snapshots](performance-results/) retain the workload, hardware and source revision. The query rows below are from the local Linux validation runner (Intel Xeon, Node 24) with the actual first-house UI default selected. Each entry is the median of three warm batches. Runner load affects absolute times, so compare the two columns within a row; these numbers are not a hardware-independent performance budget.
 
 | Isolated workload | Original query path | Optimized path |
 | --- | ---: | ---: |
-| First house: 40 downward queries, coarse terrain | 1,990.53 ms | 5.62 ms |
-| First house: 40 downward queries, refined valleys | 2,033.92 ms | 5.75 ms |
-| Second house: 40 downward queries | 2,176.85 ms | 46.83 ms |
-| First house: 35 nearby indoor-orbit constraints | 1,532.29 ms | 119.29 ms |
-| Second house: 10 nearby indoor-orbit constraints | 568.49 ms | 4.40 ms |
+| First house: 40 downward queries, Rashi/coarse terrain | 4,509.69 ms | 19.75 ms |
+| First house: 40 downward queries, Rashi/refined valleys | 2,174.69 ms | 18.48 ms |
+| Second house: 40 downward queries | 2,622.66 ms | 72.62 ms |
+| First house: 35 nearby indoor-orbit constraints, Rashi | 3,331.98 ms | 238.66 ms |
+| Second house: 10 nearby indoor-orbit constraints | 558.65 ms | 5.09 ms |
 
-The terrain comparison keeps the current scene and replaces only the query path with original Three.js raycasting. The indoor comparison already includes terrain acceleration in both columns and isolates the additional early room-surface filter. All compared hit data/camera positions match. The first coarse-terrain lookup in this CI run took 83.20 ms, including lookup validation and ordinary first-query setup; warm timings exclude that one-time cost. These are CPU query timings, not full frames or application speedup factors.
+The terrain comparison keeps the current scene and replaces only the query path with original Three.js raycasting. The indoor comparison already includes terrain acceleration in both columns and isolates the additional early room-surface filter. All compared hit data/camera positions match. The first coarse-terrain lookup in the Rashi state took 83.48 ms in this run, including lookup validation and ordinary first-query setup; warm timings exclude that one-time cost. These are CPU query timings, not full frames or application speedup factors.
 
 ### Correctness and browser coverage
 
 The test suites distinguish correctness, operation counts and runtime measurements:
 
-- `perf-terrain-test.mjs`: 1,479 exact-hit comparisons across random rays, lattice boundaries, holes and reordered cells, transforms, buffer changes, morph/custom fallbacks, near/far limits and draw ranges. The unchanged triangle routine supplies the complete hit data.
+- `perf-terrain-test.mjs`: 3,455 exact-hit comparisons across random rays, lattice boundaries, holes and reordered cells, local deformations and distant folds, transforms, buffer changes, morph/custom fallbacks, near/far limits and draw ranges. The unchanged triangle routine supplies the complete hit data. A deliberately broken candidate selector fails the displaced-triangle cases.
 - `perf-render-test.mjs`: broad-phase and nearest-hit equivalence, visibility and eligibility rules, geometry/instance mutations, tie order, shadows and clipping.
-- `perf-ray-model.mjs`: actual-model queries in both houses, including 995 refined valley cells. The reference uses the same current scene with the original terrain routine and ordinary raycasting. It reports cold cost and warm medians separately. A second workload checks 56 indoor camera corrections, including every clipping axis, and times the nearby orbit viewpoints that call the production room constraint. It is not a whole-application before/after benchmark. Use `--room-only` for the latter workload alone.
+- `perf-ray-model.mjs`: 1,260 actual-model ray comparisons in both houses, including the actual Rashi UI default, restoration to Rambam, and 995 refined valley cells in both readings. The reference uses the same current scene with the original terrain routine and ordinary raycasting. It reports cold cost and warm medians separately. A second workload checks 56 indoor camera corrections, including every clipping axis, and times the nearby orbit viewpoints that call the production room constraint. It is not a whole-application before/after benchmark. Use `--room-only` for the latter workload alone.
 - `perf-geometry.mjs`: baseline-to-candidate comparison of expanded geometry, indices, UVs, material settings, shadow/picking flags and world transforms. The second house covers 25 states and 331 actual raycasts through newly instanced groups. Float32 instance storage introduces at most 0.000006104 amot of world-matrix difference and 0.000000115 amot of ray-hit-point difference in these checks.
 - `perf-resources-hand.mjs`, `perf-resources-crowd.mjs`, `test-lamp-lifecycle.mjs`: exact generated hands, crowd selection/invalidation and deferred demonstration lifecycle.
 - `perf-hq-test.mjs`: mode switching, resize, simulated context restoration, material restoration, target allocation and absence of framebuffer feedback using the real HQ code with a recording renderer.
