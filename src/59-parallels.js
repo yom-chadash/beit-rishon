@@ -571,6 +571,8 @@
       ctx.shared.features.aravah = { key: "aravah", timed: false, isOn: () => AG.visible,
         on: () => { build(); sync(); AR.t0 = performance.now(); AG.visible = true; tefOn(true); pose(); },
         off: () => { AG.visible = false; tefOn(false); } };
+      // DEMO_STOP_G (the user, 23.11.2026 01:18): any switch, place or view ends the circuit and takes its figures away (as every demonstration)
+      (ctx.shared.demoStops || (ctx.shared.demoStops = [])).push({ id: "aravahDemo1", running: () => AG.visible, stop: () => ctx.shared.features.aravah.off() });
       ctx.animated.push(() => { if (!AG.visible) return; sync(); pose(); });
     }
 

@@ -227,7 +227,7 @@
       H2.occ(pilInst).userData.fadeWith = wl;
       if (tag === "E") pilE = pilInst;   // 1.9.1: hidden in the six-amot reading
     }
-    function gateTrim({ axis, gx, gz, arched = true, doorH = 15, doorMat = M2.cedar, inward = 1, wl = null, leaves = true }) {
+    function gateTrim({ axis, gx, gz, arched = true, doorH = 15, doorMat = M2.cedar, inward = 1, wl = null, leaves = true, sillCut = 0 }) {
       const tr = (m) => {
         if (wl) H2.occ(m).userData.fadeWith = wl;
         return m;
@@ -236,7 +236,7 @@
       if (axis === "x") {
         for (const s of [-1, 1]) tr(H2.box(g, jw, jh, jd, M2.stoneLight, gx + s * 5.9, 0, gz));
         if (arched) tr(H2.box(g, 13.6, 1.8, T + 1.2, M2.stoneLight, gx, 20, gz)); // flat stone lintel (shakuf) directly on the 20-amah opening
-        tr(H2.box(g, 11.8, 0.18, T + 1.4, M2.stoneSmooth, gx, 0, gz));
+        tr(H2.box(g, 11.8, 0.18, T + 1.4 - (sillCut ? 0.7 : 0), M2.stoneSmooth, gx, 0, gz - sillCut * 0.35));   // CHULDA_LEAVES_G: sillCut - the sill ends at the wall's face on that side (a ramp begins there)
       } else {
         for (const s of [-1, 1]) tr(H2.box(g, jd, jh, jw, M2.stoneLight, gx, 0, gz + s * 5.9));
         if (arched) tr(H2.box(g, T + 1.2, 1.8, 13.6, M2.stoneLight, gx, 20, gz)); // flat stone lintel (shakuf) directly on the 20-amah opening
@@ -296,8 +296,12 @@
       stone.position.set(55 + s * (2.5 + Math.sin(ang) * TH / 2), 20 + GH / 2 + Math.cos(ang) * TH / 2, CO.harN);
       stone.rotation.z = -s * ang;
     }
-    gateTrim({ axis: "x", gx: 0, gz: CO.harS, inward: -1, wl: wallS });
-    gateTrim({ axis: "x", gx: 110, gz: CO.harS, inward: -1, wl: wallS });
+    // CHULDA_LEAVES_G (fix-g, 23.11.2026): the two gates of Chulda have their gold leaves (1.5.0, H2.doors below, open into the Mount) - the old
+    // cedar pair of the trim stood almost shut inside the same opening, across the way (the processions of the libation and of the first fruits
+    // walked through them); left out, as Tadi's. And their sill no longer runs on over the ramp's head (it stood 0.4-0.6 over the ramp there, a
+    // step down in the air): it ends at the wall's outer face, where the ramp begins
+    gateTrim({ axis: "x", gx: 0, gz: CO.harS, inward: -1, wl: wallS, leaves: false, sillCut: 1 });
+    gateTrim({ axis: "x", gx: 110, gz: CO.harS, inward: -1, wl: wallS, leaves: false, sillCut: 1 });
     gateTrim({ axis: "z", gx: CO.harW, gz: 0, inward: -1, wl: wallW });
     const RUN = 36 * 0.8;
     // CHULDA_RAMPS_B2 (fix-b2, 22.11.2026 - the user's decision 103: "שערי חולדה — כבש משופע תמיד, במקום מדרגות"; Chalamish, "אלחנן וחיים
