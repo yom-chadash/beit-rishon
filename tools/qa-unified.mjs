@@ -187,6 +187,7 @@ try {
     }), 300));
   }, { rishon: CFG.houses.rishon.version, sheni: CFG.houses.sheni.version });
   await page.goto(pathToFileURL(path.join(plugin, 'index.html')).href, { waitUntil: 'load' });
+  await frameSnapshot(page, 'plugin before initial foreground');
   await page.bringToFront();
   await sleep(800);
   ok('the plugin starts in a foreground document', await page.evaluate(() => !document.hidden));
@@ -284,6 +285,7 @@ try {
     // after the house was ready, and the click on the bar below sometimes fell on its veil ("rishon not ready ... no frame")
     await p2.evaluateOnNewDocument((v) => { try { localStorage.setItem('tm1.news.seen', v.rishon); localStorage.setItem('tm2.news.seen', v.sheni); } catch (_) {} }, { rishon: CFG.houses.rishon.version, sheni: CFG.houses.sheni.version });
     await p2.goto(pathToFileURL(path.resolve(standalone)).href, { waitUntil: 'load' });
+    await frameSnapshot(p2, 'one file: before initial foreground');
     await p2.bringToFront();
     await sleep(500);
     ok('one file: starts in a foreground document', await p2.evaluate(() => !document.hidden));
