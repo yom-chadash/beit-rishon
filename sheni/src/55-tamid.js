@@ -130,7 +130,7 @@
       moked: () => CAMK.moked()[0].slice(1),   // NIGHT_WATCH_305: the moving eye's first key (MOKED_WIDE_211's eye at its end)
       lot1: (o) => (o === "rambam" ? GZV : [[-18, 50.5, -58.6], [-18, 15, -69]]),
       patrol: () => CAMK.patrol()[0].slice(1),
-      kiyor: () => [[6.5, 25.5, 64.2], [20.5, 21, 55.6]],   // KIYOR_A2: the wheel at the crane's foot, the laver on its base; KIYOR_VIEW_S2 (the user: "צריך מהכיוון השני, לראות גם את הכיור וגם את המוכני"): from the south-west - the toothed wheel (on the windlass's south side), the well and the laver; until now from the north-west, the wheel behind its posts
+      kiyor: () => [[9, 24.5, 63.3], [20.5, 20.6, 56]],   // KIYOR_A2: the wheel at the crane's foot, the laver on its base; KIYOR_VIEW_S2 (the user: "צריך מהכיוון השני, לראות גם את הכיור וגם את המוכני"): from the south-west - the toothed wheel (on the windlass's south side), the well and the laver; until now from the north-west, the wheel behind its posts
       kiyor12: () => [[34.5, 28, 44.5], [22, 17.6, 54.7]],   // KIYOR_A2: the twelve round the laver
       terumah: () => [V3(88, 44, 46), V3(56, 21, 18)],
       tapuach: () => [V3(82, 42, 28), V3(55.5, 25, -3.5)],
@@ -148,7 +148,7 @@
       akedah: () => [[54, 25, -10], [42, 16.5, -25]],
       dam: () => CAMK.dam()[0].slice(1),
       evarim: () => [V3(34, 46, 40), V3(50, 18, 32)],
-      melach: () => [V3(37, 41, 45), V3(48.6, 18.4, 35.2)],   // SALT_STAGE_S2: the ramp's lower half from the west, above (over the ramp's side)
+      melach: () => [V3(40, 34, 43), V3(48.6, 18.6, 35.6)],   // SALT_STAGE_S2: the ramp's lower half from the west, above (over the ramp's side)
       shema: () => GZV,
       lot34: () => GZV,
       machta: () => [V3(80, 44, 50), V3(52, 22, 20)],
