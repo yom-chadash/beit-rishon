@@ -1079,7 +1079,7 @@
       };
       const R_SUGYA = [["זבחים סב:", { book: 130, index: 2129 }], ["רמב״ם בית הבחירה ב, יד", { book: 337, index: 37 }]];
       const RAMP_REFS = {
-        rashi: R_SUGYA.concat([["רש״י זבחים סב:", { book: 2191, index: 3022 }], ["רש״י זבחים סד.", { book: 2191, index: 3089 }]]),
+        rashi: R_SUGYA.concat([["רש״י זבחים סב:", { book: 2191, index: 3017 }], ["רש״י זבחים סד.", { book: 2191, index: 3084 }]]),
         tosafot: R_SUGYA.concat([["תוספות זבחים סד.", { book: 1936, index: 686 }], ["תוספות יום טוב זבחים ו, ג", { book: 945, index: 183 }],
           ["משנה למלך בית הבחירה ב, יד", { book: 4606, index: 25 }], ["לחם שמים בית הבחירה ב, יד", { book: 5069, index: 31 }]])
       };

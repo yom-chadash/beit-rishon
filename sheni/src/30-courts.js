@@ -2271,6 +2271,57 @@
         const RV = { info: "**רובדין של אבן** (מידות א, ח): ״ומקף רובדין של אבן, וזקני בית אב ישנים שם״. להרא״ש ולתפארת ישראל — מדרגות של אבן לאורך הכתלים; למפרש — גומחות בכותל כעין מטות, ורובדין לעלות אליהן. המתג — בתפריט, ״רובדין של אבן בבית המוקד״.", refs: [["מידות א, ח", { book: 89, index: 9 }], ["פירוש הרא״ש תמיד כה:", { book: 2224, index: 9 }], ["המפרש תמיד כה:", { book: 2105, index: 9 }]] };
         ctx2.labels.push(Object.assign({ text: "רובדין של אבן — זקני בית אב ישנים שם", x: X, y: FL + 3.5, z: Z, size: 1.2, layer: "rovdinR" }, RV),
           Object.assign({ text: "רובדין — גומחות בכותל ואבנים לעלות אליהן (המפרש)", x: X, y: FL + 6.2, z: Z, size: 1.1, layer: "rovdinM" }, RV));
+        // ROVDIN_SEE_S2 (fix-s2, 23.11.2026 - the user's decision 199 ב): A VIEWING SWITCH, not a reading - the pill "כל הרובדין" on בית
+        // המוקד: its dome and the chambers' roofs off (the pill "פתח את הלשכות"), and the hall's own tall walls and gates as glass, so that
+        // the benches of both walls are seen together, in each reading; again - all back (the roofs only if it opened them). The hall's
+        // pieces are found by their bounds: inside its plan (its gates' open leaves too), ten amot high or more (the corner chambers' low walls stay)
+        {
+          let on = false, saved = null, openedRoofs = false;
+          const glassOf = new Map();
+          const hallParts = () => {
+            const out = [], bb = new Box3();
+            g.updateMatrixWorld(true);
+            g.traverse((o) => {
+              if (!(o.isMesh || o.isInstancedMesh) || !o.material || Array.isArray(o.material)) return;
+              try { bb.setFromObject(o); } catch (_) { return; }
+              if (bb.isEmpty() || bb.max.y - bb.min.y < 10 || bb.max.y < FL + 10 || bb.min.y < 13) return;   // (not the base under its outer part)
+              const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;   // inside its plan - its gates' open leaves too
+              if (Math.abs(cx - X) > W / 2 + 6 || Math.abs(cz - Z) > D / 2 + 6 || bb.max.x - bb.min.x > W + 4 || bb.max.z - bb.min.z > D + 4) return;
+              out.push(o);
+            });
+            return out;
+          };
+          const MBr = ctx2.shared.modelButtons || (ctx2.shared.modelButtons = []);
+          const roofsPill = () => MBr.find((b) => b && b.id === "crt-lishkot-roofs") || null;
+          MBr.push({
+            id: "moked-rovdin", label: "כל הרובדין", labelOn: "החזר את בית המוקד", removal: true, maxDist: 160,
+            title: "מראה את כל הרובדין שבבית המוקד יחד: הכיפה וגגות הלשכות מוסרים, וכותלי האולם הגבוהים ושעריו שקופים. בכל אחת משתי השיטות. כלי צפייה בלבד.",
+            anchor: () => [X, FL + 4.5, Z + D / 2 + 1.5],
+            get: () => on,
+            set: (v) => {
+              v = !!v;
+              if (v === on) return;
+              on = v;
+              const R = roofsPill();
+              if (on) {
+                if (R && !R.get()) { R.set(true); openedRoofs = true; } else openedRoofs = false;
+                saved = [];
+                for (const o of hallParts()) {
+                  let gm = glassOf.get(o.material);
+                  if (!gm) { gm = o.material.clone(); gm.transparent = true; gm.opacity = 0.2; gm.depthWrite = false; glassOf.set(o.material, gm); }
+                  saved.push([o, o.material, o.castShadow]);
+                  o.material = gm; o.castShadow = false;
+                }
+              } else {
+                for (const [o, m, cs] of saved || []) { o.material = m; o.castShadow = cs; }
+                saved = null;
+                if (R && openedRoofs && R.get()) R.set(false);
+                openedRoofs = false;
+              }
+              if (ctx2.requestRender) ctx2.requestRender();
+            }
+          });
+        }
       }
       // 1.5.0 (the user: "צייר את פנים בית המוקד"): the hearth - "בית המוקד" is named for the great fire kept there, by which the priests warmed
       // themselves (Tamid 1:1 with the Rambam's commentary; Shabbat 20a): a stone ring, logs and a flame in the middle of the hall; and in the

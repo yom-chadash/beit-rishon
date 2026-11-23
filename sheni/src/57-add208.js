@@ -2113,6 +2113,61 @@
         }
         D.snd = t;
       });
+      // ===== SIMCHA_FOLLOW_S2 (fix-s2, 23.11.2026 - the user's notes 8 and 8א: "לא רואים את התקיעות"; "חלק מהזמן המצלמה מאבדת את המעקב
+      // איתם") - one block, the trumpets' part only. (1) THE EYE FOLLOWS THE TWO PRIESTS from the cock's crow until they have turned their
+      // faces to the west (until now four fixed flights - at the tenth step and on the floor they stood at the picture's edge or out of
+      // it, and on the way east they walked past the eye): every frame the eye is set by their place - before them and a little to the
+      // south while they stand at the upper gate, go down the steps and blow on the court's floor (their faces and the trumpets, the
+      // steps and the gate behind them), round to their side as they walk east, and behind them for the last stretch to the gate (the
+      // wall is there) - eased, so that it never jumps; never under the steps' surface. While a flight runs (the start), or the
+      // demonstration is paused (a press on the model), the eye is the viewer's. (2) SH.simchaShoeva.trumpets(): the demonstration from
+      // just before the blowing on the women's court's floor to its end (the row "התקיעות בהליכה לשער המזרח", 70-ui.js) - a new run each
+      // time (start() stops the one before). The eye's distances and the timing of its turns - model choices.
+      {
+        const FOL0 = TD - 0.05, FOL1 = TD + 36;
+        for (let i = FLY.length - 1; i >= 0; i--) if (FLY[i][0] >= TD && FLY[i][0] < FOL1) FLY.splice(i, 1);   // the follow replaces them
+        // [the clock, the eye's offset from the pair (x along the way east, up, z to the south)]
+        const OFF = [[TD, [12, 8, 8]], [TD + 19.9, [12, 8, 8]], [TD + 25.5, [2, 8, 12]], [TD + 30.5, [-10, 8, 9]]];   // high enough to see them over the people
+        const offAt = (t) => {
+          if (t <= OFF[0][0]) return OFF[0][1];
+          for (let i = 0; i + 1 < OFF.length; i++) if (t <= OFF[i + 1][0]) { const a = OFF[i], b = OFF[i + 1], u = ss(a[0], b[0], t); return a[1].map((v, q) => v + (b[1][q] - v) * u); }
+          return OFF[OFF.length - 1][1];
+        };
+        const F = { e: null, l: null, lt: 0 };
+        const pair = () => { const ks = B && B.koh; if (!ks || !ks.length) return null; let x = 0, y = 0; for (const k of ks) { x += k.G.position.x; y += k.G.position.y; } return [x / ks.length, y / ks.length, 0]; };
+        const want = (t) => {
+          const p = pair();
+          if (!p) return null;
+          const o = offAt(t), ex = p[0] + o[0], ez = p[2] + o[2];
+          const ey = Math.max(p[1] + o[1], stepY(ex, ez, ridSteps()) + 2.2);
+          return [[ex, ey, ez], [p[0] + o[0] * 0.12, p[1] + 1.8, p[2]]];
+        };
+        if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => {
+          const now = performance.now(), dt = Math.min(0.25, Math.max(0, (now - (F.lt || now)) / 1000));
+          F.lt = now;
+          if (!D.run || D.pausedAt != null) { F.e = null; return; }
+          const t = tNow();
+          if (t < FOL0 || t > FOL1) { F.e = null; return; }
+          if (fnc(ctx2.camFlying) && ctx2.camFlying()) { F.e = null; return; }
+          const w = want(t), cam = ctx2.camera, c = ctx2.controls;
+          if (!w || !cam) return;
+          if (!F.e) { F.e = cam.position.toArray(); F.l = c && c.target ? c.target.toArray() : w[1]; }
+          const k = 1 - Math.exp(-dt * 3.2);
+          for (let q = 0; q < 3; q++) { F.e[q] += (w[0][q] - F.e[q]) * k; F.l[q] += (w[1][q] - F.l[q]) * k; }
+          cam.position.set(F.e[0], F.e[1], F.e[2]);
+          if (c && c.target) c.target.set(F.l[0], F.l[1], F.l[2]);
+          cam.lookAt(F.l[0], F.l[1], F.l[2]);
+        });
+        SH.simchaShoeva.trumpets = () => {
+          start();
+          SH.simchaShoeva.seek(TD + 13.6);
+          apply(TD + 13.6);
+          const w = want(TD + 13.6);
+          if (w && fnc(ctx2.flyTo)) { try { ctx2.flyTo(w[0], w[1], 1800); } catch (_) {} }
+        };
+        SH.simchaShoeva.TD = TD;   // (the tests: the cock's crow on the demonstration's clock)
+      }
+      // ===== end SIMCHA_FOLLOW_S2
       // the pill on the model, over the women's court
       const MB = Array.isArray(SH.modelButtons) ? SH.modelButtons : (SH.modelButtons = []);
       MB.push({
