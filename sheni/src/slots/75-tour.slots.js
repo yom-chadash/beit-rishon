@@ -106,9 +106,9 @@
 #tm-tour-box .opts.on{display:flex}
 #tm-tour-box .opts .og{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 #tm-tour-box .opts .og b{font-weight:600;color:#c9a84c;margin-left:2px}
-#tm-tour-box .opts button{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.35);color:#cfc29a;border-radius:6px;padding:1px 6px;font:inherit;line-height:1.5;cursor:pointer}
-#tm-tour-box .opts button:hover{background:rgba(201,168,76,.24)}
-#tm-tour-box .opts button.on{background:rgba(201,168,76,.45);color:#17120a;border-color:#e2c56e;font-weight:700;cursor:default}
+#tm-tour-box .opts button{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.45);color:#f3dc9a;border-radius:6px;padding:1px 7px;font:inherit;line-height:1.5;cursor:pointer}
+#tm-tour-box .opts button:hover{background:rgba(201,168,76,.3)}
+#tm-tour-box .opts button.on{background:rgba(201,168,76,.5);color:#14110a;border-color:rgba(255,236,170,.85);cursor:default}
 //@@end tour_CSS
 //@@begin tour_CSS-2
 #tm-tour-box .vs .vl{display:block;color:#c9a84c;font:600 12px 'Segoe UI',Arial,sans-serif;margin:6px 0 1px}
@@ -346,9 +346,9 @@
           tip: "תמיד ז, א: \"בזמן שכהן גדול נכנס להשתחוות, שלשה אוחזין בו\"; ז, ג: \"בזמן שכהן גדול רוצה להקטיר, היה עולה בכבש והסגן בימינו\". בשמונה בגדיו." },
         { k: "kidd", lab: "קידוש ידיים ורגליים", o: [["tk", "תנא קמא והרמב״ם"], ["ryose", "ר׳ יוסי בר״י"]], set: "setKidd",
           tip: "זבחים יט: \"מניח ידו הימנית על גבי רגלו הימנית, וידו השמאלית על גבי רגלו השמאלית, ומקדש. רבי יוסי ברבי יהודה אומר: מניח שתי ידיו זו על גב זו, ועל גבי שתי רגליו זו על גבי זו\" — \"וחבירו מסייעו\". הרמב״ם (ביאת מקדש ה, טז) כתנא קמא: \"ושוחה ומקדש\"." },
-        { k: "mitz", lab: "מצנפת כהן גדול", o: [["rashi", "רש״י"], ["ramban", "רמב״ן"]], set: "setMitz",
+        { k: "mitz", lab: "מצנפת כהן גדול", o: [["rashi", "רש״י"], ["ramban", "רמב״ן"]], row: /^מצנפת הכהן הגדול/, set: "setMitz",   // CHIP_KEEPS_DEMO_T: + its row
           tip: "רש״י (שמות כח, ד): \"כמין כפת כובע\"; (כח, לז): \"למעלה בגבה הראש\". הרמב״ן (כח, לא): \"כעין צניף שצונף בו את ראשו\"." },
-        { k: "ephod", lab: "אפוד", o: [["rashi", "רש״י"], ["rambam", "הרמב״ם"]], set: "setEphod",
+        { k: "ephod", lab: "אפוד", o: [["rashi", "רש״י"], ["rambam", "הרמב״ם"]], row: /^אפוד הכהן הגדול/, set: "setEphod",   // CHIP_KEEPS_DEMO_T: + its row
           tip: "רש״י (שמות כח, ו): \"רחבו כמדת רחב גבו של אדם ויותר\"; (כח, כו): \"ונקפל הסינר לפני הכהן על מתניו\". הרמב״ם (כלי המקדש ט, ט): \"רחבו כרחב גבו של אדם מכתף לכתף\"." }
       ];
       const renderOpts = (s) => {
@@ -368,13 +368,14 @@
               const now = call(T.readings) || {};
               if (now[g.k] === v) return;
               const row = g.row ? rowsOf().find((r) => g.row.test(String(r.cap || ""))) : null;
-              if (row) setRow(row, "o" + j);
+              if (row) setRow(row, row.options.some((o) => o[0] === v) ? v : "o" + j);   // CHIP_KEEPS_DEMO_T: a row keyed by the reading's own name (the mitre, the ephod)
               else call(T[g.set], v);
               renderOpts(slides[idx] || s);
             });
           });
         }
       };
+      if (U.chips && fnc(U.chips.hook)) call(U.chips.hook, () => { if (running && slides[idx] && slides[idx].kind === "tamid") renderOpts(slides[idx]); });   // CHIP_KEEPS_DEMO_T
       const partLabel = (s) => {
         if (mode.key === "continuous") return "מצגת רציפה · סבב " + round;
         if (s.kind === "verse") return "לפי סדר המשניות · מידות פרק " + tour_heb(s.ch);

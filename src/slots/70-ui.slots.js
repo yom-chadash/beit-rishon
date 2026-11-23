@@ -709,6 +709,28 @@
       const UI_OPS_LAYER = { thronePesukim: "throneVersion", throneTargumSheni: "throneVersion", throneEstherRabbah: "throneVersion", throneBeitHamidrash: "throneVersion",
         forestRashi: "forestHouse", forestMetzudot: "forestHouse", forestMzd: "forestHouse", aliyot: "aliyot", ulamRambam: "ulamRambam",
         altarMeasures: "altarYose", altarM_chronicles: "altarYose", altarM_yose: "altarYose", yatziaRambam: "yatziaShape", yatziaRashi: "yatziaShape" };   // 1.3.3: the numbers of the altar's frames
+      // DEMO_CHIPS_T (fix-t, 23.11.2026 - the user, 01:31: "בכל הדגמה ומצגת שיש שיטות, צריך שבכרטיס יהיה מעבר ברור ומהיר בין השיטות"):
+      // the rows on which a demonstration's own course depends, on its card (the button of the group "הדגמות" takes its place's or its
+      // card's rows: opsOf, 70-ui.js). Already here: the throne's ascent (its view throneSteps), the willows (c1), the heichal's doors (potot)
+      Object.assign(UI_OPS_P, {
+        "עדי השקר — הכסא מרעיש": ["throneVersion"],   // the witnesses' scene of the midrash chosen
+        "הדגמת המכונה — המסלול והמים": ["kidReading"]   // the priest at the laver sanctifies by the reading chosen (45-vessels.js, KIDDUSH_RYOSE_A2)
+      });
+      // CHIP_KEEPS_DEMO_T (fix-t): how a row changes while its demonstration runs (a chip on its card: 70-ui.js pickFromCard) - otherwise its onPick
+      const UI_LIVE = {
+        // the throne's version (60-palace.js throneVersion.set stops the scene): the same scene - the ascent or the witnesses - goes on in
+        // the new version from the same second ("הפסוקים ומפרשיהם" has neither: the scene ends)
+        throneVersion: (row, key) => {
+          const T = ctx.shared.throne, A = T && T.ascent, W = T && T.witnesses;
+          const m = A && (A.running || A.paused) ? A : W && (W.running || W.paused) ? W : null;
+          const sec = m && typeof m.elapsed === "function" ? m.elapsed() : 0, wasP = !!(m && m.paused);
+          row.onPick(key);
+          if (m && key !== "pesukim" && typeof m.start === "function" && m.start()) {
+            if (sec > 0 && typeof m.seek === "function") m.seek(sec);
+            if (wasP && typeof m.pause === "function") m.pause();
+          }
+        }
+      };
       // subj = { view?, title?, label?, layers? } -> the row ids (kept unfiltered: the rows are built after the places and the labels)
 //@@end buildUI.UI_OPS_V
 //@@begin pickFromCard

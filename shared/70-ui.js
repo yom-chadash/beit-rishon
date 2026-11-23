@@ -1316,6 +1316,7 @@ body.tm-measuring canvas{cursor:crosshair}
         return { mark };
       };
       let chipsRefresh = () => {};   // 1.0.2 (item 4): set with the cards' chips below
+      const ui_chipHooks = [];   // CHIP_KEEPS_DEMO_T: more hosts of chips that follow every change of a row (ctx.ui.chips.hook: the presentation's banner)
       // ===== 1.0.1-L (L.34, the user: "כל פעם שלוחצים על הר הבית הוא פותח הסבר ואז צריך לגלול כדי למצוא את יתר הכפתורים"; "כן, כרטיס צף"):
       // the floating EXPLANATION CARD #tm-xcard. Until 1.0.1-K the explanation of a view / place / reading was written into #tm-info at the
       // panel's foot and the panel was scrolled to it, so the buttons went out of view. Now the panel holds the buttons only; the explanation
@@ -1433,6 +1434,12 @@ body.tm-measuring canvas{cursor:crosshair}
         xLinks.style.display = xLinks.childNodes.length ? "" : "none";
       };
       let xOpen = false, xAnchor = null, xSide = null, xOpsIds = null, xRow = null;
+      // CHIP_KEEPS_DEMO_T: the open card is the card of the demonstration its click started (set by the place's button below); its chips
+      // keep that demonstration running while it runs (an untimed feature of a demonstration's button - the willows' circuit - counts as
+      // running while it is on)
+      let xDemo = false, xFeat = null;
+      const xRuns = () => { if (ui_demoLive()) return true; try { return !!(xFeat && typeof xFeat.isOn === "function" && xFeat.isOn()); } catch (_) { return false; } };
+      const xKeep = () => xDemo && xRuns();
       //@@slot buildUI.UI_OPS_V
       const opsFor = (subj) => {
         const ids = [];
@@ -1443,6 +1450,10 @@ body.tm-measuring canvas{cursor:crosshair}
           add(UI_OPS_P[subj.title]);
           const it = placeItemByT[subj.title];
           if (it) { add(UI_OPS_V[it.view]); add(UI_OPS_V[it.key]); }
+          // CHIP_KEEPS_DEMO_T (fix-t): a button of the group "הדגמות" has its own title - its card takes the rows of the place or the card
+          // it stands for (it.opsOf, set where the group is built) and the demonstration's own rows (it.opsAdd: ui_demosList's d.ops)
+          if (it && Array.isArray(it.opsOf)) for (const t of it.opsOf) add(UI_OPS_P[t]);
+          if (it && Array.isArray(it.opsAdd)) add(it.opsAdd);
         }
         if (subj.label) for (const [re, a] of UI_OPS_L) if (re.test(subj.label)) add(a);
         for (const lay of subj.layers || []) if (UI_OPS_LAYER[lay]) add([UI_OPS_LAYER[lay]]);
@@ -1467,7 +1478,25 @@ body.tm-measuring canvas{cursor:crosshair}
         s = s.replace(/\s*\([^()]*\)\s*$/, "").trim();
         return s.length > 72 ? s.slice(0, 70) + "…" : s;   // 1.5.0: the chips wrap, not cut
       };
-      const pickFromCard = (row, key) => {
+      // CHIP_KEEPS_DEMO_T (fix-t, 23.11.2026 - the user, 01:31: "בכל הדגמה ומצגת שיש שיטות, צריך שבכרטיס יהיה מעבר ברור ומהיר בין
+      // השיטות"; the coordinator's plan, item 19): a chip on the card of a RUNNING demonstration, or on the presentation's banner, changes the
+      // reading and the demonstration goes on with it - it is not stopped (the rule of 90-entry.js asks ctx.shared.ui_chipKeepsDemo, below)
+      // and the camera does not fly (row.fly is skipped). A row with a way of its own to change while its demonstration runs has it in
+      // UI_LIVE[row.id](row, key) (the house's slots); otherwise its onPick. The cards of the places keep their old behaviour.
+      const ui_demoLive = () => {
+        for (const d of ctx.shared.demoStops || []) { try { if (d && typeof d.running === "function" && d.running()) return true; } catch (_) {} }
+        return false;
+      };
+      // THE ONE EXCEPTION to "a switch stops the demonstrations" (90-entry.js asks this hook, DEMO_STOP_G): a chip drawn to keep the
+      // demonstration (the class "tm-dk": on the running demonstration's own card, or on the presentation's banner) - true while one runs
+      ctx.shared.ui_chipKeepsDemo = (btn) => !!(btn && typeof btn.closest === "function" && btn.closest(".tm-dk") && (btn.closest("#tm-tour-box") || xKeep()));
+      const pickFromCard = (row, key, keep) => {
+        if (keep) {
+          row.mark(key);
+          const L = typeof UI_LIVE === "object" && UI_LIVE ? UI_LIVE[row.id] : null;
+          try { if (typeof L === "function") L(row, key); else row.onPick(key); } catch (_) {}
+          return;
+        }
         row.mark(key);
         try {
           row.onPick(key);
@@ -1484,7 +1513,9 @@ body.tm-measuring canvas{cursor:crosshair}
         }
       };
       // writes the chips of the rows `ids` into host; false (and host hidden) when there is none. onPicked(row, key) after a chip's switch
-      const renderChips = (host, ids, onPicked) => {
+      // CHIP_KEEPS_DEMO_T: keep (a function, asked at the click) - true while the chip should keep the demonstration running; such chips
+      // carry the class "tm-dk" (ctx.shared.ui_chipKeepsDemo)
+      const renderChips = (host, ids, onPicked, keep) => {
         host.textContent = "";
         const rows = opsLive(ids);
         host.style.display = rows.length ? "" : "none";
@@ -1507,7 +1538,7 @@ body.tm-measuring canvas{cursor:crosshair}
             a.href = "#";
             a.setAttribute("role", "button");
             const on = row.cur === key;
-            a.className = on ? "on" : "";
+            a.className = (on ? "on" : "") + (keep ? " tm-dk" : "");   // CHIP_KEEPS_DEMO_T
             a.setAttribute("aria-pressed", on ? "true" : "false");
             ui_fillSrc(a, opsChip(row, key));
             a.title = String(label || "");
@@ -1515,7 +1546,7 @@ body.tm-measuring canvas{cursor:crosshair}
               ev.preventDefault();
               ev.stopPropagation();
               if (row.cur === key) return;
-              pickFromCard(row, key);
+              pickFromCard(row, key, typeof keep === "function" ? !!keep() : !!keep);   // CHIP_KEEPS_DEMO_T
               if (onPicked) onPicked(row, key);
             });
             g.appendChild(a);
@@ -1576,6 +1607,7 @@ body.tm-measuring canvas{cursor:crosshair}
         xSide = null;
         xOpsIds = null;
         xRow = null;
+        xDemo = false; xFeat = null;   // CHIP_KEEPS_DEMO_T
         setXMin(false);
         xcard.style.display = "none";
       };
@@ -1595,6 +1627,7 @@ body.tm-measuring canvas{cursor:crosshair}
         xRefs.style.display = rs.length ? "" : "none";
         xOpsIds = Array.isArray(ops) && ops.length ? ops : null;
         xRow = row || null;
+        xDemo = false; xFeat = null;   // CHIP_KEEPS_DEMO_T (the place's button marks it again when its click started a demonstration)
         renderChips(xOps, xOpsIds, xChipPicked);
         renderLinks(title);   // SAME_PLACE_B2 / ORDER_B2
         xAnchor = anchor || null;
@@ -2631,6 +2664,8 @@ body.tm-measuring canvas{cursor:crosshair}
             else Object.defineProperty(it, "info", { get: () => { const b = pillOf(d.pill); return (b && b.title) || ""; }, enumerable: true });
           }
           if (!it) continue;
+          it.opsOf = [d.place || d.card].filter(Boolean);   // CHIP_KEEPS_DEMO_T: the rows of the place / card it stands for (opsFor)
+          if (Array.isArray(d.ops)) it.opsAdd = d.ops.slice();   // and its own (ui_demosList's d.ops)
           if (d.pill) {
             it.action = () => {
               try { if (d.run) d.run(); } catch (_) {}
@@ -2699,6 +2734,9 @@ body.tm-measuring canvas{cursor:crosshair}
             if (it.more) setInfo("__place", uiMergedCard(it), { title: it.t, anchor: pb, side: it.cardSide });   // 1.0.1-L (Part 7, U3)
             else if (it.key) setInfo(it.key, null, { title: it.t, anchor: pb, side: it.cardSide });
             else setInfo("__place", { text: it.info || "", refs: it.refs || [] }, { title: it.t, anchor: pb, side: it.cardSide });
+            // CHIP_KEEPS_DEMO_T: this click started a demonstration - its card's chips keep it running (and do not move the camera)
+            xFeat = it.feature && it.feature.timed === false && (it.noTour || /הדגמה/.test(String(it.t || ""))) ? it.feature : null;
+            if (xOpen && xOpsIds && xRuns()) { xDemo = true; renderChips(xOps, xOpsIds, xChipPicked, xKeep); }
             hidePanelOnPhone();
             for (const o of btns) o.classList.remove("on");
             for (const o of placeBtns) o.classList.remove("on");
@@ -2833,7 +2871,8 @@ body.tm-measuring canvas{cursor:crosshair}
       ctx.animated.push(() => { if (cardSpr) placeCard(false); });
       // 1.0.2 (item 4): a row marked anywhere (the table, a chip, the presentation) redraws the open cards' chips; the label's card is measured again
       chipsRefresh = () => {
-        if (xOpen && xOpsIds) renderChips(xOps, xOpsIds, xChipPicked);
+        if (xOpen && xOpsIds) renderChips(xOps, xOpsIds, xChipPicked, xDemo ? xKeep : null);   // CHIP_KEEPS_DEMO_T
+        for (const f of ui_chipHooks) { try { f(); } catch (_) {} }   // CHIP_KEEPS_DEMO_T: the presentation's banner
         if (cardSpr && cardOpsIds) {
           renderChips(cardOps, cardOpsIds);
           cardW = card.offsetWidth || cardW;
@@ -4642,6 +4681,9 @@ body.tm-measuring canvas{cursor:crosshair}
         refs: ui_REFS,
         viewButton: (key) => viewBtnByKey[key] || null,
         opinions: OPS,
+        // CHIP_KEEPS_DEMO_T (fix-t): the cards' chips for another host (75-tour.js: the presentation's banner) - of(subj) = the rows of a
+        // subject { view, title } (as a card's), render(host, ids, onPicked, keep) as the cards draw them, hook(fn) = fn after every change of a row
+        chips: { of: (subj) => opsFor(subj || {}), render: (host, ids, onPicked, keep) => renderChips(host, ids, onPicked, keep), hook: (fn) => { if (typeof fn === "function") ui_chipHooks.push(fn); } },
         setInfo,
         refLinks,
         smallSources: ui_smallSources,   // 1.0.1-L (L.89): text -> HTML with the sources' brackets in a smaller font (75-tour.js)

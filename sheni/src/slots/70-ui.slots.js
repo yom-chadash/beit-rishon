@@ -634,6 +634,39 @@
         [/^(?:צורת התאים|קומה (?:תחתונה|אמצעית|עליונה)|כנגד האוטם|השורה העליונה|כותל של אמה|התאים)/, ["sh38"]]
       ];
       const UI_OPS_LAYER = {};
+      // DEMO_CHIPS_T (fix-t, 23.11.2026 - the user, 01:31: "בכל הדגמה ומצגת שיש שיטות, צריך שבכרטיס יהיה מעבר ברור ומהיר בין השיטות"):
+      // the rows on which a demonstration's own course depends, on its card - the place's button, the button of the group "הדגמות" (it
+      // takes its place's rows: opsOf, 70-ui.js) and the presentation's banner. The rows that its route only reads for the model's measures
+      // (the altar's place and measures, the steps) are not added (the coordinator, item 20). The demonstrations whose rows were already
+      // here: the lamps (sh70), the lotteries (sh12, sh13), the laver (sh26), the mesibah (sh38), the wicket (sh39, sh40), the great gate
+      // (sh41), the incense (sh47, sh56), the willows (sh71), the first fruits (sh76)
+      Object.assign(UI_OPS_P, {
+        "שמחת בית השואבה — הדגמה": ["sh60", "sh70"],   // the blowing on the way to the east gate; the lamps
+        "סדר עבודת הבוקר — הדגמה (מסכת תמיד)": ["sh22", "sh43", "sh13", "sh80", "sh69"]   // the order, the lamps, the avnet, the mitre, the ephod
+      });
+      // CHIP_KEEPS_DEMO_T (fix-t): how a row changes while its demonstration runs (a chip on its card: 70-ui.js pickFromCard) - the rows
+      // whose own switch would stop it, or would leave its way as it was chosen at its start; every other row: its onPick, live
+      const ui_runs = (id) => (ctx.shared.demoStops || []).some((d) => { try { return d && d.id === id && d.running(); } catch (_) { return false; } });
+      const UI_LIVE = {
+        // the lotteries (55-payis.js: setAvnet / setReading stop the run): the avnet - on from the same second, the script built again with
+        // it; the first lottery's place and time change the whole order - again from its start
+        // (the row's onPick, without its last step - P.garments, the three priests by day, which ends the run and moves the camera)
+        sh13: (row, key) => {
+          const P = ctx.shared.payis, on = !!(P && P.on), sec = on && typeof P.now === "function" ? P.now() : 0;
+          if (!on) return row.onPick(key);
+          const T = ctx.shared.tamid, PA = ctx.shared.peopleAvnet, PG = ctx.shared.priestGarments;
+          if (typeof P.setAvnet === "function") P.setAvnet(key === "o1" ? "butz" : "rambam");
+          if (PA) PA.set(key === "o1" ? "butz" : "rambam");
+          if (PG && typeof PG.reading === "function") PG.reading({ belt: key === "o1" ? "butz" : "kilayim" });
+          if (T && T.active && typeof T.setBelt === "function") T.setBelt(key === "o1" ? "white" : "kilayim");
+          if (!P.on) { P.start(); if (sec > 0 && typeof P.seek === "function") P.seek(sec); }
+        },
+        sh12: (row, key) => { const P = ctx.shared.payis, on = !!(P && P.on); row.onPick(key); if (on && !P.on) P.start(); },
+        // the cells: the mesibah's way is chosen at its start (50-heichal.js mesibahDemo) - again from its start
+        sh38: (row, key) => { const S = ctx.shared, on = ui_runs("hei-mesibah-demo"); row.onPick(key); if (on && typeof S.mesibahStop === "function" && typeof S.mesibahDemo === "function") { S.mesibahStop(); S.mesibahDemo(); } },
+        // the parochot: the High Priest's way between them is chosen at its start (ykEntry.start: Y.mode) - again from its start
+        sh47: (row, key) => { const Y = ctx.shared.ykEntry, on = ui_runs("hei-yk-entry"); row.onPick(key); if (on && Y && typeof Y.start === "function") Y.start(); }
+      };
       // subj = { view?, title?, label?, layers? } -> the row ids (kept unfiltered: the rows are built after the places and the labels)
 //@@end buildUI.UI_OPS_V
 //@@begin pickFromCard
@@ -673,11 +706,16 @@
       function ui_demosList() {
         return [
           { t: "ניסוך המים — מן השילוח", place: "ניסוך המים מן השילוח — הדגמה" },   // SHILOACH_305
+          // DEMOS_205_T (fix-t; the user's decision 205: "אותן אני צריך גם בתוך התפריט, שהוא בעצם לימוד נושא" - every demonstration in
+          // "הדגמות" and in its subject, as in the First Temple): the pilgrim's walk and the first fruits, from the mount's gates inwards
+          { t: "הליכת עולה רגל — בגובה העיניים", place: "הליכת עולה רגל — בגובה העיניים (ברטנורא)" },
+          { t: "הבאת ביכורים", place: "הבאת ביכורים — הדגמה" },
           { t: "שמחת בית השואבה", place: "שמחת בית השואבה — הדגמה" },   // SIMCHA_304 (until 2.0.12: the lamps alone - their place stays)
           { t: "הדלקת מנורות הזהב בעזרת נשים", place: "מנורות של זהב — שמחת בית השואבה" },   // DEMOLIST_305: the lamps alone, kept (the user, 23:49)
           { t: "הכהן יורד לבית הטבילה", pill: "mes-tevila-demo", card: "המסיבה ובית הטבילה" },   // DEMO_CARD_S1
           { t: "ארבעת הפייסות ו״ברקאי״", place: "ארבעת הפייסות ו״ברקאי״ — הדגמה" },
           { t: "סדר עבודת הבוקר", pill: "tamid-demo", card: "סדר עבודת הבוקר — הדגמה (מסכת תמיד)" },   // DEMO_CARD_S1
+          { t: "מצות ערבה — הקפת המזבח", place: "מצות ערבה — הדגמה" },   // DEMOS_205_T: at the altar, before the laver (as in the subject's group)
           { t: "הכיור יורד לבור ועולה", pill: "alt-mukhni-demo", card: "הדגמת המוכני — הכיור יורד לבור ועולה" },   // DEMO_CARD_S1
           { t: "הליכה במסיבה", place: "הליכה במסיבה — הדגמה" },
           { t: "הכניסה בפשפש", pill: "hei-pish-demo", card: "פשפשי ההיכל" },   // DEMO_CARD_S1
