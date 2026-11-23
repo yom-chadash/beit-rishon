@@ -121,6 +121,10 @@
     } else if (d.tm === "visible") {
       setPaused(!d.visible);
       if (d.visible) { try { window.focus(); } catch (_) {} }
+    } else if (d.tm === "place") {
+      // SAME_PLACE_B2: the shell hands the place asked from the other house; 70-ui.js opens it (or finds window.__tmPlace when it is built)
+      window.__tmPlace = d.title || null;
+      try { window.dispatchEvent(new CustomEvent("tm-place", { detail: d.title })); } catch (_) {}
     } else if (d.tm === "words") {
       // 2.0.2: the words of Otzaria's search field (the plugin's button in it), handed by the shell: { q, other: { house, name, n } }.
       // The house's 72-words.js shows them in its search section; when it is not built yet it finds them in window.__tmWords.
@@ -132,6 +136,10 @@
   window.__tmGo = function (house, words) {
     post(words == null ? { tm: "switch", to: house } : { tm: "switch", to: house, words: String(words) });
   };
+  // SAME_PLACE_B2 (fix-b2, 22.11.2026 - the user's decision 15): "אותו מקום בבית השני" - the card's button (70-ui.js) asks the shell for the
+  // other house at a place of it, by its title; this house's name for the UI
+  window.__tmHouse = HOUSE;
+  window.__tmGoPlace = function (title) { post({ tm: "switch", to: OTHER, place: String(title) }); };
 
   // ---------- 3. the buttons in the top bar ----------
   var NAMES = { rishon: "בית ראשון", sheni: "בית שני" };

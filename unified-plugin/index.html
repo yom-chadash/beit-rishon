@@ -62,6 +62,41 @@
   .house .sub{font-size:1rem;color:var(--tm-ink-soft);line-height:1.35}
   .house .back{font-family:var(--font-ui);font-size:0.78rem;color:var(--tm-ink-dim);opacity:0;transition:opacity .2s}
   .house.visited .back{opacity:1}
+  #rights{margin:2px 0 0;padding:8px 18px;border-radius:var(--radius-lg);font-family:var(--font-main);font-size:1.12rem;line-height:1.4;color:var(--tm-ink);background:var(--tm-card);border:1.5px solid var(--color-primary);text-align:center;box-shadow:0 6px 20px var(--tm-shade-card)}
+  #rights b{font-size:1.45rem;font-weight:800;color:var(--tm-gold);margin-inline-end:6px}
+  @media(max-width:640px){#rights{font-size:.98rem}#rights b{font-size:1.2rem}}
+  #rights{cursor:pointer}
+  #rights:hover,#rights:focus-visible{background:var(--tm-card-hover);outline:none}
+  #lic{position:absolute;z-index:6;top:18px;left:50%;transform:translateX(-50%);width:min(52em,calc(100% - 28px));max-height:calc(100% - 36px);display:flex;flex-direction:column;overflow:hidden;background:var(--tm-card-note);border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);box-shadow:0 14px 40px var(--tm-shade-note);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:16px 22px 14px;color:var(--tm-ink-note);font-family:var(--font-main);font-size:min(0.95rem,3.2vh,4vw);line-height:1.65}
+  #lic[hidden]{display:none}
+  header.topbar .tb-l{display:flex;align-items:center;gap:10px}
+  #news-btn{font-family:var(--font-ui);font-size:0.82rem;font-weight:600;padding:4px 14px;border-radius:var(--radius-pill);cursor:pointer;background:var(--color-primary);color:var(--color-on-primary);border:0;white-space:nowrap}
+  #news-btn:hover,#news-btn:focus-visible{filter:brightness(1.12);outline:none}
+  #news{position:absolute;z-index:6;top:18px;left:50%;transform:translateX(-50%);width:min(52em,calc(100% - 28px));max-height:calc(100% - 36px);display:flex;flex-direction:column;overflow:hidden;background:var(--tm-card-note);border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);box-shadow:0 14px 40px var(--tm-shade-note);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:16px 22px 14px;color:var(--tm-ink-note);font-family:var(--font-ui);font-size:min(0.9rem,3.1vh,3.9vw);line-height:1.6}
+  #news[hidden]{display:none}
+  #news > h2{flex:0 0 auto;font-family:var(--font-main);font-size:1.55em;line-height:1.3;color:var(--tm-gold);margin:0 0 8px}
+  #news .body{flex:1 1 auto;min-height:0;overflow:auto;padding-inline-end:6px}
+  #news .big{font-family:var(--font-main);font-size:1.6em;font-weight:800;color:var(--tm-gold);text-align:center;border:1.5px solid var(--color-primary);border-radius:var(--radius-lg);padding:8px 12px;margin:2px 0 12px}
+  #news h3{font-family:var(--font-main);font-size:1.2em;color:var(--tm-gold);margin:14px 0 6px}
+  #news ul{list-style:disc;padding-inline-start:20px;margin:0 0 6px}
+  #news ul ul{list-style:circle;margin:4px 0 2px}
+  #news li{margin:0 0 5px}
+  #news b{color:var(--tm-gold)}
+  #news .foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+  #news .foot span{font-size:0.85em;color:var(--tm-ink-dim)}
+  #news .foot button{font-family:var(--font-ui);font-size:0.95em;font-weight:600;padding:7px 22px;border-radius:var(--radius-pill);cursor:pointer;background:var(--color-primary);color:var(--color-on-primary);border:0;white-space:nowrap}
+  #lic .body{flex:1 1 auto;min-height:0;overflow:auto;padding-inline-end:6px}
+  #lic h2{font-size:1.5em;line-height:1.3;color:var(--tm-gold);margin:4px 0 10px}
+  #lic h3{font-size:1.15em;color:var(--tm-gold);margin:14px 0 6px}
+  #lic p{margin:0 0 8px}
+  #lic ol{margin:0 0 8px;padding-inline-start:22px}
+  #lic li{margin:0 0 4px}
+  #lic hr{border:0;border-top:1px solid var(--color-primary);opacity:.5;margin:14px 0}
+  #lic b{color:var(--tm-gold)}
+  #lic .foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;font-family:var(--font-ui)}
+  #lic .foot span{font-size:0.8em;color:var(--tm-ink-dim)}
+  #lic button{font-family:var(--font-ui);font-size:0.9em;font-weight:600;padding:7px 22px;border-radius:var(--radius-pill);cursor:pointer;background:var(--color-primary);color:var(--color-on-primary);border:0;white-space:nowrap}
+  #lic button:hover,#lic button:focus-visible{filter:brightness(1.12);outline:none}
   @media(max-width:640px){
     #pick h1{font-size:1.6rem}
     #pick .row{flex-direction:column;align-items:center;gap:12px}
@@ -172,7 +207,7 @@
 </head>
 <body>
 <div id="home">
-  <header class="topbar"><div class="title">בית המקדש</div><span id="version">v3.0.6</span></header>
+  <header class="topbar"><div class="title">בית המקדש</div><div class="tb-l"><button type="button" id="news-btn" aria-haspopup="dialog" aria-controls="news">מה חדש בגרסה 4.0.0</button><span id="version">v4.0.0</span></div></header>
   <div id="scene">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
   <defs>
@@ -302,14 +337,13 @@
     <!-- the gold plating and the cornice -->
     <rect x="592" y="210" width="416" height="14" fill="url(#gold)"/>
     <rect x="600" y="224" width="400" height="5" fill="#8a6a2c" opacity=".45"/>
-    <!-- the spikes on the roof (כלה עורב) -->
-    <g fill="#e8bd5a">
-      <path d="M600 210 l3 -12 l3 12Z"/><path d="M618 210 l3 -12 l3 12Z"/><path d="M636 210 l3 -12 l3 12Z"/><path d="M654 210 l3 -12 l3 12Z"/>
-      <path d="M672 210 l3 -12 l3 12Z"/><path d="M690 210 l3 -12 l3 12Z"/><path d="M708 210 l3 -12 l3 12Z"/><path d="M726 210 l3 -12 l3 12Z"/>
-      <path d="M744 210 l3 -12 l3 12Z"/><path d="M762 210 l3 -12 l3 12Z"/><path d="M780 210 l3 -12 l3 12Z"/><path d="M798 210 l3 -12 l3 12Z"/>
-      <path d="M816 210 l3 -12 l3 12Z"/><path d="M834 210 l3 -12 l3 12Z"/><path d="M852 210 l3 -12 l3 12Z"/><path d="M870 210 l3 -12 l3 12Z"/>
-      <path d="M888 210 l3 -12 l3 12Z"/><path d="M906 210 l3 -12 l3 12Z"/><path d="M924 210 l3 -12 l3 12Z"/><path d="M942 210 l3 -12 l3 12Z"/>
-      <path d="M960 210 l3 -12 l3 12Z"/><path d="M978 210 l3 -12 l3 12Z"/><path d="M996 210 l3 -12 l3 12Z"/>
+    <!-- the spikes on the roof (כלה עורב) - drawn larger than to scale, so they show (the user, 22.11.2026: "להגדיל את כליא עורב") -->
+    <g fill="#e8bd5a" stroke="#8a6a2c" stroke-width=".6">
+      <path d="M600 210 l4.5 -24 l4.5 24Z"/><path d="M619.5 210 l4.5 -24 l4.5 24Z"/><path d="M639 210 l4.5 -24 l4.5 24Z"/><path d="M658.5 210 l4.5 -24 l4.5 24Z"/><path d="M678 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M697.5 210 l4.5 -24 l4.5 24Z"/><path d="M717 210 l4.5 -24 l4.5 24Z"/><path d="M736.5 210 l4.5 -24 l4.5 24Z"/><path d="M756 210 l4.5 -24 l4.5 24Z"/><path d="M775.5 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M795 210 l4.5 -24 l4.5 24Z"/><path d="M814.5 210 l4.5 -24 l4.5 24Z"/><path d="M834 210 l4.5 -24 l4.5 24Z"/><path d="M853.5 210 l4.5 -24 l4.5 24Z"/><path d="M873 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M892.5 210 l4.5 -24 l4.5 24Z"/><path d="M912 210 l4.5 -24 l4.5 24Z"/><path d="M931.5 210 l4.5 -24 l4.5 24Z"/><path d="M951 210 l4.5 -24 l4.5 24Z"/><path d="M970.5 210 l4.5 -24 l4.5 24Z"/>
+      <path d="M990 210 l4.5 -24 l4.5 24Z"/>
     </g>
     <!-- the opening of the porch -->
     <rect x="752" y="300" width="96" height="202" fill="#2a1a0c"/>
@@ -364,6 +398,79 @@
       </ul>
       <div class="foot"><span>ההודעה הזאת מוצגת פעם אחת.</span><button type="button" id="uni-note-ok">הבנתי</button></div>
     </div>
+    <div id="news" role="dialog" aria-modal="true" aria-label="מה חדש בגרסה 4.0.0" hidden>
+      <h2>מה חדש בגרסה 4.0.0</h2>
+      <div class="body"><div class="big"><b>כדאי מאוד לעבור בעיון</b></div>
+<h3>בשני הבתים</h3>
+<ul>
+<li><b>פרצופים חדשים</b> — לדמויות הקרובות יש פנים טבעיות: עיניים עם עפעפיים, גבות, אף ושפתיים, זקן מלא ושיער שמגיע עד האוזן. מרחוק הדמויות פשוטות, והמודל נטען מהר כמו קודם.</li>
+<li><b>ידיים</b> — לדמויות הקרובות יש ידיים טבעיות, עם אצבעות, והן אוחזות את הכלים באמת: המזרק באגרוף, הצלוחית בצווארה, ומוט הארון על הכתף.</li>
+<li><b>הכהן הגדול</b> — לבוש שמונה בגדים. הציץ הוא טס של זהב ברוחב שתי אצבעות, מאוזן לאוזן. בין הציץ למצנפת נראה פס של שער, ושם מונחות התפילין (זבחים יט.; רמב״ם, הלכות כלי המקדש י, ג).</li>
+<li><b>מצנפת הכהן הגדול — מתג</b> — לפי רש״י: כמין כיפה של כובע, למעלה בגובה הראש. לפי הרמב״ן: צניף שכורכים ״כפל על כפל״ — גבוה מלפנים, יורד לאחור ומכסה את אחורי הראש עד העורף, ואמצע הראש מגולה (רמב״ן, שמות כח, לז; כט, ז). פתיל התכלת של הציץ נקשר מאחור, על המצנפת.</li>
+<li><b>תפילין</b> — לכל הכהנים והלויים יש תפילין של ראש, בתחילת צמיחת השער. הרצועות שטוחות ושחורות, והקשר בעורף. בשבת, ביום טוב, בחול המועד ובלילה — בלי תפילין.</li>
+<li><b>המזבח</b> — הקרנות חלולות. הכרכוב בולט, עם פרחים וציצים, ויש לו מתג. על הכבש ובראש המזבח יש ערמות של מלח, ומעל המערכה הגדולה עולה עמוד עשן ישר.</li>
+<li><b>המזרק והנחושת</b> — המזרק בצורתו כמו בציור שבספר ״מקרא מפורש״, ולכל כלי הנחושת יש גוון אחד, כמו שם.</li>
+<li><b>מעיין השילוח</b> — צוק של סלע, מפל ובריכה טבעית. הכהן ממלא את הצלוחית מן הגדה.</li>
+<li><b>התפריט</b> — מסודר לפי מסלול אחד, מבחוץ פנימה, כדי שהמצלמה לא תקפוץ ממקום למקום. כל הדגמה נמצאת גם בקבוצת ״הדגמות״ וגם במקומה בנושא.</li>
+<li><b>החלפת שיטה בתוך הדגמה</b> — בכרטיס של הדגמה, ובפס של המצגת, יש כפתור לכל שיטה. לחיצה מחליפה את השיטה מיד, וההדגמה ממשיכה.</li>
+<li><b>הדגמה נעצרת כשעוברים למקום אחר</b> — בחירה של מקום או מבט אחר עוצרת את ההדגמה שרצה, ומנקה את הדמויות שלה.</li>
+<li><b>בכרטיסים</b> — כפתור ״אותו מקום בבית השני״ (או ״בבית הראשון״), ונוספו זוגות חדשים. כפתור ״בסדר היום״ פותח את ההדגמה שבה המקום מופיע. כרטיס של הדגמה מביא את המקורות של המקום שלה.</li>
+<li><b>תוויות</b> — כל תווית עומדת מעל מקומה, וכשמתקרבים היא לא גדלה יותר מדי. לכל התוויות יש מקורות.</li>
+<li><b>החתך החי והצל הרך</b> — עובדים אותו דבר בשני הבתים.</li>
+<li><b>דמות לקנה מידה</b> — אפשר להציב דמות של אדם ליד כל מקום, כדי לראות את הגודל.</li>
+<li><b>מקורות</b> — לשונות רבות תוקנו אחרי בדיקה בספרייה של אוצריא, ולשוניות המקור פותחות את השורה הנכונה. בכרטיסים כתוב ״חלמיש״ במקום ״חוברת״.</li>
+<li><b>במסך הבחירה</b> — כל הזכויות שמורות. אין לשנות את התוסף. לחיצה על השורה פותחת את נוסח הרישיון.</li>
+</ul></div>
+      <div class="foot"><span>אפשר לפתוח שוב בכפתור ״מה חדש״ שבסרגל העליון.</span><button type="button" id="news-close">סגירה</button></div>
+    </div>
+    <div id="lic" role="dialog" aria-modal="true" aria-label="רישיון ותנאי שימוש" hidden>
+      <div class="body"><p>בס״ד</p>
+<h2>רישיון ותנאי שימוש — התוסף ״בית המקדש״ לאוצריא</h2>
+<h3>גילוי דעת</h3>
+<p>הואיל ובתוסף זה, מודל תלת־ממדי של בית המקדש הראשון ושל בית המקדש השני, הושקעו ממון רב, עמל רב וזמן מרובה;</p>
+<p>והואיל וכל פרט ופרט שבו נבנה בדקדוק על פי המקורות, ושינוי קל עלול להכניס בו טעות, שתיתלה בתוסף ובבעליו;</p>
+<p>והואיל והתוסף ניתן בחינם, לתועלת קהל הלומדים;</p>
+<p>לפיכך הנני להודיע ולגלות דעתי: אין רשות לשום אדם לשנות בתוסף דבר, זולתי, או מי שנתתי לו רשות בכתב. ושאר תנאי השימוש — כדלהלן.</p>
+<h3>א. על מה חל רישיון זה</h3>
+<p>רישיון זה חל על התוסף ״בית המקדש״ לאוצריא, על כל חלקיו וגרסאותיו: הקוד, המודל התלת־ממדי, העיצוב, הדמויות, ההדגמות והמצגות, נוסח הכרטיסים וההסברים, וסידור המקורות.</p>
+<p>וכן על קובץ הצפייה בלי אוצריא, ועל המאגר שבכתובת github.com/yoniny/beit-rishon.</p>
+<h3>ב. מה מותר — לכל אדם, בחינם</h3>
+<ol>
+<li value="1">להתקין את התוסף, ללמוד בו וללמד בו: ביחיד וברבים, בבית המדרש, בכיתה ובשיעור.</li>
+<li value="2">לעיין בקוד המקור.</li>
+<li value="3">להעביר את התוסף לאחרים כמות שהוא: בלי שום שינוי, בחינם, ועם שמות בעליו ורישיון זה.</li>
+<li value="4">לצלם מסך מן התוסף לצורך לימוד והוראה, ובלבד שיצוין שהוא מן התוסף ״בית המקדש״ לאוצריא.</li>
+<li value="5">להעתיק את המאגר בתוך אתר GitHub (Fork), כפי שמתירים תנאי האתר. אך אין בהעתקה זו שום רשות לשנות את התוסף או להפיץ אותו.</li>
+</ol>
+<h3>ג. מה אסור — אלא ברשות בכתב ממני</h3>
+<ol>
+<li value="1">לשנות בתוסף דבר: לא בקוד, לא במודל, לא בנוסח ולא במקורות. לא להוסיף, לא לגרוע ולא לתרגם — ואפילו לשימוש עצמי. (השימוש באפשרויות ובמתגים שבתוך התוסף — מותר, כמובן.)</li>
+<li value="2">לפרסם או להפיץ גרסה ששונתה, או תוסף אחר שנבנה מחלקים מתוסף זה.</li>
+<li value="3">למכור את התוסף, לגבות תשלום עליו, או לצרף אותו למוצר בתשלום. (ללמד בו — מותר בכל מקום, גם בשיעור בשכר.)</li>
+<li value="4">להסיר או להסתיר את שמות בעלי התוסף, או את רישיון זה.</li>
+</ol>
+<h3>ד. מי שמצא טעות</h3>
+<p>מי שמצא טעות, או רוצה להציע תיקון או הוספה, או לבקש רשות — תבוא עליו ברכה.</p>
+<p>יפנה בכפתור ״דיווח״ שבסרגל העליון של התוסף. ואם יתקבל התיקון, ייעשה על ידי, בעזרת ה׳.</p>
+<h3>ה. הרשות ניתנת על דעת התנאים בלבד</h3>
+<p>הרשות להשתמש בתוסף ניתנת על דעת התנאים האלו בלבד, ובתנאי שיקוימו.</p>
+<p>מי שאינו מקבל אותם — אין לו רשות להשתמש בתוסף.</p>
+<p>ואני מודיע בזה, שאינני מוחל על שום שינוי ועל שום הפצה שייעשו שלא ברשותי.</p>
+<h3>ו. זכויות</h3>
+<p>כל הזכויות בתוסף שמורות, על פי חוק זכות יוצרים, התשס״ח.</p>
+<p>בית שני שבתוסף נבנה על יסוד התוסף המקורי של הרב יוסי כהן והרב shalomke. אין ברישיון זה כדי לגרוע מזכויותיהם בעבודתם המקורית.</p>
+<p>ספריית three.js, שעליה בנוי המודל, מצורפת לתוסף לפי רישיון MIT שלה, וחלים עליה תנאי רישיונה בלבד.</p>
+<p>דברי חז״ל והמפרשים המובאים בתוסף — אין רישיון זה חל עליהם. הוא חל על העבודה שנעשתה בתוסף.</p>
+<h3>ז. אחריות</h3>
+<p>התוסף נועד לעיון וללימוד, ואין בו הכרעה להלכה.</p>
+<p>הוא ניתן כמות שהוא, בלי שום התחייבות, ובעליו אינם אחראים לשום נזק שיבוא מן השימוש בו.</p>
+<hr>
+<p>ויזכנו ה׳ לראות בבניין בית המקדש, במהרה בימינו, אמן.</p>
+<p>ובזה באתי על החתום,</p>
+<p><b>יוני מאיר</b></p>
+<p>י״ב בכסלו התשפ״ז</p></div>
+      <div class="foot"><span>הרישיון המלא נמצא גם במאגר: github.com/yoniny/beit-rishon</span><button type="button" id="lic-close">סגירה</button></div>
+    </div>
     <div id="uni-msg" role="status" hidden></div>
     <div id="pick">
       <h1>בית המקדש</h1>
@@ -379,6 +486,7 @@
           <span class="back">חוזר למקום שבו עזבת</span>
         </button>
       </div>
+      <button type="button" id="rights" aria-haspopup="dialog" aria-controls="lic" title="פתיחת הרישיון"><b>כל הזכויות שמורות.</b> אין לשנות את התוסף. לפרטים: לחץ</button>
     </div>
   </div>
   <footer id="uni-bar" hidden>
@@ -495,7 +603,7 @@
 (function () {
   "use strict";
   // ---------- configuration (written by tools/build-unified.mjs) ----------
-  var CFG = {"standalone":false,"houses":{"rishon":{"name":"בית ראשון","version":"1.4.15","page":"rishon/index.html","items":["open-beit-rishon"],"books":[10,39,3345,3673,3540,3206,3394,3645,3449,3574,3662,3318,6049,3232,3522,3737,3364,3025,244,3441,3560,6050,3875,3619,3639,275,3509,240,3248,3396,282,247,7715,276,259,3770,5851,3627,268,7558,3295,3705,3406,3058,7556,262,7910,7915,5994,3084,7914,3900,124,257,3698,3023,265,7553,7909,3119,3260,697,3432,3510,285,5850],"base":[{"id":10,"t":"מלכים א","w":[[186,377],[388,393]]},{"id":39,"t":"דברי הימים ב","w":[[39,198],[418,515],[633,633]]}]},"sheni":{"name":"בית שני","version":"2.0.15","page":"sheni/index.html","items":["open-beit-sheni"],"books":[89,337,5474,4260,4304,819,5308,4095,643,948,1210,645,7163,5029,7001,1074,3167,750,130,4606,1145,2,3886,5069,1342,138,4466,573,7007,7027,3,4305,3263,340,1329,7165,341,5252,3877,7079,338,7100,2982,3797,4303,1268,3891,4173,344,6797,2988,5664,4,5,1202,5822,7021,2985,7178,944,4767,4531,8404,127,106,7225,6029,3791,8423,6030,154,7040,2494,2885,7554,156,2989],"base":[{"id":89,"t":"משנה מדות","w":[[2,39]]},{"id":337,"t":"משנה תורה, הלכות בית הבחירה","w":[[3,146]]}]}},"common":{"107":"sheni","131":"sheni","155":"sheni","3190":"sheni","3258":"rishon","3684":"sheni","7414":"sheni","7549":"sheni","7576":"sheni","7577":"sheni","7582":"sheni"}};
+  var CFG = {"standalone":false,"houses":{"rishon":{"name":"בית ראשון","version":"2.0.0","page":"rishon/index.html","items":["open-beit-rishon"],"books":[10,39,3345,3673,3540,3206,3394,3645,3449,3574,3662,3318,6049,3232,3522,3737,3364,3025,244,3441,3560,6050,3875,3619,3639,275,3509,240,3248,3396,282,247,7715,276,259,3770,5851,3627,268,7558,3295,3705,3406,3058,7556,262,7910,7915,5994,3084,7914,3900,124,257,3698,3023,265,7553,7909,3119,3260,697,3432,3510,285,5850],"base":[{"id":10,"t":"מלכים א","w":[[186,377],[388,393]]},{"id":39,"t":"דברי הימים ב","w":[[39,198],[418,515],[633,633]]}]},"sheni":{"name":"בית שני","version":"3.0.0","page":"sheni/index.html","items":["open-beit-sheni"],"books":[89,337,5474,4260,4304,819,5308,4095,643,948,1210,645,7163,5029,7001,1074,3167,750,130,4606,1145,2,3886,5069,1342,138,4466,573,7007,7027,3,4305,3263,340,1329,7165,341,5252,3877,7079,338,7100,2982,3797,4303,1268,3891,4173,344,6797,2988,5664,4,5,1202,5822,7021,2985,7178,944,4767,4531,8404,127,106,7225,6029,3791,8423,6030,154,7040,2494,2885,7554,156,2989],"base":[{"id":89,"t":"משנה מדות","w":[[2,39]]},{"id":337,"t":"משנה תורה, הלכות בית הבחירה","w":[[3,146]]}]}},"common":{"107":"sheni","131":"sheni","155":"sheni","3190":"sheni","3258":"rishon","3684":"sheni","7414":"sheni","7549":"sheni","7576":"sheni","7577":"sheni","7582":"sheni"}};
   var HOUSES = ["rishon", "sheni"];
   var OTZ = typeof window.Otzaria !== "undefined" && !!window.Otzaria && typeof window.Otzaria.on === "function";
   var ROUTED = { "reader.toolbar_item_clicked": 1, "plugin.page_opened": 1 };
@@ -723,6 +831,14 @@
   function countWords(h, q) {
     try { return typeof window.__tmWordsCount === "function" ? window.__tmWordsCount(h, q) || 0 : 0; } catch (_) { return 0; }
   }
+  // SAME_PLACE_B2 (fix-b2, 22.11.2026 - the user's decision 15): "אותו מקום בבית השני" - show the house and hand it the place's title
+  var placeWait = {};
+  function sendPlace(h, title) {
+    if (!CFG.houses[h]) return;
+    show(h);
+    if (helloed[h]) send(h, { tm: "place", title: title });
+    else placeWait[h] = title;
+  }
   function sendWords(h, q) {
     if (!CFG.houses[h]) return;
     var o = h === "rishon" ? "sheni" : "rishon";
@@ -809,11 +925,13 @@
       else send(h, { tm: "result", id: d.id, ok: false, error: { message: "no Otzaria" } });
     } else if (d.tm === "switch") {
       if (typeof d.words === "string" && d.words && CFG.houses[d.to]) sendWords(d.to, d.words);   // 2.0.2: the other house, the same words
+      else if (typeof d.place === "string" && d.place && CFG.houses[d.to]) sendPlace(d.to, d.place);   // SAME_PLACE_B2: the other house, at a place
       else show(d.to);
     } else if (d.tm === "hello") {
       send(h, { tm: "visible", visible: current === h });
       helloed[h] = true;
       if (wordsWait[h]) { send(h, { tm: "words", detail: wordsWait[h] }); wordsWait[h] = null; }
+      if (placeWait[h]) { send(h, { tm: "place", title: placeWait[h] }); placeWait[h] = null; }
     }
   });
 
@@ -844,6 +962,7 @@
       var b = document.getElementById("pick-" + (HOUSES.filter(function (h) { return frames[h]; })[0] || "rishon"));
       try { b && b.focus({ preventScroll: true }); } catch (_) {}
       if (noteMaybe) noteMaybe();
+      if (newsMaybe) setTimeout(newsMaybe, 400);
     } else {
       frameFor(to);
       lastHouse = to;
@@ -869,6 +988,49 @@
     if (e.key === "1") show("rishon");
     else if (e.key === "2") show("sheni");
   });
+  // ---------- the license: the banner "כל הזכויות שמורות" opens LICENSE.md's own text (the user, 22.11.2026: "שהבאנר יוביל לרישיון במלל שלו") ----------
+  (function () {
+    var btn = document.getElementById("rights"), dlg = document.getElementById("lic"), x = document.getElementById("lic-close");
+    if (!btn || !dlg || !x) return;
+    var close = function () { if (dlg.hidden) return; dlg.hidden = true; try { btn.focus({ preventScroll: true }); } catch (_) {} };
+    btn.addEventListener("click", function () { dlg.hidden = false; var b = dlg.querySelector(".body"); if (b) b.scrollTop = 0; try { x.focus({ preventScroll: true }); } catch (_) {} });
+    x.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    document.addEventListener("pointerdown", function (e) { if (!dlg.hidden && !dlg.contains(e.target) && e.target !== btn && !btn.contains(e.target)) close(); });
+  })();
+  // ---------- the unified plugin's "מה חדש" on the choice screen (the user, 22.11.2026: "את המה חדש של המאוחד שים במסך הבחירה") ----------
+  // Opened by the top bar's button; and once per version by itself, on the choice screen, when the one-time note is not showing.
+  var newsMaybe = null;
+  (function () {
+    var KEY = "tm.unified.news.seen", VER = "4.0.0";
+    var dlg = document.getElementById("news"), btn = document.getElementById("news-btn"), x = document.getElementById("news-close");
+    if (!dlg || !btn || !x) return;
+    var seenLs = function () { try { return localStorage.getItem(KEY) === VER; } catch (_) { return false; } };
+    var mark = function () {
+      try { localStorage.setItem(KEY, VER); } catch (_) {}
+      if (OTZ) { try { Promise.resolve(window.Otzaria.call("storage.set", { key: KEY, value: VER })).catch(function () {}); } catch (_) {} }
+    };
+    var show = function () { dlg.hidden = false; var b = dlg.querySelector(".body"); if (b) b.scrollTop = 0; try { x.focus({ preventScroll: true }); } catch (_) {} };
+    var close = function () { if (dlg.hidden) return; dlg.hidden = true; mark(); };
+    btn.addEventListener("click", function () { if (dlg.hidden) show(); else close(); });
+    x.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    Array.prototype.forEach.call(document.querySelectorAll(".house"), function (b) { b.addEventListener("click", close); });
+    var allowed = false;
+    newsMaybe = function () {
+      var note = document.getElementById("uni-note");
+      if (!allowed || seenLs() || current !== "home" || !dlg.hidden || (note && !note.hidden)) return;
+      show();
+    };
+    if (seenLs()) return;
+    var done = false;
+    var decide = function (v) { if (done) return; done = true; if (v === VER) { try { localStorage.setItem(KEY, VER); } catch (_) {} } else { allowed = true; setTimeout(function () { if (newsMaybe) newsMaybe(); }, 300); } };
+    if (!OTZ) { decide(null); return; }
+    try {
+      Promise.resolve(window.Otzaria.call("storage.get", { key: KEY })).then(function (r) { decide(r && r.success !== false ? r.data : null); }, function () { decide(null); });
+    } catch (_) { decide(null); }
+    setTimeout(function () { decide(null); }, 1200);
+  })();
   // ---------- 2.0.2: the one-time note about the unified plugin ----------
   // Shown on the choice screen until it is closed ("הבנתי") or a house is chosen while it shows; remembered in Otzaria's plugin
   // storage (storage.get / storage.set) and in localStorage (the only store outside Otzaria) - either one saying "seen" is enough.
@@ -893,7 +1055,7 @@
       try { okBtn.focus({ preventScroll: true }); } catch (_) {}
     };
     noteMaybe = open;   // the plugin may open straight into a house (a book's button): the note waits for the choice screen
-    var dismiss = function () { if (note.hidden) return; noteClosedAt = Date.now(); close(); };
+    var dismiss = function () { if (note.hidden) return; noteClosedAt = Date.now(); close(); if (newsMaybe) setTimeout(newsMaybe, 300); };
     okBtn.addEventListener("click", dismiss);
     note.addEventListener("keydown", function (e) { if (e.key === "Escape" || e.key === "Esc" || e.key === "Enter") { e.stopPropagation(); dismiss(); } });
     Array.prototype.forEach.call(document.querySelectorAll(".house"), function (b) { b.addEventListener("click", close); });
