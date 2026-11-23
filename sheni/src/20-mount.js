@@ -740,6 +740,7 @@
           SKY.push([x, z]);
         }
       }
+      const curbMats = [[], []];   // identical opaque boards; roof slabs stay separately sortable
       const slab = (x0, x1, z0, z1) => {
         const m = new Mesh(new BoxGeometry(x1 - x0, 0.7, z1 - z0), roofM); m.position.set((x0 + x1) / 2, 23.5, (z0 + z1) / 2); m.userData.noPick = true; m.renderOrder = 6; RGP.add(m);
         // the same slab with its skylights: a shape with square holes, extruded 0.7
@@ -752,7 +753,7 @@
         const mh = new Mesh(geo, roofM); mh.position.set(0, 23.85, 0); mh.userData.noPick = true; mh.renderOrder = 6; RGH.add(mh);
         for (const [x, z] of holes) {                                                // the curb: four low boards round the opening
           for (const [w, d, dx, dz] of [[9, 0.5, 0, -4.25], [9, 0.5, 0, 4.25], [0.5, 8, -4.25, 0], [0.5, 8, 4.25, 0]]) {
-            const c = new Mesh(new BoxGeometry(w, 0.9, d), M2.cedar); c.position.set(x + dx, 24.3, z + dz); c.userData.noPick = true; RGH.add(c);
+            curbMats[w === 9 ? 0 : 1].push(m4(x + dx, 24.3, z + dz));
           }
         }
       };
@@ -767,6 +768,10 @@
       slab(X0, X1, IZ1, Z1);
       slab(X0, IX0, IZ0, IZ1);
       slab(IX1, X1, IZ0, IZ1);
+      for (let i = 0; i < curbMats.length; i++) if (curbMats[i].length) {
+        const c = instMesh(RGH, new BoxGeometry(i ? 0.5 : 9, 0.9, i ? 8 : 0.5), M2.cedar, curbMats[i], false);
+        c.userData.noPick = true;
+      }
       const LSG = new Group(); LSG.name = "harRoofLS"; ctx2.layers.harRoofLS = LSG;   // (a layer only: the labels of the reading "all")
       ctx2.labels.push({ text: "״וכולו היה מקורה, סטיו לפנים מסטיו״ (רמב״ם) — כל הר הבית, כלחם שמים", x: 250, y: 30, z: 160, size: 5, layers: ["harRoofAll", "harRoofLS"] });
       ctx2.labels.push({ text: "ארובות בקירוי — ״כדי להביא אור תחת הקרוי״ (תפארת ישראל)", x: SKY.length ? SKY[0][0] : 0, y: 27, z: SKY.length ? SKY[0][1] : 0, size: 2.4, layers: ["harRoofAll", "harRoofLS"] });
