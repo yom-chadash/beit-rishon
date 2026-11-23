@@ -1,0 +1,142 @@
+// Exact picking regression + CPU benchmark on the actual model builders and vendored Three.js.
+// node tools/perf-ray-model.mjs [--house rishon|sheni] [--out report.json] [--source-root /path/to/repo]
+// Uses perf-geometry.mjs's Canvas/DOM/audio stubs: this measures CPU ray queries, not startup, GPU or FPS.
+// The reference is the SAME current scene, with the terrain's _computeIntersections replaced temporarily
+// by Three.js's original method. No triangle, material, transform, visibility or scene configuration changes.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { performance } from 'node:perf_hooks';
+import { fileURLToPath } from 'node:url';
+import { buildModel } from './perf-geometry.mjs';
+import { houseText } from './house-slots.mjs';
+
+const argv = process.argv.slice(2);
+const option = (key, fallback) => { const i = argv.indexOf(key); return i < 0 ? fallback : argv[i + 1]; };
+const root = path.resolve(option('--source-root', fileURLToPath(new URL('../', import.meta.url))));
+const selected = option('--house');
+assert(!selected || ['rishon', 'sheni'].includes(selected), '--house must be rishon or sheni');
+const report = {
+  note: 'Node CPU ray-query benchmark with actual model geometry; Canvas/DOM/audio stubbed. Not browser FPS or whole-application memory.',
+  reference: 'Same scene and queries, with the coarse terrain using Three.js original _computeIntersections.',
+  environment: { node: process.version, platform: process.platform, arch: process.arch, cpu: os.cpus()[0]?.model },
+  workload: { warmQueriesPerBatch: 40, timingBatches: 3, statistic: 'median milliseconds per batch', randomSeed: 729418 },
+  states: []
+};
+const encode = (hits) => JSON.stringify(hits.map(h => ({
+  object: h.object.id, instance: h.instanceId, face: h.faceIndex, distance: h.distance,
+  point: h.point.toArray(), uv: h.uv?.toArray(), normal: h.normal?.toArray()
+})));
+
+for (const house of selected ? [selected] : ['rishon', 'sheni']) {
+  const ctx = await buildModel(house, root), { Vector3, Raycaster, Mesh } = ctx.THREE;
+  // Use the production solid selection and query helpers, including each house's source slots.
+  const source = houseText(house, '90-entry.js', root);
+  const start = source.indexOf('  var ent_sol = '), end = source.indexOf('  function ent_roofed(');
+  assert(start >= 0 && end > start, 'camera solid/query helper section not found');
+  const section = source.slice(start, end);
+  const makeQueries = () => new Function('ctx', 'performance',
+    'const {Box3,Vector3,Mesh,InstancedMesh,Matrix4}=ctx.THREE; const scene=ctx.scene;\n' + section +
+    '\nreturn {solids:ent_solids,intersect:ent_intersect,pickable:ent_pickable};')(ctx, performance);
+  const terrains = [];
+  ctx.scene.traverse(o => {
+    const p = o.geometry?.parameters;
+    if (o.isMesh && p?.widthSegments === 220 && p?.heightSegments === 220 && Object.hasOwn(o, '_computeIntersections')) {
+      terrains.push({ mesh: o, accelerated: o._computeIntersections, nx: p.widthSegments, nz: p.heightSegments });
+    }
+  });
+  assert.equal(terrains.length, 1, `${house}: expected the accelerated 220 x 220 coarse terrain`);
+  const setTerrain = (on) => {
+    for (const t of terrains) t.mesh._computeIntersections = on ? t.accelerated : Mesh.prototype._computeIntersections;
+  };
+  try {
+    for (const state of house === 'rishon' ? ['coarse', 'refined-valleys'] : ['coarse']) {
+      if (state === 'refined-valleys') {
+        // Run only the real deferred valley builder, without advancing demonstrations or unrelated animations.
+        const refine = ctx.animated.find(fn => String(fn).includes('rowOf(ST.j++)'));
+        assert(refine, 'deferred valley builder not found');
+        for (let i = 0; i < 1000 && !ctx.shared.valleys188.state.done; i++) refine();
+        assert(ctx.shared.valleys188.state.done, 'valley refinement did not finish');
+        assert(ctx.shared.valleys188.cells > 0, 'no coarse cells were replaced');
+      }
+      ctx.scene.updateMatrixWorld(true);
+      // A fresh selector includes the newly added valley blocks immediately, independent of the live one-second cache.
+      const query = makeQueries(), solids = query.solids('floor'), rays = [];
+      assert.equal(typeof query.intersect.first, 'function', 'nearest-hit helper is required');
+      const down = (x, y, z, far = 500) => new Raycaster(new Vector3(x, y, z), new Vector3(0, -1, 0), 0, far);
+      for (const x of [-120, -60, 0, 60, 120, 180, 240, 300]) {
+        for (const z of [-180, -60, 60, 180, 300]) rays.push(down(x, 200, z));
+      }
+      const run = (mode) => {
+        setTerrain(mode !== 'reference');
+        const t0 = performance.now();
+        let hits = 0;
+        for (const ray of rays) {
+          const hit = mode === 'nearest' ? query.intersect.first(ray, solids)
+            : (mode === 'bounds' ? query.intersect(ray, solids) : ray.intersectObjects(solids, false))[0];
+          if (hit) hits++;
+        }
+        return { ms: performance.now() - t0, hits };
+      };
+      setTerrain(true);
+      const coldStart = performance.now();
+      rays[0].intersectObjects(solids, false);
+      const coldFirstQueryMs = performance.now() - coldStart;
+      // Cold cost is reported separately: the first vertical query validates/builds the grid lookup.
+      // Warm each path before timing; cached shader or GPU behavior is not part of this CPU measurement.
+      for (const mode of ['reference', 'terrain', 'bounds', 'nearest']) run(mode);
+      const times = { reference: [], terrain: [], bounds: [], nearest: [] };
+      for (let batch = 0; batch < 3; batch++) {
+        for (const mode of Object.keys(times)) times[mode].push(run(mode));
+      }
+      const timings = {};
+      for (const [mode, samples] of Object.entries(times)) {
+        samples.sort((a, b) => a.ms - b.ms);
+        timings[mode] = samples[1];
+      }
+
+      let seed = report.workload.randomSeed;
+      const random = () => ((seed = Math.imul(seed, 1664525) + 1013904223 | 0) >>> 0) / 4294967296;
+      const probes = [...rays];
+      for (let i = 0; i < 70; i++) probes.push(down(random() * 5000 - 2400, random() * 300 + 30, random() * 5000 - 2400, 600));
+      if (state === 'refined-valleys') {
+        for (let i = 0; i < 60; i++) probes.push(down(random() * 1080 - 430, 100, random() * 1040 + 430, 600));
+      }
+      const position = terrains[0].mesh.geometry.attributes.position;
+      for (let i = 0; i < 18; i++) {
+        const k = Math.floor(random() * position.count);
+        probes.push(down(position.getX(k), 200, position.getZ(k), 600));
+      }
+      for (let i = 0; i < 12; i++) {
+        probes.push(new Raycaster(new Vector3(random() * 500 - 100, 120, random() * 500 - 100),
+          new Vector3(random() * 0.4 - 0.2, -1, random() * 0.4 - 0.2).normalize(), 0, 600));
+      }
+      for (let i = 0; i < probes.length; i++) {
+        const ray = probes[i], label = `${house}/${state} ray ${i}`;
+        setTerrain(false);
+        const expected = ray.intersectObjects(solids, false);
+        setTerrain(true);
+        assert.equal(encode(ray.intersectObjects(solids, false)), encode(expected), label + ': terrain changed exact hits');
+        assert.equal(encode(query.intersect(ray, solids)), encode(expected), label + ': bounds changed exact hits');
+        assert.equal(encode([query.intersect.first(ray, solids)].filter(Boolean)), encode(expected.slice(0, 1)), label + ': nearest hit changed');
+      }
+      const { nx, nz } = terrains[0];
+      const result = {
+        house, state, solids: solids.length, verifiedRays: probes.length, coldFirstQueryMs,
+        gridIndexTypedArrayBytes: (nx + 1 + nz + 1) * Float64Array.BYTES_PER_ELEMENT + nx * nz * Int32Array.BYTES_PER_ELEMENT,
+        note: 'Index byte count excludes object/Map overhead; cold query includes ordinary ray initialization too.',
+        timings, valleyCells: ctx.shared.valleys188?.cells || 0
+      };
+      report.states.push(result);
+      console.log(JSON.stringify(result, null, 2));
+    }
+  } finally { setTerrain(true); }
+}
+
+if (option('--out')) {
+  const out = path.resolve(option('--out'));
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, JSON.stringify(report, null, 2) + '\n');
+}
+console.log(`Verified ${report.states.reduce((sum, s) => sum + s.verifiedRays, 0)} actual-model ray cases; exact results unchanged.`);
