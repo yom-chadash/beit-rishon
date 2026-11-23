@@ -1703,6 +1703,7 @@
       // (the order of the lots, I Chronicles 24:7-18, 38:795-806) - model choices. By the door, a table with a white tunic folded on it.
       {
         const W24 = ["יהויריב", "ידעיה", "חרם", "שערים", "מלכיה", "מימן", "הקוץ", "אביה", "ישוע", "שכניהו", "אלישיב", "יקים", "חפה", "ישבאב", "בלגה", "אמר", "חזיר", "הפצץ", "פתחיה", "יחזקאל", "יכין", "גמול", "דליהו", "מעזיהו"];
+        ctx2.shared.watches24 = W24;   // WINDOW_NAMES_H: the one list of the watches' names (also the knives' windows, 50-heichal.js)
         const KINDS = ["מכנסים", "כתונת", "מצנפת", "אבנט"];
         const cv = document.createElement("canvas"); cv.width = 1536; cv.height = 1024;
         const c2 = cv.getContext("2d");
