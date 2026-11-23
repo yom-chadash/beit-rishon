@@ -377,14 +377,13 @@
       // out - figures of two cubits, wood on stone): over every post a disc - gold for the priests', red-brown for the Levites' -
       // that grows with the camera's distance (as the First Temple's gatekeepers do), so that the whole mount's view shows where they stand
       const FAR = [], mFarK = new MeshBasicMaterial({ color: 0xe2a400 }), mFarL = new MeshBasicMaterial({ color: 0xa8452a }), gFar = new CylinderGeometry(1.5, 1.5, 0.3, 20);
+      const guardSpots = [[], []];
       const post = (x, y, z, kohen) => {
-        const m = H2.cyl(guards, 0.9, 1.1, 3.6, kohen ? M2.gold : M2.cedar, x, y, z, 10);
-        H2.cyl(guards, 0.5, 0.5, 0.9, kohen ? M2.gold : M2.cedar, x, y + 3.6, z, 10);
+        guardSpots[kohen ? 0 : 1].push([x, y, z]);
         const d = new Mesh(gFar, kohen ? mFarK : mFarL);
         d.position.set(x, y + 5.4, z);
         guards.add(d);
         FAR.push(d);
-        return m;
       };
       if (ctx2.animated) ctx2.animated.push(() => {
         if (!guards.visible) return;
@@ -400,6 +399,17 @@
       for (const [x, z] of [[-48, -67.5], [-78, 67.5], [-48, 67.5], [-18, 67.5], [93.5, 0]]) post(x, 40.5, z, false);
       for (const [x, z, y] of [[CO.azE + 3, CO.azN - 6, 0], [CO.azE + 3, CO.azS + 6, 0], [CO.azW - 6, CO.azN - 6, 0], [CO.azW - 6, CO.azS + 6, 0]]) post(x, y, z, false);   // CHEL_211: on the chel's floor (they stood on the podium's ledge)
       post(-48, 13.5, -62, false); post(-30, 13.5, -45, false); post(-92, 13.5, 0, false);   // לשכת הקרבן, לשכת הפרוכת (places: model choices), אחורי בית הכפורת
+      // Only the marker bodies/heads are static: batch those by material, keeping each distance-scaled disc in FAR above.
+      for (const [rTop, rBottom, height, bottom] of [[0.9, 1.1, 3.6, 0], [0.5, 0.5, 0.9, 3.6]]) {
+        const geo = H2.uvWorld(new CylinderGeometry(rTop, rBottom, height, 10), 2 * Math.PI * Math.max(rTop, rBottom), height);
+        [M2.gold, M2.cedar].forEach((material, kind) => {
+          const im = new InstancedMesh(geo, material, guardSpots[kind].length), mm = new Matrix4();
+          guardSpots[kind].forEach(([x, y, z], i) => im.setMatrixAt(i, mm.makeTranslation(x, y + bottom + height / 2, z)));
+          im.castShadow = im.receiveShadow = true;
+          im.computeBoundingSphere();
+          guards.add(im);
+        });
+      }
       ctx2.shared.features = ctx2.shared.features || {};
       ctx2.shared.features.guards = { key: "guards", isOn: () => guards.visible, on: () => { guards.visible = true; }, off: () => { guards.visible = false; } };
       ctx2.labels.push({ text: "שלושה משמרות כהנים (זהב) ועשרים ואחד לויים (עץ)", x: 93.5, y: 46, z: 0, size: 1.8, layer: "guards" });

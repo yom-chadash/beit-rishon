@@ -53,12 +53,19 @@ export async function buildModel(house, sourceRoot) {
   const sandbox = { console, document, window, performance, setTimeout: noop, clearTimeout: noop, setInterval: noop,
     clearInterval: noop, requestAnimationFrame: noop, localStorage: { getItem: () => null, setItem: noop },
     navigator: { userAgent: '' }, Uint8ClampedArray };
+  // Keep the real section/material lifecycle in these tests without booting the renderer or UI.
+  const entry = houseText(house, '90-entry.js', sourceRoot);
+  const sectionStart = entry.indexOf('  var ent_sec ='), sectionEnd = entry.indexOf('  // 1.0.1-H', sectionStart);
+  assert(sectionStart >= 0 && sectionEnd > sectionStart, 'entry section block could not be found');
   const code = modules[house].map(name => houseText(house, name, sourceRoot)).join('\n') + `
     var scene = new Scene(), camera = new PerspectiveCamera(45, 1, .1, 10000), root = new Group();
     scene.add(root); camera.position.set(500, 300, 500);
     var controls = { target: new Vector3(), update: () => {}, addEventListener: () => {} };
     var ctx = { THREE: three_module_exports, scene, root, M, TEX, H, LV, CO, labels: [], animated: [], cutaway: [],
       interiorOnly: [], layers: {}, shared: {}, camera, controls, renderer: { domElement: document.createElement('canvas') }, flyTo: () => {} };
+    var renderer = ctx.renderer;
+    ${entry.slice(sectionStart, sectionEnd)}
+    ctx.shared.section = { on: false, axis: 'z', v: 0, set: ent_sectionSet };
     return { ctx, builds: [${builders[house].join(',')}] };
   })(); OtzariaPlugin;`;
   const { ctx, builds } = vm.runInNewContext(code, sandbox, { timeout: 60000 });
@@ -207,8 +214,15 @@ function compareGroupRays(before, after, groupName) {
 
 const scenarios = [
   ['default', () => {}],
+  ['guards-on', ctx => ctx.shared.features.guards.on(), 'guards'],
+  // Exercise the real frame hook; the camera-scaled discs must remain independent of the newly instanced bodies.
+  ['guards-near', ctx => { ctx.camera.position.set(0, 20, 0); ctx.animated.find(f => String(f).includes('!guards.visible'))(); }, 'guards'],
+  ['guards-far', ctx => { ctx.camera.position.set(1000, 300, 1000); ctx.animated.find(f => String(f).includes('!guards.visible'))(); }, 'guards'],
+  ['guards-clipped', ctx => ctx.shared.section.set(true, 'z', 0)],
+  ['guards-off', ctx => { ctx.shared.section.set(false); ctx.shared.features.guards.off(); ctx.camera.position.set(500, 300, 500); }],
   ['soreg-greeks', ctx => ctx.shared.soregBreach.set('greeks'), 'soregBreach'],
-  ['soreg-repaired', ctx => ctx.shared.soregBreach.set('repaired')],
+  ['soreg-clipped', ctx => ctx.shared.section.set(true, 'x', -38)],
+  ['soreg-repaired', ctx => { ctx.shared.section.set(false); ctx.shared.soregBreach.set('repaired'); }],
   ['whole-mount-roof', ctx => ctx.shared.harRoof.set('all')],
   ['kanievsky-roof', ctx => ctx.shared.harRoof.set('kanievsky')],
   ['ulam-open', ctx => ctx.shared.modelButtons.find(b => b.id === 'hei-ulam-front').set(true)],
