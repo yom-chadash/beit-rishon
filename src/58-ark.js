@@ -475,8 +475,13 @@
         SF.at.copy(cam.position); SF.tg.copy(oc.target);
         const dx = oc.target.x - cam.position.x, dz = oc.target.z - cam.position.z, L = Math.hypot(dx, dz) || 1;
         const off = Math.max(1.5, Math.min(12, cam.position.distanceTo(oc.target) * 0.2));
-        const x = oc.target.x - (dz / L) * off, z = oc.target.z + (dx / L) * off;
-        const fy = typeof ctx.shared.floorY === "function" ? ctx.shared.floorY(x, oc.target.y + 2.5, z) : -Infinity;
+        let x = oc.target.x - (dz / L) * off, z = oc.target.z + (dx / L) * off;
+        // SCALE_PLACE_H (fix-h, as in the Second Temple's: the figure stood over the camera in close views): never nearer to the eye than
+        // 3.5 amot - in a close view he steps back, beyond the target; and the floor under him not higher than the target's own level
+        { const ex = x - cam.position.x, ez = z - cam.position.z, d0 = Math.hypot(ex, ez), MIN = 3.5;
+          if (d0 < MIN) { const k = Math.sqrt(Math.max(0, MIN * MIN - off * off)) - (ex * dx + ez * dz) / L; x += (dx / L) * Math.max(0, k); z += (dz / L) * Math.max(0, k); } }
+        let fy = typeof ctx.shared.floorY === "function" ? ctx.shared.floorY(x, oc.target.y + 2.5, z) : -Infinity;
+        if (isFinite(fy) && fy > oc.target.y + 0.5 && typeof ctx.shared.floorY === "function") fy = ctx.shared.floorY(x, oc.target.y + 0.5, z);
         SF.w.g.position.set(x, isFinite(fy) ? fy : oc.target.y, z);
         SF.w.g.rotation.y = Math.atan2(cam.position.x - x, cam.position.z - z);
       };

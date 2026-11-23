@@ -324,18 +324,57 @@
     // in the north, in the wall's thickness, each a niche with knives in it; Bilga's shut with stone. Drawn in each reading of the ulam's
     // width on the face of the north part toward the ulam (the Mishnah's: the block's face, z -35; the Tiferet Yisrael's: the room's
     // north wall, z -45 (its partition has the door); the Rambam's: the hall's north end, z -45). Three rows of eight; their size, height and places, and
-    // which window is Bilga's - model choices.
+    // the order of the windows (WINDOW_NAMES_H: the order of the watches in I Chronicles 24 - the user's decision 197 a) - model choices.
     {
       const nDark = new MeshBasicMaterial({ color: 0x17110b });
       const bladeM = new MeshStandardMaterial({ color: 0xb9bcc0, metalness: 0.85, roughness: 0.3 });
       const handleM = new MeshStandardMaterial({ color: 0x5a3c22, roughness: 0.8 });
       const plugM = M2.stoneSmooth;
+      // WINDOW_NAMES_H (fix-h, 23.11.2026 - the user: "השמות של המשמרות"): each window's watch written on a small stone plate over it, in
+      // the three readings. The names - ctx2.shared.watches24 (30-courts.js: I Chronicles 24:7-18, the order of the lots). THE ORDER OF THE
+      // WINDOWS - this one array, WIN_WALL: the wall as one sees it standing before it (the rows from the top, each from the left to the
+      // right); each number - the watch by the order of the lots (1 Yehoyariv ... 24 Maazyahu). The user's decision 197 a (23.11.2026): from
+      // the right to the left and from the top down, for one standing before them - the top row 1-8, the second 9-16, the third 17-24;
+      // Bilga, the fifteenth, the seventh from the right in the second row - and only its window shut (it goes by its name).
+      const WIN_WALL = [
+        [8, 7, 6, 5, 4, 3, 2, 1],
+        [16, 15, 14, 13, 12, 11, 10, 9],
+        [24, 23, 22, 21, 20, 19, 18, 17]
+      ];
+      const W24N = ctx2.shared.watches24 || null;
+      const watchAt = (r, c) => WIN_WALL[2 - r][c] - 1;   // r 0 the lowest row, c 0 the westmost (the viewer's left)
+      // the plates: one picture of the 24 names (4 x 8 cells of 256 x 64), each plate's face on its own cell
+      const plateM = (() => {
+        if (!W24N) return null;
+        const cv = document.createElement("canvas"); cv.width = 1024; cv.height = 512;
+        const g2 = cv.getContext("2d");
+        g2.direction = "rtl"; g2.textAlign = "center"; g2.textBaseline = "middle";
+        for (let i = 0; i < 24; i++) {
+          const gx = (i % 4) * 256, gy = Math.floor(i / 4) * 64;
+          g2.fillStyle = "#d9cba6"; g2.fillRect(gx, gy, 256, 64);
+          g2.strokeStyle = "#8c7650"; g2.lineWidth = 4; g2.strokeRect(gx + 3, gy + 3, 250, 58);
+          g2.fillStyle = "#33240f"; g2.font = "bold 44px 'David','Frank Ruhl Libre','Times New Roman',serif";
+          g2.fillText(W24N[i], gx + 128, gy + 34);
+        }
+        const tx = new CanvasTexture(cv); tx.colorSpace = SRGBColorSpace; tx.anisotropy = 8;
+        return new MeshStandardMaterial({ map: tx, roughness: 0.85 });
+      })();
+      const PL_W = 1.0, PL_H = 0.22, PL_DY = 0.65;   // over the window's frame (its top at +0.52), under the next row's (at +0.78)
+      const plateGeo = (i, x, y, z, dir) => {   // dir: the way its face looks (+1: +z)
+        const q = new PlaneGeometry(PL_W, PL_H), uv = q.attributes.uv, cx = i % 4, cy = Math.floor(i / 4);
+        for (let j = 0; j < uv.count; j++) uv.setXY(j, (cx + uv.getX(j)) / 4, (8 - cy - 1 + uv.getY(j)) / 8);
+        if (dir < 0) q.rotateY(Math.PI);
+        return q.translate(x, y, z);
+      };
       const windows = (parent, zFace, dir) => {   // dir: +1 the niches face +z (their back toward -z)
-        const tmp = new Group();
-        let k = 0;
+        const tmp = new Group(), plates = [];
+        let k = 0, bilgaAt = null;
         for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++, k++) {
           const x = 2.6 + c * 1.25, y = F + 2.4 + r * 1.3, z = zFace + dir * 0.02;
-          const bilga = k === 15;   // (which one - a model choice)
+          const wi = watchAt(r, c);
+          if (plateM) plates.push(plateGeo(wi, x, y + PL_DY, zFace + dir * 0.03, dir));
+          const bilga = W24N ? W24N[wi] === "בלגה" : k === 15;   // WINDOW_NAMES_H: Bilga's by its name (until now the 16th - a model choice)
+          if (bilga) bilgaAt = [x, y];
           if (bilga) { const p = new Mesh(new BoxGeometry(0.85, 0.85, 0.12), plugM); p.position.set(x, y, zFace + dir * 0.06); tmp.add(p); continue; }
           const d = new Mesh(new PlaneGeometry(0.8, 0.8), nDark); d.position.set(x, y, z); d.rotation.y = dir > 0 ? 0 : Math.PI; tmp.add(d);
           for (const [fx, fy, fw, fh] of [[0, 0.46, 1.0, 0.12], [0, -0.46, 1.0, 0.12], [-0.46, 0, 0.12, 0.8], [0.46, 0, 0.12, 0.8]]) {
@@ -350,8 +389,10 @@
         const byMat = new Map();
         tmp.traverse((o) => { if (o.isMesh) { if (!byMat.has(o.material)) byMat.set(o.material, []); byMat.get(o.material).push(o.geometry.clone().applyMatrix4(o.matrixWorld)); } });
         for (const [mat, list] of byMat) { const m = new Mesh(mergeGeometries(list), mat); m.userData.noPick = true; m.receiveShadow = true; parent.add(m); }
+        if (plateM && plates.length) { const pm = new Mesh(mergeGeometries(plates), plateM); pm.userData.noPick = true; parent.add(pm); }   // WINDOW_NAMES_H
         ctx2.labels.push({ text: "בית החליפות — ״ששם גונזים את הסכינים״ (מידות ד, ז): כ״ד חלונות, אחד לכל משמר", x: 7, y: F + 7.2, z: zFace + dir * 1.5, size: 0.9, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
-        ctx2.labels.push({ text: "״וחלונה סתומה״ — של משמר בלגה (סוכה ה, ח)", x: 2.6 + 7 * 1.25, y: F + 2.4 + 1.3 + 0.9, z: zFace + dir * 0.9, size: 0.6, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
+        // WINDOW_NAMES_H: on Bilga's shut stone (its plate over it says "בלגה"); until now over the windows above it, and crowding them
+        ctx2.labels.push({ text: "״וחלונה סתומה״", x: bilgaAt ? bilgaAt[0] : 2.6 + 7 * 1.25, y: bilgaAt ? bilgaAt[1] : F + 2.4 + 1.3, z: zFace + dir * 0.35, size: 0.3, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
       };
       windows(ulamM, -35, 1);          // the Mishnah's reading: on the north block's face toward the ulam
       windows(ulamT, -45, 1);          // the Tiferet Yisrael's: in the room, on its north wall (the partition has its door)
@@ -524,7 +565,10 @@
     //              wall (6) - model choice
     //   ri       - Ri in Tosafot (Yoma 52a, Bava Batra 61a; the Yad Ramah): the wall 7, 6, 5; the Mishnah (4:7) measures the middle storey
     //   riB      - Ri, "אי נמי": half an amah from every wall, the partitions too - the wall 6.5, 6, 5.5, the outer wall 5.5, 5, 4.5, square cells
-    //   riC      - Ri, "עוד": the lower cell 6 in the Second Temple; the storeys above (7, 8) are not stated (לא מאומת)
+    //   riC      - Ri, "עוד": the lower cell 6 in the Second Temple; CELLS_RIC_S2 (fix-s2, 23.11.2026 - the user's decision 196 א): the storeys
+    //              above as the Har HaMoriah on the Rambam, Beit HaBechirah 4:9 (5474:203): "היו כל התאים התחתון והתיכון והעליון הכל חללו
+    //              ששה אמות, וכן עובי כותל ההיכל היה שוה בעובי בכל גובה הכותל, היה עב ששה אמות" - the cells 6, 6, 6, the house's wall 6 all its
+    //              height, the cell's outer wall 5: 17 on every storey, as Middot 4:7 (until now 6, 7, 8 and the wall 6, 5, 4 - not stated)
     //   rybm     - R. Yitzchak bar Mordechai: the ledges in the cell's outer wall - its top course 6, then 7, standing out one amah, then two
     //   habachur - R. Yitzchak HaBachur: no ledge in the house's wall; the beams from partition to partition in recesses of half an amah on
     //              each face; the cells 6 wide on every storey, their length 5, 6, 7
@@ -545,7 +589,7 @@
       rashi: { st: [22, 36, 50, 64], hw: [6, 5, 4], cw: [5, 6, 7], ow: [6, 6, 6] },
       ri: { st: [22, 36, 50, 64], hw: [7, 6, 5], cw: [5, 6, 7], ow: [5, 5, 5] },
       riB: { st: [22, 36, 50, 64], hw: [6.5, 6, 5.5], cw: [5, 6, 7], ow: [5.5, 5, 4.5], len: [5, 6, 7] },
-      riC: { st: [22, 36, 50, 64], hw: [6, 5, 4], cw: [6, 7, 8], ow: [5, 5, 5] },
+      riC: { st: [22, 36, 50, 64], hw: [6, 6, 6], cw: [6, 6, 6], ow: [5, 5, 5] },   // CELLS_RIC_S2 (the user's decision 196 א): the Har HaMoriah
       rybm: { st: [22, 36, 50, 64], hw: [6, 6, 6], cw: [5, 6, 7], ow: [5, 5, 5], shift: true },
       habachur: { st: [22, 36, 50, 64], hw: [6, 6, 6], cw: [6, 6, 6], ow: [5, 5, 5], len: [5, 6, 7], along: true },
       rid: { st: [22, 36, 50, 64], hw: [6, 6, 5], cw: [6, 6, 7], ow: [5, 5, 5], pil: true },
@@ -553,7 +597,7 @@
       rambam: { st: [22, 36, 50, 64], rambam: true }   // 1.9.1: his own drawings (rambamCells below)
     };
     // the labels of each reading, at the section (text, y, z); tools/rows_190.py maps them to the reading's card
-    const CELLS_LBL = {"rashi": [["צורת התאים — רש״י והר״ש", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 5", 29.0, -18.5], ["כותל התא 6", 26.4, -24.0], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 5", 45.6, -12.5], ["התא 6", 43.0, -18.0], ["כותל התא 6", 40.4, -24.0], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 4", 59.6, -12.0], ["התא 7", 57.0, -17.5], ["כותל התא 6", 54.4, -24.0], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "ri": [["צורת התאים — ר״י, פירוש ראשון", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 7", 31.6, -13.5], ["התא 5", 29.0, -19.5], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 5", 59.6, -12.5], ["התא 7", 57.0, -18.5], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "riB": [["צורת התאים — ר״י, פירוש שני", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6½", 31.6, -13.25], ["התא 5 על 5", 29.0, -19.0], ["כותל התא 5½", 26.4, -24.25], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6 על 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 5½", 59.6, -12.75], ["התא 7 על 7", 57.0, -19.0], ["כותל התא 4½", 54.4, -24.75], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "riC": [["צורת התאים — ר״י, פירוש שלישי", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 6", 29.0, -19.0], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית — לא מאומת", 43.0, -40], ["כותל ההיכל 5", 45.6, -12.5], ["התא 7", 43.0, -18.5], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה — לא מאומת", 57.0, -40], ["כותל ההיכל 4", 59.6, -12.0], ["התא 8", 57.0, -18.0], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "rybm": [["צורת התאים — ר׳ יצחק בר מרדכי", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 5", 29.0, -18.5], ["כותל התא 5", 26.4, -23.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 6", 59.6, -13.0], ["התא 7", 57.0, -19.5], ["כותל התא 5", 54.4, -25.5], ["השורה העליונה — 6", 34.5, -24], ["השורה העליונה — 7", 48.5, -25.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "habachur": [["צורת התאים — ר׳ יצחק הבחור", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 6, אורכו 5", 29.0, -19.0], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6, אורכו 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 6", 59.6, -13.0], ["התא 6, אורכו 7", 57.0, -19.0], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "rid": [["צורת התאים — תוספות רי״ד", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["כותל של אמה", 24.5, -16.5], ["התא 5", 29.0, -19.5], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 5", 59.6, -12.5], ["התא 7", 57.0, -18.5], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "rambam": [["צורת התאים — הרמב״ם, כציורו", 65.5, -22.5], ["קומה תחתונה", 29.0, -47], ["קומה אמצעית", 43.0, -47], ["קומה עליונה", 57.0, -47], ["תא — כותל ההיכל 6", 33.5, -13.0], ["תא — התא 6", 30.5, -19.0], ["תא — כותל התא 5", 27.5, -24.5], ["תא — המסבה 3", 24.5, -28.5], ["תא — כותל המסבה 5", 33.5, -32.5], ["יציע חמש", 25.0, -37.5], ["רובד שש", 36.9, -38.0], ["יציע שש", 40.0, -38.0], ["רובד שבע", 50.9, -38.5], ["יציע שבע", 54.0, -38.5]], "raavad": [["צורת התאים — הרמב״ם (כדברי הראב״ד והתוי״ט)", 63.6, -22.5], ["כנגד האוטם", 19.0, -40], ["כותל ההיכל 7", 21.6, -13.5], ["התא 5", 19.0, -19.5], ["כותל התא 5", 16.4, -24.5], ["קומה אמצעית", 32.5, -40], ["כותל ההיכל 6", 35.1, -13.0], ["התא 6", 32.5, -19.0], ["כותל התא 5", 29.9, -24.5], ["קומה עליונה", 53.5, -40], ["כותל ההיכל 6", 56.1, -13.0], ["התא 6", 53.5, -19.0], ["כותל התא 5", 50.9, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]]};
+    const CELLS_LBL = {"rashi": [["צורת התאים — רש״י והר״ש", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 5", 29.0, -18.5], ["כותל התא 6", 26.4, -24.0], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 5", 45.6, -12.5], ["התא 6", 43.0, -18.0], ["כותל התא 6", 40.4, -24.0], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 4", 59.6, -12.0], ["התא 7", 57.0, -17.5], ["כותל התא 6", 54.4, -24.0], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "ri": [["צורת התאים — ר״י, פירוש ראשון", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 7", 31.6, -13.5], ["התא 5", 29.0, -19.5], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 5", 59.6, -12.5], ["התא 7", 57.0, -18.5], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "riB": [["צורת התאים — ר״י, פירוש שני", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6½", 31.6, -13.25], ["התא 5 על 5", 29.0, -19.0], ["כותל התא 5½", 26.4, -24.25], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6 על 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 5½", 59.6, -12.75], ["התא 7 על 7", 57.0, -19.0], ["כותל התא 4½", 54.4, -24.75], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "riC": [["צורת התאים — ר״י, פירוש שלישי", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 6", 29.0, -19.0], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 6", 59.6, -13.0], ["התא 6", 57.0, -19.0], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "rybm": [["צורת התאים — ר׳ יצחק בר מרדכי", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 5", 29.0, -18.5], ["כותל התא 5", 26.4, -23.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 6", 59.6, -13.0], ["התא 7", 57.0, -19.5], ["כותל התא 5", 54.4, -25.5], ["השורה העליונה — 6", 34.5, -24], ["השורה העליונה — 7", 48.5, -25.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "habachur": [["צורת התאים — ר׳ יצחק הבחור", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["התא 6, אורכו 5", 29.0, -19.0], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6, אורכו 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 6", 59.6, -13.0], ["התא 6, אורכו 7", 57.0, -19.0], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "rid": [["צורת התאים — תוספות רי״ד", 63.6, -22.5], ["קומה תחתונה", 29.0, -40], ["כותל ההיכל 6", 31.6, -13.0], ["כותל של אמה", 24.5, -16.5], ["התא 5", 29.0, -19.5], ["כותל התא 5", 26.4, -24.5], ["קומה אמצעית", 43.0, -40], ["כותל ההיכל 6", 45.6, -13.0], ["התא 6", 43.0, -19.0], ["כותל התא 5", 40.4, -24.5], ["קומה עליונה", 57.0, -40], ["כותל ההיכל 5", 59.6, -12.5], ["התא 7", 57.0, -18.5], ["כותל התא 5", 54.4, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]], "rambam": [["צורת התאים — הרמב״ם, כציורו", 65.5, -22.5], ["קומה תחתונה", 29.0, -47], ["קומה אמצעית", 43.0, -47], ["קומה עליונה", 57.0, -47], ["תא — כותל ההיכל 6", 33.5, -13.0], ["תא — התא 6", 30.5, -19.0], ["תא — כותל התא 5", 27.5, -24.5], ["תא — המסבה 3", 24.5, -28.5], ["תא — כותל המסבה 5", 33.5, -32.5], ["יציע חמש", 25.0, -37.5], ["רובד שש", 36.9, -38.0], ["יציע שש", 40.0, -38.0], ["רובד שבע", 50.9, -38.5], ["יציע שבע", 54.0, -38.5]], "raavad": [["צורת התאים — הרמב״ם (כדברי הראב״ד והתוי״ט)", 63.6, -22.5], ["כנגד האוטם", 19.0, -40], ["כותל ההיכל 7", 21.6, -13.5], ["התא 5", 19.0, -19.5], ["כותל התא 5", 16.4, -24.5], ["קומה אמצעית", 32.5, -40], ["כותל ההיכל 6", 35.1, -13.0], ["התא 6", 32.5, -19.0], ["כותל התא 5", 29.9, -24.5], ["קומה עליונה", 53.5, -40], ["כותל ההיכל 6", 56.1, -13.0], ["התא 6", 53.5, -19.0], ["כותל התא 5", 50.9, -24.5], ["המסבה 3", 60, -28.5], ["כותל המסבה 5", 30, -32.5]]};
     const CELL_CX = [0, 1, 2, 3, 4].map((i) => -4.5 - 13.4 * (i + 0.5));   // -11.2, -24.6, -38, -51.4, -64.8
     const CELL_WZ = { 3: [-44 / 3, 0, 44 / 3], 2: [-11, 11] };              // the west cells' centres (z)
     const CUT_X = -38;   // the section through the middle cell
@@ -3109,6 +3153,7 @@
         KOH.pose({ x: 0, y: -400, z: 0, props: null });
         KOH.hide();
         ownOff();
+        if (ctx2.shared.tefOff) ctx2.shared.tefOff.delete("tevila");   // TEF_S2
         if (M) { M.towel.visible = true; M.ripple.visible = false; }
         const s = D.saved;
         D.saved = null;
@@ -3130,6 +3175,7 @@
         M.see(false);                 // the eye walks inside: no x-ray through the walls
         setFov(66);
         B.sleepG.visible = true;
+        (ctx2.shared.tefOff || (ctx2.shared.tefOff = new Set())).add("tevila");   // TEF_S2 (the user: "כהן לא יורד לבית הטבילה עם תפילין"): by night, none
         D.shot = -1;
         D.look = null;
         D.t0 = performance.now();

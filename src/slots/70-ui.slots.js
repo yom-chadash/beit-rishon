@@ -807,7 +807,9 @@
           // MENU_149_D: the City of David first (agent C's spring; its demonstration only with the spring, 59-parallels.js), then along the route
           ...(ctx.shared.shiloach1 ? [{ t: "ניסוך המים — מן השילוח", place: "ניסוך המים מן השילוח — הדגמה" }] : []),   // only with the spring (59-parallels.js, SPRING_C)
           { t: "עליית המלך לכסא", place: "עליית המלך לכסא" },   // DEMO_CARD_S1: as the place itself - its card (which says the button moves to Esther Rabbah's throne), its feature and its camera (until now: the pill, with Targum Sheni's throne)
-          { t: "עדי השקר — הכסא מרעיש", pill: "palaceThroneWitnesses", layer: "palace", run: thr, fly: "throneSteps" },   // DEMO_FLY_301
+          // WIT_REFS_S2 (the user's note 15, the coordinator's word): the two sources its card quotes, at the lines where their words are (checked in
+          // the library: Targum Sheni 3237:17 - line 13 is the head of 1:2 -, Pnei Acherim 274:116)
+          { t: "עדי השקר — הכסא מרעיש", pill: "palaceThroneWitnesses", layer: "palace", run: thr, fly: "throneSteps", refs: [["תרגום שני לאסתר א, ב", { book: 3237, index: 17 }], ["פנים אחרים נוסח ב", { book: 274, index: 116 }]] },   // DEMO_FLY_301
           // PARALLELS_C (fix-c, 59-parallels.js): the demonstrations of the Second Temple's places, in this house's building
           { t: "הליכת עולה רגל — בגובה העיניים", place: "הליכת עולה רגל — בגובה העיניים (ברטנורא)" },
           { t: "מצות ערבה — הקפת המזבח", place: "מצות ערבה — הדגמה" },
@@ -1228,7 +1230,7 @@
               // When the place is left, the reading goes back - unless the reader picked a reading himself meanwhile (the row's onPick).
               leave: () => { const tv = ctx.shared.throneVersion; if (ctx.shared.throneAuto && tv && typeof tv.set === "function" && tv.current === "estherRabbah") { tv.set("pesukim"); if (throneRow) throneRow.mark("pesukim"); } ctx.shared.throneAuto = false; } },
             info: (PN.throneAscent ? PN.throneAscent :"עליית המלך אל הכסא (המלך בלבוש מלכות): בכל מעלה חוזר גלגל המנגנון שבצד המעלה, והארי פושט את ידו והנשר את כנפו לקראת העולה, זה אחר זה; בראש — על פי המדרש של הגרסה שנבחרה. 'שש מעלות לכסה' (מלכים א י, יט).") + "\nבמודל: הכפתור מפעיל את ההדגמה לפי הגרסה שנבחרה בתפריט, תחת ״שיטות ומחלוקות״; **בגרסת הפסוקים אין מנגנון ואין עלייה**, ולכן הוא עובר תחילה לגרסת אסתר רבה. היא נמשכת עד סופה ואינה נסגרת לבד; 'עצור את העלייה' שעל הכסא מחזיר הכל למקומו.",
-            refs: [["מלכים א י, יט", V(10, 10, 19)], ["י, כ", V(10, 10, 20)], ["דברי הימים ב ט, יח", V(39, 9, 18)], ["מדרש אבא גוריון א", { book: 274, index: 6 }], ["אסתר רבה א, יב", { book: 264, index: 25 }], ["פנים אחרים נוסח ב", { book: 274, index: 116 }], ["תרגום שני לאסתר א, ב", { book: 3237, index: 13 }], ["בית המדרש ב (דמות כסא שלמה)", { book: 7924, index: 8 }], ["בן יהוידע על סנהדרין קו:", { book: 2546, index: 778 }], ["סנהדרין קו:", { book: 125, index: 4140 }]] },
+            refs: [["מלכים א י, יט", V(10, 10, 19)], ["י, כ", V(10, 10, 20)], ["דברי הימים ב ט, יח", V(39, 9, 18)], ["מדרש אבא גוריון א", { book: 274, index: 6 }], ["אסתר רבה א, יב", { book: 264, index: 25 }], ["פנים אחרים נוסח ב", { book: 274, index: 116 }], ["תרגום שני לאסתר א, ב", { book: 3237, index: 13 }], ["תרגום שני — עדי השקר", { book: 3237, index: 17 }], ["בית המדרש ב (דמות כסא שלמה)", { book: 7924, index: 8 }], ["בן יהוידע על סנהדרין קו:", { book: 2546, index: 778 }], ["סנהדרין קו:", { book: 125, index: 4140 }]] },
           // 1.0.1-L (L.33, the user: "בית המלך היה בחצר אחרת לגמרי! ולא בתוך חצר בית יער הלבנון"; "בית בת פרעה בתוך חצר בית יער הלבנון"; L.22
           // "בלי בריכה" - palace.md): the king's own walled court, the garden without the pool, בית בת פרעה in the great court
           { t: "בית המלך", view: "kingsHouse", layer: "palace",
