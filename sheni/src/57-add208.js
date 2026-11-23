@@ -2568,20 +2568,22 @@
           // the kit's arms and hand.js's hands, closed round the binding and round the etrog). Until now the priests carried a willow's branch
           // aside in a hanging hand, and the Israelites' lulav and etrog stood by their sides, not in their hands
           //@@include arm-k
-          // PRIEST_HOLD_K (the coordinator, 23.11.2026: Rashi in the card - the priests went round with the willow in their hands, "ביד נוטלין אותה
-          // ומנענעים ומקיפין בה"; the user's note said "the four species" - brought to him): what the priests hold - null: as until now (a branch
-          // carried aside); "aravah": a willow's branch upright in the right hand, in netilah and shaken; "four": the lulav and the etrog, as the
-          // Israelites of the reading "all" (theirs - the four species, as their card says). One line to change when he answers
-          const PRIEST_HOLD_K = SH.__priestHoldK !== undefined ? SH.__priestHoldK : null;   // (SH.__priestHoldK - for the checks, set before the circuit is first shown)
+          // ARAVAH_209_K (the user's decision 209: "כהנים בערבה, ומתג ישראל — עם ד' מינים"): in the reading "priests" (o0) each priest holds a
+          // willow's branch upright in his right hand, in netilah and shaken (Rashi in the card: "ביד נוטלין אותה ומנענעים ומקיפין בה"); in the
+          // reading "all" (o1) every walker, priest and Israelite, the four species - the lulav in his right hand and the etrog in his left. Each
+          // priest holds both, one shown at a time (pose, below)
           const AK = tm_armK(SH.priestKit), sleeveOf = {};
           const mk = (kind, robe, list, n, name, israel) => {
             for (let i = 0; i < n; i++) {
               const G = new Group(); G.visible = false; AG.add(G);
               const rc = Array.isArray(robe) ? robe[i % robe.length] : robe;
               PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: rc, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name, arms: AK ? false : undefined });
-              // (the priests of the reading "priests only" - PRIEST_HOLD_K, below: until the user decides, as until now)
-              const hold = AK && (israel ? "four" : PRIEST_HOLD_K);
-              if (hold) { const sm3 = sleeveOf[rc] || (sleeveOf[rc] = new MeshStandardMaterial({ color: rc, vertexColors: true, roughness: 0.9 })); G.userData.hold = hold === "aravah" ? AK.branch(G, sm3) : AK.four(G, sm3); list.push(G); continue; }
+              if (AK) {
+                const sm3 = sleeveOf[rc] || (sleeveOf[rc] = new MeshStandardMaterial({ color: rc, vertexColors: true, roughness: 0.9 }));
+                if (israel) G.userData.hold = AK.four(G, sm3);
+                else { const hs = G.userData.holds = { aravah: AK.branch(G, sm3), four: AK.four(G, sm3) }; for (const o of hs.four.parts) o.visible = false; G.userData.hold = hs.aravah; G.userData.holdK = "aravah"; }   // ARAVAH_209_K
+                list.push(G); continue;
+              }
               if (israel) {
                 const l = new Mesh(lulavG, lulavM); l.position.set(-0.36, 1.15, 0.3); l.rotation.x = 0.12; G.add(l);
                 const e = new Mesh(etrogG, etrogM); e.position.set(0.36, 1.3, 0.32); G.add(e);
@@ -2640,7 +2642,9 @@
         list.forEach((G, i) => {
           const [x, z, yaw] = at(-t * sp + i * gap);
           G.position.set(x, F + Math.abs(Math.sin(t * 4.2 + i * 1.3)) * 0.05, z); G.rotation.y = yaw; G.visible = true;
-          if (G.userData.hold && G.userData.hold.tick) G.userData.hold.tick(t + i * 0.37);   // FOUR_K: the willow shaken (PRIEST_HOLD_K "aravah")
+          { const hs = G.userData.holds, want = AR.circuit === "all" ? "four" : "aravah";   // ARAVAH_209_K: the priest's - by the reading
+            if (hs && G.userData.holdK !== want) { for (const o of hs[G.userData.holdK].parts) o.visible = false; for (const o of hs[want].parts) o.visible = true; G.userData.hold = hs[want]; G.userData.holdK = want; } }
+          if (G.userData.hold && G.userData.hold.tick) G.userData.hold.tick(t + i * 0.37);   // FOUR_K: the willow shaken
         });
       };
       const sync = () => {

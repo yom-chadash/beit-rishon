@@ -6,7 +6,8 @@
     // it: "gripW"), the two hands close together before the chest. The same hands as the waving of the first fruits (57-add208.js HANDS_K).
     //   tm_armK(K) - K: a house's priests' kit (SH.priestKit, ark_kit()) -> null, or { arm(parent, sd, mat, mid), setArm(A, W, q, pose,
     //   pole), handQ(sd, F, N), four(G, mat) }: four - on a walker G (its feet at 0, its face to +z, its left at +x) of the people's kit built
-    //   without its own arms - the two arms, the lulav and the etrog -> { arms, lulav, etrog, R, L } (R / L: the rings' middles and ways, in G).
+    //   without its own arms - the two arms, the lulav and the etrog -> { arms, lulav, etrog, R, L, parts } (R / L: the rings' middles and ways,
+    //   in G; parts - all it added, to show or hide); branch(G, mat) - a willow's branch in netilah (below)
     // MODEL CHOICES: the measures and forms of the lulav (1.3 amot, its spine to the holder), of the three hadassim (to its right) and the
     // two aravot (to its left), of the three bindings and of the etrog (0.28 amah long); the hands' places and the elbows.
     const tm_armK = (K) => {
@@ -93,7 +94,7 @@
         add(S.lulavG, S.lulavM); add(S.stemG, S.stemM);
         for (const [geo, M, mt] of [[S.hadasLeaf, S.HM, S.hadasM], [S.aravaLeaf, S.AM, S.aravaM]]) { const im = new InstancedMesh(geo, mt, M.length); M.forEach((m, i) => im.setMatrixAt(i, m)); im.instanceMatrix.needsUpdate = true; im.userData.noPick = true; lulav.add(im); }
         const etrog = new Mesh(S.etrogG, S.etrogM); etrog.position.copy(CL); etrog.castShadow = true; etrog.userData.noPick = true; G.add(etrog);
-        return { arms, lulav, etrog, R: { C: CR, ax: UPV }, L: { C: CL, ax: UPV } };
+        return { arms, lulav, etrog, R: { C: CR, ax: UPV }, L: { C: CL, ax: UPV }, parts: [arms[1].u, arms[1].f, arms[1].h, arms[-1].u, arms[-1].f, arms[-1].h, lulav, etrog] };
       };
       // ---- a willow's branch in netilah (ARAVAH_K - prepared, the coordinator: "ענף ערבה זקוף ביד ימין, בנטילה ובנענוע, לא בסחיבה"):
       // upright in the right hand (closed round its stem: hand.js "fist", a rod 0.0084 amah in radius), before the chest, shaken a little
@@ -127,7 +128,7 @@
           setArm(arms[-1], C.clone().sub(K.handAt(-1, "fist").applyQuaternion(q.clone().multiply(HB.q))), q.clone().multiply(HB.q), "fist", POLE[-1]);
         };
         tick(0);
-        return { arms, branch: b, tick, R: { C: CB, ax: UPV } };
+        return { arms, branch: b, tick, R: { C: CB, ax: UPV }, parts: [arms[1].u, arms[1].f, arms[1].h, arms[-1].u, arms[-1].f, arms[-1].h, b] };
       };
       return { up, fo, sx, sy, arm, setArm, handQ, ringHold, four, branch };
     };
