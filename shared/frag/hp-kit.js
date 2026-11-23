@@ -357,6 +357,15 @@
           for (let b = 0; b < HB_N; b++) for (let j = 0; j < HB_NY; j++) { let m = 0, n = 0; for (let db = -3; db <= 3; db++) for (let dj = -1; dj <= 1; dj++) { const v = at(b + db, j + dj); if (v > 0) { m += v; n++; } } D1[b * HB_NY + j] = n ? Math.max(m / n, D[b * HB_NY + j] - 0.0015) : 0; }   // (smoothed round over the locks: the cloth does not follow each lock)
           HB.set(D1);
         }
+        // MITZ_STRAIGHT_M: a much smoother copy (round 18 degrees, up 0.024) - the turns' WAY along the head is laid on it (their folds at
+        // even heights, not going up and down with each lock); their nearness to the hair is still the field above (hairB)
+        // and an envelope over the locks (spread round 12 degrees, then smoothed) - the cloth inside the band goes over the locks' tops
+        // without dipping between them (no creases across the rolls); at the band's two edges it still lies on the hair itself
+        const HE = new Float32Array(HB_N * HB_NY), HE0 = new Float32Array(HB_N * HB_NY);
+        for (let b = 0; b < HB_N; b++) for (let j = 0; j < HB_NY; j++) { let m = 0; for (let db = -4; db <= 4; db++) for (let dj = -1; dj <= 1; dj++) { const jj = j + dj; if (jj < 0 || jj >= HB_NY) continue; m = Math.max(m, HB[((b + db + HB_N) % HB_N) * HB_NY + jj]); } HE0[b * HB_NY + j] = m; }
+        for (let b = 0; b < HB_N; b++) for (let j = 0; j < HB_NY; j++) { let m = 0, n = 0; for (let db = -3; db <= 3; db++) for (let dj = -1; dj <= 1; dj++) { const jj = j + dj; if (jj < 0 || jj >= HB_NY) continue; const v = HE0[((b + db + HB_N) % HB_N) * HB_NY + jj]; if (v > 0) { m += v; n++; } } HE[b * HB_NY + j] = n ? m / n : 0; }
+        const HS = new Float32Array(HB_N * HB_NY);
+        for (let b = 0; b < HB_N; b++) for (let j = 0; j < HB_NY; j++) { let m = 0, n = 0; for (let db = -3; db <= 3; db++) for (let dj = -2; dj <= 2; dj++) { const jj = j + dj; if (jj < 0 || jj >= HB_NY) continue; const v = HB[((b + db + HB_N) % HB_N) * HB_NY + jj]; if (v > 0) { m += v; n++; } } HS[b * HB_NY + j] = n ? m / n : 0; }
         const hairB = (th, y) => {
           const fb = ((th + Math.PI) / (2 * Math.PI)) * HB_N - 0.5, fj = (y - HB_Y0) / HB_DY - 0.5, b0 = Math.floor(fb), j0 = Math.floor(fj), u = fb - b0, v = fj - j0;
           const g = (b, j) => (j < 0 || j >= HB_NY ? 0 : HB[((b + HB_N) % HB_N) * HB_NY + j]);
@@ -365,6 +374,21 @@
           return (q[0] * (1 - u) + q[1] * u) * (1 - v) + (q[2] * (1 - u) + q[3] * u) * v;
         };
         const hairR = (th, y) => { const h = hairB(th, y); return h > 0 ? Math.min(h, hairR0(th, y) + 0.004) : hairR0(th, y); };
+        const field = (A, th, y) => {
+          const fb = ((th + Math.PI) / (2 * Math.PI)) * HB_N - 0.5, fj = (y - HB_Y0) / HB_DY - 0.5, b0 = Math.floor(fb), j0 = Math.floor(fj), u = fb - b0, v = fj - j0;
+          const g = (b, j) => (j < 0 || j >= HB_NY ? 0 : A[((b + HB_N) % HB_N) * HB_NY + j]);
+          const q = [g(b0, j0), g(b0 + 1, j0), g(b0, j0 + 1), g(b0 + 1, j0 + 1)];
+          const h = q.some((w) => !w) ? Math.max(...q) : (q[0] * (1 - u) + q[1] * u) * (1 - v) + (q[2] * (1 - u) + q[3] * u) * v;
+          return h > 0 ? Math.min(h, hairR0(th, y) + 0.004) : hairR0(th, y);
+        };
+        const hairE = (th, y) => field(HE, th, y);
+        const hairS = (th, y) => {
+          const fb = ((th + Math.PI) / (2 * Math.PI)) * HB_N - 0.5, fj = (y - HB_Y0) / HB_DY - 0.5, b0 = Math.floor(fb), j0 = Math.floor(fj), u = fb - b0, v = fj - j0;
+          const g = (b, j) => (j < 0 || j >= HB_NY ? 0 : HS[((b + HB_N) % HB_N) * HB_NY + j]);
+          const q = [g(b0, j0), g(b0 + 1, j0), g(b0, j0 + 1), g(b0 + 1, j0 + 1)];
+          const h = q.some((w) => !w) ? Math.max(...q) : (q[0] * (1 - u) + q[1] * u) * (1 - v) + (q[2] * (1 - u) + q[3] * u) * v;
+          return h > 0 ? Math.min(h, hairR0(th, y) + 0.004) : hairR0(th, y);
+        };
         // GHC (figure(), below): the cap of hair over the crown - an ellipsoid (0.166, 0.246, 0.194) about the head's middle, down to 1 radian
         // from its top (GY0); in head units. Below its rim the cloth comes softly in to the hair (no step in its inner face)
         const GA = [0.166 / 1.3, 0.246 / 1.3, 0.194 / 1.3], GY0 = GA[1] * Math.cos(1.0);
@@ -381,15 +405,16 @@
             const x = P.getX(i), y = P.getY(i), z = P.getZ(i), r = Math.hypot(x, z), th = Math.atan2(x, z);
             const b = Math.min(NB - 1, Math.floor(((th + Math.PI) / (2 * Math.PI)) * NB)), j = Math.floor((y - Y0) / DY);
             if (y > tefTop[b]) tefTop[b] = y;
-            if (Math.abs(th) < 50 * DEG) continue;
+            if (Math.abs(th) < 105 * DEG) continue;   // (before the ears the strap is not under the cloth - it is seen on the hair, below the lower edge; spread from behind, it reaches to 85 degrees, under the edge)
             if (j >= 0 && j < NY) TB[b * NY + j] = Math.max(TB[b * NY + j], r);
           }
           const pass = (f) => { const T2 = new Float32Array(NB * NY); for (let b = 0; b < NB; b++) for (let j = 0; j < NY; j++) T2[b * NY + j] = f(b, j); TB.set(T2); };
           const at = (b, j) => (j < 0 || j >= NY ? 0 : TB[((b + NB) % NB) * NY + j]);
-          const D1 = new Float32Array(NB * NY);   // (the nearest bins kept whole - the blur must not uncover a thin strap)
-          for (let b = 0; b < NB; b++) for (let j = 0; j < NY; j++) { let m = 0; for (let db = -1; db <= 1; db++) for (let dj = -1; dj <= 1; dj++) m = Math.max(m, at(b + db, j + dj)); D1[b * NY + j] = m; }
-          pass((b, j) => { let m = 0; for (let db = -3; db <= 3; db++) for (let dj = -2; dj <= 2; dj++) m = Math.max(m, at(b + db, j + dj)); return m; });
-          pass((b, j) => { let m = 0; for (let db = -3; db <= 3; db++) for (let dj = -2; dj <= 2; dj++) m += at(b + db, j + dj); return Math.max(m / 35, D1[b * NY + j]); });
+          // MITZ_STRAIGHT_M: the cloth goes over the strap, its knot and its ends as one smooth swelling - the waves along the rolls behind
+          // came from following each strap: spread (max) 20 degrees round and 0.024 up, then averaged twice over half that - an average
+          // within the spread's reach is never below what it covers, so nothing comes through
+          pass((b, j) => { let m = 0; for (let db = -10; db <= 10; db++) for (let dj = -6; dj <= 6; dj++) m = Math.max(m, at(b + db, j + dj)); return m; });
+          for (let k = 0; k < 2; k++) pass((b, j) => { let m = 0; for (let db = -5; db <= 5; db++) for (let dj = -3; dj <= 3; dj++) m += at(b + db, j + dj); return m / 77; });
         }
         const tefR = (th, y) => {
           const fb = ((th + Math.PI) / (2 * Math.PI)) * NB - 0.5, fj = (y - Y0) / DY - 0.5, b0 = Math.floor(fb), j0 = Math.floor(fj), u = fb - b0, v = fj - j0;
@@ -398,6 +423,10 @@
         };
         const M = 0.0025;   // the margin between the cloth and what is under it (0.08 finger)
         const rIn = (th, y) => Math.max(base(th, y), tefR(th, y)) + M;
+        const baseS = (th, y) => { const h = hairS(th, y); if (y < GY0 - 0.04) return h; return Math.max(h, lerp(h, ell(th, Math.max(y, GY0)), smo(GY0 - 0.04, GY0, y))); };
+        const rRef = (th, y) => Math.max(baseS(th, y), tefR(th, y)) + M;   // (the smooth way)
+        const baseE = (th, y) => { const h = hairE(th, y); if (y < GY0 - 0.04) return h; return Math.max(h, lerp(h, ell(th, Math.max(y, GY0)), smo(GY0 - 0.04, GY0, y))); };
+        const rEnv = (th, y) => Math.max(baseE(th, y), tefR(th, y)) + M;   // (over the locks)
         const topAt = (th) => { const f = ((th + Math.PI) / (2 * Math.PI)) * NB - 0.5, b0 = Math.floor(f), u = f - b0; let m = -1; for (let d = -2; d <= 3; d++) m = Math.max(m, tefTop[(b0 + d + NB) % NB]); return m; };
         // a smooth curve through keys [degrees, value] (symmetric: |th|)
         const curve = (K) => (th) => {
@@ -425,7 +454,7 @@
         const meridian = (th, yl) => {
           const yt = GA[1] + M, out = [];
           let arc = 0, pr = null;
-          for (let i = 0; i <= 140; i++) { const t = i / 140, y = yt - (yt - yl) * (1 - t) * (1 - t), r = rIn(th, y); if (pr) arc += Math.hypot(r - pr[0], y - pr[1]); pr = [r, y]; out.push([r, y, arc]); }
+          for (let i = 0; i <= 140; i++) { const t = i / 140, y = yt - (yt - yl) * (1 - t) * (1 - t), r = rRef(th, y); if (pr) arc += Math.hypot(r - pr[0], y - pr[1]); pr = [r, y]; out.push([r, y, arc]); }
           return out;
         };
         const frontRim = (() => { const m = meridian(0, front); for (const q of m) if (q[2] >= 3 * FG) return q[0]; return 0.01; })();
@@ -440,22 +469,30 @@
           const key = Math.round(th * 1e5);
           let S = SEC.get(key);
           if (S) return S;
-          const yl = yL(th), m = meridian(th, yl), ro = rOpen(th);
-          let L = m[m.length - 1][2];
-          for (let i = 1; i < m.length; i++) if (m[i][0] <= ro) { const a0 = m[i - 1], a1 = m[i], u = (a0[0] - ro) / Math.max(1e-9, a0[0] - a1[0]); L = lerp(a0[2], a1[2], u); break; }
+          // MITZ_STRAIGHT_M: the rolls' way is not the lower edge's (it goes up over the ear and down behind it): it is a smooth sloping line
+          // round the head - from the lower edge before (front) to the nape behind, as a tilted ellipse (yRefLow) - and the rolls go evenly
+          // from it to the opening; where the lower edge is above that line (over the ear, and a little before) the lowest rolls are cut
+          // by the edge, as a band wound aslant would be
+          const yl = yL(th), ylR = (front - 0.106) / 2 + ((front + 0.106) / 2) * Math.cos(th), m = meridian(th, Math.min(yl, ylR)), ro = rOpen(th);
+          const arcAt = (y) => { for (let i = 1; i < m.length; i++) if (m[i][1] >= y) { const a0 = m[i - 1], a1 = m[i]; return lerp(a0[2], a1[2], clamp((y - a0[1]) / Math.max(1e-9, a1[1] - a0[1]), 0, 1)); } return m[m.length - 1][2]; };
+          const aL = arcAt(yl), aR = arcAt(ylR);
+          let aU = m[m.length - 1][2];
+          for (let i = 1; i < m.length; i++) if (m[i][0] <= ro && m[i][1] > yl) { const a0 = m[i - 1], a1 = m[i], u = (a0[0] - ro) / Math.max(1e-9, a0[0] - a1[0]); aU = lerp(a0[2], a1[2], u); break; }
+          const L = aU - aL;
           const R0 = new Float32Array(NF + 1), Y = new Float32Array(NF + 1), R = new Float32Array(NF + 1);
           let j = 1;
           for (let i = 0; i <= NF; i++) {
-            const at = (i / NF) * L;
+            const at = aL + (i / NF) * L;
             while (j < m.length - 1 && m[j][2] < at) j++;
             const a0 = m[j - 1], a1 = m[j], u = clamp((at - a0[2]) / Math.max(1e-9, a1[2] - a0[2]), 0, 1);
-            R0[i] = R[i] = lerp(a0[0], a1[0], u); Y[i] = lerp(a0[1], a1[1], u);
+            const wE = smo(0, 0.12, i / NF) * smo(1, 0.88, i / NF);   // (inside the band over the locks' envelope; at its edges on the hair itself)
+            Y[i] = lerp(a0[1], a1[1], u); R0[i] = R[i] = Math.max(lerp(lerp(a0[0], a1[0], u), rEnv(th, Y[i]), wE), rIn(th, Y[i]));   // (at the smooth way's height)
           }
           for (let it = 0; it < 12; it++) for (let i = 1; i < NF; i++) R[i] = Math.max(R0[i], 0.5 * (R[i - 1] + R[i + 1]));
           for (let i = 0; i <= NF; i++) R[i] -= 0.0015 * smo(0.08, 0, i / NF);   // (the lowest fold pressed a little into the hair - no gap under its edge)
           const NR = new Float32Array(NF + 1), NY2 = new Float32Array(NF + 1);
           for (let i = 0; i <= NF; i++) { const i0 = Math.max(0, i - 1), i1 = Math.min(NF, i + 1); let nr = Y[i1] - Y[i0], ny = -(R[i1] - R[i0]); const l = Math.hypot(nr, ny) || 1; NR[i] = nr / l; NY2[i] = ny / l; }
-          S = { yl, yu: Y[NF], L, Y, R, NR, NY: NY2 };
+          S = { yl, yu: Y[NF], L, Y, R, NR, NY: NY2, u0: (aL - aR) / (aU - aR), u1: 1, LR: aU - aR };   // u0: where the band begins on the rolls' way
           SEC.set(key, S);
           return S;
         };
@@ -468,16 +505,21 @@
         // breadth, at most 0.4 finger, a little flattened
         const STEPS = 8;
         const roll = (th, s) => {
-          let ph = STEPS * s - th / (2 * Math.PI) + 0.025 * Math.sin(2 * th + 1.9);
-          const sw = smo(Math.PI, 2.1, Math.abs(th));   // (each roll's own unevenness - none at the seam behind, where the band's turn steps up)
-          ph += sw * 0.03 * Math.sin(th + 1.3 * ph + 0.4);   // (not a coil: the rolls' breadths a little uneven, not quite parallel)
+          const S = section(th), uw = lerp(S.u0, 1, s);   // the place on the rolls' way (0 at the sloping line, 1 at the opening)
+          // MITZ_STRAIGHT_M (the coordinator on draft 2: "הגלים לאורך הגלילים חזקים... ליישר"): the rolls smooth and nearly parallel along
+          // the sloping way - no wave along them; the unevenness only in the space between one roll and the next and in their thickness
+          // (about 3%), each roll even along itself (a function of the band's own place, ph - the same all along a roll); none at the
+          // seam behind, where the band's turn steps up
+          let ph = STEPS * uw - th / (2 * Math.PI);
+          const sw = smo(Math.PI, 2.1, Math.abs(th));
+          ph += sw * 0.05 * Math.sin(2.1 * ph + 0.5);   // (the spaces between the rolls a little uneven)
           const f = ph - Math.floor(ph);
-          const sh = smo(0, 0.24, f) * (1 - 0.72 * smo(0.24, 1, f));   // the fold edge round at f 0 - 0.24, then flat down under the next
-          return { f, b: sh * (1 + sw * 0.06 * Math.sin(2 * th + 2.3 * ph + 1.1)), fade: smo(0, 0.05, s) * smo(1, 0.95, s) };
+          const sh = smo(0, 0.24, f) * (1 - 0.72 * smo(0.24, 0.9, f)) * smo(1, 0.88, f);   // each turn's lower edge a rounded fold (f 0 - 0.24) over the turn below, then flat down under the next, into the crease (no hard step: drawn without stairs)
+          return { f, b: sh * (1 + sw * 0.03 * Math.sin(2.3 * ph + 1.1)), fade: smo(0, 0.05, s) * smo(1, 0.95, s) };
         };
         const outerOff = (th, s) => {
-          const S = section(th), B = Math.min(0.4 * FG, 0.5 * (S.L / STEPS)) * 0.82, T = thick(th) * lerp(0.45, 1, smo(0, 0.18, s)), rl = roll(th, s);   // (the lowest turn thinner: its underside small)
-          return prof(s) * (T - B + B * lerp(1, rl.b, rl.fade)) + 0.00025 * Math.sin(9 * th + 13 * s + 2 * Math.sin(4 * th)) * rl.fade;   // (and the linen's small creases)
+          const S = section(th), B = Math.min(0.4 * FG, 0.5 * (S.LR / STEPS)) * 0.82, T = thick(th) * lerp(0.45, 1, smo(0, 0.18, s)), rl = roll(th, s);   // (the lowest turn thinner: its underside small)
+          return prof(s) * (T - B + B * lerp(1, rl.b, rl.fade));
         };
         // a point of the section at s, out along its normal by off
         const pt = (th, s, off) => {
@@ -489,7 +531,7 @@
         };
         // the mesh: rings round (NT) of the closed section - out along the outer face from the lower edge to the opening, and back along
         // the inner face (hidden but at the edges); the last ring is the first (the seam behind - one place)
-        const NT = 180, NO = 96, NI = 20, TILE = 0.085 / 1.3, pos = [], col = [], uv = [], idx = [], ring = NO + NI + 1;
+        const NT = 180, NO = 192, NI = 20, TILE = 0.085 / 1.3, pos = [], col = [], uv = [], idx = [], ring = NO + NI + 1;
         for (let i = 0; i <= NT; i++) {
           const th = ((i % NT) / NT) * 2 * Math.PI - Math.PI;
           let arc = 0, prev = null;
