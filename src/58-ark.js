@@ -14,7 +14,7 @@
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
       BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, handWr, handAt, footGeo, mat, mRobe, mSkin, mHand, mHat, mFace, mEye, mSashDyed, mSashWhite,
-      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs, kidBody });   // HANDS_K: kidBody (KIDDUSH_CROUCH_K)   // MIGBAAT_A2, TEFILLIN_A2 (the ark's priests bring it in on the festival - no tefillin; 'בגדי הכהנים' - with them)
+      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs, kidBody });   // HANDS_K: kidBody (KIDDUSH_CROUCH_K)   // MIGBAAT_A2, TEFILLIN_A2 (ARK_TEF_M: the ark's priests too - with them)
   }
   // ARK_FIG_208: the kit's arms in amot (as the Second Temple's 55-tamid.js makeFigKit): the sleeve from the shoulder to the elbow, the
   // forearm, the open hand; the feet; the neck
@@ -86,7 +86,7 @@
   }
   // a priest (the lotteries' priest): white kutonet, the avnet of colours, the migba'at; n - which of the beards
   // waist (KIDDUSH_BEND_212): the robe in two at K.WAIST, all above it in `bend` (turned there: the legs stay upright)
-  // TEFILLIN_A2: noTef - no tefillin (the ark is brought in on the festival, I Kings 8:2 "בחג"); every other priest has the head's
+  // TEFILLIN_A2: noTef - no tefillin (none asks for it now: ARK_TEF_M - the ark's carriers have them, as every priest); every priest has the head's
   function ark_priestFig(n, waist, noTef) {
     const K = ark_kit(), KG = ark_kitArms(), FS = K.FS;
     const g = new Group(), lean = new Group();
@@ -588,7 +588,7 @@
       pv.add(ark);
       let n = 0;
       for (const dx of [-1.6, 1.6]) for (const s of [-1, 1]) {
-        const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
+        const p = ark_priestFig(n++, false);   // ARK_TEF_M (the user's decision 202): the head's tefillin, as every priest - the ark was brought in before the festival, on a weekday
         p.g.position.set(X + dx, Y, s * 1.1);
         p.g.rotation.y = -Math.PI / 2;
         const fit = ark_staffFit(s > 0 ? 1 : -1, A ? A.staffZ - 1.1 : 0.3, A ? 1.87 + A.h / 2 : 2.62);   // HAND_GRIP_A2
@@ -657,7 +657,7 @@
       const P = D.P = [];   // ARK_PLACE_D: kept, for the way out from another place (enter)
       let n = 0;
       for (const front of [true, false]) for (const s of [-1, 1]) {
-        const p = ark_priestFig(n++, false, true);   // TEFILLIN_A2: on the festival - none
+        const p = ark_priestFig(n++, false);   // ARK_TEF_M (the user's decision 202): the head's tefillin, as every priest - the ark was brought in before the festival, on a weekday
         p.front = front;
         p.s = s;
         p.staffArm = s > 0 ? p.L : p.R;

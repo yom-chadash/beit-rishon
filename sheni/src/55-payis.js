@@ -33,7 +33,7 @@
     //@@include hand
     //@@include strap
     //@@include priest-kit
-    SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, handRaw, handWr, handAt, mHand, footGeo,
+    SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, handWr, handAt, mHand, footGeo,
       WAIST, gRobeLow, gRobeUp, bZ, spl,
       mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards,
       MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs, kidBody, headBare };   // HANDS_K: kidBody (KIDDUSH_CROUCH_K)   // MIGBAAT_A2, TEFILLIN_A2; FACE_E: headBare
