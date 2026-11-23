@@ -92,6 +92,7 @@
       duration: (i, o) => { const st = DATA.stages[TM.list(o)[i]]; return st ? st.dur : 0; },
       camAt: (i, sec, o) => { const ck = CAMK[TM.list(o)[i]]; return ck ? camKey(ck(o || TM.order), sec) : null; },   // (tests: the moving eye)
       figAt: (k) => (W && W.figs[k] ? Object.assign({}, W.figs[k].st) : null),   // (tests: where a figure stands)
+      figObj: (k) => (W && W.figs[k]) || null,   // HANDS_K (tests: the figure itself - its hands and feet at kiddush)
       qaClear: (e, t) => {   // TAMID_QA_207 (tests: is the line from the target to the eye free of the model's solids?)
         const o = new Vector3(t[0], t[1], t[2]), d = new Vector3(e[0] - t[0], e[1] - t[1], e[2] - t[2]), len = d.length();
         if (len < 1e-3) return null;
@@ -205,6 +206,19 @@
       dam: () => [[0, V3(52, 30, -40), V3(56, 17, -10)], [4, V3(86, 26, -36), V3(70, 18, -18)], [8, V3(86, 26, -36), V3(70, 18, -18)],
         [10.5, V3(30, 36, -32), V3(42, 18, 0)], [13, V3(26, 26, 30), V3(40, 18, 12)], [20, V3(26, 26, 30), V3(40, 18, 12)]]
     };
+    // KIDDUSH_VIEW_K (fix-k, 23.11.2026 - the user: "הזווית לא נכונה. אני רוצה שיראו איך הוא מקדש ממש"; the coordinator: from the side - the
+    // whole figure, the tap, and the right hand flat on the back of the right foot): while he sanctifies, the eye goes to his right side -
+    // out from the laver along the spout's way (he stands sideways to the spout, the laver at his left), a little before him, at his
+    // bowed back's height; and back after it. In "kiyor" (S2's moving eye, KIYOR_VIEW_S2, kept before and after) from 15.2 to 20.2; in
+    // "kiyor12" the priest at the west spout (s7), from 8.2 to 15.8. The distance and the height - model choices
+    const kidSide = (i, sec0, sec1, base) => {
+      const q = KID.flatSpot(i), fw = [Math.sin(q.yaw), Math.cos(q.yaw)], rt = [-Math.cos(q.yaw), Math.sin(q.yaw)], y0 = F;
+      const E = [q.p[0] + rt[0] * 5.6 + fw[0] * 0.7, y0 + 2.3, q.p[1] + rt[1] * 5.6 + fw[1] * 0.7], T = [q.p[0] + fw[0] * 0.3, y0 + 1.05, q.p[1] + fw[1] * 0.3];
+      const K0 = base || [[0, E, T]], at = (t) => { const v = camKey(K0, t); return [t, v[0], v[1]]; };
+      return K0.filter((k) => k[0] < sec0).concat([at(sec0), [sec0 + 0.8, E, T], [sec1 - 0.8, E, T], at(sec1)], K0.filter((k) => k[0] > sec1));
+    };
+    { const k0 = CAMK.kiyor; if (k0) CAMK.kiyor = (o) => kidSide(6, 15.2, 20.2, k0(o)); }
+    { const v12 = VIEW.kiyor12; CAMK.kiyor12 = () => { const v = v12(); return kidSide(6, 8.2, 15.8, [[0, v[0], v[1]], [30, v[0], v[1]]]); }; }
     const camKey = (K, sec) => {
       let j = 0;
       while (j < K.length - 1 && K[j + 1][0] <= sec) j++;

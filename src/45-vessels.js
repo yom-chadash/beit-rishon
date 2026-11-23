@@ -1646,7 +1646,12 @@
     // would cross the altar); since FOLLOW_KID_301 (below) the eye swings the other way, round the west side. The pill "עצור" above the base stays in the frame (0.87 of the half-height); the label "השיתין" (2.6 north-west of the altar's south-west corner: in the south placement over the base's north-east
     // corner, right behind the priest from this side) and the ramp window's label (beside his head with the altar in the middle) are hidden
     // while the close view is on (ctx.shared.hideLabels, 70-ui.js). Model choice; seen in the altar's three places and with R. Tam's four amot.
-    const FOL_KID = { pos: [3.4, 5.5, 9.5], aim: [2.6, 3.4, 0] };   // from the wash stop: x, F + y, z
+    // KIDDUSH_VIEW_K (fix-k, 23.11.2026 - the user: "הזווית לא נכונה. אני רוצה שיראו איך הוא מקדש ממש"; the coordinator: from the side - the
+    // whole figure, the tap, the right hand flat on the right foot): from his right, a little behind and above him (the lines to the right
+    // hand, the right foot and the head clear, his own body too) - the only side
+    // clear of the ramp (east of him) and of the base (at his left); until now from the south and high above ([3.4, 5.5, 9.5] looking at
+    // [2.6, 3.4, 0]), the bowed priest seen from over his back
+    const FOL_KID = { pos: [6.9, 4.2, 1.6], aim: [3.2, 0.7, 0.0] };   // from the wash stop: x, F + y, z
     const folKid = (tau) => smooth(Math.min((tau - (TL.wash[0] - 0.7)) / 1.2, (TL.wash[1] + 0.9 - tau) / 1.2));
     // FOLLOW_KID_301 (the user, 18.11.2026: "אין מעקב מצלמה במכונות", "במכונה יש בריחה של מצלמות"): from 2.0.14 to 3.0.0 the eye went to
     // the close view in a straight line, which passed almost straight over the base (the far view looks from the north, the close one
@@ -1827,7 +1832,11 @@
     });
 
     ctx.shared.mechona = { demo, explode, follow, partLabels, group: mg, home: [HX, HZ], poseAt: (tau) => poseAt(tau, { x: 0, z: 0, alpha: 0, flow: 0 }), timeline: TL,
-      purposeLabel: PURPOSE_TEXT, washLabel: WASH_TEXT, block: { cols: L.cols.slice(), rows: L.rows.slice(), laver: [L.laver.x, L.laver.z] } };
+      purposeLabel: PURPOSE_TEXT, washLabel: WASH_TEXT, block: { cols: L.cols.slice(), rows: L.rows.slice(), laver: [L.laver.x, L.laver.z] },
+      kidd, get wash() { return WASH; }, folKid: FOL_KID,   // HANDS_K (tests: the priest at kiddush, the stop, the close view, and a line of sight)
+      qaHit: (e, t, skip) => { const o = new Vector3(...t), d = new Vector3(e[0] - t[0], e[1] - t[1], e[2] - t[2]), len = d.length(); const rc = new Raycaster(); rc.set(o, d.normalize()); rc.near = 0.25; rc.far = len; rc.camera = ctx.camera;
+        const seen = (x) => { for (let q = x; q; q = q.parent) { if (!q.visible || q.name === "labels" || (skip && q === skip)) return false; } return true; };
+        for (const h of rc.intersectObject(ctx.root, true)) { const m = h.object; if (!m.isMesh || !seen(m) || m.isSprite) continue; const mt = Array.isArray(m.material) ? m.material[0] : m.material; if (mt && mt.transparent && mt.opacity < 0.5) continue; return [m.name || (m.parent && m.parent.name) || "?", +h.point.x.toFixed(1), +h.point.y.toFixed(1), +h.point.z.toFixed(1)]; } return null; } };
 
     // --- on-model buttons (contract 0.5b), above the moving base; they follow it and the raised laver ---
     const top = () => F + 7 + 2.5 * smooth(st.ex);

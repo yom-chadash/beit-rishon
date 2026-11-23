@@ -460,6 +460,37 @@
         const P = M0.palms ? new Vector3(M0.palms[sd][0], M0.palms[sd][1], M0.palms[sd][2]) : new Vector3(sd * (KID_FX + 0.008 + 0.05 * sy), 0.066, 0.095 + KID_DZ + 0.05 * cy);
         wrist[sd] = P.addScaledVector(F, -tm_hand({ sd, pose: "flat" }).sk.PM).multiplyScalar(FS);   // HAND_A2: the middle of the palm from the wrist (0.045 until now)
       }
+      // KIDDUSH_TOUCH_K (fix-k, 23.11.2026 - the user via the coordinator: "היד באמת שטוחה על גב הרגל, בלי רווח ובלי חדירה"): each palm laid
+      // ON the back of its foot - neither over it nor in it: the hand's own vertices (hand.js "flat", turned as it lies) against the foot
+      // (footGeo's ellipsoid, where kidLegs sets it), the hand moved along its palm's normal until its nearest point touches (a hair in). In
+      // R. Yose's reading the left palm on the right foot laid on the left, and the right palm on the back of the left hand (its vertices).
+      // Until now the palm's middle was set by a measure (0.066 over the floor) - the right hand was 0.023 amah into its foot, the left 0.013
+      const qOf = (sd) => {
+        const Fh = new Vector3(0, -1, 0), Nh = new Vector3(-sd * Math.sin(0.95), 0, -Math.cos(0.95)), Bh = new Vector3().crossVectors(Fh, Nh);
+        const Bt = new Vector3().crossVectors(fin[sd], palmN[sd]);
+        return new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(fin[sd], palmN[sd], Bt).multiply(new Matrix4().makeBasis(Fh, Nh, Bh).transpose()));
+      };
+      const ptsOf = (sd, W) => { const g = tm_hand({ sd, pose: "flat" }).geo.attributes.position, q = qOf(sd), Y = new Vector3(0, 1, 0), out = []; for (let i = 0; i < g.count; i++) out.push(new Vector3(g.getX(i), g.getY(i), g.getZ(i)).applyAxisAngle(Y, sd * 0.95).applyQuaternion(q).add(W)); return out; };
+      const footSD = (p, sf) => {   // kit units, the figure's frame
+        const ft = M0.feet[sf], e = new Euler(ft[3], ft[4], 0), Ri = new Quaternion().setFromEuler(e).invert();
+        const l = p.clone().sub(new Vector3(ft[0], ft[1], ft[2])).applyQuaternion(Ri).sub(new Vector3(sf * 0.008, 0.027, 0.095)).applyAxisAngle(new Vector3(0, 1, 0), -sf * 0.22);
+        const r0 = 0.043, r1 = 0.027, r2 = 0.098, a = l.x / r0, b = l.y / r1, c = l.z / r2, k0 = Math.hypot(a, b, c), k1 = Math.hypot(a / r0, b / r1, c / r2);
+        return k1 > 1e-9 ? (k0 * (k0 - 1)) / k1 : -r1;
+      };
+      const settle = (sd, dist) => {   // move hand sd along its palm's normal until dist (its least) is 0.0006 in (kit units)
+        const W = wrist[sd].clone().multiplyScalar(1 / FS);
+        for (let it = 0; it < 8; it++) { const m = Math.min(...ptsOf(sd, W).map(dist)); if (Math.abs(m + 0.0006) < 0.0002) break; W.addScaledVector(palmN[sd], m + 0.0006); }
+        wrist[sd] = W.multiplyScalar(FS);
+      };
+      if (M0.palms) {
+        settle(1, (p) => footSD(p, -1));
+        const L = ptsOf(1, wrist[1].clone().multiplyScalar(1 / FS)), hs = new Map(), key = (x, y, z) => x + "," + y + "," + z, C = 0.006;
+        const Ln = (() => { const g = tm_hand({ sd: 1, pose: "flat" }).geo.attributes.normal, q = qOf(1), Y = new Vector3(0, 1, 0), o = []; for (let i = 0; i < g.count; i++) o.push(new Vector3(g.getX(i), g.getY(i), g.getZ(i)).applyAxisAngle(Y, 0.95).applyQuaternion(q)); return o; })();
+        L.forEach((v, i) => { const k = key(Math.floor(v.x / C), Math.floor(v.y / C), Math.floor(v.z / C)); if (!hs.has(k)) hs.set(k, []); hs.get(k).push(i); });
+        settle(-1, (p) => { const cx = Math.floor(p.x / C), cy = Math.floor(p.y / C), cz = Math.floor(p.z / C); let best = 1e9, bi = -1;
+          for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) { const L2 = hs.get(key(cx + i, cy + j, cz + k)); if (L2) for (const q of L2) { const d2 = p.distanceToSquared(L[q]); if (d2 < best) { best = d2; bi = q; } } }
+          return bi < 0 ? 0.01 : p.clone().sub(L[bi]).dot(Ln[bi]); });
+      } else for (const sd of [1, -1]) settle(sd, (p) => footSD(p, sd));
       const toBend = (p, th) => { const dy = p.y - WY, c = Math.cos(th), s2 = Math.sin(th); return [p.x, dy * c + p.z * s2, -dy * s2 + p.z * c]; };
       let th = 0.9;
       for (; th < 2.2; th += 0.02) {
