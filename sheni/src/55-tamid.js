@@ -115,7 +115,7 @@
     // the south wall at x 79.75..82.25) - but this demo, written after that, still gathered the priests where the hall had stood
     // before (x 47..73): in the open court, west of the building. Now: the ring in the hall's east half, as the lots demo's
     // (55-payis.js: its centre (84, -67)), the way in by the hall's own door, and the lots demo's eye over it.
-    const GZV = [[84.4, 53, -57.5], [84, 16.6, -67.6]];   // the hall of hewn stone from above its south wall (its roof opened)
+    const GZV = [[86.6, 53, -57.5], [86.3, 16.6, -67.6]];   // the hall of hewn stone from above its south wall (its roof opened)
     const menView = () => {
       const m = SH.menorah;
       if (!m) return [[-31, 27.5, 9], [-37, 26.5, 6.5]];
@@ -1411,7 +1411,7 @@
       const lz = z - D;
       if (x > -34 && x < -2 && z > -77.5 && z < -57.5) return F;                                             // Beit HaMoked (MOKED_WIDE_211, FLOOR_211: 32 wide, one floor at the court's level; the steps inside its gate to the chel are found from above)
       if (x > -34 && x < 9 && z <= -77.5 && z > -100) return null;                                           // before its gate to the chel: whatever is there (CHEL_211: the landing and the flight along the north face)
-      if (x > 68.8 && x < 89.2 && z > -78.2 && z < -55.8) return F;                                          // GAZIT_PLACE_211: the hall of hewn stone's floor (over the court of Israel's strip too)
+      if (x > 77.8 && x < 89.2 && z > -78.2 && z < -55.8) return F;                                          // GAZIT_PLACE_211: the hall of hewn stone's floor (over the court of Israel's strip too)
       if (x > 41 && x < 70 && lz > -18 && lz < 11) return TOP;                                               // the altar's top
       if (x > 47.5 && x < 63.5 && lz >= 10.5 && lz < 42.6) return F + 9 * (42.6 - lz) / 32;                 // the ramp
       if (x > 17.5 && x <= 39.5 && Math.abs(z) <= 50) return F + 6 * clamp((39.5 - x) / 19, 0, 1);          // the ulam's steps
@@ -1455,7 +1455,7 @@
     };
     const nodes = () => ({
       MN_OUT: [-18, -78.65], MN_IN: [-18, -74.4], MK_C: [-18, -62.6], MS_IN: [-18, -59.6], MS_OUT: [-18, -55.3],
-      CN_W: [-15, -52.2], CN: [36, -48.5], NL: [65.45, -49.6], GZ_OUT: [81, -51.4], GZ_IN: [81, -57.4], GZ_C: [83.2, -61.4],   // GAZIT_PLACE_211: the hall's door, in its south wall at x 81
+      CN_W: [-15, -52.2], CN: [36, -48.5], NL: [65.45, -49.6], GZ_OUT: [88.25, -51.4], GZ_IN: [88.25, -57.4], GZ_C: [86.2, -61.4],   // NORTH_CHAMBERS_N2: the hall's door, in its south wall at x 87..89.5 (it was still drawn at x 81, where the door stood until 22.11)
       CNE: [74.5, -47], CE: [74.5, -12], CE2: [74.5, 32],   // CHAMBERS_EAST_N2: the lane x 74.5 (77.5 until now - the Parvah and the Madichin stand from x 77)
        CSE: A(68.4, 32.6), RF_E: A(64.8, 42.1), RF: A(55.5, 41.6), RT: A(55.5, 11.6),
       TOP_S: A(55.5, 8.4), RF_W: A(46.6, 42.1), RFW2: A(49.6, 41.9), RFE2: A(61.4, 41.9), CSW: A(41.6, 30), CSW_N: A(41.4, 14.4), STB_S: [38.4, 48.6], STB_N: [38.4, -12],
@@ -1478,7 +1478,9 @@
     const BLK = [[-83, 1.5, -35.6, 35.6], [1, 17.9, -51.6, 51.6], [17.5, 33.9, -50.4, 50.4],
       ...[[-65, -28.5], [-19.5, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 19.5], [28.5, 65]].map(([z0, z1]) => [89.6, 91.4, z0 - 0.4, z1 + 0.4]),
       // CHAMBERS_EAST_N2: the chambers of the court of Israel (30-courts.js): Pinchas's, the chavitin makers', the Madichin, the Parvah, the salt
-      [82, 91.7, -28.9, -19.1], [82, 91.7, 19.1, 28.9], [76.5, 91.7, 29, 39.8], [76.5, 91.7, 44.6, 55.4], [79, 91.7, 54.6, 65.7]];
+      [82, 91.7, -28.9, -19.1], [82, 91.7, 19.1, 28.9], [76.5, 91.7, 29, 39.8], [76.5, 91.7, 44.6, 55.4], [79, 91.7, 54.6, 65.7],
+      // NORTH_CHAMBERS_N2: the three northern chambers, one building (30-courts.js): the Gazit hall x 76..91, the Golah and the Etz x 70.8..76
+      [70.3, 91.7, -80.5, -53.4]];
     const inBlk = (p) => BLK.some(([x0, x1, z0, z1]) => p[0] > x0 && p[0] < x1 && p[1] > z0 && p[1] < z1);
     const segBox = (p, q, x0, x1, z0, z1) => {
       let t0 = 0, t1 = 1;
@@ -1659,10 +1661,10 @@
       return RISE.map((r) => { let b = -1, bd = 1e9; spots.forEach((x, j) => { const d = Math.hypot(x[0] - r[0], x[1] - r[1]); if (!used.has(j) && d < bd) { bd = d; b = j; } }); used.add(b); return spots[b]; });
     })();
     const byHearth = (p) => { const sd = p[0] < -18 ? -1 : 1; return p[1] < -67.5 ? [[-18 + sd * 3.6, -70.6], [-18 + sd * 3.6, -64.4]] : p[1] < -64.4 ? [[-18 + sd * 3.6, -64.4]] : []; };
-    const GZX = 84, GZZ = -67;   // GAZIT_PLACE_211: the middle of the hall's east half (60, -63.3 until 2.0.1 - where the hall stood before 1.9.5)
+    const GZX = 86.25, GZZ = -67;   // GAZIT_PLACE_211: the middle of the hall's east half (60, -63.3 until 2.0.1 - where the hall stood before 1.9.5)
     const gather = (a, ids, t0, t1) => {   // all into the hall of hewn stone, its holy half ("מקום הפייס"), round the officer (model choice: an
       // ellipse, the officer in its gap at the door's side)
-      for (const [k, x, z, yaw] of ringSpots(ids, GZX, GZZ, 4.2, 7.4, HP, 0.42)) {   // GAZIT_PLACE_211: the east half is ten by twenty-two, long north-south
+      for (const [k, x, z, yaw] of ringSpots(ids, GZX, GZZ, 2.5, 7.4, HP, 0.42)) {   // GAZIT_PLACE_211: the east half is ten by twenty-two, long north-south
         if (a.seen(k)) a.go(k, [x, z], t0, t1, { yaw });
         else a.at(k, x, z, yaw, t0);
       }
@@ -2114,7 +2116,7 @@
       // BARKAI_UP_215: he leaves the hall and is seen on its roof (until 2.0.14 he slid there at once, through the wall), and after the
       // call he goes down out of sight - until 2.0.14 he stood on the roof to the Shema, and then was set inside the hall's west wall
       a.hide("b2", 0.4);
-      a.at("b2", 68, -62, HP, 1.4, { h: 33.5 });   // "on a high place" (Bartenura) - model choice: the roof of the hall of hewn stone, looking east
+      a.at("b2", 79, -62, HP, 1.4, { h: 33.5 });   // "on a high place" (Bartenura) - model choice: the roof of the hall of hewn stone, looking east
       a.pose("b2", "point", 7, 16);
       // SOUND_211: no tone for "ברקאי" - a man's call is a caption only (the user, 15.11.2026: speech in the captions)
       // BARKAI_211 (stage ב, point 24; the user: "ברור יותר"): "אם הגיע, הרואה אומר, ברקאי" (Tamid 3:2) - the call itself, as a caption
