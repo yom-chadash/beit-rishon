@@ -24,7 +24,7 @@ const ok = (name, cond, info) => { results.push({ name, ok: !!cond, info }); con
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: true, timeout: 60000,
+  executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: true, timeout: 60000, protocolTimeout: 240000,
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
     '--ignore-gpu-blocklist', '--lang=he', '--font-render-hinting=none', '--allow-file-access-from-files', '--no-first-run']
 });
@@ -122,6 +122,23 @@ try {
   await sleep(1000);
   const sFrames2 = await fs2.evaluate(() => window.__renderer.info.render.frame);
   ok('the shown house draws', sFrames2 > sFrames1, { sFrames1, sFrames2 });
+
+  // CSS-hiding a house and backgrounding the whole document are different browser states.
+  // The former RAF wrapper must not be bypassed by a document.hidden timer in the latter.
+  const cover = await browser.newPage();
+  await cover.goto('about:blank');
+  await cover.bringToFront();
+  await sleep(600);
+  ok('the plugin document becomes hidden in the background', await page.evaluate(() => document.hidden));
+  const bgBefore = await Promise.all([fr, fs2].map(f => f.evaluate(() => window.__renderer.info.render.frame)));
+  await sleep(1800);
+  const bgAfter = await Promise.all([fr, fs2].map(f => f.evaluate(() => window.__renderer.info.render.frame)));
+  ok('both loaded houses stop drawing in a background document', bgAfter.every((n, i) => n === bgBefore[i]), { before: bgBefore, after: bgAfter });
+  await cover.close();
+  await page.bringToFront();
+  await sleep(1500);
+  const resumed = await fs2.evaluate(() => window.__renderer.info.render.frame);
+  ok('the active house resumes after backgrounding', resumed > bgAfter[1], { before: bgAfter[1], after: resumed });
 
   // back to the First Temple: the same place
   await clickIn(page, fs2, '#tm-go-other');

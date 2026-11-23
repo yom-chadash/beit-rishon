@@ -10,6 +10,31 @@ permissions:
   contents: read
 
 jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Exact geometry, resource and lifecycle regression checks
+        run: |
+          node tools/perf-render-test.mjs
+          node tools/perf-terrain-test.mjs
+          node tools/perf-resources-hand.mjs
+          node tools/perf-resources-crowd.mjs
+          node tools/perf-hq-test.mjs
+          node tools/test-lamp-lifecycle.mjs
+          node tools/perf-geometry.mjs --baseline-ref 695456732c1d93db67268d13b7367cca76783aee --out qa/performance/geometry.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: geometry-regression-report
+          path: qa/performance/
+          retention-days: 14
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -53,4 +78,12 @@ jobs:
         with:
           name: performance-and-browser-report
           path: qa/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: verified-built-plugin
+          path: |
+            dist-unified/plugin/
+            plugin/bundle.js
           retention-days: 14

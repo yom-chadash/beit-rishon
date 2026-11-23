@@ -98,6 +98,25 @@ try {
     await page.screenshot({ path: path.join(output, `${house}-${view}.png`) });
     console.log('[scene]', house, JSON.stringify(scene));
   }
+  report.effects = [];
+  for (const [name, ao, gi] of [['ao', true, false], ['gi', false, true], ['ao-gi', true, true], ['off', false, false]]) {
+    const effect = await page.evaluate(async (name, ao, gi) => {
+      const h = window.__hq, r = window.__renderer, c = window.__ctx;
+      h.set(ao, gi);
+      const start = window.__perfNow();
+      while (gi && h.S.giWarm !== 2) {
+        if (window.__perfNow() - start > 60000) throw new Error('GI shader warmup timed out');
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      h.frame(); r.render(c.scene, c.camera);
+      if (h.S.error) throw new Error('HQ: ' + h.S.error);
+      if (h.S.ao !== ao || h.S.gi !== gi) throw new Error('HQ effect failed to stay enabled');
+      return { name, ao: h.S.ao, gi: h.S.gi, gpuResources: { ...r.info.memory }, draw: { ...r.info.render } };
+    }, name, ao, gi);
+    report.effects.push(effect);
+    await page.screenshot({ path: path.join(output, `${house}-${name}.png`) });
+    console.log('[effect]', house, JSON.stringify(effect));
+  }
   assert.equal(report.errors.length, 0, report.errors.join('\n'));
 } finally {
   await browser.close();
