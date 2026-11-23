@@ -2977,6 +2977,7 @@
       // READING_B2 (the user's decision 125 c: "מתג — תנא קמא (קורא כשהסל על כתפו, ואחר כך מניף) / רבי יהודה (מניף ב׳ארמי אובד אבי׳ וממשיך
       // לקרוא), לפי ביכורים ג, ו"): he reads at the corner; the Tanna Kamma - the whole passage with the basket on his shoulder, then the waving;
       // R. Yehuda - on his shoulder up to "ארמי אובד אבי", then the waving while he reads on to the end, and then he sets it down
+      const WZ = 0.55;   // BIKKURIM_N1: the waving's place, in the altar's frame, moved 0.55 south - off the corner's cover slab (x 38.5-39.5, z 25.3-26.3 in the court's frame), where the priest stood
       const T0 = { gate: 6.4, take: 7.6, ezn0: 9.6, ezn1: 14.2, steps1: 15.8, nik: 17.0, walk0: 21.6, corner: 28.0, read0: 28.2 };
       const mkT = (r) => Object.assign({}, T0, r === "rj" ? { wave0: 30.4, wave1: 35.2, put: 37.2, bow0: 37.8, bow1: 39.2, end: 41.6 } : { wave0: 32.0, wave1: 36.8, put: 38.0, bow0: 38.6, bow1: 40.0, end: 42.4 });
       BK.reading = "tk";
@@ -2995,13 +2996,15 @@
           [[[97.5, 1], [89.5, 4]], T.steps1, T.nik, "floor", -Math.PI / 2],
           // WAY_K (fix-k, 23.11.2026 - the coordinator, after agent G's finding): round the ramp's foot in the clear lane between it (its end at
           // z 38.5 in the altar's frame) and the stands south of it (from z 42) - z 40.25; until now at 43.8, through the stands
-          [[[89.5, 4], [88, 18], [80, 42], A(68, 40.25), A(44.2, 40.25), A(38, 39.5), A(38, 16.2), A(38.3, 15.0)], T.walk0, T.corner, "floor", 2.62],
-          [[A(38.3, 15.0), A(37.8, 17), A(38, 39.5), A(50, 40.3)], T.bow1 + 0.2, T.end, "floor"]
+          [[[89.5, 4], [88, 18], [80, 42], A(68, 40.25), A(44.2, 40.25), A(38, 39.5), A(38, 16.2), A(38.3, 15.0 + WZ)], T.walk0, T.corner, "floor", 2.62],
+          [[A(38.3, 15.0 + WZ), A(37.8, 17), A(38, 39.5), A(50, 40.3)], T.bow1 + 0.2, T.end, "floor"]
         ]; };
       const hCache = new Map();
       // OX_K: the ray from 21 amot at most (over every floor of the way: 16 in the priests' court), not from 30 - from 30 the walkers in the
       // Nikanor gate stood on the gate's roof (23.6)
-      const hAt = (x, z, near) => { const k = Math.round(x * 2) + "," + Math.round(z * 2); let y = hCache.get(k); if (y === undefined) { y = groundAt(x, z, Math.min(near, 21), LV.KOH); hCache.set(k, y); } return y; };
+      // BIKKURIM_N1: a flat slab lying on the floor (the cover at the altar's south-west corner: 8 cm, over a black frame of 3 cm) is not a floor to walk on - the
+      // priest of the waving stood with his feet half on it and half off, and rose and sank as he crossed it; the walkers' floor is the first surface with more than 12 cm of air under it
+      const hAt = (x, z, near) => { const k = Math.round(x * 2) + "," + Math.round(z * 2); let y = hCache.get(k); if (y === undefined) { y = groundAt(x, z, Math.min(near, 21), LV.KOH); for (let i = 0; i < 3 && isFinite(y); i++) { const y2 = groundAt(x, z, y - 0.01, NaN); if (isFinite(y2) && y - y2 < 0.12) y = y2; else break; } hCache.set(k, y); } return y; };
       // OX_IN_B2 (the user's decision 178: "הוא חוזר להקרבה" - the ox goes in with them to the court, a peace offering, and stands at the
       // place of slaughter; the Rambam, Bikkurim 3:12: "וכשם שטעונין תנופה כך טעונין קרבן שלמים"): from the Nikanor gate north-west, north of
       // the altar, to beside the rings (40-altar.js: the label at x 52, z -27); peace offerings are slaughtered anywhere in the court - the spot
@@ -3547,7 +3550,9 @@
         const wait = [38.2, 11.2 + dz, 0.35], fx = Math.sin(b.yaw), fz = Math.cos(b.yaw), there = [b.x + fx * H.d, b.z + fz * H.d, b.yaw + Math.PI];
         const go = sm(T.wave0 - 1.6, T.wave0 - 0.4) * (1 - sm(T.put + 0.2, T.put + 1.4)), mv = go > 0 && go < 1;
         let dy = there[2] - wait[2]; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-        const px = lerp2(wait[0], there[0], go), pz = lerp2(wait[1], there[1], go);
+        // BIKKURIM_N1: to the waving past the cover slab's west side (it lies at x 38.5-39.5, z 25.3-26.3 in the court's frame) - not across it
+        const WM = [38.0, 14.4 + dz], g1 = clamp2(go / 0.6, 0, 1), g2 = clamp2((go - 0.6) / 0.4, 0, 1);
+        const px = go < 0.6 ? lerp2(wait[0], WM[0], g1) : lerp2(WM[0], there[0], g2), pz = go < 0.6 ? lerp2(wait[1], WM[1], g1) : lerp2(WM[1], there[1], g2);
         PR.G.position.set(px, hAt(px, pz, 30) + (mv ? Math.abs(Math.sin(t * 9)) * 0.03 : 0), pz); PR.G.rotation.y = wait[2] + dy * go;
         PR.G.updateMatrixWorld(true);
         const qB = BR.G.getWorldQuaternion(kQ.clone()), qPinv = PR.L.getWorldQuaternion(new Quaternion()).invert();
@@ -3604,7 +3609,7 @@
           [T.walk0 + 2, [70, 23, 50], [80, 17, 38]], [T.walk0 + 3.5, [66, 28, 40], [56, 16.5, 56]], [T.walk0 + 5.6, [31, 23, 53], [38, 17.5, 40]],
           [T.corner - 0.5, [31.5, 21.5, C[1] + 7], [C[0], 17.2, C[1]]],
           // HANDS_K: the waving from his left side, at the hands' height - the four hands under the basket, the two men whole to the waist
-          ...(KF ? (() => { const yE = 2.62, fx = Math.sin(yE), fz = Math.cos(yE), lx = Math.cos(yE), lz = -Math.sin(yE), bx = 38.3 + fx * 0.78, bz = 15 + dz + fz * 0.78, y0 = hAt(38.3, 15 + dz, 30);
+          ...(KF ? (() => { const yE = 2.62, fx = Math.sin(yE), fz = Math.cos(yE), lx = Math.cos(yE), lz = -Math.sin(yE), bx = 38.3 + fx * 0.78, bz = 15 + WZ + dz + fz * 0.78, y0 = hAt(38.3, 15 + WZ + dz, 30);
             const E = [bx + lx * 3.7, y0 + 1.8, bz + lz * 3.7], Lk = [bx, y0 + 2.05, bz];
             return [[T.wave0 - 0.2, E, Lk], [T.wave1 + 0.4, E, Lk], [T.put, [32, 20.5, C[1] + 2.2], [C[0] - 0.4, 17.4, C[1] + 0.4]]]; })()
             : [[T.wave0 + 0.6, [32, 20.5, C[1] + 2.2], [C[0] - 0.7, 17.8, C[1] + 0.7]], [T.put, [32, 20.5, C[1] + 2.2], [C[0] - 0.4, 17.4, C[1] + 0.4]]]),
