@@ -2662,6 +2662,7 @@ body.tm-measuring canvas{cursor:crosshair}
             if (d.card) for (const [, its] of PLACES) { const o = its.find((x) => x && x.t === d.card); if (o) { src = o; break; } }
             if (src) { for (const k of ["info", "refs", "key", "more"]) if (src[k] != null) it[k] = src[k]; }
             else Object.defineProperty(it, "info", { get: () => { const b = pillOf(d.pill); return (b && b.title) || ""; }, enumerable: true });
+            if (!src && Array.isArray(d.refs)) it.refs = d.refs;   // WIT_REFS_S2: a pill's demonstration with no place of its own - its own sources (d.refs)
           }
           if (!it) continue;
           it.opsOf = [d.place || d.card].filter(Boolean);   // CHIP_KEEPS_DEMO_T: the rows of the place / card it stands for (opsFor)

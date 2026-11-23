@@ -2115,19 +2115,19 @@
       });
       // ===== SIMCHA_FOLLOW_S2 (fix-s2, 23.11.2026 - the user's notes 8 and 8א: "לא רואים את התקיעות"; "חלק מהזמן המצלמה מאבדת את המעקב
       // איתם") - one block, the trumpets' part only. (1) THE EYE FOLLOWS THE TWO PRIESTS from the cock's crow until they have turned their
-      // faces to the west (until now four fixed flights - at the tenth step and on the floor they stood at the picture's edge or out of
+      // faces to the west and said their words, to the demonstration's end (until now four fixed flights - at the tenth step and on the floor they stood at the picture's edge or out of
       // it, and on the way east they walked past the eye): every frame the eye is set by their place - before them and a little to the
       // south while they stand at the upper gate, go down the steps and blow on the court's floor (their faces and the trumpets, the
       // steps and the gate behind them), round to their side as they walk east, and behind them for the last stretch to the gate (the
-      // wall is there) - eased, so that it never jumps; never under the steps' surface. While a flight runs (the start), or the
+      // wall is there), and at the gate, as they turn and speak, a little back and up - eased, so that it never jumps; never under the steps' surface. While a flight runs (the start), or the
       // demonstration is paused (a press on the model), the eye is the viewer's. (2) SH.simchaShoeva.trumpets(): the demonstration from
       // just before the blowing on the women's court's floor to its end (the row "התקיעות בהליכה לשער המזרח", 70-ui.js) - a new run each
       // time (start() stops the one before). The eye's distances and the timing of its turns - model choices.
       {
-        const FOL0 = TD - 0.05, FOL1 = TD + 36;
+        const FOL0 = TD - 0.05, FOL1 = TEND;   // to the end: the closing words are said by them at the gate (the wide closing view - from the wall's far side - hid them)
         for (let i = FLY.length - 1; i >= 0; i--) if (FLY[i][0] >= TD && FLY[i][0] < FOL1) FLY.splice(i, 1);   // the follow replaces them
         // [the clock, the eye's offset from the pair (x along the way east, up, z to the south)]
-        const OFF = [[TD, [12, 8, 8]], [TD + 19.9, [12, 8, 8]], [TD + 25.5, [2, 8, 12]], [TD + 30.5, [-10, 8, 9]]];   // high enough to see them over the people
+        const OFF = [[TD, [12, 8, 8]], [TD + 19.9, [12, 8, 8]], [TD + 25.5, [2, 8, 12]], [TD + 30.5, [-10, 8, 9]], [TD + 40, [-10, 8, 9]], [TD + 47, [-20, 13, 13]]];   // high enough to see them over the people
         const offAt = (t) => {
           if (t <= OFF[0][0]) return OFF[0][1];
           for (let i = 0; i + 1 < OFF.length; i++) if (t <= OFF[i + 1][0]) { const a = OFF[i], b = OFF[i + 1], u = ss(a[0], b[0], t); return a[1].map((v, q) => v + (b[1][q] - v) * u); }
