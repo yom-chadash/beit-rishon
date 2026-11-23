@@ -382,12 +382,13 @@
           return K[K.length - 1][1];
         };
         // the lower edge: before at 4.4 fingers over the eyes' height - and in any case 0.005 above the tefillin there (the box's top, its
-        // passage, the strap going out of it); over the band of hair above the tzitz (its top at 0.091) to its end at 90 degrees; down
-        // behind it, over the ear (its top at 0.0285, between 86 and 103 degrees) at 1.3 - 1.6 fingers; right behind it down; behind at
+        // passage, the strap going out of it); over the band of hair above the tzitz (its top at 0.091) to its end at 90 degrees; over the
+        // ear (its top at 0.0285, between 86 and 103 degrees) still above the tefillin's strap - the coordinator's decision 34: the strap
+        // seen over the ear, where there is hair, and under the cloth from right behind the ear; then down behind the ear, and behind at
         // the nape's hair edge (-0.106)
         let front = 4.4 * FG;
         for (let b = 0; b < NB; b++) { const th = ((b + 0.5) / NB) * 2 * Math.PI - Math.PI; if (Math.abs(th) < 32 * DEG) front = Math.max(front, tefTop[b] + 0.005); }   // (level before: no bump over the box's corners)
-        const yLk = curve([[0, front], [30, front], [60, 0.124], [80, 0.112], [90, 0.104], [96, 0.052], [102, 0.042], [110, 0.004], [120, -0.048], [140, -0.092], [160, -0.104], [180, -0.106]]);
+        const yLk = curve([[0, front], [30, front], [60, 0.124], [80, 0.112], [90, 0.106], [97, 0.1], [101, 0.093], [104, 0.07], [107, 0.036], [110, 0.006], [120, -0.048], [140, -0.092], [160, -0.104], [180, -0.106]]);
         const yL = (th) => { const a = Math.abs(th); let y = yLk(th) + 0.0015 * Math.sin(5 * th + 0.7) * smo(100 * DEG, 130 * DEG, a); if (a < 91 * DEG) y = Math.max(y, topAt(th) + 0.005); return y; };
         // the rim (the opening's edge): seen from above an ellipse about the head's axis - 0.058 to each side, 0.07 before and 0.09 behind
         // it (about 3.6 by 5 fingers); its height on a plane sloping down to the back - before 3 fingers over the lower edge, behind where
@@ -716,9 +717,12 @@
         const RW = rbWreath(f.tef && f.tef.geometry ? f.tef.geometry : null);
         mk(RW.geo, MZ.mat, 0, 0, 0, rw);
         const CR = MZ_CORD / 1.3, KR = MZ_KNOT / 1.3, onC = (deg, y, o = 0) => RW.onCloth((deg * Math.PI) / 180, y, CR + 0.0006 + o);
-        const WAY = [[98, 0.056], [105, 0.045], [115, 0.03], [130, 0.005], [145, -0.02], [160, -0.04], [172, -0.052]];
+        // (over the ear on the hair - the cloth's edge is above it there; then on the cloth)
+        const onHair = (deg, y) => { const t = (deg * Math.PI) / 180, r = RW.rIn(t, y) - 0.004 + CR + 0.001; return [r * Math.sin(t), y, r * Math.cos(t)]; };
+        const WAY = [[95, 0.058, 1], [101, 0.054, 1], [109, 0.042], [116, 0.028], [130, 0.005], [145, -0.02], [160, -0.04], [172, -0.052]];
+        const wp = (d, y, h) => (h ? onHair(d, y) : onC(d, y));
         const tzEnd = (sd) => [sd * 0.1338, (3.079 - 3.0) / 1.3, -0.002];   // the tzitz's end (its middle; buildHP's tzitz: 0.174 from the axis, before the ear)
-        tubeIn(rw, [tzEnd(1), ...WAY.map(([d, y]) => onC(d, y)), onC(180, -0.056), ...WAY.slice().reverse().map(([d, y]) => onC(-d, y)), tzEnd(-1)], CR, M.techelet);
+        tubeIn(rw, [tzEnd(1), ...WAY.map(([d, y, h]) => wp(d, y, h)), onC(180, -0.056), ...WAY.slice().reverse().map(([d, y, h]) => wp(-d, y, h)), tzEnd(-1)], CR, M.techelet);
         const KN = onC(180, -0.056, KR * 0.55);
         mk(new SphereGeometry(KR, 8, 6), M.techelet, KN[0], KN[1], KN[2], rw);
         out.mitz = { rashi: [rashi, rashiW], ramban: [ramban] };
