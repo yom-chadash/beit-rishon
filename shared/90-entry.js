@@ -262,6 +262,7 @@
   var cam = { mode: "orbit", inside: true, lookLock: false, roofed: false, floorY: -Infinity, decideAt: 0, ray: null, n: new Vector3(), tmp: new Vector3(), s: new Spherical(), dirs: [new Vector3(1, 0, 0), new Vector3(-1, 0, 0), new Vector3(0, 0, 1), new Vector3(0, 0, -1)], up: new Vector3(0, 1, 0) };
   var ent_look = cam;   // (the name the roofed test below uses for its ray and directions)
   var ent_sol = { t: -1e9, all: [], roof: [], floor: [], walls: [], big: [] };
+  //@@include raycast-bounds
   function ent_solids(withCut) {
     const now = performance.now();
     if (now - ent_sol.t > 1000) {
@@ -329,7 +330,7 @@
     try {
       const ray = ent_look.ray || (ent_look.ray = new Raycaster());
       ray.camera = camera;
-      const list = ent_solids(true), hit = (d, far) => { ray.set(p, d); ray.near = 0; ray.far = far; const h = ray.intersectObjects(list, false); return h.length ? h[0].distance : Infinity; };
+      const list = ent_solids(true), hit = (d, far) => { ray.set(p, d); ray.near = 0; ray.far = far; const h = ent_intersect(ray, list); return h.length ? h[0].distance : Infinity; };
       const walls = ent_look.dirs.map((d) => hit(d, 60));
       const near = walls.filter((w) => w < 60).length, tight = walls.filter((w) => w < 30).length;
       res = (near >= 3 && hit(ent_look.up, 60) < 60) || tight === 4;
@@ -344,7 +345,7 @@
       ray.set(cam.tmp.set(p.x, p.y + 0.3, p.z), CAM_DOWN);
       ray.near = 0;
       ray.far = 500;
-      const h = ray.intersectObjects(list || ent_solids(false), false);
+      const h = ent_intersect(ray, list || ent_solids(false));
       return h.length ? h[0].point.y : -Infinity;
     } catch (_) {
       return -Infinity;
@@ -406,7 +407,7 @@
       ray.set(q, v);
       ray.near = 0.3;
       ray.far = L;
-      for (const h of ray.intersectObjects(ent_solids(false), false)) {
+      for (const h of ent_intersect(ray, ent_solids(false))) {
         if (!h.object.userData.tmPass || h.distance >= L - 0.05) continue;
         // KEEP_CUT_211 (the place of the vessels' chamber, 15.11.2026: the eye looks down into a cell whose ceiling the section has cut
         // away - and the ceiling, which no one sees, still drew the eye down to a span from the shelves): a surface that stands in the
@@ -465,7 +466,7 @@
         ray.set(camera.position, v);
         ray.near = 0.5;
         ray.far = d;
-        const h = ray.intersectObjects(ent_solids(false), false);
+        const h = ent_intersect(ray, ent_solids(false));
         if (h.length) d = Math.max(1, h[0].distance - 0.5);
       } catch (_) {
       }
@@ -666,7 +667,7 @@
       const down = (x, z, from) => {
         try {
           ray.set(F.o.set(x, from, z), CAM_DOWN);
-          const h = ray.intersectObjects(solids, false);
+          const h = ent_intersect(ray, solids);
           return h.length ? h[0].point.y : NaN;
         } catch (_) { return NaN; }
       };
@@ -980,14 +981,10 @@
       ray.camera = camera;
       ray.near = 0.3;
       ray.far = 3000;
-      const seen = (o) => { for (let q = o; q; q = q.parent) { if (!q.visible || q.name === "labels") return false; } return true; };
-      for (const h of ray.intersectObjects(scene.children, true)) {
-        const o = h.object;
-        if (!o.isMesh || o.isSprite || (o.userData && o.userData.noPick) || !seen(o)) continue;
-        const m = Array.isArray(o.material) ? o.material[0] : o.material;
-        if (!m || (m.uniforms && m.uniforms.sunPosition) || (m.transparent && m.opacity < 0.5) || m.visible === false) continue;
-        return h.point.clone();
-      }
+      // Filter before raycasting: the hidden demonstrations/alternate readings and the
+      // sky used to be intersected in full, only to have all their hits thrown away.
+      const hits = ent_intersect(ray, ent_pickable(scene));
+      if (hits.length) return hits[0].point.clone();
       const d = camera.position.distanceTo(controls.target);
       return ray.ray.origin.clone().addScaledVector(ray.ray.direction, Math.max(4, d));
     } catch (_) {
