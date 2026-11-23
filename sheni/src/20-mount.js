@@ -634,18 +634,28 @@
     g.add(repairG, breachG);
     breachG.visible = false;
     const GAP_W = 4;
+    // Fallen boards and broken rail ends are static. Keep their exact world UVs/rotations, with one batch per board size.
+    const debrisBatches = new Map();
+    const debris = (w, h, d, x, y, z, axis, angle) => {
+      const key = w + ":" + h + ":" + d;
+      if (!debrisBatches.has(key)) debrisBatches.set(key, { w, h, d, matrices: [] });
+      const mm = new Matrix4();
+      if (axis === "x") mm.makeRotationX(angle);
+      else if (axis === "y") mm.makeRotationY(angle);
+      else mm.makeRotationZ(angle);
+      mm.setPosition(x, y + h / 2, z);
+      debrisBatches.get(key).matrices.push(mm);
+    };
     const soregDebris = (axis, fixed, c, w) => {   // the Greeks' days: slats fallen by the gap, a broken stub of the top rail at each side
       const P = (t, off) => axis === "x" ? [t, off] : [off, t];
       const pieces = [[-1.2, 0.35, 0.4, 0.9], [-0.3, -0.5, 1.7, 1.3], [0.6, 0.6, 2.6, 1.1], [1.1, -0.2, 0.9, 1.7], [0.2, 0.9, 3.4, 0.8]];
       for (const [dt, doff, rot, len] of pieces) {
         const [x, z] = P(c + dt * w / 3, fixed + doff);
-        const m = H2.box(breachG, 0.1, 0.06, len, SG_MAT, x, 0.02, z);
-        m.rotation.y = rot;
+        debris(0.1, 0.06, len, x, 0.02, z, "y", rot);
       }
       for (const sgn of [-1, 1]) {
         const [x, z] = P(c + sgn * (w / 2 - 0.25), fixed);
-        const m = H2.box(breachG, axis === "x" ? 0.5 : SG_T, SG_R, axis === "x" ? SG_T : 0.5, SG_MAT, x, SG_H - SG_R - 0.25, z);
-        m.rotation[axis === "x" ? "z" : "x"] = sgn * 0.5;
+        debris(axis === "x" ? 0.5 : SG_T, SG_R, axis === "x" ? SG_T : 0.5, x, SG_H - SG_R - 0.25, z, axis === "x" ? "z" : "x", sgn * 0.5);
       }
     };
     // gates: the openings opposite the court's gates (open in the repaired soreg, closed in the Greeks' days unless a breach is there);
@@ -693,6 +703,13 @@
     soregSide("x", sz2, sx1, sx2, [-78, -48, -18], [161], [B4(-88), B4(-78), B4(-48), B4(-18)]);
     soregSide("z", sx2, sz1, sz2, [0], [], [[0, 8], B4(-12), B4(12)]);
     soregSide("z", sx1, sz1, sz2, [0], [], [B4(-20), B4(20)]);
+    for (const { w, h, d, matrices } of debrisBatches.values()) {
+      const im = new InstancedMesh(H2.uvWorldBox(new BoxGeometry(w, h, d), w, h, d), SG_MAT, matrices.length);
+      matrices.forEach((mm, i) => im.setMatrixAt(i, mm));
+      im.castShadow = im.receiveShadow = true;
+      im.computeBoundingSphere();
+      breachG.add(im);
+    }
     // ===== ROOF_ALL_211 (the user, 15.11.2026 00:53: a row of opinions for THE ROOFING OF THE TEMPLE MOUNT). The Rambam (Beit HaBechirah
     // 5:1, book 337 line 76): "הר הבית... וכלו היה מקרה סטיו לפנים מסטיו" (Pesachim 13b, 106 line 388: "הר הבית סטיו כפול היה... סטיו
     // לפנים מסטיו"). THE TOSAFOT YOM TOV (Middot 2:1, 948 line 64): "ודאי שאין הר הבית מכוסה, שלא היה מסוכך אלא ע"ג האצטבאות... והן

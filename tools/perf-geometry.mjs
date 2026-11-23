@@ -171,8 +171,44 @@ export function compare(before, after, label, visibleOnly = false) {
   return { comparedComponents: visibleOnly ? after.counters.visibleComponents : after.counters.components, visibleOnly, maxMatrixError, equivalent: true };
 }
 
+// Real Three.js raycasts through the baseline group's pieces, also when a candidate replaced them with instances. Selection and
+// camera collision use hit points/distances, not a static board's Object3D identity. Use off-centre rays to avoid triangle-edge ties.
+function compareGroupRays(before, after, groupName) {
+  const group = before.layers[groupName], other = after.layers[groupName];
+  assert(group && other, `missing raycast regression group ${groupName}`);
+  const { Matrix4, Vector3, Raycaster } = before.THREE, points = [], mm = new Matrix4();
+  group.traverse(o => {
+    if (!o.isMesh) return;
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+    const n = o.isInstancedMesh ? o.count : 1;
+    for (let i = 0; i < n; i++) {
+      if (o.isInstancedMesh) { o.getMatrixAt(i, mm); mm.premultiply(o.matrixWorld); } else mm.copy(o.matrixWorld);
+      points.push(o.geometry.boundingSphere.center.clone().applyMatrix4(mm).add(new Vector3(0.007, 0.003, 0.011)));
+    }
+  });
+  const ray = new Raycaster(), rayAfter = new after.THREE.Raycaster();
+  let hits = 0, maxPointError = 0;
+  for (const point of points) {
+    const origin = point.clone().add(new Vector3(3.7, 5.3, 2.9)), direction = point.clone().sub(origin).normalize();
+    ray.set(origin, direction); ray.far = 12;
+    rayAfter.set(new after.THREE.Vector3(...origin.toArray()), new after.THREE.Vector3(...direction.toArray())); rayAfter.far = 12;
+    const b = ray.intersectObject(group, true)[0], a = rayAfter.intersectObject(other, true)[0];
+    assert.equal(!!a, !!b, `${groupName}: a picking/collision hit disappeared`);
+    if (!b) continue;
+    hits++;
+    const error = a.point.distanceTo(b.point);
+    maxPointError = Math.max(maxPointError, error);
+    assert(error <= 5e-5, `${groupName}: picking/collision point changed (${error})`);
+    assert(Math.abs(a.distance - b.distance) <= 5e-5, `${groupName}: picking/collision distance changed`);
+  }
+  assert(hits > 0, `${groupName}: raycast regression had no hits`);
+  return { rays: points.length, hits, maxPointError, equivalent: true };
+}
+
 const scenarios = [
   ['default', () => {}],
+  ['soreg-greeks', ctx => ctx.shared.soregBreach.set('greeks'), 'soregBreach'],
+  ['soreg-repaired', ctx => ctx.shared.soregBreach.set('repaired')],
   ['whole-mount-roof', ctx => ctx.shared.harRoof.set('all')],
   ['kanievsky-roof', ctx => ctx.shared.harRoof.set('kanievsky')],
   ['ulam-open', ctx => ctx.shared.modelButtons.find(b => b.id === 'hei-ulam-front').set(true)],
@@ -204,11 +240,12 @@ try {
     const candidate = await buildModel(house, root);
     const baseline = baselineRoot ? await buildModel(house, baselineRoot) : null;
     const states = [];
-    for (const [name, apply] of house === 'sheni' ? scenarios : [scenarios[0]]) {
+    for (const [name, apply, rayGroup] of house === 'sheni' ? scenarios : [scenarios[0]]) {
       apply(candidate); if (baseline) apply(baseline);
       const after = snapshot(candidate), before = baseline ? snapshot(baseline) : null;
       const result = { name, candidate: after.counters };
       if (before) { result.baseline = before.counters; result.validation = compare(before, after, `${house}/${name}`, name !== 'default'); }
+      if (baseline && rayGroup) result.picking = compareGroupRays(baseline, candidate, rayGroup);
       states.push(result);
     }
     report.houses[house] = states;
