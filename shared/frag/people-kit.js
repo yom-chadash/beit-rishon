@@ -250,11 +250,20 @@
       o.z = spl(bZ, y) * m * Math.cos(a);
       o.c = 1 - 0.16 * k * Math.max(0, -fold);
     });
+    // MUMIN_W (agent W, the user's decision 214: "אתה חייב לעשות מום, כמו שתום עין, שבור רגל וכד'"): ONE LEG STRETCHED FORWARD, of a man
+    // on a bench (o.mum.legOut: +1 his left, at +x; -1 his right) - from the hip's axis straight down to the heel on the floor (legLine);
+    // the robe over it ends a little past the knee, gathered onto the leg, and between the two legs it hangs from the one to the other
+    const legLine = (L) => {
+      const yT = 0.1, len = 0.9, FR = 0.047, ga = Math.asin(Math.min(0.95, (yT - (-L + FR + 0.004)) / len));   // FR: the heel's radius under the ankle
+      return { x: 0.105, ga, len, yT, at: (d) => [yT - d * Math.sin(ga), d * Math.cos(ga)], dir: [-Math.sin(ga), Math.cos(ga)], up: [Math.cos(ga), Math.sin(ga)] };
+    };
     // the robe over the thighs, round the knees and down to the shoes (a man on a bench; L: the bench's height in the figure's units)
-    const lapBench = (L) => {
+    const lapBench = (L, out) => {
       const yT = 0.1, zK = 0.3, RK = 0.085, l1 = zK, l2 = RK * Math.PI / 2, l3 = (yT - RK) - (-L + 0.05), tot = l1 + l2 + l3;
-      const D = [0, l1 * 0.5, l1, l1 + l2 / 3, l1 + 2 * l2 / 3, l1 + l2, l1 + l2 + l3 * 0.4, l1 + l2 + l3 * 0.75, tot];
-      return surf(12, D.length - 1, (u, v, o) => {
+      const D = out ? [0, l1 * 0.25, l1 * 0.5, l1 * 0.75, l1, l1 + l2 / 3, l1 + 2 * l2 / 3, l1 + l2, l1 + l2 + l3 * 0.2, l1 + l2 + l3 * 0.4, l1 + l2 + l3 * 0.6, l1 + l2 + l3 * 0.8, tot]
+        : [0, l1 * 0.5, l1, l1 + l2 / 3, l1 + 2 * l2 / 3, l1 + l2, l1 + l2 + l3 * 0.4, l1 + l2 + l3 * 0.75, tot];
+      const LL = out ? legLine(L) : null, dHem = 0.44;
+      return surf(out ? 24 : 12, D.length - 1, (u, v, o) => {
         const d = D[Math.round(v * (D.length - 1))], ph = -u * TAU;
         let pz, py, nz, ny;
         if (d <= l1) { pz = d; py = yT; nz = 0; ny = 1; }
@@ -268,6 +277,17 @@
         o.y = py + ny * r;
         o.z = pz + nz * r;
         o.c = (cx > 0 ? 1 - 0.3 * g : 0.8) - 0.1 * Math.max(0, fold);
+        if (LL) {   // MUMIN_W: the stretched leg's side - along its line, to dHem, gathered at the hem
+          const w = sstep(-0.03, 0.11, x * out);
+          if (w > 0) {
+            const t = d / tot, dd = t * dHem, q = LL.at(dd), gth = sstep(0.62, 1, t), r1 = (cx > 0 ? b * Math.pow(cx, 0.6) * (1 - 0.3 * g) : b * cx) * (1 - 0.42 * gth);
+            const xc = out * LL.x, x1 = x + (xc + (x - xc) * 0.5 - x) * gth;
+            o.x += (x1 - o.x) * w;
+            o.y += (q[0] + LL.up[0] * r1 - o.y) * w;
+            o.z += (q[1] + LL.up[1] * r1 - o.z) * w;
+            o.c = o.c * (1 - w) + w * ((cx > 0 ? 1 - 0.3 * g : 0.8) - 0.08 * gth);
+          }
+        }
       });
     };
     const arm = (S, E, W) => [shade(at(sph(0.074, 0.074, 0.074, 6, 4), S[0], S[1], S[2]), 1), shade(limb(S, E, 0.072, 0.06, 6), 0.95), shade(at(sph(0.06, 0.06, 0.06, 6, 3), E[0], E[1], E[2]), 0.95), shade(limb(E, W, 0.058, 0.048, 6), 0.9)];
@@ -281,13 +301,50 @@
       q.translate(H[0], H[1], H[2]);
       return skinPart(q);
     };
+    // MUMIN_W: the hand on the stretched leg's thigh (its top at zH along the leg's line), the wrist a little above and behind it
+    const handOnLeg = (L, sd) => {
+      const LL = legLine(L), zH = 0.29, top = 0.097, dd = (zH - LL.up[1] * top) / LL.dir[1], yH = LL.yT + LL.dir[0] * dd + LL.up[0] * top + 0.004;
+      const q = handFlat(sd);
+      q.rotateX(LL.ga * 0.85);
+      q.rotateY(-sd * 0.12);
+      q.translate(sd * 0.125, yH, zH);
+      return { W: [sd * 0.145, yH + 0.04, zH - 0.012], hand: skinPart(q) };
+    };
+    // MUMIN_W: a hand where the caller puts it - h = { H (its wrist's end of the palm), W (the wrist, the arm's end), rx, ry }
+    const handAt = (sd, h) => { const q = handFlat(sd); if (h.rx) q.rotateX(h.rx); if (h.ry) q.rotateY(h.ry); q.translate(h.H[0], h.H[1], h.H[2]); return { W: h.W, hand: skinPart(q) }; };
     const cache = {};
     // PEOPLE_KIT_211: `robe` - the robe's own colour (the cap and the far figure go with it); a standing figure holds the tablet
     // and the pen only when it is a scribe (kind "worker": the same body, its two hands before it)
     const clothOf = {};
     const clothMat = (robe) => (robe == null ? mCloth : clothOf[robe] || (clothOf[robe] = (() => { const m = mCloth.clone(); m.color.setHex(robe); return m; })()));
-    const build = (pose, L, kind, robeCol, young, noArms) => {   // YOUNG_300: young - a short beard (the young priests of the water-drawing); MUSICIANS_305: noArms
-      const key = pose + "|" + L.toFixed(3) + "|" + kind + "|" + (robeCol == null ? "" : robeCol) + (young ? "|young" : "") + (noArms ? "|na" : "");
+    // MUMIN_W: `mum` - { key, legOut (above), warp(v, part) - every point of the figure, [x, y, z] in its own units, moved (a bent back) }
+    const warpGeo = (q, f, part) => {   // the points moved, the normals turned by the move's own Jacobian (no seam where a body was joined)
+      if (!q) return q;
+      const P = q.attributes.position, N = q.attributes.normal, e = 1e-3, v = [0, 0, 0], a = [0, 0, 0], b = [0, 0, 0], c = [0, 0, 0];
+      for (let i = 0; i < P.count; i++) {
+        const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+        v[0] = x; v[1] = y; v[2] = z; f(v, part);
+        if (N) {
+          a[0] = x + e; a[1] = y; a[2] = z; f(a, part); b[0] = x; b[1] = y + e; b[2] = z; f(b, part); c[0] = x; c[1] = y; c[2] = z + e; f(c, part);
+          for (let k = 0; k < 3; k++) { a[k] -= v[k]; b[k] -= v[k]; c[k] -= v[k]; }
+          const nx = N.getX(i), ny = N.getY(i), nz = N.getZ(i);
+          const X = nx * (b[1] * c[2] - b[2] * c[1]) + ny * (c[1] * a[2] - c[2] * a[1]) + nz * (a[1] * b[2] - a[2] * b[1]);
+          const Y = nx * (b[2] * c[0] - b[0] * c[2]) + ny * (c[2] * a[0] - c[0] * a[2]) + nz * (a[2] * b[0] - a[0] * b[2]);
+          const Z = nx * (b[0] * c[1] - b[1] * c[0]) + ny * (c[0] * a[1] - c[1] * a[0]) + nz * (a[0] * b[1] - a[1] * b[0]);
+          const l = Math.hypot(X, Y, Z) || 1;
+          N.setXYZ(i, X / l, Y / l, Z / l);
+        }
+        P.setXYZ(i, v[0], v[1], v[2]);
+      }
+      P.needsUpdate = true;
+      if (N) N.needsUpdate = true;
+      q.computeBoundingSphere();
+      q.computeBoundingBox();
+      return q;
+    };
+    const build = (pose, L, kind, robeCol, young, noArms, mum) => {   // YOUNG_300: young - a short beard (the young priests of the water-drawing); MUSICIANS_305: noArms
+      const key = pose + "|" + L.toFixed(3) + "|" + kind + "|" + (robeCol == null ? "" : robeCol) + (young ? "|young" : "") + (noArms ? "|na" : "") + (mum ? "|mum:" + mum.key : "");
+      const legOut = mum && pose === "bench" ? mum.legOut || 0 : 0;   // MUMIN_W
       if (cache[key]) return cache[key];
       const seated = pose !== "stand", HY = HEAD_Y - (seated ? OFF : 0), SY = 1.728 - (seated ? OFF : 0), cloth = [], skin = [];
       const headT = (q) => at(q, 0, HY, 0);
@@ -295,9 +352,10 @@
       else cloth.push(robe([0.1, 0.4, 0.7, 1.0, 1.3, 1.45, 1.58, 1.644, 1.708, 1.772, 1.836, 1.9], 0, true));
       for (const sd of [-1, 1]) {
         if (pose === "bench") {
-          if (!noArms) for (const q of arm([sd * 0.245, SY - 0.01, 0], [sd * 0.27, 0.43, 0.03], [sd * 0.15, 0.225, 0.26])) cloth.push(q);   // (EAT_B2: noArms - the arms are the caller's)
-          if (!noArms) skin.push(hand(sd, [sd * 0.13, 0.2, 0.27], -sd * 0.25));
-          cloth.push(shade(at(sph(0.05, 0.032, 0.1, 5, 3), sd * 0.1, -L + 0.032, 0.42), 0.4));                       // the shoes
+          const HO = sd === legOut ? handOnLeg(L, sd) : mum && mum.hand && mum.hand[sd] ? handAt(sd, mum.hand[sd]) : null;   // MUMIN_W: the hand of the stretched leg's side lies on its thigh, along its slope; or where the caller puts it
+          if (!noArms) for (const q of arm([sd * 0.245, SY - 0.01, 0], [sd * 0.27, 0.43, 0.03], HO ? HO.W : [sd * 0.15, 0.225, 0.26])) cloth.push(q);   // (EAT_B2: noArms - the arms are the caller's)
+          if (!noArms) skin.push(HO ? HO.hand : hand(sd, [sd * 0.13, 0.2, 0.27], -sd * 0.25));
+          if (sd !== legOut) cloth.push(shade(at(sph(0.05, 0.032, 0.1, 5, 3), sd * 0.1, -L + 0.032, 0.42), 0.4));   // the shoes (MUMIN_W: not the stretched leg's - the caller's)
         } else if (pose === "ground") {
           for (const q of arm([sd * 0.245, SY - 0.01, 0], [sd * 0.285, 0.44, -0.02], [sd * 0.262, 0.225, 0.15])) cloth.push(q);
           skin.push(hand(sd, [sd * 0.25, 0.195, 0.17], sd * 0.1));
@@ -310,7 +368,7 @@
           cloth.push(shade(at(sph(0.05, 0.03, 0.1, 5, 3), sd * 0.1, 0.03, 0.07), 0.4));
         }
       }
-      if (pose === "bench") cloth.push(lapBench(L));
+      if (pose === "bench") cloth.push(lapBench(L, legOut));
       else if (pose === "ground") cloth.push(shade(at(sph(0.3, 0.115, 0.24, 10, 4), 0, 0.075, 0.17), 0.8));         // the robe over the crossed legs
       else if (kind === "scribe") {
         skin.push(shade(flatUV(at(rot(new BoxGeometry(0.21, 0.016, 0.27), -0.5), 0.01, 1.455, 0.37), 0.92, 0.86), 1));   // the scribe's tablet ("וכותבין", Sanhedrin 4:3)
@@ -333,11 +391,17 @@
       mc.push(robe(seated ? [0.98, 1.3, 1.58, 1.745, 1.9] : [0.1, 0.7, 1.3, 1.58, 1.745, 1.9], seated ? -OFF : 0, false, 8));
       if (pose === "bench") {
         mc.push(shade(at(new BoxGeometry(0.4, 0.19, 0.46), 0, 0.105, 0.2), 0.95));
-        mc.push(shade(at(new BoxGeometry(0.38, L, 0.17), 0, -L / 2 + 0.06, 0.385), 0.88));
+        if (!legOut) mc.push(shade(at(new BoxGeometry(0.38, L, 0.17), 0, -L / 2 + 0.06, 0.385), 0.88));
+        else {   // MUMIN_W: the bent leg alone, and the stretched one along its line to the hem
+          mc.push(shade(at(new BoxGeometry(0.19, L, 0.17), -legOut * 0.1, -L / 2 + 0.06, 0.385), 0.88));
+          const LL = legLine(L), q = LL.at(0.22), bx = new BoxGeometry(0.19, 0.17, 0.44);
+          bx.rotateX(LL.ga);
+          mc.push(shade(at(bx, legOut * LL.x, q[0], q[1]), 0.92));
+        }
       } else if (pose === "ground") mc.push(shade(at(sph(0.36, 0.115, 0.26, 8, 3), 0, 0.075, 0.17), 0.85));
       for (const sd of [-1, 1]) {
         const E = pose === "bench" ? [sd * 0.27, 0.43, 0.03] : pose === "ground" ? [sd * 0.285, 0.44, -0.02] : [sd * 0.275, 1.4, 0.02];
-        const W = pose === "bench" ? [sd * 0.15, 0.225, 0.26] : pose === "ground" ? [sd * 0.262, 0.225, 0.15] : (sd > 0 ? [0.11, 1.4, 0.25] : [-0.1, 1.46, 0.27]);
+        const W = pose === "bench" ? (sd === legOut ? handOnLeg(L, sd).W : mum && mum.hand && mum.hand[sd] ? mum.hand[sd].W : [sd * 0.15, 0.225, 0.26]) : pose === "ground" ? [sd * 0.262, 0.225, 0.15] : (sd > 0 ? [0.11, 1.4, 0.25] : [-0.1, 1.46, 0.27]);   // MUMIN_W
         if (!noArms) mc.push(shade(limb([sd * 0.245, SY - 0.01, 0], E, 0.074, 0.06, 5), 0.95));
         if (!noArms) mc.push(shade(limb(E, W, 0.058, 0.048, 5), 0.9));
         if (!noArms) ms.push(skinPart(at(sph(0.04, 0.017, 0.1, 4, 3), W[0] - sd * 0.02, W[1] - 0.02, W[2] + 0.1)));   // HAND_A2: as long as the near one
@@ -369,11 +433,21 @@
       }
       far.push(tint(at(sph(HR[0], HR[1], HR[2], 6, 4), 0, HY, 0), cS));
       far.push(tint(at(sph(HR[0] * 1.09, HR[1] * 1.09, HR[2] * 1.09, 6, 2, 0, TAU, 0, 0.92), 0, HY, -0.004), cK));
-      return (cache[key] = { cloth: mergeGeometries(cloth), skin: skin.length ? mergeGeometries(skin) : null, head, hair, close, mid, far: mergeGeometries(far), avnet: avG, tef: kind === "kohen" || kind === "levi" ? tefG(HY) : null });   // TEFILLIN_A2; FACE_E: head, close
+      const R0 = { cloth: mergeGeometries(cloth), skin: skin.length ? mergeGeometries(skin) : null, head, hair, close, mid, far: mergeGeometries(far), avnet: avG, tef: kind === "kohen" || kind === "levi" ? tefG(HY) : null };   // TEFILLIN_A2; FACE_E: head, close
+      if (mum && mum.warp) {   // MUMIN_W: every part of the figure moved alike - near, mid and far, and the full face when it is made
+        const f = mum.warp;
+        for (const k of ["cloth", "skin", "head", "far", "avnet", "tef"]) warpGeo(R0[k], f, k);
+        R0.hair.forEach((q) => warpGeo(q, f, "hair"));
+        for (const k of ["cloth", "skin", "hair", "avnet"]) warpGeo(mid[k], f, "mid-" + k);
+        const g0 = close.geo;
+        let gW = null;
+        close.geo = () => gW || (gW = (() => { const C = g0(); warpGeo(C.head, f, "head"); warpGeo(C.eyes, f, "eyes"); C.hair.forEach((q) => warpGeo(q, f, "hair")); return C; })());
+      }
+      return (cache[key] = R0);
     };
     const LOD = [], m4 = new Matrix4(), qt = new Quaternion(), sc = new Vector3(), ps = new Vector3(), up = new Vector3(0, 1, 0), c3 = new Color(), wp = new Vector3();
     const crowd = (parent, pts, o) => {
-      const n = pts.length, L = o.pose === "bench" ? o.seat / o.s : 0, G = build(o.pose, L, o.kind, o.robe, !!o.young, o.arms === false), mCl0 = clothMat(o.robe);
+      const n = pts.length, L = o.pose === "bench" ? o.seat / o.s : 0, G = build(o.pose, L, o.kind, o.robe, !!o.young, o.arms === false, o.mum), mCl0 = o.mum && o.mum.legOut ? (() => { const m = clothMat(o.robe).clone(); m.side = DoubleSide; return m; })() : clothMat(o.robe);   // MUMIN_W: the raised hem - its inner side seen
       const near = new Group(), mid = new Group(), far = new Group(), anchor = new Group();
       const mk = (g, m, c) => { const im = new InstancedMesh(g, m, c || n); im.castShadow = false; im.receiveShadow = true; im.userData.noPick = true; if (o.name) im.name = o.name; return im; };   // (PEOPLE_KIT_205: no figure casts a shadow)
       const cloth = mk(G.cloth, mCl0), skin = G.skin ? mk(G.skin, mSkin) : null, head = mk(G.head, mSkin), hairs = G.hair.map((g) => mk(g, mHairA)), cnt = hairs.map(() => 0), fm = mk(G.far, mFar);   // FACE_E: head (and the hair's texture)
@@ -560,6 +634,6 @@
     });
     // the beards along a row of n judges: white by the one in the middle, grey further, black-brown at the two ends
     const age = (n) => (i) => { const d = Math.abs(i - (n - 1) / 2) / ((n - 1) / 2); return d < 0.34 ? 0 : d < 0.67 ? 1 : 2; };
-    return (ctx.__tmPeople = { crowd, facing, age, rig });
+    return (ctx.__tmPeople = { crowd, facing, age, rig, legLine });   // MUMIN_W: legLine
   }
   // ===== PEOPLE_KIT_204 END

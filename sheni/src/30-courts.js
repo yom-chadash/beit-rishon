@@ -3575,13 +3575,203 @@
         const toHeap = (x, z) => Math.atan2(HX - x, HZ - z);
         const A = [196.2, -45.3], B = [196.4, -49.9], C = [191.2, -49.2];
         const ya = toHeap(A[0], A[1]), yb = toHeap(B[0], B[1]), yc = toHeap(C[0], C[1]);
+        // MUMIN_W (agent W, the user's decision 214: "אתה חייב לעשות מום, כמו שתום עין, שבור רגל וכד', אחרת איך יבינו שהם בעלי מום?"):
+        // each of the three has one blemish of the verse's (Leviticus 21:18-20, 3:639-641) - seen plainly, decent and not frightening:
+        // the seated one "שבר רגל" (21:19) - his right leg stretched forward, bound in white linen over two splints, a staff leaning on
+        // his left shoulder; the standing one "גבן" (21:20) - his back bent and a hump on its upper part (his robe over it); the
+        // crouching one "עור" (21:18) - blind in one eye: his right eye's lid half down over a clouded white eye, the other open. No
+        // patch over the eye (a later sign). Which blemish to whom, and their forms - model choices. Each one's extras in his own frame (the
+        // crowd's matrix), shown with his near level (the staff and the binding with the mid one too)
+        const MUM = { s: 1.4 };
+        const figM = (near) => { const m = new Matrix4(); near.children[0].getMatrixAt(0, m); return m; };
+        const mumGroup = (near, m, mid) => {   // a group in the figure's frame: in the near level, and (mid) a copy in the mid level
+          const G = new Group();
+          G.matrixAutoUpdate = false;
+          G.matrix.copy(m);
+          near.add(G);
+          if (mid) { const G2 = G.clone(); near.userData.crowd.lod.mid.add(G2); return [G, G2]; }
+          return [G];
+        };
+        const mumMesh = (geo, mat) => { const x = new Mesh(geo, mat); x.castShadow = false; x.receiveShadow = true; x.userData.noPick = true; return x; };
+        // ---- (1) THE SEATED ONE: "או איש אשר יהיה בו שבר רגל" (21:19)
+        const LEG = -1;   // his right leg
         log(A[0], 6.35, A[1], ya, 1.2, 0.2);                                       // the log he sits on
-        PW.crowd(O, [[A[0], A[1], ya]], { y: 6.7, s: 1.4, pose: "bench", seat: 0.7, kind: "levi", robe: 0x6b5a3e, tone: () => 2, shadow: true, fwd: 0.3, name: "woodworm-seated", exact: true });
-        { const [hx, hz] = ahead(A[0], A[1], ya, 0.55); log(hx, 7.55, hz, ya, 1.3); }
-        PW.crowd(O, [[B[0], B[1], yb]], { y: 6, s: 1.4, pose: "stand", kind: "levi", robe: 0x4a4f5a, tone: () => 1, shadow: true, name: "woodworm-standing", exact: true });
-        { const [hx, hz] = ahead(B[0], B[1], yb, 0.5); log(hx, 8.0, hz, yb, 1.4); }
-        PW.crowd(O, [[C[0], C[1], yc]], { y: 6, s: 1.4, pose: "ground", kind: "levi", robe: 0x5c4a3a, tone: () => 3, shadow: true, name: "woodworm-crouching", exact: true });
+        // his log lies across his left knee (on the bent leg's thigh), his left hand on it (until now it hung before his chest)
+        const KL = { c: [0.16, 0.2 + 0.13 / 1.4 + 0.006, 0.27], r: 0.13 / 1.4, len: 1.3 / 1.4 };
+        const HL = { H: [0.13, KL.c[1] + 0.165, KL.c[2] - 0.055], W: [0.15, KL.c[1] + 0.19, KL.c[2] - 0.067], rx: 0.2 };   // (the hand's place on the log: fitted to its form, its palm and fingers on the log, nothing within it)
+        const nA = PW.crowd(O, [[A[0], A[1], ya]], { y: 6.7, s: 1.4, pose: "bench", seat: 0.7, kind: "levi", robe: 0x6b5a3e, tone: () => 2, shadow: true, fwd: 0.3, name: "woodworm-seated", exact: true, mum: { key: "legR|logL", legOut: LEG, hand: { 1: HL } } });
+        { const p = new Vector3(...KL.c).applyMatrix4(figM(nA)); log(p.x, p.y, p.z, ya, 1.3); }
+        {
+          const LL = PW.legLine(0.7 / 1.4), xc = LEG * LL.x, TAU = Math.PI * 2;
+          const P = (d, a, r) => { const q = LL.at(d); return [xc + Math.cos(a) * r, q[0] + LL.up[0] * Math.sin(a) * r, q[1] + LL.up[1] * Math.sin(a) * r]; };   // a: 0 outward-left (+x), pi/2 up the leg's front
+          const gridG = (ni, nj, fn) => {
+            const pos = [], col = [], idx = [];
+            for (let j = 0; j <= nj; j++) for (let i = 0; i <= ni; i++) { const r = fn(i, j); pos.push(r[0], r[1], r[2]); col.push(r[3], r[3], r[3]); }
+            for (let j = 0; j < nj; j++) for (let i = 0; i < ni; i++) { const a = j * (ni + 1) + i, b = a + 1, c = a + ni + 1, d = c + 1; idx.push(a, b, c, b, d, c); }
+            const q = new BufferGeometry();
+            q.setAttribute("position", new Float32BufferAttribute(pos, 3));
+            q.setAttribute("color", new Float32BufferAttribute(col, 3));
+            q.setIndex(idx);
+            q.computeVertexNormals();
+            return q;
+          };
+          // the binding: white linen wound round from the knee (within the robe's hem) to the ankle, each turn over the one before it
+          const D0 = 0.38, D1 = 0.865, rB = (d) => 0.049 - 0.011 * Math.max(0, Math.min(1, (d - 0.5) / 0.36)) + 0.004 * Math.exp(-Math.pow((d - 0.56) / 0.07, 2));
+          const wind = gridG(24, 40, (i, j) => {
+            const a = (i / 24) * TAU, d = D0 + (D1 - D0) * (j / 40), t = ((a / TAU + (d - D0) / 0.052) % 1 + 1) % 1, r = rB(d) + 0.0034 * t;
+            const p = P(d, i === 24 ? 0 : a, r);
+            return [p[0], p[1], p[2], 0.8 + 0.2 * t];
+          });
+          const linen = new MeshStandardMaterial({ color: 0xf1ece0, vertexColors: true, roughness: 0.92 });
+          // the splints: two boards along the shin - one on its outer side, one before it - and three bands of the linen round them
+          const wood = new MeshStandardMaterial({ color: 0x9c7a52, roughness: 0.85, side: DoubleSide });
+          const board = (a0) => {   // a closed board: its four long faces and its two ends
+            const r0 = rB(0.56) + 0.0046, w = 0.034, th = 0.011, c = [[-1, 0], [1, 0], [1, 1], [-1, 1]], pos = [], idx = [];
+            for (const d of [0.43, 0.835]) for (const [u, h] of c) pos.push(...P(d, a0 + (u * w / 2) / r0, r0 + h * th));
+            for (let k = 0; k < 4; k++) { const a = k, b = (k + 1) % 4; idx.push(a, b, 4 + a, b, 4 + b, 4 + a); }
+            idx.push(0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7);
+            const q = new BufferGeometry();
+            q.setAttribute("position", new Float32BufferAttribute(pos, 3));
+            q.setIndex(idx);
+            return q.toNonIndexed();
+          };
+          const aOut = LEG > 0 ? 0 : Math.PI;   // the boards: one on the shin's outer side (a 0 is +x - for the right leg the outer side is at pi), one before it
+          const boards = [aOut, Math.PI / 2].map((a0) => { const q = board(a0); q.computeVertexNormals(); return q; });
+          const bandAt = (dm) => gridG(36, 3, (i, j) => {
+            const a = (i / 36) * TAU, d = dm + (j / 3 - 0.5) * 0.026;
+            let r = rB(d) + 0.0038;
+            for (const a0 of [aOut, Math.PI / 2]) { const da = Math.atan2(Math.sin(a - a0), Math.cos(a - a0)); r = Math.max(r, rB(0.56) + 0.0046 + 0.011 + 0.0028 - 0.06 * Math.max(0, Math.abs(da) - 0.36)); }
+            const p = P(d, a, r + 0.0012 * Math.sin(Math.PI * j / 3));
+            return [p[0], p[1], p[2], 0.86 + 0.1 * Math.sin(Math.PI * j / 3)];
+          });
+          const bands = [0.49, 0.635, 0.78].map(bandAt);
+          // the foot: its heel on the floor at the leg's end, the toes up and forward; in a shoe as the other foot's
+          const fa = -LL.ga + 1.22, fd = [Math.sin(fa), Math.cos(fa)], fn = [-Math.cos(fa), Math.sin(fa)];   // (y, z): the foot's way, its sole's normal
+          const ank = LL.at(LL.len), ext = Math.hypot(0.1 * fd[0], 0.034 * fn[0]);
+          const foot = new SphereGeometry(1, 10, 6);
+          foot.scale(0.052, 0.034, 0.1);
+          foot.rotateX(-fa);
+          const fz = ank[1] + fd[1] * 0.035, fy = -0.5 + 0.003 + ext;
+          foot.translate(xc, fy, fz);
+          const shoeM = new MeshStandardMaterial({ color: 0x2f2a26, roughness: 0.9 });
+          // the staff: a plain stick, from the floor at his left leaning on his left shoulder
+          const sF = [0.5, -0.5 + 0.004, 0.1], sC = [0.362, 0.62, 0.02], sd0 = [sC[0] - sF[0], sC[1] - sF[1], sC[2] - sF[2]], sl = Math.hypot(...sd0), SL = 1.52;
+          const stick = new CylinderGeometry(0.019, 0.022, SL, 8, 6);
+          { const pp = stick.attributes.position; for (let i = 0; i < pp.count; i++) { const y = pp.getY(i); pp.setX(i, pp.getX(i) + 0.006 * Math.sin(y * 4.1)); pp.setZ(i, pp.getZ(i) + 0.005 * Math.sin(y * 2.7 + 1)); } stick.computeVertexNormals(); }
+          stick.translate(0, SL / 2, 0);
+          stick.applyQuaternion(new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), new Vector3(sd0[0] / sl, sd0[1] / sl, sd0[2] / sl)));
+          stick.translate(sF[0], sF[1], sF[2]);
+          const staffM = new MeshStandardMaterial({ color: 0x6e5236, roughness: 0.88 });
+          for (const G of mumGroup(nA, figM(nA), true)) {
+            G.add(mumMesh(wind, linen));
+            for (const b of boards) G.add(mumMesh(b, wood));
+            for (const b of bands) G.add(mumMesh(b, linen));
+            G.add(mumMesh(foot, shoeM));
+            G.add(mumMesh(stick, staffM));
+          }
+          MUM.leg = { LL, xc, foot: [xc, fy, fz], ext, stick: [sF, sd0.map((v) => v / sl), SL] };
+        }
+        // ---- (2) THE STANDING ONE: "או גבן" (21:20) - the upper back rounded forward (from the waist to the shoulders), the neck lifted
+        // back a little (the face forward, to the log in his hands), and a hump on the upper back under the robe
+        const bend = (y, z, y0, y1, th) => {
+          if (y <= y0) return [y, z];
+          const k = th / (y1 - y0), r = 1 / k, t = k * (Math.min(y, y1) - y0), ov = Math.max(0, y - y1), c = Math.cos(t), sn = Math.sin(t);
+          return [y0 + (r - z) * sn + ov * c, r - (r - z) * c + ov * sn];
+        };
+        const sst = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+        const gaben = (v) => {
+          let y = v[1], z = v[2];
+          z -= 0.085 * Math.exp(-0.5 * Math.pow((y - 1.6) / 0.09, 2)) * Math.exp(-0.5 * Math.pow(v[0] / 0.12, 2)) * sst(-0.02, -0.12, z);   // the hump
+          [y, z] = bend(y, z, 1.84, 1.93, -0.3);    // the neck back
+          [y, z] = bend(y, z, 1.28, 1.8, 0.62);     // the back bent
+          v[1] = y; v[2] = z;
+        };
+        const nB = PW.crowd(O, [[B[0], B[1], yb]], { y: 6, s: 1.4, pose: "stand", kind: "levi", robe: 0x4a4f5a, tone: () => 1, shadow: true, name: "woodworm-standing", exact: true, mum: { key: "gaben", warp: gaben } });
+        { const v = [0, 2.0 / 1.4, 0.5 / 1.4]; gaben(v); const p = new Vector3(v[0], v[1], v[2]).applyMatrix4(figM(nB)); log(p.x, p.y, p.z, yb, 1.4); MUM.gaben = { log: [p.x, p.y, p.z] }; }   // his log where his hands now are
+        // ---- (3) THE CROUCHING ONE: "איש עור" (21:18) - blind in his right eye (the coordinator's note on draft 1: shut, it was a wink):
+        // the upper lid down to its half, under it the eye white and clouded - the iris and the pupil a milky grey-white, no dark spot -
+        // and the brow on that side a little lower. The face's own texture, copied and painted over at that eye, on a patch over it (its
+        // edge under the skin: the same texture there, no seam), the lowered lid a little raised over the eye; the brow lowered with the
+        // skin and the hair round it (the kit's warp)
+        const HYC = 2.075 - 0.96;   // the head's middle (a sitting figure's)
+        const droop = (v) => {   // the right brow (-x) down a little, its outer end more
+          const x = v[0], y = v[1] - HYC, z = v[2];
+          if (x > -0.008 || z < 0.06) return;
+          const w = sst(0.008, 0.03, -x) * Math.exp(-0.5 * Math.pow((y - 0.027) / 0.011, 2)) * sst(0.06, 0.1, z);
+          v[1] -= 0.0045 * w * (0.45 + 0.55 * sst(0.02, 0.07, -x));
+        };
+        const nC = PW.crowd(O, [[C[0], C[1], yc]], { y: 6, s: 1.4, pose: "ground", kind: "levi", robe: 0x5c4a3a, tone: () => 3, shadow: true, name: "woodworm-crouching", exact: true, mum: { key: "eyeR", warp: droop } });
         { const [hx, hz] = ahead(C[0], C[1], yc, 0.6); log(hx, 6.75, hz, yc, 1.2); }
+        {
+          const F = tm_face(), ES = -1, TAU = Math.PI * 2;   // his right eye (-x)
+          const lidUp = (u) => F.EY + 0.0015 * u + 0.0077 * Math.pow(Math.max(0, 1 - u * u), 0.72) * (1 - 0.14 * u);   // (face.js's)
+          const lidLo = (u) => F.EY + 0.0015 * u - 0.0051 * Math.pow(Math.max(0, 1 - u * u), 1.05) * (1 + 0.16 * u);
+          const T = (u) => ES * (F.TE + u * F.WT), cl = (u) => Math.max(-1, Math.min(1, u));
+          const yM = (u) => lidLo(cl(u)) + 0.5 * (lidUp(cl(u)) - lidLo(cl(u)));   // the lowered lid's margin: half the eye
+          // the texture: face.js's skin, copied, and this eye painted over
+          const src = F.tex.skin.image, cv = document.createElement("canvas");
+          cv.width = src.width; cv.height = src.height;
+          const c = cv.getContext("2d");
+          c.drawImage(src, 0, 0);
+          const PX = (th, y) => { const t = F.uvOf(th, y); return [t[0] * cv.width, (1 - t[1]) * cv.height]; };
+          const path = (fn, n) => { c.beginPath(); for (let k = 0; k <= n; k++) { const [th, y] = fn(k / n), p = PX(th, y); if (k) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); } };
+          const lerp = (a, b2, t) => a + (b2 - a) * t;
+          let sk = [0, 0, 0];   // the lid's own skin: as it is above the eye, under the brow
+          for (let k = 0; k < 5; k++) { const p = PX(T(-0.4 + 0.2 * k), lidUp(-0.4 + 0.2 * k) + 0.008), d = c.getImageData(p[0] | 0, p[1] | 0, 1, 1).data; sk = sk.map((v, i) => v + d[i] / 5); }
+          const rgb = (m, a) => "rgba(" + sk.map((v) => Math.round(Math.min(255, v * m))).join(",") + "," + (a == null ? 1 : a) + ")";
+          c.save();
+          path((t) => (t <= 0.5 ? [T(lerp(-1, 1, t * 2)), lidUp(lerp(-1, 1, t * 2))] : [T(lerp(1, -1, t * 2 - 1)), lidLo(lerp(1, -1, t * 2 - 1))]), 64);
+          c.clip();
+          const [ix, iy] = PX(T(0), F.EY + 0.0012), rx = Math.abs(PX(T(0) + ES * 0.0079 / 0.128, 0)[0] - PX(T(0), 0)[0]);
+          const g1 = c.createRadialGradient(ix, iy, 0, ix, iy, rx * 2.6);   // the white, dull
+          g1.addColorStop(0, "rgb(222,221,214)"); g1.addColorStop(1, "rgb(196,190,180)");
+          c.fillStyle = g1; c.fillRect(ix - rx * 4, iy - rx * 3, rx * 8, rx * 6);
+          const g2 = c.createRadialGradient(ix, iy, 0, ix, iy, rx * 1.05);   // the iris and the pupil clouded: milky grey-white, no dark spot
+          g2.addColorStop(0, "rgba(236,238,236,0.95)"); g2.addColorStop(0.4, "rgba(200,207,212,0.95)"); g2.addColorStop(0.78, "rgba(150,163,173,0.9)"); g2.addColorStop(0.92, "rgba(140,153,164,0.65)"); g2.addColorStop(1, "rgba(140,153,164,0)");
+          c.fillStyle = g2; c.beginPath(); c.arc(ix, iy, rx * 1.1, 0, TAU); c.fill();
+          c.restore();
+          // the lowered upper lid: the skin from the eye's top down to its half, a little darker toward its margin; under it a shade
+          const top = (u) => lidUp(cl(u)) + 0.0011;
+          path((t) => (t <= 0.5 ? [T(lerp(-1.02, 1.02, t * 2)), top(lerp(-1.02, 1.02, t * 2))] : [T(lerp(1.02, -1.02, t * 2 - 1)), yM(lerp(1.02, -1.02, t * 2 - 1))]), 64);
+          const [, y0] = PX(0, F.EY + 0.0077 + 0.0011), [, y1] = PX(0, yM(0));
+          const g3 = c.createLinearGradient(0, y0, 0, y1);
+          g3.addColorStop(0, rgb(1)); g3.addColorStop(0.7, rgb(0.95)); g3.addColorStop(1, rgb(0.84));
+          c.fillStyle = g3; c.fill();
+          c.save();   // the shade the lid casts on the eye under it
+          path((t) => (t <= 0.5 ? [T(lerp(-1, 1, t * 2)), yM(lerp(-1, 1, t * 2))] : [T(lerp(1, -1, t * 2 - 1)), lidLo(lerp(1, -1, t * 2 - 1))]), 64);
+          c.clip();
+          c.strokeStyle = "rgba(70,44,30,0.4)"; c.lineWidth = 3;
+          path((t) => [T(lerp(-1, 1, t)), yM(lerp(-1, 1, t)) - 0.0006], 32); c.stroke();
+          c.restore();
+          c.lineCap = "round";
+          c.strokeStyle = "rgba(38,22,14,0.95)"; c.lineWidth = 2.4;   // the lashes on the lowered margin
+          path((t) => [T(lerp(-0.92, 1, t)), yM(lerp(-0.92, 1, t)) + 0.0002], 32); c.stroke();
+          const tex = new CanvasTexture(cv);
+          tex.colorSpace = F.tex.skin.colorSpace; tex.anisotropy = 4; tex.flipY = F.tex.skin.flipY;
+          // the patch: over the eye and its lids, the face's own form a little out from it, the lowered lid raised a little more
+          const UM = 1.32, YC = 0.001, YH = 0.0128, NI = 48, NJ = 14;
+          const pos = [], uv = [], idx = [];
+          for (let j = 0; j <= NJ; j++) for (let i = 0; i <= NI; i++) {
+            const rho = j / NJ, a = (i / NI) * TAU, u = UM * rho * Math.cos(a), y = YC + YH * rho * Math.sin(a) * (Math.sin(a) > 0 ? 1.06 : 0.94);
+            const th = T(u), lidK = sst(yM(u) - 0.0004, yM(u) + 0.0005, y) * (1 - sst(0.9, 1.1, Math.abs(u))) * (1 - sst(lidUp(cl(u)) + 0.001, lidUp(cl(u)) + 0.0045, y));
+            const off = 0.0011 + 0.0006 * lidK - 0.0018 * sst(0.45, 1, rho), R = F.skinR(th, y, "face", true) + off;   // (from rho 0.78 out it sinks under the skin - there hi's skin is lo's)
+            const v = [Math.sin(th) * R, y + HYC, Math.cos(th) * R];
+            droop(v);
+            pos.push(v[0], v[1], v[2]);
+            const t = F.uvOf(th, y);
+            uv.push(t[0], t[1]);
+          }
+          for (let j = 0; j < NJ; j++) for (let i = 0; i < NI; i++) { const a = j * (NI + 1) + i, b = a + 1, c2 = a + NI + 1, d = c2 + 1; if (ES < 0) idx.push(a, b, c2, b, d, c2); else idx.push(a, c2, b, b, c2, d); }   // (outward: the right eye's grid is mirrored)
+          const lid = new BufferGeometry();
+          lid.setAttribute("position", new Float32BufferAttribute(pos, 3));
+          lid.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+          lid.setIndex(idx);
+          lid.computeVertexNormals();
+          const lidM = new MeshStandardMaterial({ color: 0xf3e7dc, map: tex, roughness: 0.8 });   // the crowd's first skin (SKINS[1]), as his head's
+          for (const G of mumGroup(nC, figM(nC), false)) G.add(mumMesh(lid, lidM));
+          MUM.eye = { side: ES };
+        }
+        ctx2.shared.mumimW = MUM;
         const l0 = ctx2.labels.length;
         lbl("כהנים בעלי מומין מתליעין העצים (מידות ב, ה)", HX + 1.5, 11.2, HZ, 1.3);
         if (eznLbl["לשכת העצים"]) eznLbl["לשכת העצים"].push(...ctx2.labels.slice(l0));
