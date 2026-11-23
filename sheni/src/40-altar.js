@@ -1948,6 +1948,37 @@
       inst.castShadow = true;
       bowlG.add(inst);
     }
+    // SPOUT_211_K (fix-k, 23.11.2026 - the user's decision 211 b, via the coordinator: "בבית שני מנמיכים את הדדים לגובה המותניים, בערך
+    // 1.5 אמות מעל רצפת עזרת כהנים, כבחירת מודל"; until now the mouths 3.16 over the floor, the upper one 4.58 - over the head of a man
+    // stooping at them): from each spout's mouth a short copper pipe down beside the laver and its base, and at its foot a bend outward
+    // and a nozzle - the water comes out there, PIPE_Y over the court's floor, level and outward (kiyorInfo: the mouths). The laver, its
+    // base, the well and the machine are as they were; the pipes are the laver's and go with it into the well. Their form and height -
+    // a model choice (the card: "גובה הדדים — בחירת מודל")
+    const PIPE_Y = 1.5, PIPE_RB = 0.12, PIPE_NZ = 0.07;   // over the floor (amot); the bend's radius and the nozzle's length (the laver's own units)
+    const pipeTop = (o) => ({ r: o.r + 0.456, y: o.y - 0.226 });   // the spout's own nozzle's foot (gd, turned down 0.12 with the spout)
+    const pipeFoot = (s) => (PIPE_Y - (KEN_H - 0.15)) / s;          // the pipe's foot in the laver's own frame (its foot on the base at F + KEN_H - 0.15)
+    const pipeMouth = (o, s) => ({ r: pipeTop(o).r + PIPE_RB + PIPE_NZ, y: pipeFoot(s) });
+    const pipeI = new InstancedMesh((() => { const q = new CylinderGeometry(0.042, 0.042, 1, 8, 1, true); q.translate(0, -0.5, 0); q.deleteAttribute("uv"); return q; })(), copperM, 12);
+    const bendI = new InstancedMesh((() => {
+      // a quarter ring from straight down to level outward (+z), centre (0, RB, RB) - the torus' plane (x, y) turned onto (z, y) - then the nozzle
+      const t = new TorusGeometry(PIPE_RB, 0.042, 6, 8, Math.PI / 2); t.applyMatrix4(new Matrix4().makeBasis(new Vector3(0, 0, -1), new Vector3(0, -1, 0), new Vector3(-1, 0, 0))); t.translate(0, PIPE_RB, PIPE_RB);
+      const n = new CylinderGeometry(0.046, 0.038, PIPE_NZ, 8, 1, true); n.rotateX(Math.PI / 2); n.translate(0, 0, PIPE_RB + PIPE_NZ / 2);
+      return mergeGeometries([t, n].map((q) => { q.deleteAttribute("uv"); return q; }));
+    })(), copperM, 12);
+    pipeI.castShadow = bendI.castShadow = true;
+    pipeI.name = "kiyorPipes"; bendI.name = "kiyorPipeMouths";
+    bowlG.add(pipeI, bendI);
+    const pipesAt = (s) => {   // (the size changes the laver's scale - the pipes' feet stay PIPE_Y over the floor)
+      const m4 = new Matrix4(), qq = new Quaternion(), pp = new Vector3(), sc = new Vector3();
+      SPOUTS.forEach((o, i) => {
+        const T = pipeTop(o), yb = pipeFoot(s), L = Math.max(0.01, T.y - (yb + PIPE_RB));
+        qq.setFromAxisAngle(new Vector3(0, 1, 0), o.a);
+        pp.set(Math.sin(o.a) * T.r, T.y, Math.cos(o.a) * T.r); sc.set(1, L, 1); m4.compose(pp, qq, sc); pipeI.setMatrixAt(i, m4);
+        pp.set(Math.sin(o.a) * T.r, yb, Math.cos(o.a) * T.r); sc.set(1, 1, 1); m4.compose(pp, qq, sc); bendI.setMatrixAt(i, m4);
+      });
+      pipeI.instanceMatrix.needsUpdate = bendI.instanceMatrix.needsUpdate = true;
+      pipeI.computeBoundingSphere(); bendI.computeBoundingSphere();
+    };
     // MOCHANI_RAMBAM_211 (the user, 15.11.2026 23:45: "תוסיף את זה כמתג שיטה לכיור"): the Rambam's מוכני - "עשה כלי סביב לכיור, והיו בו
     // המים תמיד, והיו שותתין מאותו כלי לכיור כדי הצורך ראשון ראשון, ואותו הכלי היה נקרא מוכני" (his commentary on Yoma 3, quoted by the
     // Kesef Mishneh, Beit HaBechirah 3:18, 4260:166), "כלי על הכיור להיות מלא מים, והיה סביב לכיור" (on Tamid 1:4, 575:10), "ומוכני עשו לו
@@ -2100,6 +2131,7 @@
       set(m) {
         this.mode = SIZES[m] ? m : "d4";
         K.s = SIZES[this.mode] / 5.25;
+        pipesAt(K.s);   // SPOUT_211_K
         kenG.scale.set(K.s * 1.1, 1, K.s * 1.1);   // its mouth (1.36) holds the laver's foot (1.7 of the laver's own size)
         place();
         return this.mode;
@@ -2108,7 +2140,8 @@
     ctx2.shared.kiyorInfo = () => {   // the laver as it stands ON ITS BASE (the priests' spots are by it there)
       const c = { x: KX, z: KZK }, s = K.s, foot = F + KEN_H - 0.15;
       return { R: KR0 * s, H: LAVER_H * s, foot, x: c.x, z: c.z, onBase: K.d < 0.01,
-        spouts: SPOUTS.map((o) => { const rr = (o.r + 0.6) * s; return { a: o.a, upper: o.upper, p: [c.x + Math.sin(o.a) * rr, foot + (o.y - 0.18) * s, c.z + Math.cos(o.a) * rr] }; }) };
+        // SPOUT_211_K: the water's mouth - the nozzle at the pipe's foot, PIPE_Y over the floor (until now the spout's own, (o.r + 0.6, o.y - 0.18))
+        spouts: SPOUTS.map((o) => { const M = pipeMouth(o, s), rr = M.r * s; return { a: o.a, upper: o.upper, p: [c.x + Math.sin(o.a) * rr, foot + M.y * s, c.z + Math.cos(o.a) * rr] }; }) };
     };
     // the way from the base to the well: u 0..1 - lift (0..0.15), swing (0.15..0.45), lower into the water (0.45..1)
     const DROP = 5.6, LIFT = 1.2;

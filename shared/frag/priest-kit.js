@@ -493,18 +493,23 @@
           for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) { const L2 = hs.get(key(cx + i, cy + j, cz + k)); if (L2) for (const q of L2) { const d2 = p.distanceToSquared(L[q]); if (d2 < best) { best = d2; bi = q; } } }
           return bi < 0 ? 0.01 : p.clone().sub(L[bi]).dot(Ln[bi]); });
       } else for (const sd of [1, -1]) settle(sd, (p) => footSD(p, sd));
-      const toBend = (p, th) => { const dy = p.y - WY, c = Math.cos(th), s2 = Math.sin(th); return [p.x, dy * c + p.z * s2, -dy * s2 + p.z * c]; };
-      let th = 0.9;
-      for (; th < 2.2; th += 0.02) {
-        let ok = true;
-        for (const sd of [1, -1]) { const t = toBend(wrist[sd], th), sp = [sd * A.sx, A.sy - WY, 0]; if (Math.hypot(t[0] - sp[0], t[1] - sp[1], t[2] - sp[2]) > (a + b) * 0.97) ok = false; }
-        if (ok) break;
-      }
-      const res = { mode: M0 === KIDM.ryose ? "ryose" : "tk", th, arm: {}, wq: {}, fx: KID_FX * FS, dz: KID_DZ * FS, feet: M0.feet, leg: null };
-      for (const sd of [1, -1]) res.arm[sd] = reach([sd * A.sx, A.sy - WY, 0], toBend(wrist[sd], th), sd);
-      if (M0.leg) {   // the leg whose foot is laid on the other: hip, knee (two bones, the knee forward), ankle - amot
+      // KIDDUSH_CROUCH_K (fix-k, 23.11.2026 - the coordinator, on the pictures: "הכהן מקופל כמו אולר... הגוף מתחת לקו האופקי, הראש תלוי ליד
+      // הרצפה, המגבעת שוכבת הצידה, והרגליים ישרות לגמרי"; the user: "צריך תיקון בהכל"): HE STOOPS AS A MAN STOOPS - bent at the waist 70 degrees
+      // (80 at the most; until now as far as the hands needed, 1.5 - 1.8 rad, under the level), and the rest from the knees: the hips go
+      // down and back (drop - as little as the hands need; back - 0.55 of it), the knees forward under the kutonet (kidBody bends its lower
+      // part); the head lifted on the neck (lift), the face forward and down to the hands, the migba'at on it, its top forward and up.
+      // The waist's place standing (WY0) kept on the figure. How far each - a model choice; the hands as before (KIDDUSH_TOUCH_K)
+      const WY0 = f.bend.userData.y0 != null ? f.bend.userData.y0 : (f.bend.userData.y0 = f.bend.position.y);
+      const toBend = (p, th, d) => { const dy = p.y - (WY0 - d), dz = p.z + 0.55 * d, c = Math.cos(th), s2 = Math.sin(th); return [p.x, dy * c + dz * s2, -dy * s2 + dz * c]; };
+      const fits = (th, d) => { for (const sd of [1, -1]) { const t = toBend(wrist[sd], th, d), sp = [sd * A.sx, A.sy - WY0, 0]; if (Math.hypot(t[0] - sp[0], t[1] - sp[1], t[2] - sp[2]) > (a + b) * 0.975) return false; } return true; };
+      // (the turn at the waist from 70 to 80 degrees - the one with the hips the least down; the arms nearly straight)
+      let th = 1.22, drop = 0.9;
+      for (const t0 of [1.22, 1.27, 1.31, 1.35, 1.39]) for (let d0 = 0; d0 < drop - 0.03; d0 += 0.01) if (fits(t0, d0)) { th = t0; drop = d0; break; }
+      const res = { mode: M0 === KIDM.ryose ? "ryose" : "tk", th, drop, back: 0.55 * drop, lift: Math.max(0, th - 0.72), arm: {}, wq: {}, fx: KID_FX * FS, dz: KID_DZ * FS, feet: M0.feet, leg: null };
+      for (const sd of [1, -1]) res.arm[sd] = reach([sd * A.sx, A.sy - WY0, 0], toBend(wrist[sd], th, drop), sd);
+      if (M0.leg) {   // the leg whose foot is laid on the other: hip (down and back with the stoop), knee (two bones, the knee forward), ankle - amot
         const ft = M0.feet[M0.leg], c = Math.cos(ft[3]), sn = Math.sin(ft[3]);
-        const H = new Vector3(M0.leg * 0.1, 1.0, 0), Aa = new Vector3(ft[0], ft[1] + 0.15 * c + 0.01 * sn, ft[2] + 0.15 * sn - 0.01 * c);
+        const H = new Vector3(M0.leg * 0.1, 1.0 - drop / FS, -0.55 * drop / FS), Aa = new Vector3(ft[0], ft[1] + 0.15 * c + 0.01 * sn, ft[2] + 0.15 * sn - 0.01 * c);
         const L1 = 0.45, L2 = 0.401, d = Math.min(L1 + L2 - 1e-4, H.distanceTo(Aa)), u = Aa.clone().sub(H).normalize();
         const al = (L1 * L1 - L2 * L2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, L1 * L1 - al * al)), n = new Vector3(0, 0, 1).addScaledVector(u, -u.z).normalize();
         const K = H.clone().addScaledVector(u, al).addScaledVector(n, h);
@@ -512,8 +517,8 @@
       }
       // the wrists: the hand's own axes (the fingers down its -y, the palm toward the body - handRaw) to the wanted ones, in the frame of
       // the forearm as it is in this pose
-      const lr = f.lean.rotation.x, br = [f.bend.rotation.x, f.bend.rotation.z];
-      f.lean.rotation.x = 0; f.bend.rotation.set(th, 0, 0);
+      const lr = f.lean.rotation.x, br = [f.bend.rotation.x, f.bend.rotation.z], bp = [f.bend.position.y, f.bend.position.z];
+      f.lean.rotation.x = 0; f.bend.rotation.set(th, 0, 0); f.bend.position.y = WY0 - drop; f.bend.position.z = -0.55 * drop;
       for (const sd of [1, -1]) setArm(sd > 0 ? f.L : f.R, res.arm[sd], sd);
       f.g.updateMatrixWorld(true);
       const qG = f.g.getWorldQuaternion(new Quaternion()).invert(), M1 = new Matrix4(), M2 = new Matrix4();
@@ -525,8 +530,53 @@
         const qE = qG.clone().multiply((sd > 0 ? f.L : f.R).el.getWorldQuaternion(new Quaternion()));
         res.wq[sd] = qE.invert().multiply(qT);
       }
-      f.lean.rotation.x = lr; f.bend.rotation.set(br[0], 0, br[1]);
+      f.lean.rotation.x = lr; f.bend.rotation.set(br[0], 0, br[1]); f.bend.position.y = bp[0]; f.bend.position.z = bp[1];
       return (f[key] = res);
+    };
+    // KIDDUSH_CROUCH_K: the stoop on the figure, u 0..1 into it (H null - standing): the waist down and back (f.bend), the kutonet's lower
+    // part (f.body - gRobeLow) shortened as the hips go down, its top back with them and its middle a little forward (the knees under it),
+    // the head lifted at the neck (f.neck) - each house calls it with its own figure; until now only the waist turned
+    const robeBow = (m, dk, bk, th = 0, yP = WAIST - dk) => {
+      if (!m || !m.geometry) return;
+      const key = dk.toFixed(4) + "," + bk.toFixed(4) + "," + th.toFixed(3);
+      if (m.userData.bowKey === key) return;
+      m.userData.bowKey = key;
+      if (dk < 1e-4 && bk < 1e-4) { if (m.userData.bowOrig) m.geometry = m.userData.bowOrig; return; }
+      if (!m.userData.bowGeo) { m.userData.bowOrig = m.geometry; m.userData.bowGeo = m.geometry.clone(); m.userData.bowBase = Float32Array.from(m.geometry.attributes.position.array); }
+      const g = m.userData.bowGeo, P = g.attributes.position, B = m.userData.bowBase;
+      // (the knees under its front, where two bones put them - the thigh from the hip (down and back with the stoop) to the knee, the shin
+      // from the knee to the ankle, kit units: the cloth's front goes from the waist along the thigh, nearly level, round the knee and
+      // down before the shin, its hem raised to the middle of the shin - the hands on the feet seen under it; its back only shortened, as
+      // it hangs from the hips to the heels; a little wider at the knees. Until now the front was carried forward most at the middle of
+      // its height - a sack. Standing (dk 0) - as it was)
+      const hy = 1.0 - dk, hz = -bk, ay = 0.08, az = KID_DZ, L1 = 0.45, L2 = 0.401;
+      const dd = Math.min(L1 + L2 - 1e-4, Math.hypot(hy - ay, hz - az)), uy = (ay - hy) / dd, uz = (az - hz) / dd;
+      const al = (L1 * L1 - L2 * L2 + dd * dd) / (2 * dd), hh = Math.sqrt(Math.max(0, L1 * L1 - al * al));
+      const ky = hy + uy * al + uz * hh, kz = hz + uz * al - uy * hh;   // the knee (the perpendicular forward and up)
+      const amt = Math.min(1, dk / 0.25), KR = 0.072, yW = WAIST - dk, yH = 0.1 + 0.14 * amt;
+      const tk = Math.max(0.3, Math.min(0.95, (ky - yH) / Math.max(0.05, yW - yH))), zK = kz + KR, zW = spl(bZ, WAIST) - bk;
+      const zF = (t) => t <= tk ? zK - 0.035 * Math.pow(1 - t / tk, 2) : zK + (zW - zK) * Math.pow((t - tk) / (1 - tk), 1.6);
+      for (let i = 0; i < P.count; i++) {
+        const x = B[i * 3], y = B[i * 3 + 1], z = B[i * 3 + 2], t = Math.max(0, Math.min(1, (y - 0.1) / (WAIST - 0.1)));
+        const fr = Math.max(0, z) / Math.max(1e-4, Math.hypot(x, z)), wq = Math.max(0, Math.min(1, (fr - 0.2) / 0.6)), w = wq * wq * (3 - 2 * wq) * amt;   // (broad: both knees)
+        const yB = y - dk * t, zB = z - bk * t, yF = yH + t * (yW - yH), zB0 = spl(bZ, Math.min(Math.max(y, 0.1), WAIST)) - bk * t;
+        const kn = Math.exp(-Math.pow((t - tk) / 0.25, 2)) * amt;
+        let Y = yB + w * (yF - yB), Z = zB + w * (zF(t) - zB0);
+        // (its top, the band at the waist, turns with the body over it (about the waist's pivot, yP / -bk): left level it stood up
+        // behind the bowed back - a flap)
+        const kc = Math.max(0, Math.min(1, (y - (WAIST - 0.06)) / 0.2));
+        if (kc > 0 && th > 0) { const a = th * kc, dy = Y - yP, dz = Z + bk, ca = Math.cos(a), sa = Math.sin(a); Y = yP + dy * ca - dz * sa; Z = -bk + dy * sa + dz * ca; }
+        P.setXYZ(i, x * (1 + 0.12 * kn), Y, Z);
+      }
+      P.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere();
+      m.geometry = g;
+    };
+    const kidBody = (f, H, u) => {
+      if (!f || !f.bend) return;
+      const y0 = f.bend.userData.y0 != null ? f.bend.userData.y0 : (f.bend.userData.y0 = f.bend.position.y), k = H ? u : 0;
+      f.bend.position.y = y0 - (H ? H.drop : 0) * k; f.bend.position.z = -(H ? H.back : 0) * k;
+      robeBow(f.body, (H ? H.drop : 0) * k / FS, (H ? H.back : 0) * k / FS, (H ? H.th : 0) * k, f.bend.position.y / FS);
+      if (f.neck) f.neck.rotation.x = -(H ? H.lift : 0) * k;
     };
     // the feet (and in "ryose" the leg laid on the other) for a figure at kiddush, u 0..1 into it: from where they stand (+-0.1, 0) to
     // their places; the raised leg's thigh, knee, shin and foot (f.legs - the same in both houses) instead of its own foot

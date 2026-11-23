@@ -882,7 +882,14 @@
   // Returns the geometries of the two taps (merged by vsl_baseParts into the laver).
   var VSL_TAP_Y = 4.2 - 0.08 - 0.07;              // 4.05: the spout's mouth above the court floor (the base's frame), see vsl_tapGeometry
   var VSL_TAP_R = 2.04 + 0.08;                    // 2.12: the mouth's distance from the laver's axis (east and west)
-  function vsl_tapGeometry(Y = 4.2, ZW = 0.97, ZV = 2.0) {   // (1.0.1-L: arguments for Moses' laver; the bases use the defaults)
+  // TAP_212_K (fix-k, 23.11.2026 - the user's decision 212, via the coordinator: "גם בבית ראשון: צינור נחושת קצר מן הברז של המכונה עד
+  // גובה המותניים (כ־1.5 אמות), כמו בבית שני. גובה המכונה עצמה לא משתנה"): from each tap's nozzle (VSL_TAP_Y 4.05) a short pipe of the
+  // laver's copper straight down beside the base, at its foot a bend and a nozzle turned along the base's side (the east tap's toward the
+  // south, the west's toward the north - the turn) - the water comes out there, VSL_PIPE_Y over the floor, VSL_PIPE_DZ along the side
+  // from under the tap. The base, the laver and the taps as they were (Moses' laver - without it). Its form, height and turn - a model
+  // choice (the card: "גובה הברז — בחירת מודל")
+  var VSL_PIPE_Y = 1.5, VSL_PIPE_RB = 0.08, VSL_PIPE_NZ = 0.06, VSL_PIPE_DZ = 0.08 + 0.06;
+  function vsl_tapGeometry(Y = 4.2, ZW = 0.97, ZV = 2.0, low = null) {   // (1.0.1-L: arguments for Moses' laver; the bases use the defaults; TAP_212_K: low - the pipe's foot)
     const R = 0.08, Z0 = ZV + 0.04;   // the pipe's height, the valve's centre, the spout's bend radius and start, the wall
     const one = [
       new CylinderGeometry(0.075, 0.075, 0.05, 14).rotateX(Math.PI / 2).translate(0, Y, ZW),             // the flange on the wall
@@ -897,6 +904,14 @@
     sp.applyMatrix4(new Matrix4().makeBasis(new Vector3(0, 1, 0), new Vector3(0, 0, 1), new Vector3(1, 0, 0)));
     one.push(sp.translate(0, Y - R, Z0));
     one.push(new CylinderGeometry(0.03, 0.046, 0.07, 10).translate(0, Y - R - 0.035, Z0 + R));   // the nozzle, a little flared (1.0.1-L)
+    if (low != null) {   // TAP_212_K: the pipe down from the nozzle, the bend toward -x (the base's side, once turned) and the low nozzle
+      const y0 = Y - R - 0.07, RB = VSL_PIPE_RB, NZ = VSL_PIPE_NZ, zc = Z0 + R;
+      one.push(new CylinderGeometry(0.034, 0.034, y0 - (low + RB), 10).translate(0, (y0 + low + RB) / 2, zc));
+      const bd = new TorusGeometry(RB, 0.034, 8, 8, Math.PI / 2);
+      bd.applyMatrix4(new Matrix4().makeBasis(new Vector3(1, 0, 0), new Vector3(0, -1, 0), new Vector3(0, 0, -1)));
+      one.push(bd.translate(-RB, low + RB, zc));
+      one.push(new CylinderGeometry(0.042, 0.034, NZ, 10).rotateZ(Math.PI / 2).translate(-RB - NZ / 2, low, zc));
+    }
     const east = mergeGeometries(one).rotateY(Math.PI / 2);                                                   // built pointing +z, turned to +x
     const west = east.clone().rotateY(Math.PI);                                                               // pointing -x (a turn, not a mirror)
     return [east, west];
@@ -1027,7 +1042,7 @@
     // in the same geometry, so that they are instanced with it, ride on the moving base and rise with the explode. DEV note: Ralbag 7:38
     // reads the 4 as the diameter ("וזכר שקוט' הכיור היה ארבע באמה") - not built.
     const laver = mergeGeometries([new LatheGeometry([[0.01, 3.005], [0.92, 3.005], [0.95, 3.04], [0.95, 6.85], [1.01, 6.9], [1.01, 7.0],
-      [0.935, 7.0], [0.875, 6.95], [0.875, 3.05], [0.01, 3.05]].map((p) => new Vector2(p[0], p[1])), 40)].concat(vsl_tapGeometry()));
+      [0.935, 7.0], [0.875, 6.95], [0.875, 3.05], [0.01, 3.05]].map((p) => new Vector2(p[0], p[1])), 40)].concat(vsl_tapGeometry(4.2, 0.97, 2.0, VSL_PIPE_Y)));   // TAP_212_K: with the pipes
     const water = new CircleGeometry(0.86, 32).rotateX(-Math.PI / 2).translate(0, 6.9, 0);
     // the wheel (axle along z, centred at the origin): rim (חשוק), 16 spokes (חשרים), hub (גב) - 7:33 "ידותם וגביהם וחשקיהם וחשריהם";
     // Rashi "וגביהם... הם הנקבים; וחשקיהם. הם עגלים סביב; וחשריהם - זרועות האופנים, התחובים מגביהם לחשוקיהם".
@@ -1263,11 +1278,11 @@
     const WATS = new MeshStandardMaterial({ color: 0x7db8ec, emissive: 0x15406a, emissiveIntensity: 0.5, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.85, depthWrite: false });
     const WATP = new MeshStandardMaterial({ color: 0x5f97cc, emissive: 0x0f3050, emissiveIntensity: 0.4, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.7, depthWrite: false });
     const stream = new Mesh(new CylinderGeometry(0.045, 0.04, 1, 12, 1, true).translate(0, -0.5, 0), WATS);   // hangs 1 down from its top
-    stream.position.set(VSL_TAP_R, VSL_TAP_Y, 0);
+    stream.position.set(VSL_TAP_R, VSL_PIPE_Y, VSL_PIPE_DZ);   // TAP_212_K: from the low nozzle (until now the tap's own, 4.05 up)
     stream.name = "mechona-stream";
     stream.visible = false;
     const pool = new Mesh(new CircleGeometry(0.5, 24).rotateX(-Math.PI / 2), WATP);
-    pool.position.set(VSL_TAP_R, 0.012, 0);
+    pool.position.set(VSL_TAP_R, 0.012, VSL_PIPE_DZ);
     pool.name = "mechona-pool";
     pool.visible = false;
     mg.add(stream, pool);
@@ -1343,20 +1358,26 @@
     // KIDDUSH_FLAT_A2 (the user via the coordinator: "כף היד על כף הרגל, וכך שניהם בו זמנית"): the palms flat on the feet (58-ark.js
     // ark_kiddush, the kit's kidHands); the stream comes out of the tap and falls in an arc past his left side, under his bowed body, onto
     // the backs of both hands - their middle JET_DX east of the tap's mouth (0.24 until now, onto his left hand on his leg)
-    const YW82 = Math.PI, JET_DX = 0.9;
+    // TAP_212_K (decision 212: the water from the low nozzle, VSL_PIPE_Y over the floor, "בלי לגעת בגוף (בדיקה ממוחשבת)"): it leaves the
+    // nozzle level toward the south and falls JET_DX on onto his hands; it comes to him from his FRONT-LEFT (an eighth of a turn from his
+    // face): stooping as a man stoops (the kit's KIDDUSH_CROUCH_K) his shoulders and head are over his hands, and from the side or behind
+    // the jet passes through his left arm or the kutonet - measured over all sides and distances in both readings (2.0 out, 45 degrees:
+    // its axis 0.059 / 0.051 from him). He faces north-east (YW82), south-east of the base, west of the pit and north of the ramp's
+    // tables. Until now he faced north, the base at his left, his hands 0.9 east of the tap's mouth (4.05 up). Model choice
+    const YW82 = 3 * Math.PI / 4, JET_DX = 2.0;
     const kidWater = { made: false, drip: [], film: [] };
     const handW = (w, A2, out) => { const KG = ark_kitArms(); return A2.wr ? A2.wr.localToWorld(out.set(0, -0.064 * ark_kit().FS, 0)) : A2.el.localToWorld(out.set(0, -(KG.P.fo + 0.064 * ark_kit().FS), 0.01)); };
     const kiddAt = (lt) => {
       const w = kidd.w;
       if (!w) return;
-      const sx = WASH[0] + VSL_TAP_R, sz = WASH[1];
+      const sx = WASH[0] + VSL_TAP_R, sz = WASH[1] + VSL_PIPE_DZ;   // TAP_212_K: the low nozzle's mouth
       const sm = (u) => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u)), cl = (v, a, b) => (v < a ? a : v > b ? b : v);
       const k = sm(cl((lt - 0.35) / 0.8, 0, 1)) * sm(cl((6.8 - lt) / 0.6, 0, 1));
       if (!w.off82) {   // where he stands: his hands (fully bowed) under the stream - found once
         ark_kiddush(w, 1);
         w.g.position.set(0, F, 0); w.g.rotation.y = YW82; w.g.updateMatrixWorld(true);
         const b = handW(w, w.L, new Vector3()).add(handW(w, w.R, new Vector3())).multiplyScalar(0.5);
-        w.off82 = [JET_DX - b.x, -b.z];   // KIDDUSH_FLAT_A2: his hands' middle JET_DX east of the tap's mouth, on its line
+        w.off82 = [-b.x, JET_DX - b.z];   // TAP_212_K: his hands' middle JET_DX south of the low mouth, on its line (KIDDUSH_FLAT_A2: JET_DX east of the tap's)
       }
       w.g.position.set(sx + w.off82[0], F, sz + w.off82[1]);
       w.g.rotation.y = YW82;
@@ -1369,8 +1390,9 @@
         const on = md === "ryose" && k > 0.02;
         kidd.h.g.visible = on;
         if (on) {
-          kidd.h.g.position.set(w.g.position.x + 0.72, F, w.g.position.z - 0.12);
-          kidd.h.g.rotation.y = -Math.PI / 2;
+          const rx = -Math.cos(YW82), rz = Math.sin(YW82), fx = Math.sin(YW82), fz = Math.cos(YW82);   // TAP_212_K: at his right, as he now stands
+          kidd.h.g.position.set(w.g.position.x + rx * 0.72 + fx * 0.12, F, w.g.position.z + rz * 0.72 + fz * 0.12);
+          kidd.h.g.rotation.y = YW82 + Math.PI / 2;
           kidd.h.lean.rotation.x = 0.2 * k;
           ark_setArm(kidd.h.L, [-0.95 * k + 0.05 * (1 - k), -0.16, -0.5 * k - 0.15 * (1 - k)], 1); ark_setArm(kidd.h.R, [-0.95 * k + 0.05 * (1 - k), -0.16, -0.5 * k - 0.15 * (1 - k)], -1);
         }
@@ -1391,12 +1413,13 @@
       const hR = handW(w, w.R, new Vector3()), hL = handW(w, w.L, new Vector3());
       const FSk = ark_kit().FS, fR = w.fr.localToWorld(new Vector3(0, 0.03 * FSk, 0.2 * FSk)), fL = w.fl.localToWorld(new Vector3(0, 0.03 * FSk, 0.2 * FSk));   // KIDDUSH_FLAT_A2: the toes
       stream.visible = false;   // (the base's own stream - straight down - gives way to the jet onto his hand)
+      pool.position.set((fR.x + fL.x) / 2 - mg.position.x, 0.012, (fR.z + fL.z) / 2 - mg.position.z);   // TAP_212_K: its pool under his feet (2.0 from the nozzle now)
       const UPV = new Vector3(0, 1, 0), dv = new Vector3();
       const seg = (m, a, b) => { dv.subVectors(b, a); const n = dv.length() || 1e-6; m.position.copy(a); m.quaternion.setFromUnitVectors(UPV, dv.multiplyScalar(1 / n)); m.scale.set(1, n, 1); };
       seg(kidWater.drip[0], hR, fR); seg(kidWater.drip[1], hL, fL);
       // KIDDUSH_FLAT_A2: out of the tap level and falling - on across, down as the square of the way - onto the backs of both hands
       kidWater.drip[2].visible = false;
-      { const P0 = new Vector3(sx, F + VSL_TAP_Y, sz), Hm = hR.clone().add(hL).multiplyScalar(0.5), n = kidWater.arc.length; Hm.y += 0.045;
+      { const P0 = new Vector3(sx, F + VSL_PIPE_Y, sz), Hm = hR.clone().add(hL).multiplyScalar(0.5), n = kidWater.arc.length; Hm.y += 0.045;
         let pv = P0.clone();
         for (let q = 1; q <= n; q++) { const t = q / n, nx = new Vector3(P0.x + (Hm.x - P0.x) * t, P0.y - (P0.y - Hm.y) * t * t, P0.z + (Hm.z - P0.z) * t); seg(kidWater.arc[q - 1], pv, nx); pv = nx; } }
       kidWater.film[0].position.copy(hR); kidWater.film[1].position.copy(hL); kidWater.film[2].position.copy(fR); kidWater.film[3].position.copy(fL);
@@ -1413,16 +1436,18 @@
       wash.add(w.g); kidd.w = w;
       { const h = ark_priestFig(6); h.g.visible = false; wash.add(h.g); kidd.h = h; }   // KIDDUSH_RYOSE_A2: his fellow ("וחבירו מסייעו")
       const q = ark_priestFig(5);
-      q.g.position.set(STOP[0] + VSL_TAP_R + 0.48, F, STOP[1] - 0.9); q.g.rotation.y = Math.atan2(-0.48, 0.9);   // north of the stream, his face to it
-      q.lean.rotation.x = 0.32;
-      ark_setArm(q.L, [-0.95, -0.12, -0.55], 1); ark_setArm(q.R, [-0.95, -0.12, -0.55], -1);
+      // TAP_212_K: the innards lower (under the low nozzle, F + 1.15 - until now 1.5): he stands 1.0 from them, north of the stream, his face
+      // to it, bowed a little more (0.45 - 0.32 until now), his arms down before him - his hands' middle on them (found by a search)
+      q.g.position.set(STOP[0] + VSL_TAP_R + 0.42, F, STOP[1] + VSL_PIPE_DZ - 0.91); q.g.rotation.y = Math.atan2(-0.42, 0.91);   // north of the stream, his face to it
+      q.lean.rotation.x = 0.45;
+      ark_setArm(q.L, [-0.35, -0.08, -0.1], 1); ark_setArm(q.R, [-0.35, -0.08, -0.1], -1);
       purpose.add(q.g); kidd.p = q;
       const organM = new MeshStandardMaterial({ color: 0xc9a08c, roughness: 0.75 });
       const og = new Group();
       for (const [dx, dy, dz, sx, sy, sz] of [[0, 0, 0, 0.36, 0.22, 0.28], [0.12, -0.05, 0.22, 0.22, 0.16, 0.2], [-0.1, -0.06, -0.2, 0.2, 0.15, 0.18]]) {
         const m = new Mesh(new SphereGeometry(1, 12, 8), organM); m.scale.set(sx, sy, sz); m.position.set(dx, dy, dz); og.add(m);
       }
-      og.position.set(STOP[0] + VSL_TAP_R + 0.12, F + 1.5, STOP[1] - 0.25);
+      og.position.set(STOP[0] + VSL_TAP_R, F + 1.15, STOP[1] + VSL_PIPE_DZ);   // TAP_212_K: under the low nozzle (until now F + 1.5, under the tap at 4.05)
       purpose.add(og); kidd.organs = og;
     } catch (_) {}
     let sprites = null, spriteTries = 0;           // the UI's sprites of the part labels (sprite.userData.label), looked up a few times
@@ -1453,8 +1478,9 @@
       // opens and the pool spreads under it; nothing while the laver is raised (the explode)
       const fl = s < 0.01 ? pose.flow : 0;
       stream.visible = pool.visible = fl > 0.001;
+      pool.position.set(VSL_TAP_R, 0.012, VSL_PIPE_DZ);   // TAP_212_K: under the nozzle (kiddAt moves it under the washing priest's feet)
       if (fl > 0.001) {
-        stream.scale.y = VSL_TAP_Y * fl;
+        stream.scale.y = VSL_PIPE_Y * fl;   // TAP_212_K
         pool.scale.set(0.35 + 0.65 * fl, 1, 0.35 + 0.65 * fl);
       }
       // the purposes' labels: while the base stands at a stop in the demonstration (or is put there by seek), not while it drives
@@ -1651,7 +1677,10 @@
     // hand, the right foot and the head clear, his own body too) - the only side
     // clear of the ramp (east of him) and of the base (at his left); until now from the south and high above ([3.4, 5.5, 9.5] looking at
     // [2.6, 3.4, 0]), the bowed priest seen from over his back
-    const FOL_KID = { pos: [6.9, 4.2, 1.6], aim: [3.2, 0.7, 0.0] };   // from the wash stop: x, F + y, z
+    // TAP_212_K (the coordinator, 23.11.2026: "בבית ראשון — מצלמה בגובה כחצי הדמות, מן הצד הפתוח ביותר"): he stands now south-east of the base
+    // (the low nozzle's jet, 45-vessels.js kiddAt); the eye at his right (south-east of him, 4.5 out - the side whose lines to his head,
+    // hips, hands and feet are clear from 3.5 to 5.5 out), 1.5 over the floor, on his middle. Until now [6.9, 4.2, 1.6] on [3.2, 0.7, 0]
+    const FOL_KID = { pos: [5.1, 1.5, 5.54], aim: [2.13, 0.8, 2.15] };   // from the wash stop: x, F + y, z
     const folKid = (tau) => smooth(Math.min((tau - (TL.wash[0] - 0.7)) / 1.2, (TL.wash[1] + 0.9 - tau) / 1.2));
     // FOLLOW_KID_301 (the user, 18.11.2026: "אין מעקב מצלמה במכונות", "במכונה יש בריחה של מצלמות"): from 2.0.14 to 3.0.0 the eye went to
     // the close view in a straight line, which passed almost straight over the base (the far view looks from the north, the close one
