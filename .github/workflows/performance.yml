@@ -66,6 +66,14 @@ jobs:
           npm run build
           node tools/build-sheni.mjs --house build/sheni/house
           node tools/build-unified.mjs --sheni build/sheni/house --no-pack
+      - name: Verify tracked plugin artifacts match the sources
+        run: |
+          test -z "$(git status --porcelain --untracked-files=no -- plugin/bundle.js plugin/index.html)"
+          cmp dist-unified/plugin/rishon/bundle.js unified-plugin/rishon/bundle.js
+          cmp dist-unified/plugin/sheni/bundle.js unified-plugin/sheni/bundle.js
+          cmp dist-unified/plugin/house-bridge.js unified-plugin/house-bridge.js
+          cmp dist-unified/plugin/rishon/index.html unified-plugin/rishon/index.html
+          cmp dist-unified/plugin/sheni/index.html unified-plugin/sheni/index.html
       - name: Scene and resource reports
         run: |
           node tools/perf-scene.mjs dist-unified/plugin rishon qa/performance
