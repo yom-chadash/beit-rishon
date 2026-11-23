@@ -176,6 +176,47 @@ check('hidden detail geometry never reaches the exact zoom raycast', () => {
   assert.equal(oldTests, 121); assert.equal(newTests, 1);
 });
 
+check('bridge lets loading finish, holds hidden ready frames and resumes once', () => {
+  let ready = false, mutation, next = 0;
+  const events = new Map(), callbacks = [], parent = { postMessage() {} };
+  const window = { name: 'tm-house:rishon:web', parent, focus() {}, requestAnimationFrame(cb) { callbacks.push(cb); return ++next; },
+    addEventListener(type, cb) { events.set(type, cb); }, dispatchEvent() {} };
+  const document = { documentElement: { classList: { contains: () => ready } }, body: null, addEventListener() {} };
+  vm.runInNewContext(read('unified/house-bridge.js'), { window, document, console, Event, CustomEvent: Event,
+    MutationObserver: class { constructor(cb) { mutation = cb; } observe() {} }, setInterval() {}, setTimeout });
+  const visible = (v) => events.get('message')({ source: parent, data: { tm: 'visible', visible: v } });
+  let calls = 0;
+  visible(false); assert.equal(window.__tmHouseVisible, true);
+  window.requestAnimationFrame(() => calls++); callbacks.shift()(1); assert.equal(calls, 1);
+  ready = true; mutation(); assert.equal(window.__tmHouseVisible, false);
+  window.requestAnimationFrame(() => calls++); callbacks.shift()(2); assert.equal(calls, 1);
+  visible(true); assert.equal(window.__tmHouseVisible, true); assert.equal(callbacks.length, 1);
+  callbacks.shift()(3); assert.equal(calls, 2);
+  visible(true); assert.equal(callbacks.length, 0);
+  visible(false); visible(true); assert.equal(callbacks.length, 0);
+});
+
+check('animation loop never renders or runs scene work for a hidden document/house', () => {
+  const source = read('shared/90-entry.js');
+  const section = source.slice(source.indexOf('  function ent_isVisible()'), source.indexOf('  // the view follows the window:'));
+  let frame, renders = 0, work = 0;
+  const document = { hidden: false }, window = {}, noop = () => {};
+  const sandbox = { document, window, renderer: { setAnimationLoop: (fn) => { frame = fn; }, render: () => renders++ },
+    ent_load: { loading: false, printed: true }, flyAnim: null, cam: {}, ent_hq: { frame: () => work++ }, ctx: { animated: [() => work++] },
+    ent_damp: noop, ent_zoomStep: noop, ent_liftStep: noop, ent_walkStep: noop, cam_update: noop, guardCamera: noop, cam_nearStep: noop,
+    scene: {}, camera: {}, performance, setInterval: () => assert.fail('background rendering timer must not be installed') };
+  vm.runInNewContext(section, sandbox);
+  frame(0); assert.equal(renders, 1); assert.equal(work, 2);
+  document.hidden = true;
+  for (let i = 0; i < 20; i++) frame(i * 250);
+  assert.equal(renders, 1); assert.equal(work, 2);
+  document.hidden = false; window.__tmHouseVisible = false; frame(6000);
+  assert.equal(renders, 1); assert.equal(work, 2);
+  window.__tmHouseVisible = true; frame(6100);
+  assert.equal(renders, 2); assert.equal(work, 4);
+  sandbox.ent_load.loading = true; frame(6200); assert.equal(renders, 2);
+});
+
 if (process.argv.includes('--benchmark')) {
   // A deterministic thin-wall workload: every broad sphere intersects the ray, while
   // the exact wall boxes do not. Times describe this workload, not whole-app FPS.

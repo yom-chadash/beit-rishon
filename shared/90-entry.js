@@ -1960,8 +1960,9 @@
     makeControls(lastGoodTarget);
     controls.update();
   }
+  function ent_isVisible() { return !document.hidden && window.__tmHouseVisible !== false; }
   renderer.setAnimationLoop((t) => {
-    if (ent_load.loading) return;   // 1.0.1-K: nothing is drawn behind the loading overlay (see initModules)
+    if (ent_load.loading || !ent_isVisible()) return;   // nothing is drawn behind the loading overlay or by a hidden house/tab
     if (flyAnim) {
       const k = Math.min(1, (t - flyAnim.t0) / flyAnim.dur), e = ease(k);
       camera.position.lerpVectors(flyAnim.p0, flyAnim.p1, e);
@@ -1999,26 +2000,13 @@
       ent_printLoad();
     }
   });
-  setInterval(() => {
-    if (document.hidden && !ent_load.loading) {
-      ent_damp(performance.now());   // 1.0.1-L (L.87)
-      ent_zoomStep();
-      cam_update();   // 1.2.0
-      guardCamera();
-      for (const fn of ctx.animated) {
-        try {
-          fn(performance.now());
-        } catch (_) {
-        }
-      }
-      cam_nearStep();   // CAM_219 (3)
-      renderer.render(scene, camera);
-    }
-  }, 250);
+  // No timer-based background rendering: it bypassed the browser's RAF suspension
+  // and the house bridge's pause, drawing every loaded model four times a second.
   // the view follows the window: on "resize" and from a watchdog (a webview may show the tab without firing "resize"; see viewSize)
   var fitW = viewWH[0], fitH = viewWH[1];
   function fitToWindow() {
-    guardCamera();   // the watchdog also runs the camera guard: it ticks even where neither the animation loop nor the hidden-document interval does
+    if (!ent_isVisible()) return;
+    guardCamera();   // recover a visible webview even if its animation loop has not resumed yet
     const wh = viewSize();
     if (wh[0] === fitW && wh[1] === fitH) return;
     fitW = wh[0];
@@ -2028,6 +2016,7 @@
     renderer.setSize(fitW, fitH);
   }
   window.addEventListener("resize", fitToWindow);
+  document.addEventListener("visibilitychange", fitToWindow);
   setInterval(fitToWindow, 500);
   var isOtzaria = typeof window.Otzaria !== "undefined";
   if (isOtzaria) {
