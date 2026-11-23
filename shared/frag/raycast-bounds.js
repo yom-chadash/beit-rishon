@@ -51,7 +51,7 @@
       if (dirty) b.world.copy(b.local).applyMatrix4(o.matrixWorld).expandByScalar(1e-7);
       return finite(b.world) ? b.world : null;
     };
-    return (ray, objects, hits = []) => {
+    const intersect = (ray, objects, hits = []) => {
       const candidates = [];
       for (const o of objects) {
         const box = bounds(o);
@@ -59,6 +59,42 @@
       }
       return ray.intersectObjects(candidates, false, hits);
     };
+    // Floor/roof/zoom queries need only the nearest hit. A floor should not pay for
+    // the 96,800 terrain triangles underneath it. Visit boxes near-to-far and stop
+    // only once their conservative entry distance exceeds the nearest exact hit.
+    // Tied hits retain the input object's order, exactly as Raycaster's stable sort.
+    const entry = new Vector3();
+    intersect.first = (ray, objects) => {
+      const candidates = [];
+      for (let i = 0; i < objects.length; i++) {
+        const o = objects[i], box = bounds(o);
+        let distance = -Infinity;   // no conservative bound: this object must be tested
+        if (box) {
+          if (box.containsPoint(ray.ray.origin)) distance = 0;
+          else {
+            if (!ray.ray.intersectBox(box, entry)) continue;
+            distance = ray.ray.origin.distanceTo(entry);
+            if (distance > ray.far) continue;
+          }
+        }
+        candidates.push({ o, distance, order: i });
+      }
+      candidates.sort((a, b) => a.distance - b.distance || a.order - b.order);
+      let best = null, order = Infinity;
+      const hits = [];
+      for (const c of candidates) {
+        if (best && c.distance > best.distance) break;
+        ray.intersectObject(c.o, false, hits);
+        const h = hits[0];
+        if (h && (!best || h.distance < best.distance || h.distance === best.distance && c.order < order)) {
+          best = h;
+          order = c.order;
+        }
+        hits.length = 0;
+      }
+      return best;
+    };
+    return intersect;
   }
   var ent_intersect = ent_makeRaycast();
 

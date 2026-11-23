@@ -339,7 +339,7 @@
     try {
       const ray = ent_look.ray || (ent_look.ray = new Raycaster());
       ray.camera = camera;
-      const list = ent_solids(true), hit = (d, far) => { ray.set(p, d); ray.near = 0; ray.far = far; const h = ent_intersect(ray, list); return h.length ? h[0].distance : Infinity; };
+      const list = ent_solids(true), hit = (d, far) => { ray.set(p, d); ray.near = 0; ray.far = far; const h = ent_intersect.first(ray, list); return h ? h.distance : Infinity; };
       const walls = ent_look.dirs.map((d) => hit(d, 60));
       const near = walls.filter((w) => w < 60).length, tight = walls.filter((w) => w < 30).length;
       res = (near >= 3 && hit(ent_look.up, 60) < 60) || tight === 4;
@@ -354,8 +354,8 @@
       ray.set(cam.tmp.set(p.x, p.y + 0.3, p.z), CAM_DOWN);
       ray.near = 0;
       ray.far = 500;
-      const h = ent_intersect(ray, list || ent_solids(false));
-      return h.length ? h[0].point.y : -Infinity;
+      const h = ent_intersect.first(ray, list || ent_solids(false));
+      return h ? h.point.y : -Infinity;
     } catch (_) {
       return -Infinity;
     }
@@ -475,8 +475,8 @@
         ray.set(camera.position, v);
         ray.near = 0.5;
         ray.far = d;
-        const h = ent_intersect(ray, ent_solids(false));
-        if (h.length) d = Math.max(1, h[0].distance - 0.5);
+        const h = ent_intersect.first(ray, ent_solids(false));
+        if (h) d = Math.max(1, h.distance - 0.5);
       } catch (_) {
       }
       controls.target.copy(camera.position).addScaledVector(v, d);
@@ -676,8 +676,8 @@
       const down = (x, z, from) => {
         try {
           ray.set(F.o.set(x, from, z), CAM_DOWN);
-          const h = ent_intersect(ray, solids);
-          return h.length ? h[0].point.y : NaN;
+          const h = ent_intersect.first(ray, solids);
+          return h ? h.point.y : NaN;
         } catch (_) { return NaN; }
       };
       let fy = NaN;
@@ -995,8 +995,8 @@
       ray.far = 3000;
       // Filter before raycasting: the hidden demonstrations/alternate readings and the
       // sky used to be intersected in full, only to have all their hits thrown away.
-      const hits = ent_intersect(ray, ent_pickable(scene));
-      if (hits.length) return hits[0].point.clone();
+      const hit = ent_intersect.first(ray, ent_pickable(scene));
+      if (hit) return hit.point.clone();
       const d = camera.position.distanceTo(controls.target);
       return ray.ray.origin.clone().addScaledVector(ray.ray.direction, Math.max(4, d));
     } catch (_) {

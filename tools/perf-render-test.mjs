@@ -11,7 +11,7 @@ const library = read('shared/00-lib.js');
 const helper = read('shared/frag/raycast-bounds.js');
 // Load the exact vendored renderer version and the actual source fragment together.
 const T = new Function('window', library + helper + '\nreturn { ...three_module_exports, makeRaycast: ent_makeRaycast, pickable: ent_pickable };})(); return OtzariaPlugin;')({ performance });
-const { Group, Scene, Mesh, InstancedMesh, BoxGeometry, BufferAttribute, Float32BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute,
+const { Group, Scene, Mesh, InstancedMesh, BoxGeometry, PlaneGeometry, BufferGeometry, BufferAttribute, Float32BufferAttribute, InterleavedBuffer, InterleavedBufferAttribute,
   MeshBasicMaterial, ShaderMaterial, Matrix4, Vector3, Raycaster, DoubleSide, FrontSide, Plane, DirectionalLight } = T;
 const mat = new MeshBasicMaterial({ side: DoubleSide });
 let passed = 0;
@@ -21,6 +21,7 @@ const compare = (cast, ray, objects) => {
   const expected = ray.intersectObjects(objects, false);
   const actual = cast(ray, objects);
   assert.deepEqual(summary(actual), summary(expected));
+  assert.deepEqual(summary([cast.first(ray, objects)].filter(Boolean)), summary(expected.slice(0, 1)));
   return actual;
 };
 const down = (x, z, y = 100) => new Raycaster(new Vector3(x, y, z), new Vector3(0, -1, 0), 0, 200);
@@ -174,6 +175,37 @@ check('hidden detail geometry never reaches the exact zoom raycast', () => {
   Mesh.prototype._computeIntersections = function (...args) { newTests++; return original.apply(this, args); };
   try { cast(ray, T.pickable(scene)); } finally { Mesh.prototype._computeIntersections = original; }
   assert.equal(oldTests, 121); assert.equal(newTests, 1);
+});
+
+check('nearest floor skips dense terrain behind it and keeps exact edge hits', () => {
+  const terrain = new Mesh(new PlaneGeometry(5200, 5200, 220, 220).rotateX(-Math.PI / 2), mat);
+  terrain.position.y = -28;
+  const floor = new Mesh(new BoxGeometry(20, 1, 20), mat), objects = [terrain, floor], cast = T.makeRaycast();
+  for (const o of objects) o.updateMatrixWorld();
+  const ray = down(0, 0);
+  compare(cast, ray, objects);
+  const original = Mesh.prototype._computeIntersections;
+  let terrainTests = 0;
+  Mesh.prototype._computeIntersections = function (...args) { if (this === terrain) terrainTests++; return original.apply(this, args); };
+  try {
+    assert.equal(cast.first(ray, objects).object, floor);
+    assert.equal(terrainTests, 0);
+    assert.equal(cast.first(down(50, 50), objects).object, terrain);
+    assert.equal(terrainTests, 1);
+  } finally { Mesh.prototype._computeIntersections = original; }
+  compare(cast, down(10, 10), objects);
+  compare(cast, new Raycaster(new Vector3(0, 0, 0), new Vector3(0, -1, 0), 0, 100), objects);
+});
+
+check('nearest ties keep input order even when broad-phase box order differs', () => {
+  const flat = new BufferGeometry().setAttribute('position', new Float32BufferAttribute([-2, 0, -2, 2, 0, -2, 0, 0, 2], 3));
+  const tall = new BufferGeometry().setAttribute('position', new Float32BufferAttribute([
+    -2, 0, -2, 2, 0, -2, 0, 0, 2, 90, 90, 90, 92, 90, 90, 90, 90, 92
+  ], 3));
+  const a = new Mesh(flat, mat), b = new Mesh(tall, mat), cast = T.makeRaycast(), ray = down(0, 0);
+  a.updateMatrixWorld(); b.updateMatrixWorld();
+  assert.equal(compare(cast, ray, [a, b])[0].object, a);
+  assert.equal(compare(cast, ray, [b, a])[0].object, b);
 });
 
 check('bridge lets loading finish, holds hidden ready frames and resumes once', () => {
