@@ -2135,7 +2135,7 @@
     // היה נכנס בין האולם ולמזבח"; the Tosafot, the Ritva, the Meiri, the Ran, the Gra; Kelim 1:8-9); "all" - Israelites too (the Or Zarua,
     // part 2, 315 - 3930:3793 - in the name of the Yerushalmi). The figures go round the altar and its ramp, a branch in each hand, while the
     // demonstration is shown (a place's feature, untimed). No tefillin - Chol HaMoed (SH.tefOff). MODEL CHOICES: the willows' number and form,
-    // the way round (outside the ramp too), the walkers' number, pace and what they hold (a willow branch).
+    // the way round (outside the ramp too), the walkers' number and pace. FOUR_K: what they hold - the four species in netilah (below).
     {
       const AG = grp("aravahDemo", false);
       const altDz = () => { const AP = SH.altarPlace; return AP && AP.dz && typeof AP.dz[AP.current] === "number" ? AP.dz[AP.current] : 12.5; };
@@ -2216,10 +2216,26 @@
           const lulavG = new CylinderGeometry(0.018, 0.026, 1.9, 5).translate(0, 0.95, 0), etrogG = new SphereGeometry(0.1, 10, 8).scale(1, 1.35, 1);
           const lulavM = new MeshStandardMaterial({ color: 0x5f7a3a, roughness: 0.8 }), etrogM = new MeshStandardMaterial({ color: 0xd9c23a, roughness: 0.6 });
           const twig = new BoxGeometry(0.04, 0.3, 0.006);
+          // FOUR_K (fix-k, 23.11.2026 - the user via the coordinator: "הכהנים אמורים להקיף עם ארבעת המינים בנטילה, ולא סתם בסחיבה"): every
+          // walker - the priests, and the Israelites in the reading "all" - holds the four species in netilah all the way round: the lulav with
+          // its hadassim and aravot upright in his right hand, the etrog in his left, the two hands close before his chest (shared/frag/arm-k.js:
+          // the kit's arms and hand.js's hands, closed round the binding and round the etrog). Until now the priests carried a willow's branch
+          // aside in a hanging hand, and the Israelites' lulav and etrog stood by their sides, not in their hands
+          //@@include arm-k
+          // PRIEST_HOLD_K (the coordinator, 23.11.2026: Rashi in the card - the priests went round with the willow in their hands, "ביד נוטלין אותה
+          // ומנענעים ומקיפין בה"; the user's note said "the four species" - brought to him): what the priests hold - null: as until now (a branch
+          // carried aside); "aravah": a willow's branch upright in the right hand, in netilah and shaken; "four": the lulav and the etrog, as the
+          // Israelites of the reading "all" (theirs - the four species, as their card says). One line to change when he answers
+          const PRIEST_HOLD_K = SH.__priestHoldK !== undefined ? SH.__priestHoldK : null;   // (SH.__priestHoldK - for the checks, set before the circuit is first shown)
+          const AK = tm_armK(SH.priestKit), sleeveOf = {};
           const mk = (kind, robe, list, n, name, israel) => {
             for (let i = 0; i < n; i++) {
               const G = new Group(); G.visible = false; AG.add(G);
-              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: Array.isArray(robe) ? robe[i % robe.length] : robe, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name });
+              const rc = Array.isArray(robe) ? robe[i % robe.length] : robe;
+              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: rc, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name, arms: AK ? false : undefined });
+              // (the priests of the reading "priests only" - PRIEST_HOLD_K, below: until the user decides, as until now)
+              const hold = AK && (israel ? "four" : PRIEST_HOLD_K);
+              if (hold) { const sm3 = sleeveOf[rc] || (sleeveOf[rc] = new MeshStandardMaterial({ color: rc, vertexColors: true, roughness: 0.9 })); G.userData.hold = hold === "aravah" ? AK.branch(G, sm3) : AK.four(G, sm3); list.push(G); continue; }
               if (israel) {
                 const l = new Mesh(lulavG, lulavM); l.position.set(-0.36, 1.15, 0.3); l.rotation.x = 0.12; G.add(l);
                 const e = new Mesh(etrogG, etrogM); e.position.set(0.36, 1.3, 0.32); G.add(e);
@@ -2232,7 +2248,7 @@
           };
           mk("kohen", 0xf1ede2, AR.walkers.priests, 14, "aravahPriest", false);
           mk("worker", [0x6b5a3e, 0x4a4f5a, 0x5c4a3a, 0x3e4a5e, 0x7a6a50], AR.walkers.all, 18, "aravahIsraelite", true);
-        } catch (_) {}
+        } catch (e) { console.warn("[aravah] walkers", e && e.message); }   // FOUR_K: said, not swallowed
       };
       // the labels are pushed at once (the labels' layer is drawn once, at the start), and follow the altar's place
       for (const [text, x, y, z, size] of [
@@ -2278,6 +2294,7 @@
         list.forEach((G, i) => {
           const [x, z, yaw] = at(-t * sp + i * gap);
           G.position.set(x, F + Math.abs(Math.sin(t * 4.2 + i * 1.3)) * 0.05, z); G.rotation.y = yaw; G.visible = true;
+          if (G.userData.hold && G.userData.hold.tick) G.userData.hold.tick(t + i * 0.37);   // FOUR_K: the willow shaken (PRIEST_HOLD_K "aravah")
         });
       };
       const sync = () => {
@@ -2626,8 +2643,10 @@
           [[[240, 2], [229, 1], [200, 1], [106, 1]], T.ezn0, T.ezn1, "floor", -Math.PI / 2],
           [[[106, 1], [97.5, 1]], T.ezn1, T.steps1, "floor"],
           [[[97.5, 1], [89.5, 4]], T.steps1, T.nik, "floor", -Math.PI / 2],
-          [[[89.5, 4], [88, 18], [80, 42], A(68, 43.8), A(44.2, 43.8), A(38, 40), A(38, 16.2), A(38.3, 15.0)], T.walk0, T.corner, "floor", 2.62],
-          [[A(38.3, 15.0), A(37.8, 17), A(38, 40), A(44, 46)], T.bow1 + 0.2, T.end, "floor"]
+          // WAY_K (fix-k, 23.11.2026 - the coordinator, after agent G's finding): round the ramp's foot in the clear lane between it (its end at
+          // z 38.5 in the altar's frame) and the stands south of it (from z 42) - z 40.25; until now at 43.8, through the stands
+          [[[89.5, 4], [88, 18], [80, 42], A(68, 40.25), A(44.2, 40.25), A(38, 39.5), A(38, 16.2), A(38.3, 15.0)], T.walk0, T.corner, "floor", 2.62],
+          [[A(38.3, 15.0), A(37.8, 17), A(38, 39.5), A(50, 40.3)], T.bow1 + 0.2, T.end, "floor"]
         ]; };
       const hCache = new Map();
       // OX_K: the ray from 21 amot at most (over every floor of the way: 16 in the priests' court), not from 30 - from 30 the walkers in the
