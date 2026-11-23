@@ -75,6 +75,7 @@
       tm.vertexColors = true;
       tm.color.set(15527123);
       const terrain = new Mesh(geo, tm);
+      tm_terrainRaycast(terrain, SEG, SEG);
       terrain.receiveShadow = true;
       g.add(terrain);
     }
