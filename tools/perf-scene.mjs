@@ -59,6 +59,20 @@ try {
       }
       c.scene.updateMatrixWorld(true);
       r.render(c.scene, c.camera);
+      const queries = [];
+      const measure = (name, query) => {
+        const times = []; let result;
+        query();
+        for (let i = 0; i < 7; i++) { const t = now(); result = query(); times.push(now() - t); }
+        times.sort((a, b) => a - b);
+        queries.push({ name, medianMs: times[3], result });
+      };
+      measure('floor-camera', () => window.__ent360.floorY(c.camera.position));
+      measure('floor-target', () => window.__ent360.floorY(c.controls.target));
+      const rect = r.domElement.getBoundingClientRect();
+      for (const [name, x, y] of [['center', 0.5, 0.5], ['left', 0.2, 0.5], ['right', 0.8, 0.5]]) {
+        measure('zoom-' + name, () => window.__zoomQA.at(rect.left + rect.width * x, rect.top + rect.height * y));
+      }
       const geometries = new Set(), materials = new Set(), arrays = new Set();
       let objects = 0, meshes = 0, vertices = 0;
       c.scene.traverse(o => {
@@ -77,7 +91,7 @@ try {
         geometryBufferBytes: [...arrays].reduce((n, b) => n + b.byteLength, 0),
         draw: { ...r.info.render }, gpuResources: { ...r.info.memory },
         animatedCallbacks: c.animated.length, callbackMedianMs: samples[Math.floor(samples.length / 2)], callbackSamplesMs: samples,
-        topCallbacks: hooks.sort((a, b) => b.ms - a.ms).slice(0, 12),
+        topCallbacks: hooks.sort((a, b) => b.ms - a.ms).slice(0, 12), queries,
         camera: c.camera.position.toArray(), target: c.controls.target.toArray() };
     }, view);
     report.scenes.push(scene);
