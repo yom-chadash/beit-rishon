@@ -1,0 +1,41 @@
+name: Performance regression checks
+
+on:
+  push:
+    branches: [main, 'perf/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CHROME: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build both houses and the unified plugin
+        run: |
+          npm run build
+          node tools/build-sheni.mjs --house build/sheni/house
+          node tools/build-unified.mjs --sheni build/sheni/house --no-pack
+      - name: Scene and resource reports
+        run: |
+          node tools/perf-scene.mjs dist-unified/plugin rishon qa/performance
+          node tools/perf-scene.mjs dist-unified/plugin sheni qa/performance
+      - name: Unified plugin regression checks
+        run: node tools/qa-unified.mjs dist-unified/plugin --shots qa/unified
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-and-browser-report
+          path: qa/
+          retention-days: 14

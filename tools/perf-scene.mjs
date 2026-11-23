@@ -1,0 +1,92 @@
+// Reproducible scene/resource report using the shipped Three.js and real WebGL.
+// node tools/perf-scene.mjs <unified plugin directory> <rishon|sheni> <output directory>
+// Software WebGL timings describe this runner, not a user's GPU or FPS.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import puppeteer from 'puppeteer-core';
+
+const [directory = 'dist-unified/plugin', house = 'rishon', output = 'qa/performance'] = process.argv.slice(2);
+assert(['rishon', 'sheni'].includes(house), 'house must be rishon or sheni');
+fs.mkdirSync(output, { recursive: true });
+const cfg = JSON.parse(/var CFG = (\{[\s\S]*?\});\n/.exec(fs.readFileSync(path.join(directory, 'index.html'), 'utf8'))[1]);
+const report = { house, viewport: [960, 600, 1], renderer: 'Chromium / SwiftShader', errors: [], scenes: [] };
+const browser = await puppeteer.launch({
+  executablePath: process.env.CHROME || '/usr/bin/google-chrome', headless: true, timeout: 60000, protocolTimeout: 240000,
+  args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
+    '--ignore-gpu-blocklist', '--no-first-run', '--disable-background-networking', '--disable-sync']
+});
+try {
+  const page = await browser.newPage();
+  page.on('pageerror', e => report.errors.push(String(e)));
+  page.on('console', m => { if (m.type() === 'error' && !/404|favicon/.test(m.text())) report.errors.push(m.text()); });
+  await page.setViewport({ width: 960, height: 600, deviceScaleFactor: 1 });
+  await page.evaluateOnNewDocument((versions) => {
+    let seed = 123456789;
+    Math.random = () => { seed = (Math.imul(1664525, seed) + 1013904223) >>> 0; return seed / 4294967296; };
+    try { localStorage.setItem('tm1.news.seen', versions.rishon); localStorage.setItem('tm2.news.seen', versions.sheni); } catch (_) {}
+  }, { rishon: cfg.houses.rishon.version, sheni: cfg.houses.sheni.version });
+  const start = Date.now();
+  await page.goto(pathToFileURL(path.resolve(directory, house, 'index.html')).href, { waitUntil: 'domcontentloaded', timeout: 240000 });
+  await page.waitForFunction(() => document.documentElement.classList.contains('tm-ready'), { timeout: 240000, polling: 500 });
+  report.readyMs = Date.now() - start;
+  await page.evaluate(() => {
+    window.__renderer.setAnimationLoop(null);
+    window.__perfNow = performance.now.bind(performance);
+    window.__perfTime = 60000;
+    performance.now = () => window.__perfTime;
+    window.__ctx.controls.autoRotate = false;
+    for (const id of ['tm-news', 'tm-help']) document.getElementById(id)?.remove();
+  });
+  for (const view of ['overview', 'interior']) {
+    const scene = await page.evaluate((view) => {
+      const c = window.__ctx, r = window.__renderer, now = window.__perfNow;
+      if (view === 'interior') {
+        const p = c.shared.flyPoints.kodesh;
+        if (p) { c.camera.position.fromArray(p.pos); c.controls.target.fromArray(p.target); }
+      }
+      c.controls.update();
+      for (let i = 0; i < 5; i++) { c.scene.updateMatrixWorld(true); for (const fn of c.animated) fn(window.__perfTime); }
+      const hooks = c.animated.map((fn, i) => ({ i, source: fn.toString().slice(0, 100), ms: 0 }));
+      const samples = [];
+      for (let frame = 0; frame < 30; frame++) {
+        const start = now();
+        for (let i = 0; i < c.animated.length; i++) {
+          const t = now(); c.animated[i](window.__perfTime); hooks[i].ms += now() - t;
+        }
+        samples.push(now() - start);
+      }
+      c.scene.updateMatrixWorld(true);
+      r.render(c.scene, c.camera);
+      const geometries = new Set(), materials = new Set(), arrays = new Set();
+      let objects = 0, meshes = 0, vertices = 0;
+      c.scene.traverse(o => {
+        objects++;
+        if (o.isMesh) meshes++;
+        if (o.geometry) geometries.add(o.geometry);
+        for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m) materials.add(m);
+      });
+      for (const g of geometries) {
+        vertices += g.attributes.position?.count || 0;
+        for (const a of Object.values(g.attributes || {})) { const b = a.array || a.data?.array; if (b) arrays.add(b.buffer); }
+        if (g.index) arrays.add(g.index.array.buffer);
+      }
+      samples.sort((a, b) => a - b);
+      return { view, objects, meshes, geometries: geometries.size, materials: materials.size, vertices,
+        geometryBufferBytes: [...arrays].reduce((n, b) => n + b.byteLength, 0),
+        draw: { ...r.info.render }, gpuResources: { ...r.info.memory },
+        animatedCallbacks: c.animated.length, callbackMedianMs: samples[Math.floor(samples.length / 2)], callbackSamplesMs: samples,
+        topCallbacks: hooks.sort((a, b) => b.ms - a.ms).slice(0, 12),
+        camera: c.camera.position.toArray(), target: c.controls.target.toArray() };
+    }, view);
+    report.scenes.push(scene);
+    await page.screenshot({ path: path.join(output, `${house}-${view}.png`) });
+    console.log('[scene]', house, JSON.stringify(scene));
+  }
+  assert.equal(report.errors.length, 0, report.errors.join('\n'));
+} finally {
+  await browser.close();
+  fs.writeFileSync(path.join(output, `${house}.json`), JSON.stringify(report, null, 2));
+  console.log('[performance]', JSON.stringify(report));
+}
