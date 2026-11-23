@@ -1108,7 +1108,9 @@
       // 1.3.6 (the scan of 11.11.2026): that view was far and high, over the mechonot and their label, and the small ramps were two thin
       // strips. Now close: from the south-west and above, at the place where the western ramps meet the altar = [37.5, 22, 33] looking at
       // [46.6, 9, 25.5] (in pictures: Rashi - the one ramp at the foot; the Tosafot - the second above it, rising to the sovev)
-      ctx.shared.flyPoints.mizbeachRamps = { pos: [RX0 - 9.5, F + 16, ZS + 12], target: [RX0 - 0.4, F + 3, ZS + 4.5] };
+      // SCAN2_FIX (scan 2, item 7: the ramp's side filled the screen): farther and high, from the south-west, over the bases' block - the western small ramps whole, from
+      // the big ramp's third to the yesod and the sovev, between the card and the panel
+      ctx.shared.flyPoints.mizbeachRamps = { pos: [RX0 - 16, F + 36, ZS + 29], target: [RX0 - 3.67, F + 3.35, ZS + 7.98] };
       // the south-west corner from outside: the yesod's corner, the sovev, the red line, the western small ramps and the shitin
       // MIZBEACH_SW_S1 (scan 1, finding 19): higher, over the bases of the south row (two of their lavers hid a third of the old view, from
       // [SHX - 14, F + 10, SHZ + 15], and the labels crowded at its top): the corner, the yesod, the sovev and the red line, the shitin by them
