@@ -36,7 +36,7 @@
     SH.priestKit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, sph, at, rot, white, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, handWr, handAt, mHand, footGeo,
       WAIST, gRobeLow, gRobeUp, bZ, spl,
       mat, mRobe, mSkin, mHat, mSashDyed, mSashWhite, mBeards,
-      MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs, headBare };   // MIGBAAT_A2, TEFILLIN_A2; FACE_E: headBare
+      MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs, kidBody, headBare };   // HANDS_K: kidBody (KIDDUSH_CROUCH_K)   // MIGBAAT_A2, TEFILLIN_A2; FACE_E: headBare
     // HP_KIT_A2: the high priest in his eight and the priest in his four - one construction for both houses (shared/frag/hp-kit.js): the
     // morning service's high priest (55-tamid.js) and "בגדי הכהנים" (below); built when first asked
     //@@include hp-kit

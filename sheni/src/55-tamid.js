@@ -92,6 +92,7 @@
       duration: (i, o) => { const st = DATA.stages[TM.list(o)[i]]; return st ? st.dur : 0; },
       camAt: (i, sec, o) => { const ck = CAMK[TM.list(o)[i]]; return ck ? camKey(ck(o || TM.order), sec) : null; },   // (tests: the moving eye)
       figAt: (k) => (W && W.figs[k] ? Object.assign({}, W.figs[k].st) : null),   // (tests: where a figure stands)
+      figObj: (k) => (W && W.figs[k]) || null,   // HANDS_K (tests: the figure itself - its hands and feet at kiddush)
       qaClear: (e, t) => {   // TAMID_QA_207 (tests: is the line from the target to the eye free of the model's solids?)
         const o = new Vector3(t[0], t[1], t[2]), d = new Vector3(e[0] - t[0], e[1] - t[1], e[2] - t[2]), len = d.length();
         if (len < 1e-3) return null;
@@ -205,6 +206,19 @@
       dam: () => [[0, V3(52, 30, -40), V3(56, 17, -10)], [4, V3(86, 26, -36), V3(70, 18, -18)], [8, V3(86, 26, -36), V3(70, 18, -18)],
         [10.5, V3(30, 36, -32), V3(42, 18, 0)], [13, V3(26, 26, 30), V3(40, 18, 12)], [20, V3(26, 26, 30), V3(40, 18, 12)]]
     };
+    // KIDDUSH_VIEW_K (fix-k, 23.11.2026 - the user: "הזווית לא נכונה. אני רוצה שיראו איך הוא מקדש ממש"; the coordinator: from the side - the
+    // whole figure, the tap, and the right hand flat on the back of the right foot): while he sanctifies, the eye goes to his right side -
+    // out from the laver along the spout's way (he stands sideways to the spout, the laver at his left), a little before him, at his
+    // bowed back's height; and back after it. In "kiyor" (S2's moving eye, KIYOR_VIEW_S2, kept before and after) from 15.2 to 20.2; in
+    // "kiyor12" the priest at the west spout (s7), from 8.2 to 15.8. The distance and the height - model choices
+    const kidSide = (i, sec0, sec1, base) => {
+      const q = KID.flatSpot(i), fw = [Math.sin(q.yaw), Math.cos(q.yaw)], rt = [-Math.cos(q.yaw), Math.sin(q.yaw)], y0 = F;
+      const E = [q.p[0] + rt[0] * 5.6 + fw[0] * 0.7, y0 + 2.3, q.p[1] + rt[1] * 5.6 + fw[1] * 0.7], T = [q.p[0] + fw[0] * 0.3, y0 + 1.05, q.p[1] + fw[1] * 0.3];
+      const K0 = base || [[0, E, T]], at = (t) => { const v = camKey(K0, t); return [t, v[0], v[1]]; };
+      return K0.filter((k) => k[0] < sec0).concat([at(sec0), [sec0 + 0.8, E, T], [sec1 - 0.8, E, T], at(sec1)], K0.filter((k) => k[0] > sec1));
+    };
+    { const k0 = CAMK.kiyor; if (k0) CAMK.kiyor = (o) => kidSide(6, 15.2, 20.2, k0(o)); }
+    { const v12 = VIEW.kiyor12; CAMK.kiyor12 = () => { const v = v12(); return kidSide(6, 8.2, 15.8, [[0, v[0], v[1]], [30, v[0], v[1]]]); }; }
     const camKey = (K, sec) => {
       let j = 0;
       while (j < K.length - 1 && K[j + 1][0] <= sec) j++;
@@ -1894,9 +1908,16 @@
     // KIDDUSH_FLAT_A2: where he stands for the palms on the feet - sideways to the spout, the laver at his left: the stream comes out of
     // the spout and falls in an arc (KID.waterAt) past his left side, under his bowed body, onto the backs of his hands on his feet; his
     // hands' middle d amot out from the spout's mouth (until now he faced the laver - bowed so, his body was under the stream). Model choice
-    KID.flatSpot = (i, d = 0.9) => {
+    // SPOUT_211_K (fix-k, 23.11.2026 - decision 211: the mouths come down to 1.5 over the floor, 40-altar.js; the coordinator: "תתאים גם את
+    // מיקום הכהן כך שיעמוד מתחת לזרם"): the water leaves the low mouth level and falls KID_DX out onto his hands; it comes to him from his
+    // FRONT-LEFT (KID_PH from his face), not from his left: stooping as a man stoops (KIDDUSH_CROUCH_K) his shoulders and head are over his
+    // hands, and from the side or behind the jet passes through his left arm or the kutonet - measured over all sides and distances
+    // (both readings, "tk" and "ryose"): from 45 degrees and 2.0 out its axis keeps 0.059 / 0.051 from him (the stream's own half-breadth
+    // 0.03). Until now he stood sideways, the laver at his left, his hands 0.9 out. Model choice
+    const KID_PH = Math.PI / 4, KID_DX = 2.0;
+    KID.flatSpot = (i, d = KID_DX) => {
       const I = KIY(), o = I.spouts[i] || { a: -HP, p: [I.x, F, I.z - I.R] }, ua = [Math.sin(o.a), Math.cos(o.a)];
-      const rh = Math.hypot(o.p[0] - I.x, o.p[2] - I.z) + d, yaw = o.a + HP, fw = [Math.sin(yaw), Math.cos(yaw)], hz = (SH.priestKit && SH.priestKit.kidHZ) || 0.29;
+      const rh = Math.hypot(o.p[0] - I.x, o.p[2] - I.z) + d, yaw = o.a + Math.PI - KID_PH, fw = [Math.sin(yaw), Math.cos(yaw)], hz = (SH.priestKit && SH.priestKit.kidHZ) || 0.29;
       return { p: [I.x + ua[0] * rh - fw[0] * hz, I.z + ua[1] * rh - fw[1] * hz], yaw };
     };
     const WHEEL_SPOT = [15.15, 57.15];   // west of the drum's handles (40-altar.js: the post x 17.4, z 58.05; the handles at x 16.05)
@@ -2980,12 +3001,14 @@
           const md = TM.kidd === "ryose" && /^s\d+$/.test(f.id) ? "ryose" : "tk";
           const u = smooth(clamp(t / 0.8, 0, 1)), H = SH.priestKit.kidHands(f, setArm, md), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
           R = mix(POSES.stand[0], H.arm[-1]); Lv = mix(POSES.stand[1], H.arm[1]); lean = 0; bendA = H.th * u; kidU = u; kidH = H;
+          if (SH.priestKit.kidBody) { SH.priestKit.kidBody(f, H, u); headA = -H.lift * u; f.kBowed = true; }   // HANDS_K (KIDDUSH_CROUCH_K): the hips down and back, the kutonet over bent knees, the head up
         }
         else if (p === "kiddush" && f.bend && SH.priestKit && SH.priestKit.bZ) {   // KIDDUSH_BEND_212: upright legs, bent at the waist, the hands on the legs
           const u = smooth(clamp(t / 0.8, 0, 1)), H = kidReach(f), mix = (q, w) => [lerp(q[0], w[0], u), lerp(q[1], w[1], u), lerp(q[2], w[2], u)];
           R = mix(POSES.stand[0], H[-1]); Lv = mix(POSES.stand[1], H[1]); lean = 0.03 * u; bendA = KB * u;
         }
       }
+      if (f.kBowed && !kidH && SH.priestKit && SH.priestKit.kidBody) { SH.priestKit.kidBody(f, null, 0); f.kBowed = false; }   // HANDS_K: up again after kiddush
       setArm(f.R, R, -1);
       setArm(f.L, Lv, 1);
       // BIRKAT_HANDS_A2 (the user: "צריכים להושיט ידיים בדיוק כמו בחלמיש!" - B-07, B-25): in the blessing the arms go up straight before him,

@@ -1328,7 +1328,8 @@
     lbl("שער ניקנור", 100, 39.5, 0, 4);
     // 1.5.0: THE DOORS. The six north / south gates and the women's-court gate - gold leaves (Middot 2:3); Nikanor's - bronze that yellows
     // like gold (2:3 "מפני שנחשתן מצהיב"; Yoma 38a: Nikanor's doors, saved from the sea). The wickets of Nikanor: leaves too, smaller. The
-    // leaves stand ajar into the court (an angle - model choice), so the gate reads as a gate and the way through stays open.
+    // leaves stand ajar into the court (an angle - model choice), so the gate reads as a gate and the way through stays open (GATE_K: the
+    // women's-court gate's two leaves too, below - until now 0.3 off shut).
     for (const [, x] of gN) H2.doors(g, { axis: "x", cx: x, cz: -67.5, y: 13.5, width: 10, height: 20, inward: 1, mat: M2.gateGold, open: 1.1, inset: 2 });
     for (const [, x] of gS) H2.doors(g, { axis: "x", cx: x, cz: 67.5, y: 13.5, width: 10, height: 20, inward: -1, mat: M2.gateGold, open: 1.1, inset: 2 });
     // 1.9.5 (a remark sent on to the user, 11.11.2026: "לפי הדגם דלתות שער ניקנור סותמות את העזרה"): the two leaves stood open into the
@@ -1456,8 +1457,10 @@
     // 1.9.3: until now twelve more leaves stood here at x -40, 0 and 40 - where the court's gates were before 1.3.0 - buried in the
     // solid walls, and showed as ghost doors whenever a wall faded before the camera; they are gone. The four leaves of Josephus' side
     // gates of the women's court were in the walls too in Chazal's reading (the default): now they are in his layer (eznJ), below
-    leaf(228.5, 6, -5, -0.3);
-    leaf(228.5, 6, 5, Math.PI + 0.3);
+    // GATE_K (fix-k, 23.11.2026; the coordinator, after the ox's walk of the first fruits: the two leaves stood 0.3 off shut - a gap of 0.64
+    // amah between them, and every procession walked through them): open as the court's other gates (open 1.1), the way 5.6 amot wide
+    leaf(228.5, 6, -5, -1.1);
+    leaf(228.5, 6, 5, Math.PI + 1.1);
     const goldLeaves = new InstancedMesh(leafGeo, goldDoor, Lm.length);
     Lm.forEach((m, i) => goldLeaves.setMatrixAt(i, m));
     goldLeaves.instanceMatrix.needsUpdate = true;

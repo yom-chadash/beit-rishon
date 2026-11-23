@@ -2481,7 +2481,7 @@
     // היה נכנס בין האולם ולמזבח"; the Tosafot, the Ritva, the Meiri, the Ran, the Gra; Kelim 1:8-9); "all" - Israelites too (the Or Zarua,
     // part 2, 315 - 3930:3793 - in the name of the Yerushalmi). The figures go round the altar and its ramp, a branch in each hand, while the
     // demonstration is shown (a place's feature, untimed). No tefillin - Chol HaMoed (SH.tefOff). MODEL CHOICES: the willows' number and form,
-    // the way round (outside the ramp too), the walkers' number, pace and what they hold (a willow branch).
+    // the way round (outside the ramp too), the walkers' number and pace. FOUR_K: what they hold - the four species in netilah (below).
     {
       const AG = grp("aravahDemo", false);
       const altDz = () => { const AP = SH.altarPlace; return AP && AP.dz && typeof AP.dz[AP.current] === "number" ? AP.dz[AP.current] : 12.5; };
@@ -2562,10 +2562,28 @@
           const lulavG = new CylinderGeometry(0.018, 0.026, 1.9, 5).translate(0, 0.95, 0), etrogG = new SphereGeometry(0.1, 10, 8).scale(1, 1.35, 1);
           const lulavM = new MeshStandardMaterial({ color: 0x5f7a3a, roughness: 0.8 }), etrogM = new MeshStandardMaterial({ color: 0xd9c23a, roughness: 0.6 });
           const twig = new BoxGeometry(0.04, 0.3, 0.006);
+          // FOUR_K (fix-k, 23.11.2026 - the user via the coordinator: "הכהנים אמורים להקיף עם ארבעת המינים בנטילה, ולא סתם בסחיבה"): every
+          // walker - the priests, and the Israelites in the reading "all" - holds the four species in netilah all the way round: the lulav with
+          // its hadassim and aravot upright in his right hand, the etrog in his left, the two hands close before his chest (shared/frag/arm-k.js:
+          // the kit's arms and hand.js's hands, closed round the binding and round the etrog). Until now the priests carried a willow's branch
+          // aside in a hanging hand, and the Israelites' lulav and etrog stood by their sides, not in their hands
+          //@@include arm-k
+          // ARAVAH_209_K (the user's decision 209: "כהנים בערבה, ומתג ישראל — עם ד' מינים"): in the reading "priests" (o0) each priest holds a
+          // willow's branch upright in his right hand, in netilah and shaken (Rashi in the card: "ביד נוטלין אותה ומנענעים ומקיפין בה"); in the
+          // reading "all" (o1) every walker, priest and Israelite, the four species - the lulav in his right hand and the etrog in his left. Each
+          // priest holds both, one shown at a time (pose, below)
+          const AK = tm_armK(SH.priestKit), sleeveOf = {};
           const mk = (kind, robe, list, n, name, israel) => {
             for (let i = 0; i < n; i++) {
               const G = new Group(); G.visible = false; AG.add(G);
-              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: Array.isArray(robe) ? robe[i % robe.length] : robe, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name });
+              const rc = Array.isArray(robe) ? robe[i % robe.length] : robe;
+              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: rc, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name, arms: AK ? false : undefined });
+              if (AK) {
+                const sm3 = sleeveOf[rc] || (sleeveOf[rc] = new MeshStandardMaterial({ color: rc, vertexColors: true, roughness: 0.9 }));
+                if (israel) G.userData.hold = AK.four(G, sm3);
+                else { const hs = G.userData.holds = { aravah: AK.branch(G, sm3), four: AK.four(G, sm3) }; for (const o of hs.four.parts) o.visible = false; G.userData.hold = hs.aravah; G.userData.holdK = "aravah"; }   // ARAVAH_209_K
+                list.push(G); continue;
+              }
               if (israel) {
                 const l = new Mesh(lulavG, lulavM); l.position.set(-0.36, 1.15, 0.3); l.rotation.x = 0.12; G.add(l);
                 const e = new Mesh(etrogG, etrogM); e.position.set(0.36, 1.3, 0.32); G.add(e);
@@ -2578,7 +2596,7 @@
           };
           mk("kohen", 0xf1ede2, AR.walkers.priests, 14, "aravahPriest", false);
           mk("worker", [0x6b5a3e, 0x4a4f5a, 0x5c4a3a, 0x3e4a5e, 0x7a6a50], AR.walkers.all, 18, "aravahIsraelite", true);
-        } catch (_) {}
+        } catch (e) { console.warn("[aravah] walkers", e && e.message); }   // FOUR_K: said, not swallowed
       };
       // the labels are pushed at once (the labels' layer is drawn once, at the start), and follow the altar's place
       for (const [text, x, y, z, size] of [
@@ -2624,6 +2642,9 @@
         list.forEach((G, i) => {
           const [x, z, yaw] = at(-t * sp + i * gap);
           G.position.set(x, F + Math.abs(Math.sin(t * 4.2 + i * 1.3)) * 0.05, z); G.rotation.y = yaw; G.visible = true;
+          { const hs = G.userData.holds, want = AR.circuit === "all" ? "four" : "aravah";   // ARAVAH_209_K: the priest's - by the reading
+            if (hs && G.userData.holdK !== want) { for (const o of hs[G.userData.holdK].parts) o.visible = false; for (const o of hs[want].parts) o.visible = true; G.userData.hold = hs[want]; G.userData.holdK = want; } }
+          if (G.userData.hold && G.userData.hold.tick) G.userData.hold.tick(t + i * 0.37);   // FOUR_K: the willow shaken
         });
       };
       const sync = () => {
@@ -2972,17 +2993,450 @@
           [[[240, 2], [229, 1], [200, 1], [106, 1]], T.ezn0, T.ezn1, "floor", -Math.PI / 2],
           [[[106, 1], [97.5, 1]], T.ezn1, T.steps1, "floor"],
           [[[97.5, 1], [89.5, 4]], T.steps1, T.nik, "floor", -Math.PI / 2],
-          [[[89.5, 4], [88, 18], [80, 42], A(68, 43.8), A(44.2, 43.8), A(38, 40), A(38, 16.2), A(38.3, 15.0)], T.walk0, T.corner, "floor", 2.62],
-          [[A(38.3, 15.0), A(37.8, 17), A(38, 40), A(44, 46)], T.bow1 + 0.2, T.end, "floor"]
+          // WAY_K (fix-k, 23.11.2026 - the coordinator, after agent G's finding): round the ramp's foot in the clear lane between it (its end at
+          // z 38.5 in the altar's frame) and the stands south of it (from z 42) - z 40.25; until now at 43.8, through the stands
+          [[[89.5, 4], [88, 18], [80, 42], A(68, 40.25), A(44.2, 40.25), A(38, 39.5), A(38, 16.2), A(38.3, 15.0)], T.walk0, T.corner, "floor", 2.62],
+          [[A(38.3, 15.0), A(37.8, 17), A(38, 39.5), A(50, 40.3)], T.bow1 + 0.2, T.end, "floor"]
         ]; };
       const hCache = new Map();
-      const hAt = (x, z, near) => { const k = Math.round(x * 2) + "," + Math.round(z * 2); let y = hCache.get(k); if (y === undefined) { y = groundAt(x, z, near, LV.KOH); hCache.set(k, y); } return y; };
+      // OX_K: the ray from 21 amot at most (over every floor of the way: 16 in the priests' court), not from 30 - from 30 the walkers in the
+      // Nikanor gate stood on the gate's roof (23.6)
+      const hAt = (x, z, near) => { const k = Math.round(x * 2) + "," + Math.round(z * 2); let y = hCache.get(k); if (y === undefined) { y = groundAt(x, z, Math.min(near, 21), LV.KOH); hCache.set(k, y); } return y; };
       // OX_IN_B2 (the user's decision 178: "הוא חוזר להקרבה" - the ox goes in with them to the court, a peace offering, and stands at the
       // place of slaughter; the Rambam, Bikkurim 3:12: "וכשם שטעונין תנופה כך טעונין קרבן שלמים"): from the Nikanor gate north-west, north of
       // the altar, to beside the rings (40-altar.js: the label at x 52, z -27); peace offerings are slaughtered anywhere in the court - the spot
       // a model choice
       const OXW = () => [[[89.5, 4], [84, 1], [78, -8], [66, -19]], T.nik - 0.6, T.nik + 3.8, "floor"];
       const prime = () => { const was = BG.visible; BG.visible = false; for (const [P, , , kind] of SW().concat([OXW()])) if (kind === "floor") { const L = plen2(P); for (let d = 0; d <= L; d += 0.5) { const q = at2(P, d / Math.max(L, 1e-3)); hAt(q[0], q[1], 30); } } BG.visible = was; };
+      // ===== OX_K (fix-k, 23.11.2026 - the user, via the coordinator: "שור עם ראש מורם" - "שילך עם ראש ישר או מעט מושפל"; "קפיצות של השור
+      // בעזרה" - "הליכה רציפה במסלול חלק, בלי קפיצה בין פריים לפריים ובלי חדירה לקירות או לאנשים"): THE OX, BUILT AGAIN, AND ITS WAY.
+      // Bikkurim 3:3 (50:28): "והשור הולך לפניהם, וקרניו מצופות זהב, ועטרת של זית בראשו". Its body one soft shape (the back's line and the
+      // withers, the belly, the flanks), the neck forward and a little down (about ten degrees under the level), the face down toward the
+      // muzzle (as an ox carries its head walking), ears, eyes, the dewlap, the tail; the legs of two bones and a hoof, each hoof set on the
+      // floor under it (on the steps each on its own step), the body pitched with the steps (the head kept nearer the level); a walk of four
+      // beats (hind, fore, hind, fore). ITS WAY: up the ramp before them and in through the gate (as until now); unseen across the mount; from
+      // the gate of the women's court one smooth way (its corners rounded) up the twelve steps, across the court, up the fifteen steps,
+      // through the Nikanor gate and on to its place by the rings, never stopping on the way - at a pace that never leaps (slower on the steps),
+      // always before the people. Until now: balls for a body and a level head, sticks for legs and the hooves apart from them; its height the
+      // floor's under its middle (it leapt up each step, and in the Nikanor gate onto the gate's roof), its turn snapping, a hop in each stride.
+      // Its measures, form and pace - model choices.
+      const spl1 = (tab, x) => {   // a smooth line through [x, y] (Catmull-Rom)
+        let i = 0; while (i < tab.length - 2 && x > tab[i + 1][0]) i++;
+        const p0 = tab[Math.max(0, i - 1)], p1 = tab[i], p2 = tab[i + 1], p3 = tab[Math.min(tab.length - 1, i + 2)];
+        const dd = p2[0] - p1[0], u = clamp2((x - p1[0]) / dd, 0, 1), m1 = (p2[1] - p0[1]) / (p2[0] - p0[0]) * dd, m2 = (p3[1] - p1[1]) / (p3[0] - p1[0]) * dd, u2 = u * u, u3 = u2 * u;
+        return (2 * u3 - 3 * u2 + 1) * p1[1] + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2[1] + (u3 - u2) * m2;
+      };
+      const seamless = (g) => {   // one normal where the sphere's seam and poles put several vertices on one point
+        const p = g.attributes.position, n = g.attributes.normal, m = new Map();
+        for (let i = 0; i < p.count; i++) { const k = Math.round(p.getX(i) * 1e4) + "," + Math.round(p.getY(i) * 1e4) + "," + Math.round(p.getZ(i) * 1e4); if (!m.has(k)) m.set(k, []); m.get(k).push(i); }
+        for (const L of m.values()) if (L.length > 1) { let x = 0, y = 0, z = 0; for (const i of L) { x += n.getX(i); y += n.getY(i); z += n.getZ(i); } const l = Math.hypot(x, y, z) || 1; for (const i of L) n.setXYZ(i, x / l, y / l, z / l); }
+        return g;
+      };
+      // a soft body from A to B: across it rv (toward `up`) and rw (sideways), each from its A end to its B end; pw < 1 - fuller to its ends
+      const blob = (A, B, rv0, rv1, rw0, rw1, up, pw, ws, hs, ease) => {   // (ease > 1: full for longer, narrowing late)
+        const g = new SphereGeometry(1, ws || 22, hs || 14), p = g.attributes.position, ax = B.clone().sub(A), len = ax.length(); ax.multiplyScalar(1 / len);
+        const w = new Vector3().crossVectors(up, ax).normalize(), v = new Vector3().crossVectors(ax, w).normalize(), P = new Vector3();
+        for (let i = 0; i < p.count; i++) {
+          const x = p.getX(i), y = p.getY(i), z = p.getZ(i), r = Math.sqrt(Math.max(0, 1 - y * y)), f = r > 1e-6 ? Math.pow(r, pw) / r : 0, t = (1 - y) / 2;
+          const te = ease ? Math.pow(t, ease) : t;
+          P.copy(A).addScaledVector(ax, t * len).addScaledVector(w, x * f * (rw0 + (rw1 - rw0) * te)).addScaledVector(v, z * f * (rv0 + (rv1 - rv0) * te));
+          p.setXYZ(i, P.x, P.y, P.z);
+        }
+        g.computeVertexNormals(); return seamless(g);
+      };
+      const taper = (pts, r0, r1, segs) => {   // a tube along pts narrowing from r0 to r1
+        const curve = new CatmullRomCurve3(pts), tube = new TubeGeometry(curve, segs, 1, 8, false), pos = tube.attributes.position;
+        for (let i = 0; i < pos.count; i++) { const u = Math.floor(i / 9) / segs, c = curve.getPointAt(Math.min(1, u)), r = r0 + (r1 - r0) * u; pos.setXYZ(i, c.x + (pos.getX(i) - c.x) * r, c.y + (pos.getY(i) - c.y) * r, c.z + (pos.getZ(i) - c.z) * r); }
+        tube.computeVertexNormals(); return tube;
+      };
+      const V3k = (x, y, z) => new Vector3(x, y, z), UPk = V3k(0, 1, 0);
+      // the legs: [x (+ his left), the hip's height, z, the upper bone, the lower (to the fetlock), the knee's way (+1 forward: the fore; -1 back:
+      // the hind's hock), the step's phase, the upper's radii]
+      const OXLEG = [[0.3, 1.74, 1.0, 0.9, 0.8, 1, 0.25, 0.3], [-0.3, 1.74, 1.0, 0.9, 0.8, 1, 0.75, 0.3], [0.3, 1.86, -1.15, 1.0, 0.83, -1, 0.0, 0.38], [-0.3, 1.86, -1.15, 1.0, 0.83, -1, 0.5, 0.38]];
+      const OXG = { HOOF: 0.13, STR: 1.1, LIFT: 0.22, DUTY: 0.55, STRIDE: 1.6, FMAX: 2.0, NECK: V3k(0, 2.05, 1.2) };
+      const oxBuild = () => {
+        const G = new Group(), P = new Group(), HG = new Group(); G.add(P); P.add(HG); BG.add(G); G.visible = false; G.name = "bikkurimOx";
+        HG.position.copy(OXG.NECK);
+        const hide = new MeshStandardMaterial({ color: 0x74482a, roughness: 0.85 }), dark = new MeshStandardMaterial({ color: 0x2c1c12, roughness: 0.9 });
+        const gold = new MeshStandardMaterial({ color: 0xd8b04a, metalness: 0.9, roughness: 0.25 }), olive = new MeshStandardMaterial({ color: 0x5f7a3a, roughness: 0.7 });
+        const add = (par, geo, m, at) => { const o = new Mesh(geo, m); if (at) o.position.copy(at); o.castShadow = true; o.userData.noPick = true; par.add(o); return o; };
+        const H = (v) => v.clone().sub(OXG.NECK);   // a point of the head's group (its pivot the neck's root)
+        // the body: across, at each z - the back's height, the belly's, the half breadth
+        { const TOP = [[-1.75, 2.12], [-1.45, 2.38], [-0.9, 2.44], [0, 2.42], [0.6, 2.48], [1.0, 2.6], [1.35, 2.5], [1.65, 2.2]];
+          const BOT = [[-1.75, 1.95], [-1.45, 1.58], [-0.9, 1.32], [0, 1.2], [0.8, 1.14], [1.25, 1.26], [1.65, 1.66]];
+          const WID = [[-1.75, 0.3], [-1.35, 0.5], [-0.6, 0.6], [0, 0.63], [0.7, 0.57], [1.2, 0.5], [1.65, 0.36]];
+          const g = new SphereGeometry(1, 36, 24), p = g.attributes.position;
+          for (let i = 0; i < p.count; i++) {
+            const x = p.getX(i), y = p.getY(i), z = p.getZ(i), r = Math.sqrt(Math.max(0, 1 - y * y)), f = r > 1e-6 ? Math.pow(r, 0.62) / r : 0, Z = -0.05 + y * 1.7, tp = spl1(TOP, Z), bt = spl1(BOT, Z);
+            p.setXYZ(i, -x * f * spl1(WID, Z), (tp + bt) / 2 + z * f * (tp - bt) / 2, Z);
+          }
+          g.computeVertexNormals(); add(P, seamless(g), hide); }
+        // the neck (forward and down 8 degrees), the dewlap under it, the head (its face 59 degrees down, the muzzle at its end)
+        add(HG, blob(H(V3k(0, 2.05, 1.2)), H(V3k(0, 1.95, 2.12)), 0.45, 0.3, 0.33, 0.24, UPk, 0.75), hide);
+        add(HG, blob(H(V3k(0, 1.55, 1.3)), H(V3k(0, 1.64, 2.05)), 0.27, 0.13, 0.08, 0.07, UPk, 0.7), hide);
+        const HA = V3k(0, 2.12, 2.0), HB = V3k(0, 1.42, 2.42), hax = HB.clone().sub(HA).normalize();
+        add(HG, blob(H(HA), H(HB), 0.25, 0.16, 0.25, 0.17, UPk, 0.65), hide);
+        add(HG, new SphereGeometry(1, 16, 12).scale(0.17, 0.14, 0.15), dark, H(V3k(0, 1.41, 2.45)));
+        for (const sd of [1, -1]) {
+          add(HG, new SphereGeometry(0.04, 10, 8), dark, H(V3k(sd * 0.215, 1.94, 2.17)));                     // the eyes
+          const ear = add(HG, new SphereGeometry(1, 12, 8).scale(0.16, 0.05, 0.085), hide, H(V3k(sd * 0.32, 2.03, 2.05))); ear.rotation.z = -sd * 0.35;
+          const horn = add(HG, taper([V3k(0, 0, 0), V3k(0.2, 0.06, 0.02), V3k(0.33, 0.22, 0.07), V3k(0.36, 0.42, 0.14)], 0.055, 0.02, 14), gold, H(V3k(sd * 0.15, 2.16, 2.0)));
+          horn.scale.set(sd, 1, 1);
+        }
+        // the wreath of olive round the head at the horns' roots ("ועטרת של זית בראשו")
+        { const C = H(V3k(0, 2.07, 2.03)), q = new Quaternion().setFromUnitVectors(V3k(0, 0, 1), hax), w = V3k(1, 0, 0).applyQuaternion(q), v2 = V3k(0, 1, 0).applyQuaternion(q);
+          const wr = add(HG, new TorusGeometry(0.245, 0.04, 8, 28), olive, C); wr.quaternion.copy(q);
+          const lg = new SphereGeometry(1, 8, 5).scale(0.03, 0.06, 0.11);
+          for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, lf = add(HG, lg, olive, C.clone().addScaledVector(w, Math.cos(a) * 0.255).addScaledVector(v2, Math.sin(a) * 0.255)); lf.quaternion.copy(q); lf.rotateZ(a); lf.rotateX(0.5); } }
+        // the tail
+        const TL = new Group(); TL.position.set(0, 2.32, -1.68); P.add(TL);
+        add(TL, taper([V3k(0, 0, 0), V3k(0, -0.12, -0.18), V3k(0, -0.62, -0.22), V3k(0, -1.22, -0.18)], 0.045, 0.025, 12), hide);
+        add(TL, new SphereGeometry(1, 10, 8).scale(0.07, 0.16, 0.07), dark, V3k(0, -1.3, -0.18));
+        // the legs: the upper bone, the knee, the lower to the fetlock, the hoof (stands on the floor)
+        const legs = OXLEG.map(([x, hy, z, a, b, , , ru]) => {
+          // (the upper bone thick with its muscle, narrowing to the knee; the knee as broad as the bones on both sides of it - no ball)
+          const up = add(P, blob(V3k(0, 0.22, 0), V3k(0, -a - 0.05, 0), ru, 0.1, ru * 0.7, 0.092, V3k(0, 0, 1), 0.5, 18, 14, 2.4), hide);
+          const kn = add(P, new SphereGeometry(1, 14, 10).scale(0.098, 0.1, 0.108), hide);
+          const lo = add(P, blob(V3k(0, 0.06, 0), V3k(0, -b - 0.02, 0), 0.094, 0.075, 0.086, 0.07, V3k(0, 0, 1), 0.6, 14, 10), hide);
+          const hf = add(P, new CylinderGeometry(0.075, 0.098, OXG.HOOF + 0.01, 12).translate(0, (OXG.HOOF + 0.01) / 2, 0), dark);
+          return { x, hy, z, a, b, up, kn, lo, hf, hip: V3k(x, hy, z), K: new Vector3(), F: new Vector3(), short: 0, gy: 0, lift: 0, foot: new Vector3() };
+        });
+        return { G, P, HG, TL, legs, visible: false };
+      };
+      // ---- its way: A - up the ramp before them (straight, x -0.4; two and a half seconds before them), in through the gate, hidden at z 329;
+      // C - from then, one smooth way from the women's court's gate to its place, through the middle of the duchan's opening (the Levites
+      // stand at its two sides); its pace by the floor. The floor along each way: every amah, and where it changes every fifth of one; each
+      // step's edge found to a hundredth (four halvings); between them a straight line (the ramp)
+      const OXA = { x: -0.4, z0: 357.8, v: 5.58, zh: 329, zs: 366 };
+      const OXC = { pts: [[226, 1], [200, 1], [118.5, 1], [106, 1], [97.5, 1], [91, 0.6], [86, 0.3], [81.5, 0.2], [77, -4], [72, -11], [66, -19]] };
+      const oxGround = (x, z) => { const y = fnc2(SH.floorY) ? SH.floorY(x, 20.5, z) : -Infinity; return isFinite(y) ? y : hAt(x, z, 21); };
+      const oxProf = (Pf, L) => {
+        const N = Math.ceil(L), H1 = [], K2 = [];
+        for (let i = 0; i <= N; i++) { const [x, z] = Pf(Math.min(L, i)); H1.push(oxGround(x, z)); }
+        for (let i = 0; i < N; i++) {
+          const a = i, b2 = Math.min(L, i + 1);
+          K2.push([a, H1[i]]);
+          if (Math.abs(H1[i + 1] - H1[i]) < 0.03) continue;
+          let sP = a, hP = H1[i];
+          for (let j = 1; j <= 5; j++) {
+            const s0 = Math.min(b2, a + j * 0.2), [x, z] = Pf(s0), h = j === 5 ? H1[i + 1] : oxGround(x, z);
+            if (Math.abs(h - hP) > 0.3) { let lo = sP, hi = s0; for (let k = 0; k < 4; k++) { const m = (lo + hi) / 2, [mx, mz] = Pf(m), hm = oxGround(mx, mz); if (Math.abs(hm - hP) < Math.abs(hm - h)) lo = m; else hi = m; } const e = (lo + hi) / 2; K2.push([e - 1e-4, hP], [e + 1e-4, h]); }
+            else if (j < 5) K2.push([s0, h]);
+            sP = s0; hP = h;
+          }
+        }
+        K2.push([L, H1[N]]);
+        const hAtS = (s0) => { if (s0 <= K2[0][0]) return K2[0][1]; if (s0 >= K2[K2.length - 1][0]) return K2[K2.length - 1][1]; let a = 0, b2 = K2.length - 1; while (b2 - a > 1) { const m = (a + b2) >> 1; if (K2[m][0] <= s0) a = m; else b2 = m; } const [s1, h1] = K2[a], [s2, h2] = K2[b2]; return h1 + (h2 - h1) * (s0 - s1) / Math.max(1e-9, s2 - s1); };
+        const ds = 0.05, n = Math.ceil(L / ds), cum = new Float64Array(n + 1);
+        for (let i = 1; i <= n; i++) cum[i] = cum[i - 1] + hAtS((i - 0.5) * ds) * ds;
+        const C = (s0) => { if (s0 <= 0) return hAtS(0) * s0; if (s0 >= n * ds) return cum[n] + hAtS(L) * (s0 - n * ds); const i = Math.floor(s0 / ds), f = s0 / ds - i; return cum[i] + (cum[i + 1] - cum[i]) * f; };
+        const edges = []; for (let i = 1; i < K2.length; i++) if (K2[i][0] - K2[i - 1][0] < 3e-4 && Math.abs(K2[i][1] - K2[i - 1][1]) > 0.2) edges.push((K2[i][0] + K2[i - 1][0]) / 2);
+        // a hoof is not set within 0.12 of a step's edge: the shift that keeps it off (to the side it is on)
+        const off = (s0) => { for (const e of edges) { const d = s0 - e; if (Math.abs(d) < 0.12) return (d >= 0 ? 0.12 : -0.12) - d; } return 0; };
+        return { hAtS, gS: (s0) => (C(s0 + 0.7) - C(s0 - 0.7)) / 1.4, knots: K2, edges, off };
+      };
+      const oxTables = () => {
+        if (OXC.tab) return OXC.tab;
+        const was = BG.visible; BG.visible = false;
+        // A: s from z 366 along -z
+        const LA = OXA.zs - OXA.zh + 3, PA = oxProf((s0) => [OXA.x, OXA.zs - s0], LA);
+        // C: the smooth way
+        const curve = new CatmullRomCurve3(OXC.pts.map(([x, z]) => new Vector3(x, 0, z)), false, "centripetal"), L = curve.getLength(), ds = 0.1, n = Math.ceil(L / ds);
+        const X = new Float64Array(n + 1), Z = new Float64Array(n + 1);
+        curve.getSpacedPoints(n).forEach((q, i) => { X[i] = q.x; Z[i] = q.z; });
+        const PtC = (s0) => { const f = clamp2(s0 / ds, 0, n), i = Math.min(n - 1, Math.floor(f)), u = f - i; return [X[i] + (X[i + 1] - X[i]) * u, Z[i] + (Z[i + 1] - Z[i]) * u]; };
+        const PC = oxProf(PtC, L);
+        BG.visible = was;
+        // the pace: on the flat of the women's court 22 amot a second (the demonstration's own hurried pace: the people go at 29), on every
+        // flight of steps 4.5 (a hoof on each step, not sliding), from the fifteen steps through the Nikanor gate to the duchan 15, in the
+        // priests' court 7, slowing to its place; never faster or slower by more than 30 amot a second in each second (no leap in the pace)
+        const vRaw = new Float64Array(n + 1);
+        let top15 = -1;
+        for (const e of PC.edges) if (PC.hAtS(e + 0.01) > 13.2 && PC.hAtS(e + 0.01) < 13.8 && top15 < 0) top15 = e;
+        if (top15 < 0) top15 = L - 60;
+        for (let i = 0; i <= n; i++) {
+          const s0 = i * ds;
+          let v = s0 < top15 ? 22 : X[i] > 84 ? 15 : 7, stp = false;
+          for (const e of PC.edges) if (Math.abs(e - s0) < 1.2) stp = true;
+          if (stp) v = 4.5;
+          if (s0 < 0.01) v = 6;
+          if (L - s0 < 0.01) v = 0;
+          vRaw[i] = v;
+        }
+        const V = Float64Array.from(vRaw), A2 = 2 * 30 * ds;
+        for (let i = 1; i <= n; i++) V[i] = Math.min(V[i], Math.sqrt(V[i - 1] * V[i - 1] + A2));
+        for (let i = n - 1; i >= 0; i--) V[i] = Math.min(V[i], Math.sqrt(V[i + 1] * V[i + 1] + A2));
+        for (let i = 0; i <= n; i++) V[i] = Math.max(V[i], 0.25);
+        const tA = (OXA.z0 - OXA.zh) / OXA.v, Tm = new Float64Array(n + 1); Tm[0] = tA + 0.08; for (let i = 1; i <= n; i++) Tm[i] = Tm[i - 1] + ds * 2 / (V[i] + V[i - 1]);
+        // the step's phase through the whole demonstration (dφ/dt - the pace over the stride, at most FMAX) and its breadth (eased)
+        const PH = [], AMP = [], STRd = [], dt = 1 / 120;
+        let ph = 0, amp = 1;   // (it is walking already at the start)
+        const vAt = (t) => { if (t < tA) return OXA.v; if (t < Tm[0] || t >= Tm[n]) return 0; let a = 0, b2 = n; while (b2 - a > 1) { const m = (a + b2) >> 1; if (Tm[m] <= t) a = m; else b2 = m; } return V[a]; };
+        // (the step's breadth: so that a hoof on the floor stays where it came down - the pace times the time on the floor - at most 0.9 on
+        // the flat and 0.6 on steps of 45 degrees; on a slope shorter and quicker steps - up to 4 a second on the steps)
+        const slAt = (t) => { let P2 = PA, s0; if (t < tA) s0 = OXA.zs - (OXA.z0 - OXA.v * t); else if (t < Tm[0]) return 0; else { P2 = PC; let a = 0, b2 = n; if (t >= Tm[n]) a = n; else while (b2 - a > 1) { const m = (a + b2) >> 1; if (Tm[m] <= t) a = m; else b2 = m; } s0 = a * ds; } return Math.abs(Math.sin(Math.atan2(P2.gS(s0 + 1.0) - P2.gS(s0 - 1.15), 2.15))) / 0.7071; };
+        for (let t = 0; t <= 80; t += dt) { const v = vAt(t), sl = Math.min(1, slAt(t)), f = Math.min(v / OXG.STRIDE, OXG.FMAX + 2 * sl); PH.push(ph); AMP.push(amp); STRd.push(amp * clamp2(f > 1e-3 ? v * OXG.DUTY / f : OXG.STR, 0, 0.9 - 0.3 * sl)); ph += f * dt; amp += clamp2(clamp2(v / 1.2, 0, 1) - amp, -dt / 0.6, dt / 0.6); }
+        return (OXC.tab = { curve, L, n, ds, X, Z, V, Tm, PA, PC, PH, AMP, STRd, vAt, tA, top15 });
+      };
+      const fnc2 = (f) => typeof f === "function";
+      const _ox = { q: new Quaternion(), q2: new Quaternion(), v: new Vector3(), v2: new Vector3(), m: new Matrix4(), Y: new Vector3(0, 1, 0), D: new Vector3(0, -1, 0) };
+      // the ox's state at t: its way (A, C or hidden), how far along it (s), how fast; each way's point and heading at s
+      const oxWay = (tb, w) => w === "A" ? { P: tb.PA, pt: (s0) => [OXA.x, OXA.zs - s0], yaw: () => Math.PI }
+        : { P: tb.PC, pt: (s0) => { const f = s0 / tb.ds, i = Math.max(0, Math.min(tb.n - 1, Math.floor(f))), u = f - i; return [tb.X[i] + (tb.X[i + 1] - tb.X[i]) * u, tb.Z[i] + (tb.Z[i + 1] - tb.Z[i]) * u]; },   // (beyond its ends - straight on)
+          yaw: (s0) => { const a = Math.max(0, Math.min(tb.n - 8, Math.round(s0 / tb.ds) - 4)); return Math.atan2(tb.X[a + 8] - tb.X[a], tb.Z[a + 8] - tb.Z[a]); } };
+      const oxS = (t) => {
+        const tb = oxTables();
+        if (t < tb.tA) return { w: "A", s: OXA.zs - (OXA.z0 - OXA.v * Math.max(0, t)), v: OXA.v };
+        if (t < tb.Tm[0]) return { w: null };
+        let a = 0, b2 = tb.n; const n = tb.n;
+        if (t >= tb.Tm[n]) return { w: "C", s: n * tb.ds, v: 0 };
+        while (b2 - a > 1) { const m = (a + b2) >> 1; if (tb.Tm[m] <= t) a = m; else b2 = m; }
+        const f = clamp2((t - tb.Tm[a]) / (tb.Tm[a + 1] - tb.Tm[a]), 0, 1);
+        return { w: "C", s: (a + f) * tb.ds, v: tb.V[a] + (tb.V[a + 1] - tb.V[a]) * f };
+      };
+      const phInv = (tb, val) => { const P = tb.PH; let a = 0, b2 = P.length - 1; if (val <= P[0]) return 0; if (val >= P[b2]) return b2 / 120; while (b2 - a > 1) { const m = (a + b2) >> 1; if (P[m] < val) a = m; else b2 = m; } return (a + clamp2((val - P[a]) / Math.max(1e-9, P[b2] - P[a]), 0, 1)) / 120; };
+      const oxPose = (o, t) => {
+        const tb = oxTables(), S2 = oxS(t);
+        o.G.visible = !!S2.w && t < T.end + 5; o.visible = o.G.visible;
+        if (!o.G.visible) return;
+        const W2 = oxWay(tb, S2.w), Pr = W2.P, [cx, cz] = W2.pt(S2.s), yaw = W2.yaw(S2.s);
+        const ti = Math.min(tb.PH.length - 1, Math.max(0, Math.floor(t * 120))), ph = tb.PH[ti] || 0, k = tb.AMP[ti] || 0;
+        // the body: on the floor averaged under its fore and hind hooves, pitched with it, and as much lower as the slope asks (its legs stay
+        // upright: on a slope the hips stand higher over the floor by 1/cos - so the body comes down by that, and by half the step's rise and
+        // a little for the steps' noses, so the hind hoof reaches back down the slope); each hoof's place under its hip
+        const gF = Pr.gS(S2.s + 1.0), gH = Pr.gS(S2.s - 1.15), th = Math.atan2(gF - gH, 2.15), cT = Math.cos(th), sT = Math.sin(th), A0 = tb.STRd[Math.min(tb.STRd.length - 1, Math.max(0, Math.floor(t * 120)))] || 0;
+        const sl3 = (d2) => Math.atan(Math.abs(Pr.gS(S2.s + d2 + 0.3) - Pr.gS(S2.s + d2 - 0.3)) / 0.6), thd = Math.max(Math.abs(th), sl3(-1.15), sl3(1.0)), cD = Math.cos(thd), sD = Math.sin(thd);
+        let yC = (gF * 1.15 + gH * 1.0) / 2.15 - 1.8 * (1 / cD - 1) - 0.5 * A0 * sD / cD - 0.25 * sD / 0.7071;
+        yC += (1 - k) * 0.075;   // (standing, its legs almost straight)
+        // but never so low that its belly, chest or rump comes within a tenth of an amah of the floor under it (the steps' foot and top)
+        for (const [by, bz] of [[1.25, -0.8], [1.2, 0], [1.18, 0.8], [1.3, 1.3], [1.95, -1.75], [1.6, -1.5]]) {
+          const yy = yC + by * cT + bz * sT, aa = S2.s + bz * cT - by * sT; let fl2 = -1e9; for (let q = -0.2; q <= 0.2; q += 0.1) fl2 = Math.max(fl2, Pr.hAtS(aa + q));
+          if (yy < fl2 + 0.1) yC += fl2 + 0.1 - yy;
+        }
+        o.G.position.set(cx, yC, cz); o.G.rotation.set(0, yaw, 0); o.P.rotation.x = -th; o.HG.rotation.x = th - Math.max(0.85 * th, 0.55 * Math.atan2(Pr.gS(S2.s + 3.0) - Pr.gS(S2.s + 0.5), 2.5), 0);   // (the head level on the flat; on a slope raised with the body, all but a little - the body comes down to the slope, and the muzzle must be clear of the steps before it; before a slope raised by half of it)
+        o.TL.rotation.z = 0.12 * Math.sin(t * 2.3); o.TL.rotation.x = 0.1 * k;
+        o.G.updateMatrixWorld(true);
+        // and higher yet if its muzzle would come within a quarter amah of the floor before it (the steps' foot)
+        for (let it = 0; it < 16; it++) {
+          const mz = o.HG.localToWorld(_ox.v.set(0, 1.41 - 2.05 - 0.16, 2.45 - 1.2)), dz2 = (mz.x - cx) * Math.sin(yaw) + (mz.z - cz) * Math.cos(yaw);
+          let fl2 = -1e9; for (let q = -0.3; q <= 0.45; q += 0.15) fl2 = Math.max(fl2, Pr.hAtS(S2.s + dz2 + q));
+          if (mz.y >= fl2 + 0.22) break;
+          o.HG.rotation.x -= 0.05; o.HG.updateMatrixWorld(true);
+        }
+        const qInv = _ox.q.copy(o.P.getWorldQuaternion(_ox.q2)).invert();
+        // a hoof's place along the way at a time in its own step (the step's breadth there), kept off the steps' edges: on the floor where it
+        // came down (its height the floor's there); in the air from where it rose to where it comes down, over the edge between them
+        const At = (tt) => tb.STRd[Math.min(tb.STRd.length - 1, Math.max(0, Math.floor(tt * 120)))] || 0;
+        const dlOf = (u0) => u0 < OXG.DUTY ? 0.5 - u0 / OXG.DUTY : -0.5 + sm2((u0 - OXG.DUTY) / (1 - OXG.DUTY));
+        const at3 = (L, ph3, end) => { const tl = phInv(tb, ph3), S3 = oxS(tl); if (S3.w !== S2.w) return null; const th3 = Math.atan2(Pr.gS(S3.s + 1.0) - Pr.gS(S3.s - 1.15), 2.15), raw = S3.s + L.z * Math.cos(th3) - L.hy * Math.sin(th3) + (end ? -0.5 : 0.5) * At(tl); return { raw, at: raw + Pr.off(raw) }; };
+        OXLEG.forEach((LG, i) => {
+          const L = o.legs[i], Ph = ph + LG[6], c = Math.floor(Ph), u0 = Ph - c, Lz = L.z * cT - L.hy * sT, raw = S2.s + Lz + dlOf(u0) * A0, own = { raw, at: raw + Pr.off(raw) };
+          const l0 = at3(L, c - LG[6], false) || own;
+          let sh, gy, lift = 0;
+          if (u0 < OXG.DUTY) { sh = raw + (l0.at - l0.raw); for (const e of Pr.edges) if (Math.abs(e - l0.at) < 2) { const sd = l0.at >= e ? 1 : -1; if (sd * (sh - e) < 0.12) sh = e + sd * 0.12; } gy = Pr.hAtS(sh); }   // (it does not slide over a step's edge)
+          else {
+            const u = (u0 - OXG.DUTY) / (1 - OXG.DUTY), e = sm2(u), k0 = at3(L, c + OXG.DUTY - LG[6], true) || own, l1 = at3(L, c + 1 - LG[6], false) || own;
+            sh = raw + (l0.at - l0.raw) * (1 - e) + (l1.at - l1.raw) * e;
+            const a0 = k0.raw + (l0.at - l0.raw), h0 = Pr.hAtS(a0), h1 = Pr.hAtS(l1.at), dh = h1 - h0, stp = Pr.edges.some((e) => (e - a0) * (e - l1.at) < 0);
+            // over a step's edge: up early or down late, lifted the more; on the flat or a smooth slope: along it
+            gy = stp ? h0 + dh * (dh > 0 ? sm2(Math.min(1, u * 1.7)) : sm2(Math.max(0, (u - 0.4) / 0.6))) : Pr.hAtS(sh);
+            lift = (OXG.LIFT * Math.min(1, A0 / 0.8) + (stp ? 0.25 * Math.abs(dh) : 0)) * Math.sin(Math.PI * u) * (stp ? 1 : Math.min(1, A0 / 0.3));
+          }
+          let [px, pz] = W2.pt(sh), yw = W2.yaw(sh), wx = px + Math.cos(yw) * L.x, wz = pz - Math.sin(yw) * L.x;
+          // where the leg cannot reach (the step's end on a change of slope), the hoof is drawn in toward under the hip along the floor
+          const reach = (x, y, z) => o.P.worldToLocal(_ox.v.set(x, y + OXG.HOOF, z)).distanceTo(L.hip) <= L.a + L.b - 0.002;
+          if (!reach(wx, gy + lift, wz)) {
+            const s1 = S2.s + Lz; let lo = 0, hi = 1;
+            for (let it = 0; it < 7; it++) { const m = (lo + hi) / 2, s3 = sh + (s1 - sh) * m, [qx, qz] = W2.pt(s3), y3 = Pr.hAtS(s3 + Pr.off(s3)); if (reach(qx + Math.cos(yw) * L.x, y3 + lift, qz - Math.sin(yw) * L.x)) hi = m; else lo = m; }
+            sh = sh + (s1 - sh) * hi; sh += Pr.off(sh); [px, pz] = W2.pt(sh); wx = px + Math.cos(yw) * L.x; wz = pz - Math.sin(yw) * L.x; if (lift < 0.01 || !Pr.edges.length) gy = Pr.hAtS(sh);
+          }
+          L.gy = gy; L.lift = lift; L.foot.set(wx, gy + lift, wz); L.sh = sh;
+          // two bones from the hip to the fetlock over the hoof, the knee forward (the fore) or back (the hind's hock)
+          const T3 = o.P.worldToLocal(_ox.v.set(wx, gy + lift + OXG.HOOF, wz)), d3 = _ox.v2.subVectors(T3, L.hip), D0 = d3.length() || 1e-6;
+          d3.multiplyScalar(1 / D0);
+          const Dc = Math.min(D0, L.a + L.b - 1e-4), ca = clamp2((L.a * L.a + Dc * Dc - L.b * L.b) / (2 * L.a * Dc), -1, 1), pole = new Vector3(0, 0.5, LG[5]).addScaledVector(d3, -(0.5 * d3.y + LG[5] * d3.z)).normalize();   // (bent much, the knee comes up - not down onto the step)
+          L.K.copy(L.hip).addScaledVector(d3, L.a * ca).addScaledVector(pole, L.a * Math.sqrt(Math.max(0, 1 - ca * ca)));
+          L.F.copy(L.hip).addScaledVector(d3, Dc); L.short = D0 - Dc;
+          L.up.position.copy(L.hip); L.up.quaternion.setFromUnitVectors(_ox.D, _ox.v.subVectors(L.K, L.hip).normalize());
+          L.kn.position.copy(L.K);
+          L.lo.position.copy(L.K); L.lo.quaternion.setFromUnitVectors(_ox.D, _ox.v.subVectors(L.F, L.K).normalize());
+          L.hf.quaternion.copy(qInv).multiply(_ox.q2.setFromAxisAngle(_ox.Y, yw));
+          L.hf.position.copy(o.P.worldToLocal(_ox.v.set(wx, gy + lift, wz)));
+        });
+      };
+      // OX_K end
+      // ===== HANDS_K (fix-k, 23.11.2026 - the user via the coordinator: "ידי הכהן מתחת ידי הבעלים, ושניהם מתחת לסל"; Bikkurim 3:6, 50:31:
+      // "מוריד הסל מעל כתפו ואוחזו בשפתותיו, וכהן מניח ידו תחתיו ומניפו"; Menachot 61b, 131:2146: "כהן מניח ידו תחת ידי בעלים ומניף"):
+      // THE WAVING WITH REAL HANDS. The bringer and the priest are the kit's figures (SH.priestKit: the robe, the face, hand.js's hands),
+      // their arms solved every frame (shoulder, elbow, wrist - two bones) to where the hands must be: the bringer's palms up under the
+      // basket's rim on its two sides (the rim a rolled lip), the priest's palms up under the bringer's hands, touching them; the basket,
+      // his hands and the priest's move together, as one. Found once (kHold), from the hands' own vertices: the basket's height on his palms
+      // and the priest's hands' height under his - no gap and nothing in another. Until now the basket was moved before a figure whose hands
+      // stood fixed before its chest, the priest a step away. How far apart they stand and the hands' slant - model choices.
+      const KK = SH.priestKit;
+      const KF = KK && KK.handWr ? (() => {
+        const FS = KK.FS, sc = (q, s) => q.scale(s, s, s), W1 = (q) => KK.white(q);
+        return { FS, up: KK.UP * FS, fo: KK.FORE * FS, sx: KK.SH_X * FS, sy: KK.SH_Y * FS,
+          upG: sc(mergeGeometries([W1(KK.sph(0.07, 0.07, 0.07, 14, 10)), W1(KK.at(new CylinderGeometry(0.07, 0.058, KK.UP, 14), 0, -KK.UP / 2, 0)), W1(KK.at(KK.sph(0.058, 0.058, 0.058, 12, 8), 0, -KK.UP, 0))]), FS),
+          foG: sc(W1(KK.at(new CylinderGeometry(0.056, 0.046, KK.FORE, 14), 0, -KK.FORE / 2, 0)), FS),
+          footG: { 1: sc(KK.footGeo(1).translate(-0.1, 0, 0), FS), "-1": sc(KK.footGeo(-1).translate(0.1, 0, 0), FS) },
+          neckG: KK.at(new CylinderGeometry(0.066, 0.072, 0.09, 12), 0, 1.925, 0),
+          // the Israelite's kippah (as tm_people's, in more faces)
+          kipG: W1(KK.at(KK.rot(KK.sph(KK.HR[0] * 1.09, KK.HR[1] * 1.09, KK.HR[2] * 1.09, 28, 7, 0, Math.PI * 2, 0, 0.99), -0.14), 0, KK.HEAD_Y + 0.002, -0.004)),
+          kipM: new MeshStandardMaterial({ color: 0x1c1c22, roughness: 0.9 }) };
+      })() : null;
+      const DOWNk = new Vector3(0, -1, 0);
+      // an arm of the kit (the sleeve to the elbow, the forearm, the hand at the wrist) in the figure's frame `lean`; armTo puts its wrist at
+      // W with the hand turned by q (both in that frame; q null - the hand along the forearm, as it hangs), the elbow toward `pole`
+      const kArm = (lean, sd, m) => {
+        const up = new Mesh(KF.upG, m), fo = new Mesh(KF.foG, m), hd = new Mesh(KK.handWr(sd, "rest"), KK.mHand);
+        for (const o of [up, fo, hd]) { o.castShadow = true; o.userData.noPick = true; lean.add(o); }
+        const S0 = new Vector3(sd * KF.sx, KF.sy, 0); up.position.copy(S0);
+        return { sd, S0, up, fo, hd, pose: "rest", E: new Vector3(), W: new Vector3(), short: 0 };
+      };
+      const _ka = new Vector3(), _kn = new Vector3(), _kw = new Vector3();
+      const armTo = (A, W, q, pose, pole) => {
+        if (pose && A.pose !== pose) { A.hd.geometry = KK.handWr(A.sd, pose); A.pose = pose; }
+        const a = KF.up, b = KF.fo;
+        _ka.subVectors(W, A.S0); const D = _ka.length() || 1e-6; _ka.multiplyScalar(1 / D);
+        const Dc = Math.min(D, a + b - 1e-4), ca = clamp2((a * a + Dc * Dc - b * b) / (2 * a * Dc), -1, 1);
+        _kn.copy(pole).addScaledVector(_ka, -pole.dot(_ka)).normalize();
+        A.E.copy(A.S0).addScaledVector(_ka, a * ca).addScaledVector(_kn, a * Math.sqrt(Math.max(0, 1 - ca * ca)));
+        A.W.copy(A.S0).addScaledVector(_ka, Dc);
+        A.short = D - Dc;   // (> 0: the wrist could not reach W)
+        A.up.quaternion.setFromUnitVectors(DOWNk, _kw.subVectors(A.E, A.S0).normalize());
+        A.fo.position.copy(A.E);
+        A.fo.quaternion.setFromUnitVectors(DOWNk, _kw.subVectors(A.W, A.E).normalize());
+        A.hd.position.copy(A.W);
+        if (q) A.hd.quaternion.copy(q); else A.hd.quaternion.copy(A.fo.quaternion);
+      };
+      const POLE_HANG = { 1: new Vector3(0.25, 0, -1).normalize(), "-1": new Vector3(-0.25, 0, -1).normalize() };
+      const POLE_HOLD = { 1: new Vector3(0.45, -1, -0.25).normalize(), "-1": new Vector3(-0.45, -1, -0.25).normalize() };
+      const hangW = (A) => A.S0.clone().add(new Vector3(A.sd * 0.07, -(KF.up + KF.fo) * 0.985, 0.1));
+      // the hand turned so that its fingers go along F and its palm looks toward N (handWr's frame: the fingers down, the palm toward
+      // (-sd sin 0.95, 0, -cos 0.95) - priest-kit.js handRaw)
+      const handQ = (sd, F, N) => {
+        const Fh = new Vector3(0, -1, 0), Nh = new Vector3(-sd * Math.sin(0.95), 0, -Math.cos(0.95)), Bh = new Vector3().crossVectors(Fh, Nh);
+        const Fn = F.clone().normalize(), Nt = N.clone().addScaledVector(Fn, -N.dot(Fn)).normalize(), Bt = new Vector3().crossVectors(Fn, Nt);
+        return new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(Fn, Nt, Bt).multiply(new Matrix4().makeBasis(Fh, Nh, Bh).transpose()));
+      };
+      // a figure of the kit: kind "kohen" (his four garments, the head's tefillin) or an Israelite in his robe's colour, with a kippah
+      const kFig = (kind, robe, n, name) => {
+        const g = new Group(), lean = new Group(), S = new Group(); g.add(lean); S.scale.setScalar(KF.FS); lean.add(S); BG.add(g); g.visible = false; g.name = name || "";
+        const add = (par, geo, m) => { const o = new Mesh(geo, m); o.castShadow = true; o.userData.noPick = true; par.add(o); return o; };
+        const priest = kind === "kohen", robeM = priest ? KK.mRobe : new MeshStandardMaterial({ color: robe, vertexColors: true, roughness: 0.92 });
+        add(S, KK.gRobeBody, robeM);
+        add(S, KF.neckG, KK.mSkin);
+        const hg = KK.headOn(S, KK.HEAD_Y, KK.mBeards[n % KK.mBeards.length], n);
+        hg.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
+        if (priest) { add(S, KK.gSash, (SH.tamid && SH.tamid.belt === "white") ? KK.mSashWhite : KK.mSashDyed); add(S, KK.gHat, KK.mHat).position.y = KK.HAT_Y; if (KK.tefOn) KK.tefOn(hg); }
+        else add(S, KF.kipG, KF.kipM);
+        const fl = add(g, KF.footG[1], KK.mSkin), fr = add(g, KF.footG[-1], KK.mSkin); fl.position.x = 0.1 * KF.FS; fr.position.x = -0.1 * KF.FS;
+        const F = { G: g, L: lean, arms: { 1: kArm(lean, 1, robeM), "-1": kArm(lean, -1, robeM) } };
+        for (const sd of [1, -1]) armTo(F.arms[sd], hangW(F.arms[sd]), null, "rest", POLE_HANG[sd]);
+        return F;
+      };
+      // the basket's rim: a rolled lip round its mouth (LIP: its circle's radius and height, the roll's radius - in the basket's frame; the
+      // roll a little thinner than the closed hand's ring, hand.js "grip": 0.028 amah - the fingers on it, the palm's pads not in it)
+      const LIP = { R: 0.385, y: 0.335, r: 0.026 };
+      const WALLk = [[0.22, 0], [0.3, 0.12], [0.34, 0.3], [0.36, 0.34]];
+      const wallR = (y) => { for (let i = 1; i < WALLk.length; i++) if (y <= WALLk[i][1]) { const [r0, y0] = WALLk[i - 1], [r1, y1] = WALLk[i]; return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return WALLk[WALLk.length - 1][0]; };
+      // THE TWO WAYS OF THE WAVING (the user's decision 207: a switch, the default a): a - the Bartenura and R. Shimshon of Sens: the basket
+      // lies on the priest's hands - his two palms up under its bottom - and the bringer holds it by its rim from above; b - the Gemara's plain
+      // sense: the priest's hands under the bringer's, both at the rim - the bringer's palms up under the rim, the priest's palms up close
+      // under his. Each found once (kHoldOf) in the bringer's frame (his feet at 0, his face to +z): B0 - the basket's foot; WO / qO / pO -
+      // the bringer's wrists, hands' turns and poses; WP / qP - the priest's (his hand -sd under the bringer's sd in b). d - the priest's
+      // distance before him; zb - the basket's middle before him. How far apart, how high, the hands' slant - model choices.
+      const KW = { way: "a", t0: -1e9, from: "a" };
+      const KHs = {};
+      const vsK = (geo, q, W) => { const p = geo.attributes.position, nn = geo.attributes.normal, P = [], N = []; for (let i = 0; i < p.count; i++) { P.push(new Vector3(p.getX(i), p.getY(i), p.getZ(i)).applyQuaternion(q).add(W)); N.push(new Vector3(nn.getX(i), nn.getY(i), nn.getZ(i)).applyQuaternion(q)); } return { P, N }; };
+      // the least signed distance of points A from the surface of points B (the nearest vertex's plane; B hashed in cells of 0.02)
+      const sdistK = (A, B) => { const hs = new Map(), key = (x, y, z) => x + "," + y + "," + z;
+        B.P.forEach((v, i) => { const k = key(Math.floor(v.x / 0.02), Math.floor(v.y / 0.02), Math.floor(v.z / 0.02)); if (!hs.has(k)) hs.set(k, []); hs.get(k).push(i); });
+        let mn = 1e9; for (const p of A.P) { const cx = Math.floor(p.x / 0.02), cy = Math.floor(p.y / 0.02), cz = Math.floor(p.z / 0.02); let best = 1e9, bi = -1;
+          for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) { const L2 = hs.get(key(cx + i, cy + j, cz + k)); if (L2) for (const q of L2) { const d2 = p.distanceToSquared(B.P[q]); if (d2 < best) { best = d2; bi = q; } } }
+          if (bi >= 0) { const s0 = _kw.subVectors(p, B.P[bi]).dot(B.N[bi]); if (s0 < mn) mn = s0; } } return mn; };
+      const kHoldOf = (way) => {
+        if (KHs[way]) return KHs[way];
+        // (the basket's middle 0.78 before him and the priest 1.56: as it is waved toward either of them - 0.12 - it comes no nearer than
+        // three hundredths of an amah to his body)
+        const H = { way, d: 1.56, zb: 0.78, WO: {}, qO: {}, pO: {}, WP: {}, qP: {}, pP: { 1: "flat", "-1": "flat" }, ok: true, chk: {} };
+        if (way === "b") {
+          // b: the bringer's palms up (a little toward the basket) under the rim on its two sides, the priest's under his, along them, his
+          // fingers toward him; the basket as low as its lip may lie on the bringer's palms; the priest's hands as high as they may be
+          const yw = 2.0, a = 0.06, b2 = 0.14;
+          const Fo = (sd) => new Vector3(-sd * Math.sin(a), 0, Math.cos(a)), Nup = (sd) => new Vector3(-sd * Math.sin(b2), Math.cos(b2), 0);
+          for (const sd of [1, -1]) { H.qO[sd] = handQ(sd, Fo(sd), Nup(sd)); H.qP[-sd] = handQ(-sd, Fo(sd).negate(), Nup(sd)); H.pO[sd] = "flat"; }
+          const g = (sd) => KK.handWr(sd, "flat"), h0 = vsK(g(1), H.qO[1], new Vector3()), cO = h0.P.reduce((q, v) => q.add(v), new Vector3()).multiplyScalar(1 / h0.P.length);
+          const Lh = Math.max(...h0.P.map((v) => v.dot(Fo(1))));
+          const zw = H.zb - cO.z;
+          let ok = false, yb = 0;
+          for (let xw = 0.3; xw < 0.6 && !ok; xw += 0.002) {
+            let ybx = -1e9, sup = 0; const HS = {};
+            for (const sd of [1, -1]) { H.WO[sd] = new Vector3(sd * xw, yw, zw); HS[sd] = vsK(g(sd), H.qO[sd], H.WO[sd]); }
+            for (const sd of [1, -1]) for (const v of HS[sd].P) { const rho = Math.hypot(v.x, v.z - H.zb), e = rho - LIP.R; if (Math.abs(e) < LIP.r) { ybx = Math.max(ybx, v.y - LIP.y + Math.sqrt(LIP.r * LIP.r - e * e)); sup++; } }
+            if (!sup) continue;
+            ybx -= 0.0008;
+            let bad = 0;
+            for (const sd of [1, -1]) for (const v of HS[sd].P) { const rho = Math.hypot(v.x, v.z - H.zb), y = v.y - ybx; if (y > -0.01 && y < LIP.y + 0.06 && rho < (y < 0 ? 0 : y > 0.34 ? 0.37 : wallR(y)) + 0.004) bad++; }
+            if (!bad) { ok = true; yb = ybx; }
+          }
+          H.ok = ok; H.B0 = new Vector3(0, yb, H.zb);
+          for (const sd of [1, -1]) {
+            const F = Fo(sd), lat = new Vector3(F.z, 0, -F.x), HO = vsK(g(sd), H.qO[sd], H.WO[sd]);
+            const W = H.WO[sd].clone().addScaledVector(F, Lh + 0.03); W.y = yw - 0.06;
+            const hp0 = vsK(g(-sd), H.qP[-sd], new Vector3()), cP = hp0.P.reduce((q, v) => q.add(v), new Vector3()).multiplyScalar(1 / hp0.P.length);
+            const cOw = H.WO[sd].clone().add(sd > 0 ? cO : new Vector3(-cO.x, cO.y, cO.z));
+            W.addScaledVector(lat, cOw.clone().sub(W.clone().add(cP)).dot(lat));
+            for (let it = 0; it < 40; it++) { const s0 = sdistK(vsK(g(-sd), H.qP[-sd], W), HO); if (s0 > 1e8) { W.y += 0.01; continue; } if (Math.abs(s0 + 0.0008) < 0.0003) break; W.y += s0 + 0.0008; }
+            H.WP[-sd] = W;
+          }
+        } else {
+          // a: the priest's two palms up side by side under the basket's bottom, his fingers toward the bringer (under the half of the bottom
+          // nearer him - his arms reach so); the basket set down on them (the highest point of his palms under the bottom touches it); the
+          // bringer's hands closed round the rim from above (hand.js "grip": the ring of the closed fingers round the rim's roll), each at 55
+          // degrees from the side nearer him, his wrist over and out from the rim (65 degrees from the upright), the fingers without
+          const ybT = 2.02, xP = 0.072, zP = H.zb + 0.11;
+          // (the palms' slant along the hand chosen so that most of each palm lies against the flat bottom - not only the heel of the hand)
+          let top = -1e9, bestN = -1;
+          for (let al = -0.16; al <= 0.161; al += 0.02) {
+            const qq = {}, WW = {}, HH = {}; let tp = -1e9;
+            for (const sp of [1, -1]) {
+              qq[sp] = handQ(sp, new Vector3(0, Math.sin(al), -Math.cos(al)), new Vector3(0, Math.cos(al), Math.sin(al)));
+              // (the palm's middle - half way from the wrist to the middle finger's knuckle - at (-sp xP, zP): the palm under the flat bottom)
+              const c0 = tm_hand({ sd: sp, pose: "flat" }).sk.fingers[1].j[0].clone().applyAxisAngle(new Vector3(0, 1, 0), sp * 0.95).multiplyScalar(KF.FS * 0.5).applyQuaternion(qq[sp]);
+              WW[sp] = new Vector3(-sp * xP - c0.x, 0, zP - c0.z);
+              HH[sp] = vsK(KK.handWr(sp, "flat"), qq[sp], WW[sp]);
+              for (const v of HH[sp].P) { const rho = Math.hypot(v.x, v.z - H.zb); if (rho < 0.22) tp = Math.max(tp, v.y); else if (rho < 0.3) tp = Math.max(tp, v.y - (rho - 0.22) / 0.08 * 0.12); }   // (under the bottom, and under the wall where it widens)
+            }
+            let nC = 0; for (const sp of [1, -1]) for (const v of HH[sp].P) if (Math.hypot(v.x, v.z - H.zb) < 0.21 && v.y > tp - 0.004) nC++;
+            if (nC > bestN) { bestN = nC; top = tp; for (const sp of [1, -1]) { H.qP[sp] = qq[sp]; H.WP[sp] = WW[sp]; } H.al = al; }
+          }
+          H.contactN = bestN;
+          for (const sp of [1, -1]) H.WP[sp].y = ybT - top + 0.0008;   // (the palms' top a hair into the bottom: touching)
+          H.B0 = new Vector3(0, ybT, H.zb);
+          const th = 55 * Math.PI / 180, psi = 65 * Math.PI / 180;
+          for (const sd of [1, -1]) {
+            const C = new Vector3(sd * LIP.R * Math.sin(th), ybT + LIP.y, H.zb - LIP.R * Math.cos(th)), radial = new Vector3(sd * Math.sin(th), 0, -Math.cos(th));
+            const wd = new Vector3(0, Math.cos(psi), 0).addScaledVector(radial, Math.sin(psi)).normalize();
+            const G = KK.handAt(sd, "grip"), Axh = KK.handAt(sd, "gripAx").normalize(), Wh = G.clone().negate(); Wh.addScaledVector(Axh, -Wh.dot(Axh)).normalize();
+            const best = [];
+            for (const flip of [1, -1]) {   // the index finger forward along the rim, or back - the one whose fingers are outside the rim
+              const ax = new Vector3(sd * Math.cos(th), 0, Math.sin(th)).multiplyScalar(flip);
+              const q = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(ax, wd, new Vector3().crossVectors(ax, wd)).multiply(new Matrix4().makeBasis(Axh, Wh, new Vector3().crossVectors(Axh, Wh)).transpose()));
+              const W = C.clone().sub(G.clone().applyQuaternion(q));
+              const tips = tm_hand({ sd, pose: "grip" }).sk.fingers.map((f) => f.j[3].clone().applyAxisAngle(new Vector3(0, 1, 0), sd * 0.95).multiplyScalar(KF.FS).applyQuaternion(q).add(W));
+              const out = tips.reduce((a2, v) => a2 + (Math.hypot(v.x, v.z - H.zb) - LIP.R), 0) / tips.length;
+              best.push([out, q, W]);
+            }
+            best.sort((u, v) => v[0] - u[0]);
+            H.qO[sd] = best[0][1]; H.WO[sd] = best[0][2]; H.pO[sd] = "grip";
+          }
+        }
+        return (KHs[way] = H);
+      };
+      const kHold = () => kHoldOf(KW.way);
+      // HANDS_K end (helpers)
       let D = null;
       const build = () => {
         if (D) return D;
@@ -2996,39 +3450,21 @@
         const basket = (doves) => {
           const B = new Group(); const bm = new Mesh(basketG, wick); bm.castShadow = true; B.add(bm);
           for (let i = 0; i < 16; i++) { const a = rr() * 6.28, r = rr() * 0.24, f = new Mesh(new SphereGeometry(0.05 + rr() * 0.04, 8, 6), fruitM[i % fruitM.length]); f.position.set(Math.cos(a) * r, 0.33 + rr() * 0.07, Math.sin(a) * r); B.add(f); }
+          { const lip = new Mesh(new TorusGeometry(LIP.R, LIP.r, 10, 48).rotateX(Math.PI / 2).translate(0, LIP.y, 0), wick); lip.castShadow = true; B.add(lip); }   // HANDS_K: the rolled rim ("ואוחזו בשפתותיו")
           if (doves) for (const sx of [-0.1, 0.12]) { const d = new Mesh(new SphereGeometry(0.07, 10, 8), doveM); d.scale.set(1.5, 0.9, 0.9); d.position.set(sx, 0.47, 0.02); B.add(d); const h = new Mesh(new SphereGeometry(0.035, 8, 6), doveM); h.position.set(sx + 0.1, 0.52, 0.02); B.add(h); }
           B.traverse((o) => { if (o.isMesh) o.userData.noPick = true; });
           return B;
         };
-        const bringer = fig("worker", 0x7a5a2e, 1.4, "bikkurimBringer", 1);
+        const bringer = KF ? kFig("worker", 0x7a5a2e, 3, "bikkurimBringer") : fig("worker", 0x7a5a2e, 1.4, "bikkurimBringer", 1);   // HANDS_K: the kit's figure, his arms moving
         const myBasket = basket(true); BG.add(myBasket);
         const comps = [0x3e5a7a, 0x6a3e3e, 0x4a6a3e, 0x5a4a6a].map((c, i) => { const f = fig("worker", c, i === 3 ? 1.05 : 1.4, "bikkurimCompanion", i % 3); const b2 = basket(true);   /* the user's decision 123: "הגוזלות שעל גבי הסלים" (ג, ה) on every basket */ b2.position.set(-0.3, i === 3 ? 1.85 : 2.45, -0.05); b2.scale.setScalar(i === 3 ? 0.75 : 1); f.L.add(b2); return f; });
         const flute = fig("worker", 0x2e4a5a, 1.4, "bikkurimFlute", 2);
         { const pm = new Mesh(new CylinderGeometry(0.02, 0.028, 0.5, 8), new MeshStandardMaterial({ color: 0xc8b07a, roughness: 0.6 })); pm.rotation.x = 1.15; pm.position.set(0, 2.05, 0.32); flute.L.add(pm); }
-        const priest = fig("kohen", 0xf1ede2, 1.4, "bikkurimPriest", 1);
+        const priest = KF ? kFig("kohen", 0, 1, "bikkurimPriest") : fig("kohen", 0xf1ede2, 1.4, "bikkurimPriest", 1);   // HANDS_K
         // OX_B2 (the user's decision 123 a; Bikkurim 3:3, 50:28: "והשור הולך לפניהם, וקרניו מצופות זהב, ועטרת של זית בראשו"): an ox before them,
-        // its horns overlaid with gold and a wreath of olive on its head; it goes before them up the ramp, to the gate. Its form - a model choice
-        const ox = (() => {
-          const G = new Group(), L2 = new Group(); G.add(L2); BG.add(G); G.visible = false;
-          const hide = new MeshStandardMaterial({ color: 0x6b4426, roughness: 0.85 }), dark = new MeshStandardMaterial({ color: 0x3a2616, roughness: 0.9 });
-          const gold = new MeshStandardMaterial({ color: 0xd8b04a, metalness: 0.9, roughness: 0.25 }), olive = new MeshStandardMaterial({ color: 0x5f7a3a, roughness: 0.7 });
-          const part = (geo, m, x, y, z, sx, sy, sz) => { const o2 = new Mesh(geo, m); o2.position.set(x, y, z); if (sx) o2.scale.set(sx, sy, sz); o2.castShadow = true; o2.userData.noPick = true; L2.add(o2); return o2; };
-          const sph = new SphereGeometry(1, 16, 12);
-          part(sph, hide, 0, 1.55, 0, 0.62, 0.62, 1.55);                 // the body (its face to +z)
-          part(sph, hide, 0, 1.75, 1.05, 0.58, 0.62, 0.62);              // the shoulders and the hump
-          part(sph, hide, 0, 1.62, 1.95, 0.32, 0.34, 0.48);              // the head
-          part(sph, dark, 0, 1.5, 2.35, 0.22, 0.2, 0.18);                // the muzzle
-          part(sph, hide, 0, 1.25, 1.55, 0.2, 0.32, 0.22);               // the dewlap
-          const legG = new CylinderGeometry(0.11, 0.09, 1.25, 8).translate(0, -0.62, 0), legs = [];
-          for (const [lx, lz] of [[-0.34, 1.0], [0.34, 1.0], [-0.34, -0.95], [0.34, -0.95]]) { const lg = part(legG, hide, lx, 1.25, lz); legs.push(lg); part(new CylinderGeometry(0.1, 0.11, 0.1, 8), dark, 0, -1.25, 0).position.set(lx, 0.05, lz); }
-          const hornG = new TubeGeometry(new CatmullRomCurve3([new Vector3(0, 0, 0), new Vector3(0.22, 0.08, 0.02), new Vector3(0.36, 0.26, 0.08), new Vector3(0.38, 0.45, 0.16)]), 10, 0.045, 6, false);
-          for (const sd of [-1, 1]) { const h = part(hornG, gold, sd * 0.2, 1.86, 1.9); h.scale.set(sd, 1, 1); }
-          const wreath = part(new TorusGeometry(0.27, 0.05, 6, 18), olive, 0, 1.9, 1.88); wreath.rotation.x = Math.PI / 2 - 0.25;
-          for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2, lf = part(new SphereGeometry(0.06, 6, 4), olive, Math.cos(a) * 0.29, 1.9 + Math.sin(a) * 0.07, 1.88 + Math.sin(a) * 0.27, 1, 0.45, 1.8); lf.rotation.y = -a; }
-          const tail = part(new CylinderGeometry(0.03, 0.02, 0.9, 5).translate(0, -0.45, 0), hide, 0, 1.85, -1.5); tail.rotation.x = 0.2;
-          G.scale.setScalar(1.15);
-          return { G, L: L2, legs };
-        })();
+        // its horns overlaid with gold and a wreath of olive on its head; it goes before them up the ramp, to the gate. Its form - a model choice.
+        // OX_K: built again (oxBuild, above)
+        const ox = oxBuild();
         // the Levites on the duchan (Arachin 2:3 and the Mishnah's "ודברו הלוים בשיר"), their faces to the people (east)
         const lev = new Group(); BG.add(lev); lev.visible = false;
         { const yD = groundAt(86.3, 6, 20, 15.5), LZ = [-10.8, -8.4, -6, -3.6, 3.6, 6, 8.4, 10.8];
@@ -3044,6 +3480,84 @@
         F.G.position.set(x, y + (u > 0 && u < 1 ? Math.abs(Math.sin(t * 9)) * 0.035 : 0), z); F.G.rotation.y = yaw; F.G.visible = kind !== "hide";
         return { x, y, z, yaw };
       };
+      // HANDS_K: the basket from the gate to the corner and the four hands. In the bringer's frame (BL - the basket's foot): on his right
+      // shoulder, his right hand under its rim (from when he takes it, T.take); "מוריד הסל מעל כתפו" - out and forward, then down before
+      // him, his left hand joining it; "ואוחזו בשפתותיו" - his two palms up under its rim; "וכהן מניח ידו תחתיו" - the priest's palms up under
+      // his; "ומניפו" - forward and back, up and down (the old measures), all of them together. The priest comes from where he waits to before
+      // him, and back after it (until now he stood there at once). Each hand eased from where it was (0.4 - 0.6 s), never jumping
+      const kQ = new Quaternion(), kQ2 = new Quaternion(), kV = new Vector3(), kV2 = new Vector3();
+      const hangOf = (A) => { if (!A.hang) { armTo(A, hangW(A), null, "rest", POLE_HANG[A.sd]); A.hang = { W: A.W.clone(), q: A.hd.quaternion.clone() }; } return A.hang; };
+      // the arm A toward the hold (W, q in its figure's frame) by s (0 - hanging, 1 - holding)
+      const blendArm = (A, s, W, q, pole, pose) => {
+        const h = hangOf(A);
+        if (s <= 0) { armTo(A, h.W, null, "rest", POLE_HANG[A.sd]); return; }
+        kV2.copy(h.W).lerp(W, s); kQ2.copy(h.q).slerp(q, s);
+        kV.copy(POLE_HANG[A.sd]).lerp(pole, s).normalize();
+        armTo(A, kV2, kQ2, s > 0.5 ? pose || "flat" : "rest", kV);
+      };
+      // the hold now: the chosen way's, or - for half a second after the switch (sh96, from the card too, while it runs) - eased from the other
+      const holdNow = () => {
+        const to = kHoldOf(KW.way), w = sm2(clamp2((performance.now() - KW.t0) / 500, 0, 1));
+        if (w >= 1 || KW.from === KW.way) return to;
+        const fr = kHoldOf(KW.from), H = { d: to.d, B0: fr.B0.clone().lerp(to.B0, w), WO: {}, qO: {}, pO: {}, WP: {}, qP: {}, pP: to.pP };
+        for (const sd of [1, -1]) { H.WO[sd] = fr.WO[sd].clone().lerp(to.WO[sd], w); H.qO[sd] = fr.qO[sd].clone().slerp(to.qO[sd], w); H.pO[sd] = w > 0.5 ? to.pO[sd] : fr.pO[sd]; H.WP[sd] = fr.WP[sd].clone().lerp(to.WP[sd], w); H.qP[sd] = fr.qP[sd].clone().slerp(to.qP[sd], w); }
+        return H;
+      };
+      const setWave = (m) => { const w2 = m === "b" ? "b" : "a"; if (w2 !== KW.way) { KW.from = KW.way; KW.way = w2; KW.t0 = BK.run ? performance.now() : -1e9; } return KW.way; };
+      const basketL = (t, H) => {   // the basket's foot in the bringer's frame, and the waving's offset (its envelope at the ends)
+        const sm = (a, b2) => sm2(clamp2((t - a) / (b2 - a), 0, 1));
+        const k = clamp2((t - T.wave0) / (T.wave1 - T.wave0), 0, 1), env = t < T.wave1 ? sm(T.wave0 + 0.7, T.wave0 + 1.2) * (1 - sm(T.wave1 - 0.5, T.wave1)) : 0;
+        const u = clamp2((t - (T.wave0 - 0.4)) / 0.7, 0, 1), cu = (v) => sm2(clamp2(v, 0, 1));
+        return new Vector3(lerp2(-0.3, 0, cu((u - 0.35) / 0.65)) - 0.16 * Math.sin(Math.PI * Math.min(1, u / 0.8)),
+          lerp2(2.45, H.B0.y, cu((u - 0.25) / 0.75)) + 0.12 * Math.sin(k * Math.PI * 4) * env,
+          lerp2(-0.05, H.B0.z, cu(u / 0.6)) + 0.12 * Math.sin(k * Math.PI * 8) * env);   // (forward and back 0.12 - it was 0.18: the basket then came into the men)
+      };
+      const kApply = (d, b, t) => {
+        const H = holdNow(), BR = d.bringer, PR = d.priest, MB = d.myBasket, dz = altDzB();
+        const sm = (a, b2) => sm2(clamp2((t - a) / (b2 - a), 0, 1));
+        const BL = basketL(t, H), B0 = H.B0;
+        MB.rotation.set(0, 0, 0);
+        BR.G.updateMatrixWorld(true);
+        // BASKET_FLOW_K (fix-k, 23.11.2026 - the coordinator: "הסל 'קופץ'... תעביר את הסל ברצף, בכחצי שנייה עד שנייה, והידיים מלוות אותו"):
+        // the basket never changes hands in one frame - from his fellow's hands to his shoulder it goes in an arc over TKD seconds about
+        // T.take, and from his hands down to its place beside the corner over PTD seconds from T.put, his hands with it as far as they
+        // reach and then letting go. Until now it was in one place in one frame and in the other in the next
+        const TKA = T.take - 0.6, TKB = T.take + 0.15, PTD = 0.9, uT = sm(TKA, TKB), uP = sm(T.put, T.put + PTD);
+        const c0 = d.comps[0].G; c0.updateMatrixWorld(true);
+        const pC = new Vector3(0.0, 1.55, 0.42).applyMatrix4(c0.matrixWorld), pB = BR.G.localToWorld((t < T.put ? BL : basketL(T.put - 0.001, H)).clone());
+        const [px0, pz0] = [40.0, 13.15 + dz], pF = new Vector3(px0, hAt(px0, pz0, 30), pz0);
+        // (at T.take he turns in one frame to his next way - the basket on his shoulder swings round with him in 0.18 s, not in that frame)
+        if (t >= T.take && t < T.take + 0.2) { const dyw = Math.atan2(Math.sin(b.yaw - Math.PI), Math.cos(b.yaw - Math.PI)), yS = Math.PI + dyw * sm(T.take, T.take + 0.18) - b.yaw; pB.sub(BR.G.position).applyAxisAngle(new Vector3(0, 1, 0), yS).add(BR.G.position); }
+        if (t < TKB) { MB.position.lerpVectors(pC, pB, uT); MB.position.y += 0.3 * Math.sin(Math.PI * uT); MB.rotation.y = c0.rotation.y + Math.atan2(Math.sin(b.yaw - c0.rotation.y), Math.cos(b.yaw - c0.rotation.y)) * uT; MB.visible = uT > 0 ? true : c0.visible; }
+        else if (t < T.put) { MB.position.copy(pB); MB.rotation.y = b.yaw; MB.visible = BR.G.visible; }
+        else { MB.position.lerpVectors(pB, pF, uP); MB.rotation.y = b.yaw; MB.visible = t < T.end + 5; }
+        // the bringer's hands: the right to the rim as the basket comes (on the shoulder too), the left from the lowering; both go down
+        // with it at T.put and let go as it passes out of their reach
+        const rel = 1 - sm(T.put + 0.3, T.put + 0.75);
+        const offP = t >= T.put ? BR.G.worldToLocal(MB.position.clone()).sub(basketL(T.put - 0.001, H)) : null;
+        for (const sd of [1, -1]) {
+          const s = (sd < 0 ? sm(TKA + 0.15, TKB) : sm(T.wave0 - 0.15, T.wave0 + 0.3)) * rel;
+          const W = (t < T.put ? BL : basketL(T.put - 0.001, H)).clone().add(kV.copy(H.WO[sd]).sub(B0));
+          if (offP) W.add(offP);
+          blendArm(BR.arms[sd], s, W, H.qO[sd], POLE_HOLD[sd], H.pO[sd]);
+        }
+        // the priest: waiting at the corner; to before him for the waving (from 1.6 s before it); back after he sets it down
+        const on = t >= T.walk0 && t < T.end; PR.G.visible = on;
+        if (!on) return;
+        const wait = [38.2, 11.2 + dz, 0.35], fx = Math.sin(b.yaw), fz = Math.cos(b.yaw), there = [b.x + fx * H.d, b.z + fz * H.d, b.yaw + Math.PI];
+        const go = sm(T.wave0 - 1.6, T.wave0 - 0.4) * (1 - sm(T.put + 0.2, T.put + 1.4)), mv = go > 0 && go < 1;
+        let dy = there[2] - wait[2]; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        const px = lerp2(wait[0], there[0], go), pz = lerp2(wait[1], there[1], go);
+        PR.G.position.set(px, hAt(px, pz, 30) + (mv ? Math.abs(Math.sin(t * 9)) * 0.03 : 0), pz); PR.G.rotation.y = wait[2] + dy * go;
+        PR.G.updateMatrixWorld(true);
+        const qB = BR.G.getWorldQuaternion(kQ.clone()), qPinv = PR.L.getWorldQuaternion(new Quaternion()).invert();
+        const sP = sm(T.wave0 + 0.1, T.wave0 + 0.7) * rel;
+        for (const sd of [1, -1]) {
+          const Wb = (t < T.put ? BL : basketL(T.put - 0.001, H)).clone().add(kV.copy(H.WP[sd]).sub(B0));
+          const Wl = PR.L.worldToLocal(BR.G.localToWorld(Wb)), ql = qPinv.clone().multiply(qB.clone().multiply(H.qP[sd]));
+          blendArm(PR.arms[sd], sP, Wl, ql, POLE_HOLD[sd], H.pP[sd]);
+        }
+      };
       const apply = (t) => {
         const d = build(), W = SW(), cur = wayNow(t) || W[0];
         const b = placeF(d.bringer, cur[0], cur[1], cur[2], cur[3], Math.min(t, cur[2]), cur[4], 0, 0);
@@ -3054,15 +3568,13 @@
           if (t >= T.nik + 0.6) { const sx = 90.5 + (i % 2) * 1.6, sz = -2 - i * 1.4; F.G.visible = true; F.G.position.set(sx, hAt(sx, sz, 30), sz); F.G.rotation.y = -Math.PI / 2; return; }
           if (w === W[W.length - 1] || w === W[W.length - 2]) { F.G.visible = false; return; }
           placeF(F, w[0], w[1], w[2], w[3], Math.min(tt, w[2]), w[4], (i % 2 ? 1 : -1) * 1.1, 0);
+          // BASKET_FLOW_K: in the gate the floor's height 1.1 to the side of the way was taken from the gate's own stones (the fellow, and
+          // the basket in his hands, went up 3 amot in a frame, three times) - never higher than the way's own floor beside him
+          if (w[3] === "floor") { const yw = F.G.rotation.y, dxv = (i % 2 ? 1 : -1) * 1.1, cy = hAt(F.G.position.x - Math.cos(yw) * dxv, F.G.position.z + Math.sin(yw) * dxv, 30); if (F.G.position.y > cy + 0.06) F.G.position.y = cy; }
         });
         // OX_B2 / OX_IN_B2: the ox before them all - up the ramp, (unseen) across the mount, through the women's court and the steps, ahead of
-        // them by a second and a half; from the Nikanor gate to its place by the rings, where it stands until the end
-        { const o3 = d.ox, tt = t + 1.5, ow = OXW();
-          let mv = 0;
-          if (t >= ow[1]) { placeF(o3, ow[0], ow[1], ow[2], "floor", Math.min(t, ow[2]), -Math.PI / 2, 0, 0); mv = t < ow[2] ? 1 : 0; }
-          else { const w = wayNow(Math.min(tt, T.nik)) || W[0]; placeF(o3, w[0], w[1], w[2], w[3], Math.min(tt, w[2], T.nik), w[4], w[3] === "ramp" ? -0.4 : 0, 0); mv = tt < w[2] ? 1 : 0; }
-          o3.G.visible = o3.G.visible && t < T.end + 5;
-          o3.legs.forEach((lg, k) => { lg.rotation.x = mv * 0.32 * Math.sin(t * 7 + (k === 0 || k === 3 ? 0 : Math.PI)); }); }
+        // them; from the Nikanor gate to its place by the rings, where it stands until the end. OX_K: one smooth way (oxPose, above)
+        oxPose(d.ox, t);
         // the flute before them up to the mount ("עד שמגיעין להר הבית")
         { const tt = t + 0.9, w = W[0]; if (t < T.take + 0.6) placeF(d.flute, w[0], w[1], w[2], "ramp", Math.min(tt, w[2]), Math.PI, 0.8, 0); else d.flute.G.visible = false; }
         // his basket: with the first companion up the ramp; on his own shoulder from the gate; lowered and waved; set down
@@ -3076,6 +3588,7 @@
         } else { const [px, pz] = [40.0, 13.15 + altDzB()]; MB.position.set(px, hAt(px, pz, 30), pz); MB.visible = t < T.end + 5; }
         // he bows
         if (t >= T.bow0 && t < T.bow1) d.bringer.L.rotation.x = 0.55 * Math.sin(Math.PI * clamp2((t - T.bow0) / (T.bow1 - T.bow0), 0, 1));
+        if (d.bringer.arms && KF) { kApply(d, b, t); d.lev.visible = t >= T.nik - 0.8 && t < T.corner + 1; return; }   // HANDS_K: the basket, the hands, the priest
         // the priest: waiting at the corner, then before him for the waving
         { const dz = altDzB(), on = t >= T.walk0 && t < T.end; d.priest.G.visible = on;
           if (on) { const wv = t >= T.wave0 - 0.4 && t < T.put, px = wv ? b.x + Math.sin(b.yaw) * 1.05 : 38.2, pz = wv ? b.z + Math.cos(b.yaw) * 1.05 : 11.2 + dz;
@@ -3090,7 +3603,11 @@
           [T.nik + 0.4, [74, 22, 20], [90, 16, 3]], [T.nik + 2.2, [74, 21, 18], [88, 16.5, 5]], [T.walk0, [74, 21, 20], [88, 16.5, 10]],
           [T.walk0 + 2, [70, 23, 50], [80, 17, 38]], [T.walk0 + 3.5, [66, 28, 40], [56, 16.5, 56]], [T.walk0 + 5.6, [31, 23, 53], [38, 17.5, 40]],
           [T.corner - 0.5, [31.5, 21.5, C[1] + 7], [C[0], 17.2, C[1]]],
-          [T.wave0 + 0.6, [32, 20.5, C[1] + 2.2], [C[0] - 0.7, 17.8, C[1] + 0.7]], [T.put, [32, 20.5, C[1] + 2.2], [C[0] - 0.4, 17.4, C[1] + 0.4]],
+          // HANDS_K: the waving from his left side, at the hands' height - the four hands under the basket, the two men whole to the waist
+          ...(KF ? (() => { const yE = 2.62, fx = Math.sin(yE), fz = Math.cos(yE), lx = Math.cos(yE), lz = -Math.sin(yE), bx = 38.3 + fx * 0.78, bz = 15 + dz + fz * 0.78, y0 = hAt(38.3, 15 + dz, 30);
+            const E = [bx + lx * 3.7, y0 + 1.8, bz + lz * 3.7], Lk = [bx, y0 + 2.05, bz];
+            return [[T.wave0 - 0.2, E, Lk], [T.wave1 + 0.4, E, Lk], [T.put, [32, 20.5, C[1] + 2.2], [C[0] - 0.4, 17.4, C[1] + 0.4]]]; })()
+            : [[T.wave0 + 0.6, [32, 20.5, C[1] + 2.2], [C[0] - 0.7, 17.8, C[1] + 0.7]], [T.put, [32, 20.5, C[1] + 2.2], [C[0] - 0.4, 17.4, C[1] + 0.4]]]),
           [T.bow1, [32.5, 21, C[1] + 3.5], [C[0], 17.4, C[1]]], [T.end, [30, 24, C[1] + 12], [39, 17, C[1] + 10]]
         ]; };
       const caps = () => [
@@ -3141,7 +3658,7 @@
       const wk = () => (SH.demoStops || []).find((q2) => q2.id === "walk");
       (SH.demoStops || (SH.demoStops = [])).push({ id: "bikkurimDemo", running: () => BK.run, stop, pause: () => { const w = wk(); if (w) w.pause(); }, resume: () => { const w = wk(); if (w) w.resume(); }, paused: () => { const w = wk(); return !!(w && w.paused()); }, restart: () => { stop(); start(); } });
       // CHIP_KEEPS_DEMO_T: setReading while it runs - on from the same second, at most from the reading (until now: from the start)
-      SH.bikkurim = { start, stop, at: (t) => { build(); prime(); T = mkT(BK.reading); BG.visible = true; apply(t); }, keys, get reading() { return BK.reading; }, get off() { return BK.run ? BK.off || 0 : 0; }, setReading: (r) => { BK.reading = r === "rj" ? "rj" : "tk"; if (BK.run) { const Wk = SH.walk, now = (Wk && typeof Wk.now === "function" ? Math.max(0, Wk.now()) : 0) + (BK.off || 0); stop(); startFrom(Math.min(now, T.read0)); } return BK.reading; }, get on() { return BK.run; } };
+      SH.bikkurim = { start, stop, at: (t) => { build(); prime(); T = mkT(BK.reading); BG.visible = true; apply(t); }, keys, get reading() { return BK.reading; }, get off() { return BK.run ? BK.off || 0 : 0; }, get _k() { return { D, T, OXW, SW, KH: KF ? kHold() : null, kHoldOf, LIP, wallR }; }, get wave() { return KW.way; }, setWave,   /* HANDS_K: for the checks */ setReading: (r) => { BK.reading = r === "rj" ? "rj" : "tk"; if (BK.run) { const Wk = SH.walk, now = (Wk && typeof Wk.now === "function" ? Math.max(0, Wk.now()) : 0) + (BK.off || 0); stop(); startFrom(Math.min(now, T.read0)); } return BK.reading; }, get on() { return BK.run; } };
     }
     // ---------- AQUEDUCTS_B2 (fix-b2, 22.11.2026 - the user's decisions 170 and 171 a): THE TWO WATER CHANNELS ----------
     // (1) the channel under the court from the shitin to the Kidron - Middot 3:2 (89:20): "ובקרן מערבית דרומית היו שני נקבים, כמין שני

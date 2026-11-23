@@ -14,7 +14,7 @@
     //@@include priest-kit
     return (ark_kit.kit = { FS, HEAD_Y, HAT_Y, SH_X, SH_Y, UP, FORE, HR, HS, EYE, ER, TAU, rnd, sstep, spl, surf, sph, at, rot, white, flatUV, cnv, WAIST, gRobeLow, gRobeUp,
       BODY, bX, bZ, gRobeBody, gSash, gHat, gCap, headOn, hairGeo, handRaw, handWr, handAt, footGeo, mat, mRobe, mSkin, mHand, mHat, mFace, mEye, mSashDyed, mSashWhite,
-      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs });   // MIGBAAT_A2, TEFILLIN_A2 (ARK_TEF_M: the ark's priests too - with them)
+      mBeards, texHair, MIG, TEF, tefSet, tefOn, tefArm, gTefR, mTef, kidHands, kidHZ, kidLegs, kidBody });   // HANDS_K: kidBody (KIDDUSH_CROUCH_K)   // MIGBAAT_A2, TEFILLIN_A2 (ARK_TEF_M: the ark's priests too - with them)
   }
   // ARK_FIG_208: the kit's arms in amot (as the Second Temple's 55-tamid.js makeFigKit): the sleeve from the shoulder to the elbow, the
   // forearm, the open hand; the feet; the neck
@@ -109,15 +109,20 @@
     body.castShadow = true;
     S.add(body);
     if (waist) { const up = new Mesh(K.gRobeUp, K.mRobe); up.castShadow = true; U.add(up); }
-    U.add(new Mesh(KG.neck, K.mSkin));
+    // KIDDUSH_CROUCH_K (fix-k): the neck, the head and the migba'at in one group turned at the neck's foot (as the Second Temple's 55-tamid.js
+    // NK) - at kiddush the head is lifted on it (the kit's kidBody); standing, not turned: all where it was
+    const NKY = 1.86, NK = new Group();
+    NK.position.y = NKY;
+    U.add(NK);
+    { const nk = new Mesh(KG.neck, K.mSkin); nk.position.y = -NKY; NK.add(nk); }
     U.add(new Mesh(K.gSash, K.mSashDyed));
-    const hg = K.headOn(U, K.HEAD_Y, K.mBeards[[3, 1, 6, 4][n % 4]], n);
+    const hg = K.headOn(NK, K.HEAD_Y - NKY, K.mBeards[[3, 1, 6, 4][n % 4]], n);
     hg.rotation.set(0, (((n * 0.618) % 1) - 0.5) * 0.3, 0);
     if (!noTef && K.tefOn) K.tefOn(hg);   // TEFILLIN_A2
     const hat = new Mesh(K.gHat, K.mHat);
-    hat.position.y = K.HAT_Y;
+    hat.position.y = K.HAT_Y - NKY;
     hat.rotation.y = hg.rotation.y + (((n * 0.37) % 1) - 0.5) * 0.9;
-    U.add(hat);
+    NK.add(hat);
     const arm = (side) => {
       const sh = new Group();
       sh.position.set(side * KG.P.sx, KG.P.sy - (bend ? bend.position.y : 0), 0);
@@ -157,7 +162,7 @@
         legs[side] = { g: lg, th, kn, sn, ft };
       }
     }
-    return { g, lean, bend, legs, L, R, fl, fr, hat, hg, S: U, A: KG.P };   // (HP_RISHON_A2: hat, hg, S; KIDDUSH_FLAT_A2: A - the arm, for the kit's kidHands)
+    return { g, lean, bend, legs, L, R, fl, fr, hat, hg, S: U, A: KG.P, body: waist ? body : null, neck: NK };   // HANDS_K: body, neck (KIDDUSH_CROUCH_K)   // (HP_RISHON_A2: hat, hg, S; KIDDUSH_FLAT_A2: A - the arm, for the kit's kidHands)
   }
   // HP_KIT_A2 (the user via the coordinator, 22.11.2026: "בבית ראשון להשתמש באותה בנייה עצמה, ולא בבנייה נפרדת"): THE HIGH PRIEST IN
   // HIS EIGHT AND THE PRIEST IN HIS FOUR - the Second Temple's construction itself (shared/frag/hp-kit.js; until now its 55-tamid.js
@@ -260,6 +265,7 @@
     const KG = ark_kitArms();
     if (KG.handF) for (const [A2, sd] of [[w.L, 1], [w.R, -1]]) { const m = A2.wr && A2.wr.userData.hand, gq = u > 0.35 ? KG.handF[sd] : KG.handW[sd]; if (m && m.geometry !== gq) m.geometry = gq; }
     K.kidLegs(w, H, u);   // the feet (and in "ryose" the right leg laid on the left)
+    if (K.kidBody) K.kidBody(w, H, u);   // HANDS_K (KIDDUSH_CROUCH_K): the hips down and back, the kutonet over bent knees, the head up
     return H;
   }
   // KING_211: the king's cloths - his robe of tekhelet, his mantle of argaman bordered with gold, his dark hair - made once, for the

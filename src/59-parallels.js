@@ -498,10 +498,27 @@
           const lulavG = new CylinderGeometry(0.018, 0.026, 1.9, 5).translate(0, 0.95, 0), etrogG = new SphereGeometry(0.1, 10, 8).scale(1, 1.35, 1);
           const lulavM = new MeshStandardMaterial({ color: 0x5f7a3a, roughness: 0.8 }), etrogM = new MeshStandardMaterial({ color: 0xd9c23a, roughness: 0.6 });
           const twig = new BoxGeometry(0.04, 0.3, 0.006);
+          // FOUR_K (fix-k, 23.11.2026 - the user via the coordinator: "הכהנים אמורים להקיף עם ארבעת המינים בנטילה, ולא סתם בסחיבה"): as the
+          // Second Temple's (57-add208.js FOUR_K) - every walker holds the four species in netilah all the way round: the lulav with its hadassim
+          // and aravot upright in his right hand, the etrog in his left, the two hands close before his chest (shared/frag/arm-k.js, the kit's
+          // arms and hand.js's hands). Until now the priests carried a willow's branch aside in a hanging hand
+          //@@include arm-k
+          // ARAVAH_209_K (the user's decision 209: "כהנים בערבה, ומתג ישראל — עם ד' מינים"): in the reading "priests" (o0) each priest holds a
+          // willow's branch upright in his right hand, in netilah and shaken (Rashi in the card: "ביד נוטלין אותה ומנענעים ומקיפין בה"); in the
+          // reading "all" (o1) every walker, priest and Israelite, the four species - the lulav in his right hand and the etrog in his left. Each
+          // priest holds both, one shown at a time (pose, below)
+          const AK = tm_armK(typeof ark_kit === "function" ? ark_kit() : null), sleeveOf = {};
           const mk = (kind, robe, list, n, name, israel) => {
             for (let i = 0; i < n; i++) {
               const G = new Group(); G.visible = false; AG.add(G);
-              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: Array.isArray(robe) ? robe[i % robe.length] : robe, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name });
+              const rc = Array.isArray(robe) ? robe[i % robe.length] : robe;
+              PP.crowd(G, [[0, 0, 0]], { y: 0, s: 1.4, pose: "stand", kind, robe: rc, tone: () => i % 4, exact: true, avnet: kind === "kohen" ? undefined : false, name, arms: AK ? false : undefined });
+              if (AK) {
+                const sm3 = sleeveOf[rc] || (sleeveOf[rc] = new MeshStandardMaterial({ color: rc, vertexColors: true, roughness: 0.9 }));
+                if (israel) G.userData.hold = AK.four(G, sm3);
+                else { const hs = G.userData.holds = { aravah: AK.branch(G, sm3), four: AK.four(G, sm3) }; for (const o of hs.four.parts) o.visible = false; G.userData.hold = hs.aravah; G.userData.holdK = "aravah"; }   // ARAVAH_209_K
+                list.push(G); continue;
+              }
               if (israel) {
                 const l = new Mesh(lulavG, lulavM); l.position.set(-0.36, 1.15, 0.3); l.rotation.x = 0.12; G.add(l);
                 const et = new Mesh(etrogG, etrogM); et.position.set(0.36, 1.3, 0.32); G.add(et);
@@ -553,6 +570,9 @@
         list.forEach((G, i) => {
           const [x, z, yaw] = at(-t * sp + i * gap);
           G.position.set(x, AZ + Math.abs(Math.sin(t * 4.2 + i * 1.3)) * 0.05, z); G.rotation.y = yaw; G.visible = true;
+          { const hs = G.userData.holds, want = AR.circuit === "all" ? "four" : "aravah";   // ARAVAH_209_K: the priest's - by the reading
+            if (hs && G.userData.holdK !== want) { for (const o of hs[G.userData.holdK].parts) o.visible = false; for (const o of hs[want].parts) o.visible = true; G.userData.hold = hs[want]; G.userData.holdK = want; } }
+          if (G.userData.hold && G.userData.hold.tick) G.userData.hold.tick(t + i * 0.37);   // FOUR_K: the willow shaken
         });
       };
       const sync = () => {
