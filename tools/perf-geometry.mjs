@@ -108,7 +108,7 @@ function materialKey(material) {
 
 // Expanding an InstancedMesh back into its component records permits a direct before/after comparison. Geometry and UV buffers,
 // material settings and flags must match exactly. World matrices allow only Float32 instance-translation rounding (2e-5 amot).
-function snapshot(ctx) {
+export function snapshot(ctx) {
   const { Matrix4 } = ctx.THREE;
   ctx.scene.updateMatrixWorld(true);
   const geometryKeys = new Map(), materialKeys = new Map(), groups = new Map();
@@ -153,11 +153,14 @@ function snapshot(ctx) {
   return { counters, groups };
 }
 
-function compare(before, after, label) {
-  assert.deepEqual([...after.groups.keys()].sort(), [...before.groups.keys()].sort(), `${label}: geometry, materials, flags or visibility changed`);
+export function compare(before, after, label, visibleOnly = false) {
+  // Lazy caches may legitimately be absent while hidden; every visible component must still match the baseline.
+  const select = snapshot => visibleOnly ? new Map([...snapshot.groups].filter(([key]) => JSON.parse(key).visible)) : snapshot.groups;
+  const beforeGroups = select(before), afterGroups = select(after);
+  assert.deepEqual([...afterGroups.keys()].sort(), [...beforeGroups.keys()].sort(), `${label}: geometry, materials, flags or visibility changed`);
   let maxMatrixError = 0;
-  for (const [key, actual] of after.groups) {
-    const expected = before.groups.get(key);
+  for (const [key, actual] of afterGroups) {
+    const expected = beforeGroups.get(key);
     assert.equal(actual.length, expected.length, `${label}: a model component was lost/duplicated`);
     for (let i = 0; i < expected.length; i++) for (let k = 0; k < 16; k++) {
       const error = Math.abs(actual[i][k] - expected[i][k]);
@@ -165,7 +168,7 @@ function compare(before, after, label) {
       assert(error <= 2e-5, `${label}: component transform changed (${error} at element ${k})`);
     }
   }
-  return { comparedComponents: after.counters.components, maxMatrixError, equivalent: true };
+  return { comparedComponents: visibleOnly ? after.counters.visibleComponents : after.counters.components, visibleOnly, maxMatrixError, equivalent: true };
 }
 
 const scenarios = [
@@ -173,7 +176,14 @@ const scenarios = [
   ['whole-mount-roof', ctx => ctx.shared.harRoof.set('all')],
   ['kanievsky-roof', ctx => ctx.shared.harRoof.set('kanievsky')],
   ['ulam-open', ctx => ctx.shared.modelButtons.find(b => b.id === 'hei-ulam-front').set(true)],
-  ['ulam-closed', ctx => ctx.shared.modelButtons.find(b => b.id === 'hei-ulam-front').set(false)]
+  ['ulam-closed', ctx => ctx.shared.modelButtons.find(b => b.id === 'hei-ulam-front').set(false)],
+  // Visit the two Rashi positions first: the old roof controls eagerly built them in this order. The live-fire shader's
+  // procedural seed follows creation order, so matching that history lets us compare its uniforms exactly as well.
+  ...['rashi', 'ty'].flatMap(form => ['mid', 'corner'].flatMap(at => [
+    [`lamps-${at}-${form}`, ctx => { ctx.shared.simchaLamps.set({ at, form }); ctx.shared.features.simchaMenorot.on(); }],
+    [`lamps-${at}-${form}-pour`, ctx => ctx.shared.simchaDemo.drive(12.5)],
+    [`lamps-${at}-${form}-lit`, ctx => ctx.shared.simchaDemo.drive(15)]
+  ]))
 ];
 
 async function main() {
@@ -198,7 +208,7 @@ try {
       apply(candidate); if (baseline) apply(baseline);
       const after = snapshot(candidate), before = baseline ? snapshot(baseline) : null;
       const result = { name, candidate: after.counters };
-      if (before) { result.baseline = before.counters; result.validation = compare(before, after, `${house}/${name}`); }
+      if (before) { result.baseline = before.counters; result.validation = compare(before, after, `${house}/${name}`, name !== 'default'); }
       states.push(result);
     }
     report.houses[house] = states;
