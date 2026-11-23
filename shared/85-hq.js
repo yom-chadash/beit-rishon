@@ -825,8 +825,10 @@
       pu.normalPhi.value = 3;
       pu.radius.value = 8;
       litRT = new WebGLRenderTarget(4, 4, { type: HalfFloatType });
-      giRT = new WebGLRenderTarget(4, 4, { type: HalfFloatType, depthBuffer: false });
-      gdRT = new WebGLRenderTarget(4, 4, { type: HalfFloatType, depthBuffer: false });
+      // AO and GI are mutually exclusive resolve paths: GI returns before the AO passes (its alpha already contains AO).
+      // Both paths need the same two half-float colour buffers. Reuse them when switching modes instead of retaining four.
+      giRT = aoRT;
+      gdRT = pdRT;
       gdM = new ShaderMaterial({ uniforms: { tInput: { value: giRT.texture }, tDepth: { value: dt }, tNormal: { value: pre.texture }, resolution: { value: new Vector2() },
         cameraProjectionMatrixInverse: { value: new Matrix4() } }, vertexShader: G.vertexShader, fragmentShader: DEN_FRAG, blending: NoBlending, depthTest: false, depthWrite: false });
       giM = new ShaderMaterial({
@@ -852,8 +854,6 @@
       aoRT.setSize(w, h);
       pdRT.setSize(w, h);
       litRT.setSize(w, h);
-      giRT.setSize(w, h);
-      gdRT.setSize(w, h);
       giM.uniforms.resolution.value.set(w, h);
       gdM.uniforms.resolution.value.set(w, h);
       gtaoM.uniforms.resolution.value.set(w, h);

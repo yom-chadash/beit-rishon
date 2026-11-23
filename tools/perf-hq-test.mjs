@@ -83,6 +83,7 @@ async function run(house) {
   assert.equal(allocated.size, 0, 'shader warmup alone must not allocate framebuffer attachments');
   hq.set(true, false); frame(['normal', 'gtaoM', 'pdM']);
   const ao = metrics();
+  const aoResult = hq.U.tmAOTex.value, aoRaw = hq.mats().pdM.uniforms.tDiffuse.value;
   assert.equal(ao.targets, 3); assert.equal(ao.depthAttachments, 1);
   assert.deepEqual(hq.U.tmAOMask.value.toArray(), [1, 0, 0, 0]);
   hq.set(false, false); frame([]);
@@ -95,9 +96,11 @@ async function run(house) {
   frame(['normal', 'lit', 'giM', 'gdM']);
   hq.set(true, true); frame(['normal', 'lit', 'giM', 'gdM']);
   assert.equal(hq.U.tmAOTex.value, hq.U.tmGITex.value);
+  assert.equal(hq.U.tmGITex.value, aoResult, 'GI and AO reuse the same resolved target');
+  assert.equal(hq.mats().gdM.uniforms.tInput.value, aoRaw, 'GI and AO reuse the same raw target');
   assert.deepEqual(hq.U.tmAOMask.value.toArray(), [0, 0, 0, 1]);
   const allModes = metrics();
-  assert.equal(allModes.targets, 6); assert.equal(allModes.depthAttachments, 2);
+  assert.equal(allModes.targets, 4); assert.equal(allModes.halfFloatColorTargets, 3); assert.equal(allModes.depthAttachments, 2);
   hq.set(true, false); frame(['normal', 'gtaoM', 'pdM']);
   assert.deepEqual(hq.U.tmAOMask.value.toArray(), [1, 0, 0, 0]);
   // A changed live section/material side is reflected immediately in the shared normal prepass.
@@ -111,6 +114,7 @@ async function run(house) {
   allocated.clear(); frame(['normal', 'lit', 'giM', 'gdM']);
   assert.equal(allocated.size, 4);
   hq.set(true, false); frame(['normal', 'gtaoM', 'pdM']);
+  assert.equal(allocated.size, 4, 'returning to AO must not allocate another pair');
   hq.set(false, false); frame([]);
   assert.equal(hq.U.tmHQOn.value, 0); assert.equal(hq.U.tmAOTex.value.image.width, 1); assert.equal(hq.U.tmGITex.value.image.width, 1);
   return { house, ao, allModes };
