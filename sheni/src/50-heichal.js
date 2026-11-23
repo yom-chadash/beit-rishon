@@ -392,7 +392,7 @@
         if (plateM && plates.length) { const pm = new Mesh(mergeGeometries(plates), plateM); pm.userData.noPick = true; parent.add(pm); }   // WINDOW_NAMES_H
         ctx2.labels.push({ text: "בית החליפות — ״ששם גונזים את הסכינים״ (מידות ד, ז): כ״ד חלונות, אחד לכל משמר", x: 7, y: F + 7.2, z: zFace + dir * 1.5, size: 0.9, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
         // WINDOW_NAMES_H: on Bilga's shut stone (its plate over it says "בלגה"); until now over the windows above it, and crowding them
-        ctx2.labels.push({ text: "״וחלונה סתומה״ (סוכה ה, ח)", x: bilgaAt ? bilgaAt[0] : 2.6 + 7 * 1.25, y: bilgaAt ? bilgaAt[1] : F + 2.4 + 1.3, z: zFace + dir * 0.35, size: 0.36, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
+        ctx2.labels.push({ text: "״וחלונה סתומה״", x: bilgaAt ? bilgaAt[0] : 2.6 + 7 * 1.25, y: bilgaAt ? bilgaAt[1] : F + 2.4 + 1.3, z: zFace + dir * 0.35, size: 0.3, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
       };
       windows(ulamM, -35, 1);          // the Mishnah's reading: on the north block's face toward the ulam
       windows(ulamT, -45, 1);          // the Tiferet Yisrael's: in the room, on its north wall (the partition has its door)
