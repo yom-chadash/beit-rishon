@@ -115,7 +115,7 @@
     // the south wall at x 79.75..82.25) - but this demo, written after that, still gathered the priests where the hall had stood
     // before (x 47..73): in the open court, west of the building. Now: the ring in the hall's east half, as the lots demo's
     // (55-payis.js: its centre (84, -67)), the way in by the hall's own door, and the lots demo's eye over it.
-    const GZV = [[84.4, 53, -57.5], [84, 16.6, -67.6]];   // the hall of hewn stone from above its south wall (its roof opened)
+    const GZV = [[86.6, 53, -57.5], [86.3, 16.6, -67.6]];   // the hall of hewn stone from above its south wall (its roof opened)
     const menView = () => {
       const m = SH.menorah;
       if (!m) return [[-31, 27.5, 9], [-37, 26.5, 6.5]];
@@ -1411,13 +1411,13 @@
       const lz = z - D;
       if (x > -34 && x < -2 && z > -77.5 && z < -57.5) return F;                                             // Beit HaMoked (MOKED_WIDE_211, FLOOR_211: 32 wide, one floor at the court's level; the steps inside its gate to the chel are found from above)
       if (x > -34 && x < 9 && z <= -77.5 && z > -100) return null;                                           // before its gate to the chel: whatever is there (CHEL_211: the landing and the flight along the north face)
-      if (x > 68.8 && x < 89.2 && z > -78.2 && z < -55.8) return F;                                          // GAZIT_PLACE_211: the hall of hewn stone's floor (over the court of Israel's strip too)
+      if (x > 77.8 && x < 89.2 && z > -78.2 && z < -55.8) return F;                                          // GAZIT_PLACE_211: the hall of hewn stone's floor (over the court of Israel's strip too)
       if (x > 41 && x < 70 && lz > -18 && lz < 11) return TOP;                                               // the altar's top
       if (x > 47.5 && x < 63.5 && lz >= 10.5 && lz < 42.6) return F + 9 * (42.6 - lz) / 32;                 // the ramp
       if (x > 17.5 && x <= 39.5 && Math.abs(z) <= 50) return F + 6 * clamp((39.5 - x) / 19, 0, 1);          // the ulam's steps
       if (x > 1.5 && x <= 17.5 && Math.abs(z) <= 50) return HEI;                                            // the ulam
       if (x <= 1.5 && x > -82.5 && Math.abs(z) <= 35) return HEI + houseRise(x);                            // the house
-      if (x > 85) return MK;                                                                                 // the court of Israel (DUCHAN_GAP_A2: the duchan x 82.5..85)
+      if (x > 85) return MK + (SH.israelLift ? SH.israelLift() : 0);                                                                                 // the court of Israel (DUCHAN_GAP_A2: the duchan x 82.5..85)
       return F;
     };
     const floorCache = new Map();
@@ -1455,17 +1455,18 @@
     };
     const nodes = () => ({
       MN_OUT: [-18, -78.65], MN_IN: [-18, -74.4], MK_C: [-18, -62.6], MS_IN: [-18, -59.6], MS_OUT: [-18, -55.3],
-      CN_W: [-15, -52.2], CN: [36, -48.5], NL: [65.45, -49.6], GZ_OUT: [81, -51.4], GZ_IN: [81, -57.4], GZ_C: [83.2, -61.4],   // GAZIT_PLACE_211: the hall's door, in its south wall at x 81
-      CNE: [77.5, -47], CE: [77.5, -12], CE2: [77.5, 32], CSE: A(68.4, 32.6), RF_E: A(64.8, 42.1), RF: A(55.5, 41.6), RT: A(55.5, 11.6),
+      CN_W: [-15, -52.2], CN: [36, -48.5], NL: [65.45, -49.6], GZ_OUT: [88.25, -51.4], GZ_IN: [88.25, -57.4], GZ_C: [86.2, -61.4],   // NORTH_CHAMBERS_N2: the hall's door, in its south wall at x 87..89.5 (it was still drawn at x 81, where the door stood until 22.11)
+      CNE: [74.5, -47], CE: [74.5, -12], CE2: [74.5, 32],   // CHAMBERS_EAST_N2: the lane x 74.5 (77.5 until now - the Parvah and the Madichin stand from x 77)
+       CSE: A(68.4, 32.6), RF_E: A(64.8, 42.1), RF: A(55.5, 41.6), RT: A(55.5, 11.6),
       TOP_S: A(55.5, 8.4), RF_W: A(46.6, 42.1), RFW2: A(49.6, 41.9), RFE2: A(61.4, 41.9), CSW: A(41.6, 30), CSW_N: A(41.4, 14.4), STB_S: [38.4, 48.6], STB_N: [38.4, -12],
       ST_C: [30, -1], LAV: [24.6, 52.6], UL_D: [15, 0], UL: [8, 0], G_OUT: [2.6, 0], G_IN: [-6.2, 0], HEI: [-22, 0], WK: [3.4, -19],
-      ISR: [92, 0], DUCH: [83.6, 0], UL_NE: [18.6, -52.2], CV_D: [88.6, 24], ST_NE: [34.4, -51.0], ST_SE: [34.4, 51.0]
+      ISR: [92, 0], DUCH: [83.6, 0], UL_NE: [18.6, -52.2], CV_D: [87, 15.6], ST_NE: [34.4, -51.0], ST_SE: [34.4, 51.0]
     });
     // ROUTER_BLOCK_215: the north lane passes the ulam's platform (it reaches z -51) by the corner UL_NE, not across its edge
     const EDGES = [["MN_OUT", "MN_IN"], ["MN_IN", "MK_C"], ["MK_C", "MS_IN"], ["MS_IN", "MS_OUT"], ["MS_OUT", "CN_W"], ["CN_W", "UL_NE"], ["UL_NE", "ST_NE"], ["ST_NE", "CN"], ["CN", "NL"], ["NL", "GZ_OUT"],
       ["GZ_OUT", "GZ_IN"], ["GZ_IN", "GZ_C"], ["CNE", "GZ_OUT"], ["NL", "CNE"], ["CNE", "CE"], ["CE", "CE2"], ["CE2", "CSE"], ["CSE", "RF_E"], ["RF_E", "RF"], ["RF", "RT"], ["RT", "TOP_S"],
       ["RF_W", "RFW2"], ["RFW2", "RF"], ["RF_E", "RFE2"], ["RFE2", "RF"], ["RF_W", "CSW"], ["CSW", "CSW_N"], ["CSW", "STB_S"], ["STB_S", "ST_SE"], ["ST_SE", "LAV"], ["STB_S", "RF_W"], ["STB_S", "STB_N"], ["STB_N", "CN"], ["CN", "ST_C"], ["STB_N", "ST_C"],
-      ["STB_S", "ST_C"], ["ST_C", "UL_D"], ["UL_D", "UL"], ["UL", "G_OUT"], ["G_OUT", "G_IN"], ["G_IN", "HEI"], ["UL", "WK"], ["CE", "DUCH"], ["CE2", "DUCH"], ["DUCH", "ISR"], ["CV_D", "DUCH"], ["CV_D", "CE2"]];   // ROUTER_BLOCK_215: CV_D before the chavitin chamber's door
+      ["STB_S", "ST_C"], ["ST_C", "UL_D"], ["UL_D", "UL"], ["UL", "G_OUT"], ["G_OUT", "G_IN"], ["G_IN", "HEI"], ["UL", "WK"], ["CE", "DUCH"], ["CE2", "DUCH"], ["DUCH", "ISR"], ["CV_D", "DUCH"]];   // ROUTER_BLOCK_215: CV_D before the chavitin chamber's door - CHAMBERS_EAST_N2: now in its north wall (x 87, z 19.5), the way to it by the gate (the edge to CE2 crossed the chamber)
     const REG_NODES = { moked: ["MK_C", "MS_IN", "MN_IN"], mokedN: ["MN_OUT"], gazit: ["GZ_C", "GZ_IN"], top: ["TOP_S"], ramp: ["RF", "RT", "RFW2", "RFE2"], heichal: ["HEI", "G_IN"],
       gate: ["G_IN", "G_OUT"], ulam: ["UL", "WK", "G_OUT"], ulamDoor: ["UL_D"], steps: ["ST_C", "STB_N", "STB_S", "UL_D"], israel: ["ISR", "CV_D"],
       courtE: ["CE", "CE2", "CNE", "DUCH"], courtN: ["CN", "CN_W", "NL", "CNE", "STB_N", "MS_OUT"], courtSE: ["CSE", "RF_E"], courtSW: ["CSW", "CSW_N", "RF_W", "STB_S"], courtS: ["LAV", "STB_S", "ST_SE"] };   // ROUTER_BLOCK_215: ST_NE and ST_SE - round the corners of the ulam's twelve steps (to z ±50), not over them
@@ -1475,7 +1476,11 @@
     // (and the low wall at x 90..91 before the court's east wall, open only at the gate, the wickets and the chambers' doors)
     // (and the ulam's twelve steps - a hop round their corners, not over them)
     const BLK = [[-83, 1.5, -35.6, 35.6], [1, 17.9, -51.6, 51.6], [17.5, 33.9, -50.4, 50.4],
-      ...[[-65, -26], [-22, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 22], [26, 65]].map(([z0, z1]) => [89.6, 91.4, z0 - 0.4, z1 + 0.4])];
+      ...[[-65, -28.5], [-19.5, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 19.5], [28.5, 65]].map(([z0, z1]) => [89.6, 91.4, z0 - 0.4, z1 + 0.4]),
+      // CHAMBERS_EAST_N2: the chambers of the court of Israel (30-courts.js): Pinchas's, the chavitin makers', the Madichin, the Parvah, the salt
+      [82, 91.7, -28.9, -19.1], [82, 91.7, 19.1, 28.9], [76.5, 91.7, 29, 39.8], [76.5, 91.7, 44.6, 55.4], [79, 91.7, 54.6, 65.7],
+      // NORTH_CHAMBERS_N2: the three northern chambers, one building (30-courts.js): the Gazit hall x 76..91, the Golah and the Etz x 70.8..76
+      [70.3, 91.7, -80.5, -53.4]];
     const inBlk = (p) => BLK.some(([x0, x1, z0, z1]) => p[0] > x0 && p[0] < x1 && p[1] > z0 && p[1] < z1);
     const segBox = (p, q, x0, x1, z0, z1) => {
       let t0 = 0, t1 = 1;
@@ -1656,10 +1661,10 @@
       return RISE.map((r) => { let b = -1, bd = 1e9; spots.forEach((x, j) => { const d = Math.hypot(x[0] - r[0], x[1] - r[1]); if (!used.has(j) && d < bd) { bd = d; b = j; } }); used.add(b); return spots[b]; });
     })();
     const byHearth = (p) => { const sd = p[0] < -18 ? -1 : 1; return p[1] < -67.5 ? [[-18 + sd * 3.6, -70.6], [-18 + sd * 3.6, -64.4]] : p[1] < -64.4 ? [[-18 + sd * 3.6, -64.4]] : []; };
-    const GZX = 84, GZZ = -67;   // GAZIT_PLACE_211: the middle of the hall's east half (60, -63.3 until 2.0.1 - where the hall stood before 1.9.5)
+    const GZX = 86.25, GZZ = -67;   // GAZIT_PLACE_211: the middle of the hall's east half (60, -63.3 until 2.0.1 - where the hall stood before 1.9.5)
     const gather = (a, ids, t0, t1) => {   // all into the hall of hewn stone, its holy half ("מקום הפייס"), round the officer (model choice: an
       // ellipse, the officer in its gap at the door's side)
-      for (const [k, x, z, yaw] of ringSpots(ids, GZX, GZZ, 4.2, 7.4, HP, 0.42)) {   // GAZIT_PLACE_211: the east half is ten by twenty-two, long north-south
+      for (const [k, x, z, yaw] of ringSpots(ids, GZX, GZZ, 2.5, 7.4, HP, 0.42)) {   // GAZIT_PLACE_211: the east half is ten by twenty-two, long north-south
         if (a.seen(k)) a.go(k, [x, z], t0, t1, { yaw });
         else a.at(k, x, z, yaw, t0);
       }
@@ -1842,9 +1847,9 @@
     // choice: the lanes; the walk is quick). In the Rambam's order the stage begins with the knock and the waking (6:1).
     // KLI_SHIR_211: they meet before the chavitin chamber's door (through the court's east wall at z 24, the bar shura broken there) - the
     // ends were at x 92.4, inside the wall's thickness (x 91..96), and the third of the east group stood on the bar shura (x 90..91)
-    const EAST = [[-14, -52.4], [36, -51.2], [62, -50.6], [77.5, -47], [78.4, -20], [78.4, 15.6], [89.6, 21.2]];
+    const EAST = [[-14, -52.4], [36, -51.2], [62, -50.6], [74.5, -47], [75.4, -20], [75.4, 14.4], [85.0, 16.2]];   // CHAMBERS_EAST_N2: the lane x 74.5..75.4 and the end before the door in the chamber's north wall (z 19.5)
     const WEST = [[-22, -52.4], [-80, -52.4], [-88.4, -44], [-88.4, 44], [-80, 53.6], [16, 53.6], [44.5, 54.2],   // PLATFORM_215: z 53.6 (52.2 until 2.0.14 - the third, 1.4 inside, walked in the ulam's platform)
-      [66, 54.2], [77, 46], [78.2, 28], [89.6, 26.6]];
+      [66, 54.2], [73, 46], [75.4, 28], [75.4, 14.8], [87.4, 16.2]];
     SC.patrol = (a) => {
       const night = a.prev === "moked" || a.prev === "gevini";   // (the Rambam's order; NIGHT_WATCH_305)
       a.roofs(0, 9);
@@ -1893,7 +1898,7 @@
       // SHALOM_211 (stage ב, point 20; the user: "מוחשי יותר"): "הגיעו אלו ואלו, אמרו שלום, הכל שלום" (Tamid 1:3) - the words as captions
       a.tag("b1", "״שלום״", 28.6, 35);
       a.tag("b3", "״הכל שלום״", 29.6, 36.5);
-      a.at("cv", 96.7, 24.0, -HP, 31);   // "העמידו עושי חבתים לעשות חבתים" (KLI_SHIR_211: in the chamber's door, on the court's floor - it opens to the court now)
+      a.at("cv", 87, 20.5, Math.PI, 31);   // "העמידו עושי חבתים לעשות חבתים" (CHAMBERS_EAST_N2: in the door of the chamber, in the court of Israel - the door in its north wall, x 87, z 19.5; his face north, to those who come; KLI_SHIR_211: x 96.7, z 24 until now)
       a.tag("cv", "עושי חביתין", 31);
       a.set("torches", [0, 0], 33.6);
       a.gone("torch1", 33.6); a.gone("torch2", 33.6);
@@ -1994,11 +1999,11 @@
       // BROTHERS_215: the two brothers who stood by Beit HaMoked go, at a walk, to the meeting place of the patrol before the chavitin
       // makers' chamber (Tamid 1:3, "הגיעו אלו ואלו אצל בית עושי חביתין"), where their brothers stand - so that the run to the laver in
       // the next stage ("והם רצו ובאו", 2:1) starts there for all four, and not 150 amot away (until 2.0.14 it was run in 4.4 s)
-      a.go("b2", [88.4, 23.2], 3, 21, { yaw: -HP });
-      a.go("b4", [88.4, 24.9], 3.6, 21.6, { yaw: -HP });
+      a.go("b2", [86.0, 16.4], 3, 21, { yaw: Math.PI });   // CHAMBERS_EAST_N2: before the door in the chamber's north wall (x 87, z 19.5) - north of it, their backs to the door
+      a.go("b4", [87.8, 16.4], 3.6, 21.6, { yaw: Math.PI });
       // (in the Rambam's order the lots were cast in the hall of hewn stone after the search: the two who carried the torches come too)
-      a.go("b1", [89.6, 21.2], 3.3, 21.3, { yaw: -HP });
-      a.go("b3", [89.6, 26.6], 3.9, 21.9, { yaw: -HP });
+      a.go("b1", [85.0, 16.2], 3.3, 21.3, { yaw: Math.PI });
+      a.go("b3", [87.4, 16.2], 3.9, 21.9, { yaw: Math.PI });
     };
     const TAP = [0.55, 0.95, 1.35, 1.75].map((f) => [ACX + Math.cos(f * Math.PI) * 4.6, ACZ + Math.sin(f * Math.PI) * 4.6]);   // round the heap, clear of the pyre
     const B4 = ["b1", "b2", "b3", "b4"];
@@ -2111,7 +2116,7 @@
       // BARKAI_UP_215: he leaves the hall and is seen on its roof (until 2.0.14 he slid there at once, through the wall), and after the
       // call he goes down out of sight - until 2.0.14 he stood on the roof to the Shema, and then was set inside the hall's west wall
       a.hide("b2", 0.4);
-      a.at("b2", 68, -62, HP, 1.4, { h: 33.5 });   // "on a high place" (Bartenura) - model choice: the roof of the hall of hewn stone, looking east
+      a.at("b2", 79, -62, HP, 1.4, { h: 33.5 });   // "on a high place" (Bartenura) - model choice: the roof of the hall of hewn stone, looking east
       a.pose("b2", "point", 7, 16);
       // SOUND_211: no tone for "ברקאי" - a man's call is a caption only (the user, 15.11.2026: speech in the captions)
       // BARKAI_211 (stage ב, point 24; the user: "ברור יותר"): "אם הגיע, הרואה אומר, ברקאי" (Tamid 3:2) - the call itself, as a caption
@@ -2329,13 +2334,18 @@
       // LEVITES_211 / SINGERS_211: in through Nikanor's gate, then each to his place along the duchan - the twelve singers in its
       // middle part (six north and six south of the middle, where Ben Arza stands with the cymbal and the two trumpeters come later),
       // and the players beyond them on both sides: five lyres north; four lyres and the two harps south (the spots: model choices)
-      const LZ = [-18.4, -20.8, -23.2, -25.6, -28.0, 18.4, 20.8, 23.2, 25.6, 28.0, 30.4, 0.6,
+      // CHAMBERS_EAST_N2 (fix-n2): the chambers of the gate stand in the court of Israel now (z -28.5..-19.5 and 19.5..28.5, x 82.5..91.5) and
+      // close the way along the duchan beyond them - the twelve singers stay in the duchan's middle (x 83.3, z +-3.6..15.6 and the one at
+      // 0.6) and the eleven players (five lyres north, four lyres and the two harps south: as before) stand in a second row on the step of an
+      // amah (x 84.7), between the chambers (z -18.2..18.2; until now z +-18.4..30.4, in one row)
+      const LX = [84.7, 84.7, 84.7, 84.7, 84.7, 84.7, 84.7, 84.7, 84.7, 84.7, 84.7, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3, 83.3];
+      const LZ = [-18.2, -15.8, -13.4, -11.0, -8.6, 6.2, 8.6, 11.0, 13.4, 15.8, 18.2, 0.6,
         -15.6, -13.2, -10.8, -8.4, -6.0, -3.6, 3.6, 6.0, 8.4, 10.8, 13.2, 15.6];
       // LEVITES_GATE_215: two files through the gate's opening (its walls at z ±5, the low wall west of it open at |z| < 5.6),
       // and only west of the wicket frames (x 89.7) each turns to his place
       LEV_IDS.forEach((k, i) => {
         const s = LZ[i] < 0 ? -1.2 : 1.2;
-        a.walk(k, [[98.4, s], [89.4, s], [83.3, LZ[i]]], 7 + i * 0.12, 12.4 + i * 0.12, { yaw: HP });   // DUCHAN_GAP_A2: on the duchan's second step (x 83..83.5; until then 86.3); LEVITES_EAST_A2: their faces to the people, east (the user's decision 99; west until now)
+        a.walk(k, [[98.4, s], [89.4, s], [LX[i], LZ[i]]], 7 + i * 0.12, 12.4 + i * 0.12, { yaw: HP });   // DUCHAN_GAP_A2: on the duchan's second step (x 83..83.5; until then 86.3); LEVITES_EAST_A2: their faces to the people, east (the user's decision 99; west until now)
         if (i < 9) a.hold(k, "lyre" + (i + 1), "L", 7);
         else if (i < 11) a.hold(k, "nevel" + (i - 8), "L", 7);
       });

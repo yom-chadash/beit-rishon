@@ -25,7 +25,8 @@
   async function buildPayis(ctx2) {
     const { M: M2, LV } = ctx2;
     const SH = ctx2.shared;
-    const FYG = (ctx2.shared.gazitFloor != null ? ctx2.shared.gazitFloor : LV.KOH) + 0.02;   // the Gazit hall's floor (30-courts.js; GAZIT_FLOOR_B2 - 13.5 from 22.11.2026, 16 until then)
+    const FYG0 = (ctx2.shared.gazitFloor != null ? ctx2.shared.gazitFloor : LV.KOH) + 0.02;
+    let FYG = FYG0;   // ISRAEL_LIFT_N2: + ctx2.shared.israelLift() (2.5 in the first Tanna's reading of the pispasin - the hall rises with the court of Israel), refreshed at each start   // the Gazit hall's floor (30-courts.js; GAZIT_FLOOR_B2 - 13.5 from 22.11.2026, 16 until then)
     const g = new Group();
     g.name = "payisDemo";
     g.visible = false;
@@ -153,7 +154,7 @@
       const cap = new Mesh(gCap, mElder);
       cap.position.y = 1.645;
       ELDER.add(cap);
-      ELDER.position.set(77.2, FYG, -67);
+      ELDER.position.set(81.7, FYG, -67);   // NORTH_CHAMBERS_N2: the hall is x 76..91 now - the elder sits by the half oval's chord (x 83.5)
       ELDER.scale.setScalar(FS);
       g.add(ELDER);
     }
@@ -379,7 +380,8 @@
       capEl.style.display = "flex";
     };
     // ---------- the places
-    const GZ = { x: 84, z: -67, r: 3.9, y: FYG };                       // the ring in the Gazit's east half ("פייס במזרחה")
+    const GZ = { x: 86.25, z: -67, r: 2.4, y: FYG };   // NORTH_CHAMBERS_N2: the holy half is 5.5 wide now (10 until now): the ring, r 2.4 (3.9 until now)                       // the ring in the Gazit's east half ("פייס במזרחה")
+    const refreshFYG = () => { FYG = FYG0 + (ctx2.shared.israelLift ? ctx2.shared.israelLift() : 0); GZ.y = FYG; ELDER.position.y = FYG; };
     const MK = { x: -18, z: -61.6, r: 3.0, y: LV.KOH };   // FLOOR_211: clear of the hearth, whose southern half now stands on the one floor (z -62.6, r 3.3 until 2.0.1)                 // the ring in Beit HaMoked's holy half (the Tiferet Yisrael)
     const ringAt = (R, i, n) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [R.x + R.r * Math.cos(a), R.y, R.z + R.r * Math.sin(a)]; };
     const ROLES = ["שוחט", "זורק", "מדשן מזבח הפנימי", "מדשן את המנורה", "הראש והרגל", "שתי הידים", "העקץ והרגל", "החזה והגרה", "שתי הדפנות", "הקרבים", "הסלת", "החבתין", "היין"];
@@ -454,7 +456,7 @@
       const camMokedS = [[-18, 50, -43.5], [-18, 16, -61.5]];               // before its gate to the court
       const camCourt = [[30, 230, 170], [30, 16, 35]], fovCourt = 38;       // the court from high in the south: the way behind the house and by the south, and the way by the north-east and the east
       const camMeet = [[62, 52, -20], [81, 17, 18]];
-      const camGazit = [[84.4, 53, -57.5], [84, 16.6, -67.6]], camGazitNear = [[87.6, 37.5, -60.6], [83.7, 16.2, -65.6]], camGazit13 = [[86.4, 46, -56.6], [83.9, 15.8, -64.8]];   // the ring and the winners' tags above the caption
+      const camGazit = [[86.6, 53, -57.5], [86.3, 16.6, -67.6]], camGazitNear = [[88.8, 37.5, -60.6], [86, 16.2, -65.6]], camGazit13 = [[88.6, 46, -56.6], [86.1, 15.8, -64.8]];   // the ring and the winners' tags above the caption
       // the altar where the rows "מקום המזבח" and "מידות המזבח" now put it (40-altar.js): the ramp's middle line and its shift
       const PL = SH.altarPlace, adz = PL && PL.dz && typeof PL.dz[PL.current] === "number" ? PL.dz[PL.current] : 0;
       const yose = !!(SH.altarMeasures && SH.altarMeasures.mode === "yose"), rx = 55.5 + (yose ? 2 : 0), rz = adz + (yose ? -4 : 0);
@@ -830,6 +832,7 @@
     const roofsBtn = () => (Array.isArray(SH.modelButtons) ? SH.modelButtons.find((b) => b && b.id === "crt-lishkot-roofs") : null);
     const labelsObj = () => ctx2.scene.getObjectByName("labels");
     function start() {
+      refreshFYG();
       if (RUN) stop();
       garmentsOff();
       try { if (typeof SH.stopDemos === "function") SH.stopDemos(); } catch (_) {}
