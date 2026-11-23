@@ -14,6 +14,8 @@ The accelerator supports the first house's refined valleys, which replace subset
 
 Camera picking also uses conservative world-space bounding boxes before the exact Three.js raycast. Boxes follow geometry, instances and parent transforms. Queries that only need the nearest result visit candidates in distance order and stop when the remaining boxes cannot beat it. Unbounded/custom/deformed objects retain their exact test. Zoom candidates exclude hidden and non-pickable branches before intersecting them, using the previous post-hit eligibility rules.
 
+The indoor orbit constraint now filters its candidates to surfaces marked by the wall-fade system before raycasting. It previously intersected terrain and props on every indoor frame and then discarded every unmarked hit. The same camera correction and section-plane rules still apply. This also removes expensive oblique terrain rays, which the vertical-grid accelerator deliberately does not handle.
+
 ### Hidden rendering and frame allocations
 
 The old hidden-document timer rendered each loaded house four times per second, bypassing normal browser frame suspension. Hidden documents now stop that drawing. The unified shell also tells each house whether it is visible so its resize/camera watchdog can suspend the same work. Loading and restoration of the visible house remain supported, and switching houses retains their state.
