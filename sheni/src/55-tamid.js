@@ -19,6 +19,20 @@
   async function buildTamid(ctx2) {
     const DATA = typeof TAMID_DATA !== "undefined" ? TAMID_DATA : null;
     if (!DATA) return;
+    // SALT_STAGE_S2 (fix-s2, 23.11.2026 - the user: "הדגמת הבוקר — שלב מליחת האברים לפני ההקטרה"; Tamid 4:3, 88:25: "הלכו ונתנום מחצי
+    // הכבש ולמטה במערבו, ומלחום"): a stage of its own, "melach", right after "evarim" in both orders - the nine, who set the limbs, the
+    // fine flour, the cakes and the wine on the ramp's lower half by its west side, salt them. Its caption is the Mishnah's words as the
+    // data has them (until now the last caption of "evarim", which moves here), with the source; the salt is the ramp's ("על גבי הכבש
+    // — ששם מולחים את האברים", Menachot 21b, in the salt's card). The gestures and the stage's length - model choices
+    if (DATA.stages && DATA.stages.evarim && !DATA.stages.melach) {
+      const ev = DATA.stages.evarim, cs = (ev.caps || []).find((c) => /מְלָחוּם|מלחום/.test(c[1]));
+      if (cs) {
+        ev.caps = ev.caps.filter((c) => c !== cs);
+        DATA.stages.melach = { id: "melach", title: "מליחת האברים על הכבש", dur: 12, v: (ev.v || []).slice(-1), vr: [], caps: [[0.6, cs[1] + " (תמיד ד, ג)"]],
+          text: "הכהנים מולחים את האברים, הסולת, החביתין והיין שנתנו על הכבש — מחציו ולמטה, במערבו.", refs: [["תמיד ד, ג", "Mishnah_Tamid.4.3"]], lamps: null };
+        for (const o of Object.keys(DATA.orders || {})) { const L = DATA.orders[o], i = L.indexOf("evarim"); if (i >= 0 && L.indexOf("melach") < 0) L.splice(i + 1, 0, "melach"); }
+      }
+    }
     const F = LV.KOH, MK = 13.5, HEI = LV.HEI, ACX = 55.5, ACZ = -3.5, TOP0 = F + 9;
     const SH = ctx2.shared;
     const KID = {};   // KIDDUSH_FOOT_213: the raised leg, the hand's place on the foot, the priest's spots and the stream (below)
@@ -116,7 +130,7 @@
       moked: () => CAMK.moked()[0].slice(1),   // NIGHT_WATCH_305: the moving eye's first key (MOKED_WIDE_211's eye at its end)
       lot1: (o) => (o === "rambam" ? GZV : [[-18, 50.5, -58.6], [-18, 15, -69]]),
       patrol: () => CAMK.patrol()[0].slice(1),
-      kiyor: () => [[8.5, 25.5, 50.5], [20.2, 18.4, 55.6]],   // KIYOR_A2: the wheel at the crane's foot, the laver on its base
+      kiyor: () => CAMK.kiyor()[0].slice(1),   // KIYOR_A2; KIYOR_VIEW_S2: the moving eye's first key (CAMK.kiyor)
       kiyor12: () => [[34.5, 28, 44.5], [22, 17.6, 54.7]],   // KIYOR_A2: the twelve round the laver
       terumah: () => [V3(88, 44, 46), V3(56, 21, 18)],
       tapuach: () => [V3(82, 42, 28), V3(55.5, 25, -3.5)],
@@ -134,6 +148,7 @@
       akedah: () => [[54, 25, -10], [42, 16.5, -25]],
       dam: () => CAMK.dam()[0].slice(1),
       evarim: () => [V3(34, 46, 40), V3(50, 18, 32)],
+      melach: () => [V3(37.8, 22.6, 34.9), V3(48.6, 19.2, 35.5)],   // SALT_STAGE_S2: from the west, a little above - the nine in their row on the ramp's lower half, the parts before them
       shema: () => GZV,
       lot34: () => GZV,
       machta: () => [V3(80, 44, 50), V3(52, 22, 20)],
@@ -155,6 +170,12 @@
       // NIGHT_WATCH_305: with Ish Har HaBayit along the north chel, then with Ben Bavi by the west
       // (NIGHT_SIT_305: the sleepers seen beside the one who comes to them - from the west of the gate of the spark, from the south-west
       // behind the house of the kaporet; until the second draft the eye looked over the officer's back)
+      // KIYOR_VIEW_S2 (the user: "צריך מהכיוון השני, לראות גם את הכיור וגם את המוכני"; the coordinator: "הכיור והמוכני גדולים וברורים, מאירים,
+      // ובלי עמוד לפניהם. בזמן הקידוש רואים גם את הכהן המקדש"): from the south, between the well and the court's wall - above, while the
+      // at a man's height, under the exedra's overhang (from above it hides the wheel) and east of the well (the laver comes up beside the
+      // eye, not under it), west of the wall of לשכת המדיחין: the toothed wheel, the well, the laver rising and set on its base, and at the
+      // kiddush the priest at its west spout. Until now from the north-west, the wheel behind its posts
+      kiyor: () => [[0, [26.3, 20.4, 62.8], [20.6, 17.8, 59.4]], [10.5, [26.3, 20.4, 62.8], [20.6, 17.8, 59.4]], [13.6, [26.3, 20.4, 62.8], [20.2, 19.7, 56.5]], [40, [26.3, 20.4, 62.8], [20.2, 19.6, 56.4]]],   // (the well's mouth seen at first, the eye lifted with the laver)
       ihb: () => [[0, [-28, 17, -99], [-42, 1.6, -77.2]], [2.6, [-49, 7.5, -89], [-41.2, 1.5, -76.9]], [6.4, [-49, 7.5, -89], [-41.2, 1.5, -76.9]],
         [11.2, [-80, 6.2, -83], [-71.3, 1.3, -76.7]], [12.0, [-82, 4.6, -80.5], [-71.3, 1.2, -76.6]], [18.6, [-82, 4.6, -80.5], [-71.3, 1.2, -76.6]],
         [19.4, [-79, 3.8, -80.6], [-71.0, 0.8, -76.6]], [25.6, [-79, 3.8, -80.6], [-71.0, 0.8, -76.6]],
@@ -1101,7 +1122,7 @@
           stones.add(st);
         }
         // the cloak on the ground, and its fire
-        const cloakG = new Group();
+        const cloakG = new Group(), cloakCloth = [];   // CLOAK_S2: the cloth's folds (hidden while only the hem burns on him)
         {
           // a cloth fallen in a heap: a few low folds over one another (NIGHT_SIT_305: until the second draft one flat disc)
           for (const [sx, sy, sz, x, y, z, ry] of [[0.6, 0.09, 0.46, 0, 0.05, 0, 0.2], [0.38, 0.13, 0.27, 0.22, 0.1, -0.12, 0.7], [0.3, 0.11, 0.22, -0.26, 0.09, 0.14, -0.5],
@@ -1111,6 +1132,7 @@
             c.rotation.y = ry;
             c.castShadow = true;
             cloakG.add(c);
+            cloakCloth.push(c);   // CLOAK_S2
           }
         }
         // its fire: tongues of flame over it, orange about and yellow in the middle, and their light on the chel
@@ -1125,6 +1147,11 @@
           cloakG.add(fl);
           cloakFl.push(fl);
         }
+        // KIYOR_LIGHT_S2 (the coordinator, of the stage "kiyor": "המבט כהה... הכיור והמוכני גדולים וברורים, מאירים"): a soft light over the
+        // laver and the machine while that night stage is shown (N.kiyorLit; no lamp is drawn - a viewing light, a model choice)
+        const kiyorL = new PointLight(0xffe2bc, 0, 26, 1.4);
+        kiyorL.position.set(21.5, 25.5, 62.5);
+        grp.add(kiyorL);
         const cloakL = new PointLight(0xff8a3a, 0, 10, 1.8);
         cloakL.position.set(0, 0.6, 0);
         cloakG.add(cloakL);
@@ -1162,6 +1189,8 @@
             cloakFl.forEach((m, i) => { m.visible = cf > 0.02; const w = 0.8 + 0.3 * Math.sin(tt * 11 + i * 1.7); m.scale.set(Math.max(0.01, cf * (0.9 + 0.1 * w)), Math.max(0.01, cf * w), Math.max(0.01, cf * (0.9 + 0.1 * w))); });
             cloakL.intensity = cf > 0.02 ? cf * (5 + 1.2 * Math.sin(tt * 13)) : 0;
             mCloak.color.copy(cloakCol).lerp(charCol, clamp(cf * 1.4, 0, 1) * 0.7);   // the cloth blackens as it burns
+            for (const c of cloakCloth) c.visible = !(N.cloakCloth < 0.5);   // CLOAK_S2: the fire alone at the hem of the cloak he wears
+            kiyorL.intensity = N.kiyorLit > 0 ? 34 * N.kiyorLit : 0;   // KIYOR_LIGHT_S2
           }
         };
       })();
@@ -1220,6 +1249,8 @@
         prop("p" + i, o, { p: [0, -0.16, 0.24], r: [0, 0, 0] });
       }
       prop("salt", (() => { const g = new Group(); for (let i = 0; i < 9; i++) g.add(mesh(new SphereGeometry(0.06, 6, 4), MAT.salt, Math.cos(i) * 0.3, 0.06, (i - 4) * 1.2)); return g; })());
+      // SALT_STAGE_S2: each of the nine's pinch of salt, in his right hand while he salts (SC.melach)
+      for (let i = 1; i <= 9; i++) prop("saltH" + i, (() => { const g = new Group(); for (const [x, y, z] of [[0, 0, 0], [0.06, 0.035, 0.02], [-0.05, 0.03, -0.03], [0.01, 0.07, -0.01]]) g.add(mesh(new SphereGeometry(0.05, 6, 4), MAT.salt, x, y, z)); return g; })());
       // MAARACHOT2_211 (stage ב; the user: the arrangements in detail): the limbs and the fats not consumed from the evening - charred, on the
       // old fire until "סונקין אותם לצדדי המזבח" (Tamid 2:1) and "מחזירין אותן למערכה" (2:5); and the kindling lit in the gaps between the
       // new logs - "ורוח היה בין הגזרין, שהיו מציתין את האליתא משם" (2:4). Their number, form and places - model choices
@@ -1518,6 +1549,8 @@
         blood: { ne: 0, sw: 0, ys: 0 }, chelG: 0, roofs: false, torches: [0, 0], coalsS: 0, coalsG: 0, teniAsh: 0, kafLid: 1, mizrak: 0, slab: 0, slabKeys: 1, fx: [], night: 1,
         lanterns: 0, lantA: 0, joltN: 0, joltP: 0, cloakFire: 0, ltorchOut: 0 });   // NIGHT_WATCH_305 //   // NIGHT_COALS_304: night
       N.lamps.fill(1);
+      N.cloakCloth = 1;   // CLOAK_S2
+      N.kiyorLit = 0;   // KIYOR_LIGHT_S2
     };
     const snap = () => { for (const id in W.figs) { const s = W.figs[id].st, o = S0[id]; o.vis = s.vis; o.x = s.x; o.z = s.z; o.yaw = s.yaw; } };
     // the script API of one stage at its second `tau` (every call does nothing before its own time)
@@ -1658,7 +1691,7 @@
       // house of the kaporet asleep, wrapped in their cloaks
       a.at("gk", NWP.gk[0], NWP.gk[1], Math.PI, 0, { y: 0, pose: "sit" });
       a.at("gn", NWP.gn[0], NWP.gn[1], Math.PI, 0, { y: 0, pose: "doze" });
-      a.cloak("gn", 0, 16.4);
+      a.cloak("gn", 0, 21.0);   // CLOAK_S2: on him until he throws it (16.4 until now)
       a.at("gp", NWP.gp[0], NWP.gp[1], -HP, 0, { y: 0, pose: "doze" });
       a.cloak("gp", 0);
       // ---- Ish Har HaBayit (Middot 1:2): along the north chel, westward
@@ -1682,29 +1715,41 @@
       a.pose("ihb", "strike", 14.9, 16.3);
       a.fx("strike", 15.25); a.fx("strike", 15.95);
       a.ramp("joltN", 1, 0, 15.25, 15.65); a.ramp("joltN", 1, 0, 15.95, 16.35);
-      // he wakes and leaps up - his cloak falls from him
-      a.face("gn", faceTo(NWP.gn, p3), 16.4);
-      a.pose("gn", "wake", 16.4, 17.4);
-      const gnU = upAt(NWP.gn, faceTo(NWP.gn, p3));
-      a.at("gn", gnU[0], gnU[1], faceTo(NWP.gn, p3), 17.4, { y: 0 });
-      a.put("cloakN", NWP.cloak[0], 0.02, NWP.cloak[1], 16.4, 0.5);
-      a.walk("gn", ON_CHEL([gnU, [-72.6, -76.6]]), 17.4, 18.2, { yaw: faceTo([-72.6, -76.6], NWP.cloak) });
-      // "ורשות היה לו לשרוף את כסותו": the torch from the lantern, to the cloak, and back
+      // CLOAK_S2 (fix-s2, 23.11.2026 - the user, of the morning's night: "שריפת כסותו — הכוונה הבגד שעליו, כדי להעיר אותו!"; Middot 1:2,
+      // 89:3: "ורשות היה לו לשרף את כסותו... קול בן לוי לוקה ובגדיו נשרפין, שישן לו על משמרו"): the blows do not wake him;
+      // the officer takes the torch from the lantern and sets a small flame to the hem of the cloak while it is still on him, and only
+      // then he wakes and leaps up, throws the cloak from him to the ground, where it burns a little and dies down. No harm to the body:
+      // the flame only at the hem, small, and the cloak off him at once. (Until now he woke at the blows, his cloak fell, and the
+      // officer burned it on the ground.) The flame's size, the timing and where it falls - model choices
       const pl = [-73.0, -75.9];
       a.walk("ihb", ON_CHEL([p3, pl]), 16.6, 17.6, { yaw: faceTo(pl, [-73.6, -75.0]) });
       a.pose("ihb", "reachL", 17.6, 18.2);
       a.set("ltorchOut", 1, 18.0);
       a.hold("ihb", "ltorch", "L", 18.0);
-      const pc = [-70.4, -77.15];   // north of the cloak, his face to it
-      a.walk("ihb", ON_CHEL([pl, pc]), 18.3, 19.1, { yaw: 0 });
+      const pc = [-71.05, -77.0];   // by his west side, the face to the hem of his cloak
+      const hem = [-71.95, 0.78, -75.7];   // the cloak's hem at his west side, by the seat (he sits facing north: yaw PI)
+      a.walk("ihb", ON_CHEL([pl, pc]), 18.3, 19.1, { yaw: faceTo(pc, [hem[0], hem[2]]) });
       a.pose("ihb", "lowerL", 19.2, 20.4);
-      a.ramp("cloakFire", 0, 1, 19.6, 20.6);
-      a.fx("ignite", 19.6); a.fx("torch", 20.3);
-      a.walk("ihb", ON_CHEL([pc, pl]), 20.6, 21.4, { yaw: faceTo(pl, [-73.6, -75.0]) });
-      a.pose("ihb", "reachL", 21.4, 21.9);
-      a.gone("ltorch", 21.7);
-      a.set("ltorchOut", 0, 21.7);
-      a.ramp("cloakFire", 1, 0.35, 23, 26);
+      a.set("cloakCloth", 0, 19.5);
+      a.put("cloakN", hem[0], hem[1], hem[2], 19.5, 0.5);
+      a.ramp("cloakFire", 0, 0.24, 19.6, 20.2);   // a small flame at the hem
+      a.fx("ignite", 19.6);
+      // now he wakes - the cloak still on him - and leaps up, throwing it from him
+      a.face("gn", faceTo(NWP.gn, p3), 20.5);
+      a.pose("gn", "wake", 20.5, 21.5);
+      a.set("cloakCloth", 1, 21.0);
+      a.fly("cloakN", [NWP.cloak[0] - 0.9, 0.02, NWP.cloak[1] + 0.5], 21.0, 21.6, 0.5);
+      a.ramp("cloakFire", 0.24, 0.5, 21.6, 22.4);
+      const gnU = upAt(NWP.gn, faceTo(NWP.gn, p3));
+      a.at("gn", gnU[0], gnU[1], faceTo(NWP.gn, p3), 21.5, { y: 0 });
+      a.walk("gn", ON_CHEL([gnU, [-72.6, -76.6]]), 21.6, 22.4, { yaw: faceTo([-72.6, -76.6], [NWP.cloak[0] - 0.9, NWP.cloak[1] + 0.5]) });
+      // the torch back to the lantern
+      a.fx("torch", 21.2);
+      a.walk("ihb", ON_CHEL([pc, pl]), 21.2, 22.0, { yaw: faceTo(pl, [-73.6, -75.0]) });
+      a.pose("ihb", "reachL", 22.0, 22.5);
+      a.gone("ltorch", 22.3);
+      a.set("ltorchOut", 0, 22.3);
+      a.ramp("cloakFire", 0.5, 0.25, 23, 26);
       // ---- Ben Bavi (Shekalim 5:1 "בן בבי על הפקיע"; the Yachin there: "והיה הוא או אנשיו חוזרים על המשמורת בלילה"): by the west
       a.set("lantA", 2, 26.0);
       const b0 = [-91.0, -78.2], b1 = [-99.2, -78.4], b2 = [-99.1, -8.2], b3 = [-98.9, -6.9];
@@ -2194,8 +2239,27 @@
         a.put("p" + (i + 1), s[0], null, s[1], 12 + i * 0.12, HP);
         a.pose(k, "place", 11.4 + i * 0.25, 12.6 + i * 0.25);
       });
-      a.put("salt", onRamp(4)[0] + 0.05, null, onRamp(4)[1], 15);
-      a.tag("s5", "האברים", 2, 14);
+      a.tag("s5", "האברים", 2, 14);   // SALT_STAGE_S2: the salt in the stage of its own (below; until now put here at 15 s)
+    };
+    // KIYOR_LIGHT_S2: the stage "kiyor" (its own script is not touched - the kiddush is agent H's, HANDS_K) lit while it is shown, and
+    // not in the stages after it (they replay it at its end: the light off at its end)
+    { const sk0 = SC.kiyor; if (sk0) SC.kiyor = (a) => { sk0(a); a.set("kiyorLit", 1, 0); a.set("kiyorLit", 0, (DATA.stages.kiyor ? DATA.stages.kiyor.dur : 20) + 0.5); }; }
+    // SALT_STAGE_S2: "ומלחום" (Tamid 4:3) - each of the nine, on the ramp east of what he set down, his face to the west: a scoop of salt,
+    // then over his part, twice; the grains seen on the parts
+    SC.melach = (a) => {
+      NINE.forEach((k, i) => {
+        const s = onRamp(i);
+        a.at(k, 48.9, s[1], -HP, 0, { y: null });
+        for (const r of [0, 3.6]) {
+          const t0 = 0.8 + r + i * 0.28;
+          a.pose(k, "scoop", t0, t0 + 1.1);
+          a.pose(k, "place", t0 + 1.2, t0 + 2.4);
+          a.hold(k, "saltH" + (i + 1), "R", t0 + 0.7);   // the pinch, from the scoop until it is strewn over his part
+          a.gone("saltH" + (i + 1), t0 + 2.2);
+        }
+      });
+      a.put("salt", onRamp(4)[0] + 0.05, null, onRamp(4)[1], 2.2);
+      a.tag("s5", "מולחים את האברים", 0.6, 11.5);
     };
     SC.shema = (a) => {
       a.roofs();
@@ -3198,7 +3262,9 @@
     const applySky = (s) => {
       const K = SH.sky;
       // TEFILLIN_A2 (the user's decision 67: "חוץ מבתחילת הבוקר לפני שעלה עמוד השחר"): the tefillin from the dawn ("alot", s 0.6) on
-      if (SH.tefOff) { if (TM.active && s < 0.6) SH.tefOff.add("tamid"); else SH.tefOff.delete("tamid"); }
+      // TEF_S2 (fix-s2, 23.11.2026 - the coordinator's word on the user's decision 67: no tefillin on anyone by night, until "ברקאי"):
+      // until the east is lit at "ברקאי" (skyAt: 2.0 at 7.4 s of that stage, the call at 7.8 s) - until now from the first grey (0.6)
+      if (SH.tefOff) { if (TM.active && s < 2.0) SH.tefOff.add("tamid"); else SH.tefOff.delete("tamid"); }
       if (!K || !saved) return;
       // TAMID_NIGHT_207: the lotteries' night (55-payis.js NIGHT) - the phase by the demonstration's clock of the sky
       const NK = SH.nightKit;
