@@ -1,0 +1,106 @@
+{
+  "provenance": {
+    "run": "https://github.com/yom-chadash/beit-rishon/actions/runs/45256012887",
+    "sourceCommit": "e80bb4dbe8cfb93db7f356b2fd45f850746f848d"
+  },
+  "note": "Node CPU ray-query benchmark with actual model geometry; Canvas/DOM/audio stubbed. Not browser FPS or whole-application memory.",
+  "reference": "Same scene and queries, with the coarse terrain using Three.js original _computeIntersections.",
+  "environment": {
+    "node": "v24.22.3",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "workload": {
+    "warmQueriesPerBatch": 40,
+    "timingBatches": 3,
+    "statistic": "median milliseconds per batch",
+    "randomSeed": 729418
+  },
+  "states": [
+    {
+      "house": "rishon",
+      "state": "coarse",
+      "solids": 777,
+      "verifiedRays": 140,
+      "coldFirstQueryMs": 83.2010539999992,
+      "gridIndexTypedArrayBytes": 197136,
+      "note": "Index byte count excludes object/Map overhead; cold query includes ordinary ray initialization too.",
+      "timings": {
+        "reference": {
+          "ms": 1990.5338579999989,
+          "hits": 40
+        },
+        "terrain": {
+          "ms": 18.095972999999503,
+          "hits": 40
+        },
+        "bounds": {
+          "ms": 6.348159999999552,
+          "hits": 40
+        },
+        "nearest": {
+          "ms": 5.615229999999428,
+          "hits": 40
+        }
+      },
+      "valleyCells": 0
+    },
+    {
+      "house": "rishon",
+      "state": "refined-valleys",
+      "solids": 805,
+      "verifiedRays": 200,
+      "coldFirstQueryMs": 24.906094000001758,
+      "gridIndexTypedArrayBytes": 197136,
+      "note": "Index byte count excludes object/Map overhead; cold query includes ordinary ray initialization too.",
+      "timings": {
+        "reference": {
+          "ms": 2033.9171920000008,
+          "hits": 40
+        },
+        "terrain": {
+          "ms": 18.765989999999874,
+          "hits": 40
+        },
+        "bounds": {
+          "ms": 6.899000999997952,
+          "hits": 40
+        },
+        "nearest": {
+          "ms": 5.745661999993899,
+          "hits": 40
+        }
+      },
+      "valleyCells": 995
+    },
+    {
+      "house": "sheni",
+      "state": "coarse",
+      "solids": 1883,
+      "verifiedRays": 140,
+      "coldFirstQueryMs": 2.5365859999947133,
+      "gridIndexTypedArrayBytes": 197136,
+      "note": "Index byte count excludes object/Map overhead; cold query includes ordinary ray initialization too.",
+      "timings": {
+        "reference": {
+          "ms": 2176.848883999999,
+          "hits": 40
+        },
+        "terrain": {
+          "ms": 118.15391200000158,
+          "hits": 40
+        },
+        "bounds": {
+          "ms": 86.62671699999919,
+          "hits": 40
+        },
+        "nearest": {
+          "ms": 46.82804599999508,
+          "hits": 40
+        }
+      },
+      "valleyCells": 0
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "provenance": {
+    "sourceCommit": "e80bb4dbe8cfb93db7f356b2fd45f850746f848d",
+    "environment": "local Linux CPU; see environment field; actual model builders with Canvas/DOM/audio stubs",
+    "command": "node tools/perf-ray-model.mjs --room-only --out room-report.json"
+  },
+  "note": "Node CPU ray-query benchmark with actual model geometry; Canvas/DOM/audio stubbed. Not browser FPS or whole-application memory.",
+  "reference": "Same scene and queries, with the coarse terrain using Three.js original _computeIntersections.",
+  "environment": {
+    "node": "v24.22.3",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C"
+  },
+  "workload": {
+    "warmQueriesPerBatch": 40,
+    "timingBatches": 3,
+    "statistic": "median milliseconds per batch",
+    "randomSeed": 729418
+  },
+  "states": [],
+  "rooms": [
+    {
+      "house": "rishon",
+      "verifiedPoses": 40,
+      "markedRoomSurfaces": 295,
+      "solids": 777,
+      "timedViews": [
+        "shulchanot",
+        "shulchanMoshe",
+        "menorot",
+        "incenseAltar",
+        "kodeshHakodashim",
+        "throne",
+        "throneSteps"
+      ],
+      "queriesPerBatch": 35,
+      "baselineMs": 1532.2925670000004,
+      "candidateMs": 119.28733700000157,
+      "note": "Median of three batches; actual close viewpoints, unchanged camera result. Includes current terrain acceleration in both paths."
+    },
+    {
+      "house": "sheni",
+      "verifiedPoses": 16,
+      "markedRoomSurfaces": 959,
+      "solids": 1883,
+      "timedViews": [
+        "menorah",
+        "shulchan"
+      ],
+      "queriesPerBatch": 10,
+      "baselineMs": 568.492033999999,
+      "candidateMs": 4.403432999999495,
+      "note": "Median of three batches; actual close viewpoints, unchanged camera result. Includes current terrain acceleration in both paths."
+    }
+  ],
+  "roomReference": "Same current scene and terrain accelerator; compare the indoor guard before and after prefiltering its tmPass surfaces."
+}

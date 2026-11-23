@@ -14,6 +14,8 @@ The accelerator supports the first house's refined valleys, which replace subset
 
 Camera picking also uses conservative world-space bounding boxes before the exact Three.js raycast. Boxes follow geometry, instances and parent transforms. Queries that only need the nearest result visit candidates in distance order and stop when the remaining boxes cannot beat it. Unbounded/custom/deformed objects retain their exact test. Zoom candidates exclude hidden and non-pickable branches before intersecting them, using the previous post-hit eligibility rules.
 
+Those bounds add cached boxes and matrices per queried object/geometry. The maps are weakly keyed, allowing discarded scenes to be collected. This trades some retained CPU-side metadata for substantially fewer triangle tests; total browser heap reduction is not claimed.
+
 The indoor orbit constraint now filters its candidates to surfaces marked by the wall-fade system before raycasting. It previously intersected terrain and props on every indoor frame and then discarded every unmarked hit. The same camera correction and section-plane rules still apply. This also removes expensive oblique terrain rays, which the vertical-grid accelerator deliberately does not handle.
 
 ### Hidden rendering and frame allocations
@@ -66,6 +68,22 @@ AO and GI resolve paths are mutually exclusive: the GI result already contains t
 At a 1920 × 1080 drawing buffer, the existing half-resolution effects use 960 × 540 targets. After visiting AO and GI, colour-target storage falls from 22,809,600 to 14,515,200 bytes. Including an estimate of four bytes per depth attachment, the targeted render-buffer total falls from 31,104,000 to 18,662,400 bytes (40%). Actual allocation depends on the graphics driver. **This is not a claim of 40% lower total application memory.** Effect resolution, samples and shaders are unchanged.
 
 ## Verification and measurement scope
+
+### Recorded CPU query results
+
+The committed [measurement snapshots](performance-results/) retain the workload, hardware and source revision. The terrain rows below are from the Linux CI runner (AMD EPYC, Node 24); the indoor rows are from the local Linux validation runner (Intel Xeon, Node 24). Each entry is the median of three warm batches. Compare the two columns within a row, not absolute times across machines.
+
+| Isolated workload | Original query path | Optimized path |
+| --- | ---: | ---: |
+| First house: 40 downward queries, coarse terrain | 1,990.53 ms | 5.62 ms |
+| First house: 40 downward queries, refined valleys | 2,033.92 ms | 5.75 ms |
+| Second house: 40 downward queries | 2,176.85 ms | 46.83 ms |
+| First house: 35 nearby indoor-orbit constraints | 1,532.29 ms | 119.29 ms |
+| Second house: 10 nearby indoor-orbit constraints | 568.49 ms | 4.40 ms |
+
+The terrain comparison keeps the current scene and replaces only the query path with original Three.js raycasting. The indoor comparison already includes terrain acceleration in both columns and isolates the additional early room-surface filter. All compared hit data/camera positions match. The first coarse-terrain lookup in this CI run took 83.20 ms, including lookup validation and ordinary first-query setup; warm timings exclude that one-time cost. These are CPU query timings, not full frames or application speedup factors.
+
+### Correctness and browser coverage
 
 The test suites distinguish correctness, operation counts and runtime measurements:
 

@@ -20,6 +20,7 @@ assert(!selected || ['rishon', 'sheni'].includes(selected), '--house must be ris
 const report = {
   note: 'Node CPU ray-query benchmark with actual model geometry; Canvas/DOM/audio stubbed. Not browser FPS or whole-application memory.',
   reference: 'Same scene and queries, with the coarse terrain using Three.js original _computeIntersections.',
+  roomReference: 'Same current scene and terrain accelerator; compare the indoor guard before and after prefiltering its tmPass surfaces.',
   environment: { node: process.version, platform: process.platform, arch: process.arch, cpu: os.cpus()[0]?.model },
   workload: { warmQueriesPerBatch: 40, timingBatches: 3, statistic: 'median milliseconds per batch', randomSeed: 729418 },
   states: [], rooms: []
