@@ -2811,7 +2811,9 @@
         [T.bow1 + 0.4, "הדרך, הקצב, השור, הסל ופירותיו והמלווים — בחירת מודל"]
       ];
       const finish = () => { BK.run = false; BG.visible = false; const sv = BK.saved; if (sv && sv.lg) sv.lg.visible = sv.labels; if (sv && sv.view && SH.viewLimits) SH.viewLimits.set(sv.view); if (BK.camLow0 === undefined) delete SH.camLow; else SH.camLow = BK.camLow0; BK.saved = null; };
-      const start = () => {
+      // CHIP_KEEPS_DEMO_T (fix-t, 23.11.2026; the coordinator: "מותר להתחיל מחדש מהשלב הרלוונטי (הקריאה), לא מההתחלה"): the run may begin
+      // at a second of its timeline (BK.off) - the walk's keys and captions from there, shifted to its start; setReading uses it below
+      const startFrom = (off0) => {
         const Wk = SH.walk; if (!Wk) return false;
         if (typeof SH.stopDemos === "function") SH.stopDemos("bikkurimDemo");
         build(); prime();
@@ -2821,21 +2823,30 @@
         if (SH.viewLimits) SH.viewLimits.include([0, RPb.yf - 2, RPb.zf + 30]);
         BK.camLow0 = SH.camLow; SH.camLow = RPb.yf - 3;
         T = mkT(BK.reading);
-        BG.visible = true; BK.run = true; apply(0);
-        Wk.run(keys(), caps(), finish);
+        const off = off0 > 0 ? off0 : 0;
+        BK.off = off;
+        BG.visible = true; BK.run = true; apply(off);
+        if (!off) { Wk.run(keys(), caps(), finish); return true; }
+        const K = keys(), C = caps();
+        let i0 = 0, c0 = 0;
+        for (let i = 0; i < K.length; i++) if (K[i][0] <= off) i0 = i;
+        for (let i = 0; i < C.length; i++) if (C[i][0] <= off) c0 = i;
+        Wk.run(K.slice(i0).map(([t, e, l]) => [Math.max(0, t - off), e, l]), C.slice(c0).map(([t, x]) => [Math.max(0, t - off), x]), finish);
         return true;
       };
+      const start = () => startFrom(0);
       const stop = () => { if (!BK.run) return; const Wk = SH.walk; if (Wk && Wk.on) Wk.stop(); else finish(); };
       let sndB = -1;
       if (Array.isArray(ctx2.animated)) ctx2.animated.push(() => {
         if (!BK.run) { sndB = -1; return; }
-        const Wk = SH.walk, t = Wk && typeof Wk.now === "function" ? Math.max(0, Wk.now()) : 0;
+        const Wk = SH.walk, t = (Wk && typeof Wk.now === "function" ? Math.max(0, Wk.now()) : 0) + (BK.off || 0);   // CHIP_KEEPS_DEMO_T: + BK.off
         try { apply(t); } catch (e) { if (!BK.warned) { BK.warned = true; console.warn("[bikkurim]", e && e.message); } }
         sndB = t;
       });
       const wk = () => (SH.demoStops || []).find((q2) => q2.id === "walk");
       (SH.demoStops || (SH.demoStops = [])).push({ id: "bikkurimDemo", running: () => BK.run, stop, pause: () => { const w = wk(); if (w) w.pause(); }, resume: () => { const w = wk(); if (w) w.resume(); }, paused: () => { const w = wk(); return !!(w && w.paused()); }, restart: () => { stop(); start(); } });
-      SH.bikkurim = { start, stop, at: (t) => { build(); prime(); T = mkT(BK.reading); BG.visible = true; apply(t); }, keys, get reading() { return BK.reading; }, setReading: (r) => { BK.reading = r === "rj" ? "rj" : "tk"; if (BK.run) { stop(); start(); } return BK.reading; }, get on() { return BK.run; } };
+      // CHIP_KEEPS_DEMO_T: setReading while it runs - on from the same second, at most from the reading (until now: from the start)
+      SH.bikkurim = { start, stop, at: (t) => { build(); prime(); T = mkT(BK.reading); BG.visible = true; apply(t); }, keys, get reading() { return BK.reading; }, get off() { return BK.run ? BK.off || 0 : 0; }, setReading: (r) => { BK.reading = r === "rj" ? "rj" : "tk"; if (BK.run) { const Wk = SH.walk, now = (Wk && typeof Wk.now === "function" ? Math.max(0, Wk.now()) : 0) + (BK.off || 0); stop(); startFrom(Math.min(now, T.read0)); } return BK.reading; }, get on() { return BK.run; } };
     }
     // ---------- AQUEDUCTS_B2 (fix-b2, 22.11.2026 - the user's decisions 170 and 171 a): THE TWO WATER CHANNELS ----------
     // (1) the channel under the court from the shitin to the Kidron - Middot 3:2 (89:20): "ובקרן מערבית דרומית היו שני נקבים, כמין שני

@@ -36,6 +36,12 @@
 #tm-tour-box .src a{display:inline-block;color:#f3dc9a;margin:2px 0 2px 5px;padding:2px 7px;border:1px solid rgba(201,168,76,.45);border-radius:6px;
   background:rgba(201,168,76,.12);text-decoration:none;cursor:pointer}
 #tm-tour-box .src a:hover{background:rgba(201,168,76,.3)}
+#tm-tour-box .o{flex:none;max-height:30%;overflow-y:auto;margin:6px 12px 0;padding-top:4px;border-top:1px solid rgba(201,168,76,.25);font-size:.6875rem;line-height:1.5;color:#b9ac82}
+#tm-tour-box .o .g{display:block}
+#tm-tour-box .o .k{margin-left:3px}
+#tm-tour-box .o a{display:inline-block;color:#f3dc9a;margin:2px 0 2px 5px;padding:2px 7px;border:1px solid rgba(201,168,76,.45);border-radius:6px;background:rgba(201,168,76,.12);text-decoration:none;cursor:pointer}
+#tm-tour-box .o a:hover{background:rgba(201,168,76,.3)}
+#tm-tour-box .o a.on{background:rgba(201,168,76,.5);color:#14110a;border-color:rgba(255,236,170,.85);cursor:default}
 #tm-tour-box .caps{margin-top:6px}
 #tm-tour-box .caps:empty{display:none}
 #tm-tour-box .caps .cap{margin:0 0 6px;padding:4px 8px;border-right:3px solid rgba(201,168,76,.3);border-radius:4px;line-height:1.6;color:#a89c78;
@@ -841,6 +847,27 @@ body.tm-measuring #tm-tour-box{bottom:96px}
       const elTtl = mk("div", "ttl", "", box), elSub = mk("div", "sub", "", box), elWait = mk("div", "wait", "", box);
       //@@slot buildTour.elOpts
       const body = mk("div", "body", null, box);
+      // CHIP_KEEPS_DEMO_T (fix-t, 23.11.2026 - the user, 01:31: "בכל הדגמה ומצגת שיש שיטות, צריך שבכרטיס יהיה מעבר ברור ומהיר בין השיטות"):
+      // the slide's opinions as chips, as on the cards (70-ui.js ctx.ui.chips), under its title: a place or a view - its card's rows; a
+      // reading of the table - its own row. A chip changes the model at once and marks the row in the menu (and back: the hook); the
+      // presentation goes on - no flight, no stop (the banner is no switch, 90-entry.js; ctx.shared.ui_chipKeepsDemo)
+      const elOps = mk("div", "o", null, null);
+      elOps.style.display = "none";
+      box.insertBefore(elOps, body);
+      const chipsOf = (s) => {
+        const C = U.chips;
+        if (!s || !C || !fnc(C.of)) return null;
+        if (s.kind === "opinion") return s.row ? [s.row] : null;
+        if (s.kind === "place") return call(C.of, { title: s.title });
+        if (s.kind === "view") return call(C.of, { view: s.key });
+        return null;
+      };
+      const renderOps = (s) => {
+        const C = U.chips, ids = running && s ? chipsOf(s) : null;
+        elOps.textContent = "";
+        if (!ids || !ids.length || !C || !fnc(C.render) || !call(C.render, elOps, ids, null, () => true)) elOps.style.display = "none";
+      };
+      if (U.chips && fnc(U.chips.hook)) call(U.chips.hook, () => { if (running && slides[idx]) renderOps(slides[idx]); });
       // 1.0.1-L: elCaps = the captions of a timeline (the king's ascent, the witnesses), added one by one at their times
       const elVs = mk("div", "vs", null, body), elTxt = mk("div", "txt", "", body), elCaps = mk("div", "caps", null, body), elSrc = mk("div", "src", "", body);
       // 1.0.1-L (L.80): the bubble on the throne slides - in the banner under the scrolling text, always seen (on a phone it scrolls with the text:
@@ -1033,6 +1060,7 @@ body.tm-measuring #tm-tour-box{bottom:96px}
         fillSrc(elTtl, s.title);
         elSub.textContent = s.sub || "";
         elSub.style.display = s.sub ? "" : "none";
+        renderOps(s);   // CHIP_KEEPS_DEMO_T
         //@@slot render
         renderVerses(s.verses && s.verses.length ? s.verses : null);
         fillSrc(elTxt, slideText(s, rt));
@@ -1467,6 +1495,8 @@ body.tm-measuring #tm-tour-box{bottom:96px}
         elNum.textContent = "";
         elTtl.textContent = "סוף המצגת";
         elSub.style.display = "none";
+        elOps.textContent = "";   // CHIP_KEEPS_DEMO_T
+        elOps.style.display = "none";
         elVs.textContent = "";
         elTxt.textContent = "השיטות, השכבות והמתגים שהיו לפני המצגת הוחזרו, וחזרנו למבט הכללי. אפשר להמשיך לבד בלוח הבקרה, או להתחיל שוב.";
         elCaps.textContent = "";
