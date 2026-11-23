@@ -115,15 +115,19 @@
   sun.shadow.normalBias = 0.35;
   scene.add(sun);
   //@@slot after-sc
-  var shc = { scene: scene, force: true, again: 0, skip: false, n: -1, h: 0, sec: "", frames: 0, draws: 0 };
+  var shc = { scene: scene, force: true, again: 0, skip: false, n: -1, h: 0, sec: "", frames: 0, draws: 0,
+    objectValues: new Float64Array(7), lightValues: new Float64Array(9), state: { n: 0, h: 0, dirty: false } };
   function shc_obj(o) {
     let c = o.__shc, ch = false;
     if (!c) { c = o.__shc = new Float64Array(23); ch = true; }
     const e = o.matrixWorld.elements;
     for (let i = 0; i < 16; i++) if (c[i] !== e[i]) { c[i] = e[i]; ch = true; }
     const g = o.geometry, pa = g && g.attributes ? g.attributes.position : null, m = o.material, im = o.instanceMatrix;
-    const v = [g ? g.id : -1, pa ? pa.version : -1, Array.isArray(m) ? -m.length : (m ? m.id : -1), Array.isArray(m) ? 1 : (m && m.visible ? 1 : 0),
-      o.layers.mask, im ? im.version : -1, o.isInstancedMesh ? o.count : -1];
+    // One scratch buffer for the pass, not a new array for every caster in every frame.
+    const v = shc.objectValues;
+    v[0] = g ? g.id : -1; v[1] = pa ? pa.version : -1;
+    v[2] = Array.isArray(m) ? -m.length : (m ? m.id : -1); v[3] = Array.isArray(m) ? 1 : (m && m.visible ? 1 : 0);
+    v[4] = o.layers.mask; v[5] = im ? im.version : -1; v[6] = o.isInstancedMesh ? o.count : -1;
     for (let i = 0; i < 7; i++) if (c[16 + i] !== v[i]) { c[16 + i] = v[i]; ch = true; }
     return ch;
   }
@@ -143,7 +147,11 @@
     if (!c) { c = L.__shcL = new Float64Array(41); ch = true; }
     const a = L.matrixWorld.elements, b = L.target ? L.target.matrixWorld.elements : a;
     for (let i = 0; i < 16; i++) { if (c[i] !== a[i]) { c[i] = a[i]; ch = true; } if (c[16 + i] !== b[i]) { c[16 + i] = b[i]; ch = true; } }
-    const v = sc2 ? [sc2.left, sc2.right, sc2.top, sc2.bottom, sc2.near, sc2.far, s.mapSize.x, s.mapSize.y, sc2.fov || 0] : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const v = shc.lightValues;
+    if (sc2) {
+      v[0] = sc2.left; v[1] = sc2.right; v[2] = sc2.top; v[3] = sc2.bottom; v[4] = sc2.near; v[5] = sc2.far;
+      v[6] = s.mapSize.x; v[7] = s.mapSize.y; v[8] = sc2.fov || 0;
+    } else v.fill(0);
     for (let i = 0; i < 9; i++) if (c[32 + i] !== v[i]) { c[32 + i] = v[i]; ch = true; }
     return ch;
   }
@@ -152,7 +160,8 @@
     if (scn !== shc.scene || !lights || !lights.length || !this.enabled) return shc_render.call(this, lights, scn, cam);
     if (shc.skip) return;   // HQ_302: the light toggles' prepass draws the scene again - the map stays as it is
     shc.frames++;
-    const st = { n: 0, h: 0, dirty: false };
+    const st = shc.state;
+    st.n = 0; st.h = 0; st.dirty = false;
     shc_walk(scn, st);
     let dirty = st.dirty || st.n !== shc.n || st.h !== shc.h;
     shc.n = st.n;
@@ -801,23 +810,26 @@
   });
   //@@slot after-ent_walkModeSet-note
   var ent_sec = { on: false, axis: "z", v: 0, plane: new Plane(new Vector3(0, 0, -1), 0), sides: new Map() };
+  function ent_sectionMaterial(m) {
+    if (!m || m.isShaderMaterial || m.isSpriteMaterial) return;
+    const P = ent_sec.plane;
+    if (m.clippingPlanes && m.clippingPlanes.length === 1 && m.clippingPlanes[0] === P) return;
+    //@@slot ent_sectionApply-note-2
+    if (!ent_sec.sides.has(m)) ent_sec.sides.set(m, m.clippingPlanes && m.clippingPlanes.length ? FrontSide : m.side);
+    m.clippingPlanes = [P];
+    m.clipShadows = true;
+    m.side = DoubleSide;
+    m.needsUpdate = true;
+  }
+  function ent_sectionObject(o) {
+    //@@slot ent_sectionApply-note
+    if (!(o.isMesh || o.isLine || o.isPoints) || !o.material) return;
+    if (Array.isArray(o.material)) { for (const m of o.material) ent_sectionMaterial(m); }
+    else ent_sectionMaterial(o.material);
+  }
   function ent_sectionApply() {
     if (!ent_sec.on || !ctx || !ctx.root) return;
-    const P = ent_sec.plane;
-    ctx.root.traverse((o) => {
-      //@@slot ent_sectionApply-note
-      if (!(o.isMesh || o.isLine || o.isPoints) || !o.material) return;
-      for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
-        if (!m || m.isShaderMaterial || m.isSpriteMaterial) continue;
-        if (m.clippingPlanes && m.clippingPlanes.length === 1 && m.clippingPlanes[0] === P) continue;
-        //@@slot ent_sectionApply-note-2
-        if (!ent_sec.sides.has(m)) ent_sec.sides.set(m, m.clippingPlanes && m.clippingPlanes.length ? FrontSide : m.side);
-        m.clippingPlanes = [P];
-        m.clipShadows = true;
-        m.side = DoubleSide;
-        m.needsUpdate = true;
-      }
-    });
+    ctx.root.traverse(ent_sectionObject);
   }
   function ent_sectionSet(on, axis, v) {
     on = !!on;

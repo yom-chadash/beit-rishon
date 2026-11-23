@@ -217,6 +217,43 @@ check('animation loop never renders or runs scene work for a hidden document/hou
   sandbox.ent_load.loading = true; frame(6200); assert.equal(renders, 2);
 });
 
+check('shadow cache redraws on movement, geometry, visibility, instances and clipping', () => {
+  const source = read('shared/90-entry.js');
+  const section = source.slice(source.indexOf('  var shc = '), source.indexOf('  renderer.domElement.addEventListener("webglcontextrestored"'));
+  const scene = new Scene(), sun = new DirectionalLight(), mesh = new Mesh(new BoxGeometry(), mat);
+  sun.shadow.map = {}; mesh.castShadow = true; scene.add(mesh); scene.updateMatrixWorld(true);
+  let draws = 0;
+  const renderer = { shadowMap: { enabled: true, render() { draws++; } }, localClippingEnabled: false };
+  const sandbox = { scene, renderer, Float64Array, Math, ent_sec: { on: false }, Array };
+  vm.runInNewContext(section, sandbox);
+  const render = () => renderer.shadowMap.render([sun], scene, {});
+  render(); render(); render(); assert.equal(draws, 2);
+  const changes = [
+    () => { mesh.position.x = 4; scene.updateMatrixWorld(true); },
+    () => { mesh.geometry.attributes.position.needsUpdate = true; },
+    () => { mesh.visible = false; },
+    () => { mesh.visible = true; },
+    () => { mesh.material = mat.clone(); },
+    () => { sandbox.ent_sec = { on: true, axis: 'z', v: 4 }; },
+    () => { sun.shadow.camera.left -= 5; }
+  ];
+  for (const change of changes) { const n = draws; change(); render(); render(); render(); assert.equal(draws, n + 2); }
+});
+
+check('clipping follows newly added/replaced materials without per-object wrapper arrays', () => {
+  const source = read('shared/90-entry.js');
+  const section = source.slice(source.indexOf('  var ent_sec = '), source.indexOf('  function ent_sectionSet('));
+  const group = new Group(), a = new Mesh(new BoxGeometry(), mat.clone()), b = new Mesh(new BoxGeometry(), [mat.clone(), mat.clone()]);
+  group.add(a, b);
+  const sandbox = { ctx: { root: group }, Plane, Vector3, Map, Array, FrontSide, DoubleSide };
+  vm.runInNewContext(section, sandbox); sandbox.ent_sec.on = true; sandbox.ent_sectionApply();
+  assert.equal(a.material.clippingPlanes[0], sandbox.ent_sec.plane);
+  for (const m of b.material) assert.equal(m.clippingPlanes[0], sandbox.ent_sec.plane);
+  a.material = mat.clone(); sandbox.ent_sectionApply(); assert.equal(a.material.clippingPlanes[0], sandbox.ent_sec.plane);
+  const c = new Mesh(new BoxGeometry(), mat.clone()); group.add(c); sandbox.ent_sectionApply();
+  assert.equal(c.material.clippingPlanes[0], sandbox.ent_sec.plane);
+});
+
 if (process.argv.includes('--benchmark')) {
   // A deterministic thin-wall workload: every broad sphere intersects the ray, while
   // the exact wall boxes do not. Times describe this workload, not whole-app FPS.
