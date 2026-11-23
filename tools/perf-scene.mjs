@@ -113,7 +113,9 @@ try {
       h.frame(); r.render(c.scene, c.camera);
       if (h.S.error) throw new Error('HQ: ' + h.S.error);
       if (h.S.ao !== ao || h.S.gi !== gi) throw new Error('HQ effect failed to stay enabled');
-      return { name, ao: h.S.ao, gi: h.S.gi, gpuResources: { ...r.info.memory }, draw: { ...r.info.render } };
+      // renderer.info auto-resets per render: this describes the final beauty pass,
+      // not the normal/lit/fullscreen passes that h.frame() performed beforehand.
+      return { name, ao: h.S.ao, gi: h.S.gi, gpuResources: { ...r.info.memory }, beautyDraw: { ...r.info.render } };
     }, name, ao, gi);
     report.effects.push(effect);
     await page.screenshot({ path: path.join(output, `${house}-${name}.png`) });
