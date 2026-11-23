@@ -1218,9 +1218,24 @@
         if (!c) { c = m.clone(); c.clippingPlanes = planes; c.clipIntersection = true; c.userData = Object.assign({}, m.userData, { __lul: true }); clones.set(m, c); }
         return c;
       };
+      // SCAN2_FIX (scan 2, item 2: "הלול לא נראה"): the amah traksin in Rashi's reading (the default; 55-interior.js ctx.shared.traksin) moves
+      // everything west of the devir one amah west - the walls' vertices, the plates above, the label and the place's eye - but these planes
+      // stayed: the outer 0.8 of the chamber wall (x -81.5..-80.7) and the devir's inner amah were not cut, and the lul was not seen from
+      // either side. The box's two x ends follow the traksin's map (the Rambam's: the map is x -> x, the box as built)
+      let mapX0 = LB.x0, mapX1 = LB.x1;
+      const followTraksin = () => {
+        const TR = ctx.shared.traksin, mp = TR && typeof TR.map === "function" ? TR.map : null;
+        const a = mp ? mp(LB.x0) : LB.x0, b = mp ? mp(LB.x1) : LB.x1;
+        if (a === mapX0 && b === mapX1) return;
+        mapX0 = a; mapX1 = b;
+        planes[0].constant = a; planes[1].constant = -b;
+        lbox.min.x = a; lbox.max.x = b;
+        meshes = null;   // the meshes that cross the box, found again
+      };
       (ctx.animated = ctx.animated || []).push(() => {
         const S = ctx.shared.section;
         if (S && S.on) return;
+        followTraksin();
         if (!meshes || ++tick % 180 === 0) find();
         for (const o of meshes) {
           if (Array.isArray(o.material)) { let ch = false; const a = o.material.map((m) => { const c = cloneOf(m); if (c !== m) ch = true; return c; }); if (ch) o.material = a; }
@@ -2537,7 +2552,7 @@
     Object.assign(ctx.shared.flyPoints, {
       // 1.0.1-L (L.72): the two tables before the house's doorway, from inside the ulam on its axis (the eye 1 before the front wall's inner
       // face x 12.5, 6.2 above the floor, looking 31 deg down at the doorway's foot between the tables; the pillars' shafts frame the view)
-      ulamTables: { pos: [11.5, 18.2, 0], target: [4.7, 13.6, 0] },
+      ulamTables: { pos: [11.8, 25, 0], target: [4.2, 13.56, 1.06] },   // SCAN2_FIX (scan 2, item 4): higher, looking down - both tables between the card and the panel (were at the screen's two sides, under them)
       // 1.0.1-L (FIXES L.41; the user: "כפתור הבית מבחוץ לא ממש מציג את הבית"): the whole house from the south-east above (azimuth 40 deg from
       // the east toward the south, 36 deg down), as the book's general view (p. א): the ulam's front with its doorway, the south side with
       // the closed yatzia and the house rising over it, the base and the steps - centred, the house's outline filling 65% x 81% of the view
