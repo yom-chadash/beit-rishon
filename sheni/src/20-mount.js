@@ -791,11 +791,20 @@
         ezSlab(CX0, CX1, -WZ, WZ);                                                    // the middle, from the north wall to the south wall
         ezSlab(WX0, CX0, -CZ, CZ);                                                    // the west arm (over the fifteen steps)
         ezSlab(CX1, WX1, -CZ, CZ);                                                    // the east arm (before the gate)
-        const beam = (x, z, w, d) => { const m = new Mesh(new BoxGeometry(w, 1.0, d), M2.cedar); m.position.set(x, YR - 0.5, z); m.castShadow = true; m.userData.noPick = true; EZ.add(m); };
+        const beamMats = new Map();
+        const beam = (x, z, w, d) => {
+          const key = w + "," + d;
+          if (!beamMats.has(key)) beamMats.set(key, { w, d, mats: [] });
+          beamMats.get(key).mats.push(m4(x, YR - 0.5, z));
+        };
         for (let z = -WZ + 3; z <= WZ - 2.9; z += 6.2) beam((CX0 + CX1) / 2, z, CX1 - CX0, 0.8);   // the middle: east to west
         for (let x = WX0 + 3; x < CX0 - 1; x += 6.25) beam(x, 0, 0.8, 2 * CZ);                     // the arms: north to south
         for (let x = CX1 + 3; x < WX1 - 1; x += 6.25) beam(x, 0, 0.8, 2 * CZ);
         for (const x of [CX0, CX1]) beam(x, 0, 1.6, 2 * CZ + 1);                                  // the two lintels on the columns
+        for (const { w, d, mats } of beamMats.values()) {
+          const m = instMesh(EZ, new BoxGeometry(w, 1.0, d), M2.cedar, mats, false);
+          m.castShadow = true; m.userData.noPick = true;
+        }
         const ec = H2.colonnade(EZ, EZC.map(([x, z]) => ({ x, y: LV.EZN, z })), { height: YR - 1 - LV.EZN, rShaft: 0.95, mat: M2.marble, style: "corinthian" });
         ec.userData.noPick = true;
       }
