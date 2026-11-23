@@ -168,16 +168,18 @@
       const neckCurve = new CatmullRomCurve3([new Vector3(0, 1.36, 0), new Vector3(0, 1.62, 0), new Vector3(0.12, 1.86, 0), new Vector3(0.38, 1.98, 0)]);
       const neck = new TubeGeometry(neckCurve, 16, 0.15, 10, false);
       const lip = new TorusGeometry(0.15, 0.04, 6, 16);
-      const X0 = 86.5, Z0 = -9.5, DZ = -2.1;   // the court of Israel's floor, east of the duchan (fix-b2, 22.11.2026, at fix-a2's request: the duchan and its steps moved 3 amot west, to touch the priests' court, x 82.5..85 - 84.0 until now stood on them)
+      // CHAMBERS_EAST_N2 (fix-n2): the Pinchas chamber now stands in the court of Israel (z -28.5..-19.5), so the thirteen chests stand in two
+      // columns (x 85.5 and 88), seven rows 1.5 apart, from z -9.5 to -18.5 (one column, z -9.5..-34.7, until now)
+      const X0 = 86.5, Z0 = -9.5, DZ = -1.5;   // the court of Israel's floor, east of the duchan (fix-b2, 22.11.2026, at fix-a2's request: the duchan and its steps moved 3 amot west, to touch the priests' court, x 82.5..85 - 84.0 until now stood on them)
       for (let i = 0; i < 13; i++) {
-        const z = Z0 + i * DZ, y = groundAt(X0, z, 40, LV.AZ);
-        const b = new Group(); b.position.set(X0, y, z); b.rotation.y = Math.PI;   // the curved mouths toward the court (west)
+        const xi = i % 2 ? 88 : 85.5, z = Z0 + Math.floor(i / 2) * DZ, y = groundAt(xi, z, 40, LV.AZ);
+        const b = new Group(); b.position.set(xi, y, z); b.rotation.y = Math.PI;   // the curved mouths toward the court (west)
         shG.add(b);
         mesh(b, body, M2.bronze, 0, 0, 0);
         mesh(b, neck, M2.bronze, 0, 0, 0);
         const l = mesh(b, lip, M2.gold, 0.38, 1.98, 0); l.rotation.y = Math.PI / 2;
       }
-      lbl("שלשה עשר שופרות (שקלים ו, א; ו, ה)", X0, LV.AZ + 4.2, Z0 + 6 * DZ, 1.6);
+      lbl("שלשה עשר שופרות (שקלים ו, א; ו, ה)", X0, LV.AZ + 4.2, Z0 + 3 * DZ, 1.6);
     }
 
     // ---------- 4. THE CHAMBER OF THE VESSELS (Tamid 3:4) ----------
@@ -990,7 +992,7 @@
         // the Levites on the duchan with the song of the day, flutes among them (Arachin 2:3, 84:9: "ובשנים עשר יום בשנה החליל מכה לפני המזבח... ובשמונת ימי
         // החג, ולא היה מכה באבוב של נחשת אלא באבוב של קנה"; Tamid 7:3 "ודברו הלוים בשיר"); their places as the morning's singers', south of the middle
         const duch = new Group(); DG.add(duch); duch.visible = false;
-        const LZ = [3.6, 6.0, 8.4, 10.8, 13.2, 15.6, 18.0, 20.4], flutes = [1, 3, 5];
+        const LZ = [3.6, 6.0, 8.4, 10.8, 13.2, 15.6, 18.0], flutes = [1, 3, 5];   // CHAMBERS_EAST_N2: z 20.4 (the eighth) stood where the chavitin makers' chamber is now (z 19.5..28.5)
         const yD = groundY(86.3, 6, 20);
         PP.crowd(duch, LZ.map((z) => [86.3, z, -Math.PI / 2]), { y: isFinite(yD) ? yD : 15.5, s: 1.4, pose: "stand", kind: "levi", robe: 0xe9e3d3, tone: (i) => i % 4, name: "shiloachDuchan" });
         const reed = new MeshStandardMaterial({ color: 0xc8b07a, roughness: 0.6 });

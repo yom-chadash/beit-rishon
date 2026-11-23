@@ -99,6 +99,18 @@
       }
       uv.needsUpdate = true;
     };
+    // CHAMBERS_EAST_N2 (fix-n2, 23.11.2026 - the user's decision, on the Rambam, Beit HaBechirah 5:17, book 337 line 92: "שמונה לשכות היו בעזרת
+    // ישראל. שלש בצפון. ושלש בדרום"): the three chambers of the south - the salt, the Parvah, the Madichin - and the two of the Nikanor
+    // gate stand in the court of Israel (x 82.5..91, in the east, by its wall) and not opposite the altar (x 39.5..71.5), as until now (the
+    // Parvah x 47..61 and the Madichin x 27..41, on the south wall). Tiferet Yisrael, Tzurat Beit HaMikdash (6029 line 71): "וג' לשכות היו
+    // לעומתן במקצוע דרום של עזרת ישראל. וגם הן היה קצת מרווחן בעזרת כהנים" - so each of the three reaches a little into the priests' court
+    // (to x 77 - five and a half amot; the salt chamber, three, as before). They stand in one column from the south wall northward: the
+    // salt (z 55..65), the Parvah (45..55), an alley six amot wide with the mesibah's stair (39.4..45), the Madichin (29.4..39.4). The
+    // Madichin's pit, MPIT, moves with it (x 84.5, 2.4 south of the room's middle, as it was). The places, the sizes and the order in the
+    // column - model choices.
+    const MPIT = { x: 84.5, z: 36.8, w: 3.2, d: 2.2 };
+    const PARH = { x: 79.75, z: 50, w: 5.5, d: 10 };   // the priests' pave open under the part of the Parvah in the priests' court (as SALTH, below)
+    const MADH = { x: 79.75, z: 34.4, w: 5.5, d: 10 };   // ... and of the Madichin
     // 1.9.1 (the mukhni): the laver's well - through the court's podium and pave (40-altar.js lines it and hangs the laver over it)
     const KPIT = ctx2.shared.KPIT = { x: 22, z: 61.4, w: 6.4, d: 6.4 };   // KIYOR_A2 (fix-a2; decision 59): the laver's well 4.4 south (z 57 until then) - its base stands north of it (40-altar.js)
     // KLI_DEEP_211 (the user, 15.11.2026 18:21: "1. להעמיק"): the instruments' chambers run WEST from their opening in the women's court,
@@ -108,7 +120,7 @@
     const KDEEP = { x0: 82.5, x1: 102.5, d: 9, z: 24 };
     // SALT_144_D: the shaft of the salt chamber's tunnel (x 70.5..82.5, z 56.5..64.5) - filled in the default reading (SALT_144_D below)
     const SALT_T = { x: 76.5, z: 60.5, w: 12, d: 8 };
-    boxHoles(g, 189.5, LV.AZ - 0.15, 140, M2.stone, (CO.azW - 2.5 + CO.azE) / 2, 0, 0, [KPIT, SALT_T].concat([-1, 1].map((sz) => ({ x: (KDEEP.x0 + CO.azE) / 2, z: sz * KDEEP.z, w: CO.azE - KDEEP.x0, d: KDEEP.d }))));   // the court's podium; CHEL_211: to the walls' outer faces (x -96, z ±70)
+    boxHoles(g, 189.5, LV.AZ - 0.15, 140, M2.stone, (CO.azW - 2.5 + CO.azE) / 2, 0, 0, [KPIT, SALT_T, MPIT].concat([-1, 1].map((sz) => ({ x: (KDEEP.x0 + CO.azE) / 2, z: sz * KDEEP.z, w: CO.azE - KDEEP.x0, d: KDEEP.d }))));   // the court's podium; CHEL_211: to the walls' outer faces (x -96, z ±70)
     ctx2.shared.stepsPlace = { mode: "inside", set() {} };
     stairsR(g, { width: 14, totalRise: 6, steps: 12, dir: "W", x: 237, y: 0, z: 0, tread: 0.5 });   // inside the chel (x 231..237); RAILS_211
     ctx2.labels.push({ text: "מעקות במדרגות — בחירת מודל", x: 236, y: 4.2, z: -8.6, size: 1.1 });
@@ -122,9 +134,8 @@
     // and the priests' court's slab - are kept in ctx2.herodFloor: the reading "שיש בשלושה גוונים ברצפת העזרה" of the row "בניין הורדוס"
     // gives them its marble (50-heichal.js, ctx2.shared.herod). Their top faces are mapped by their place in the court (u = x, v = z),
     // so that the marble's bands run on from piece to piece.
-    const herodFloor = [H2.box(g, 11, 0.15, 135, M2.paveFine, 88, 13.35, 0)];
+    const herodFloor = boxHoles(g, 11, 0.15, 135, M2.paveFine, 88, 13.35, 0, [MPIT]);   // CHAMBERS_EAST_N2: open for the Madichin's pit
     // 1.9.1 (the user: "לשכת המדיחין — בור מים להדחה"): the pave has a hole for the rinsing pit in the Madichin (MPIT; the room's floor too)
-    const MPIT = { x: 34, z: 62.4, w: 3.2, d: 2.2 };
     // 1.9.3 (the user, of the kuntres, point 18: "לשכת הדוכן (חזו״א) כשיטה"): the priests' court's podium has a recess opposite the altar
     // (CIH: x 76.5..82.5, z -7..25 - the altar's 32 in its default place), closed by a plug in the default reading - see THE DUCHAN'S
     // CHAMBER below
@@ -134,7 +145,7 @@
     const GZH = { x: 75.75, z: -61.75, w: 13.5, d: 11.5 };
     // SALT_144_D: so too under the salt chamber's part in the priests' court (x 79.5..82.5, z 55..65; closed in the tunnel's reading)
     const SALTH = { x: 81, z: 60, w: 3, d: 10 };
-    herodFloor.push(...boxHoles(g, 176, 2.65, 135, M2.pave, -5.5, 13.35, 0, [MPIT, KPIT, CIH, GZH, SALTH]));
+    herodFloor.push(...boxHoles(g, 176, 2.65, 135, M2.pave, -5.5, 13.35, 0, [KPIT, CIH, GZH, SALTH, PARH, MADH]));
     const ciPlug = H2.box(g, CIH.w, 2.65, CIH.d, M2.pave, CIH.x, 13.35, CIH.z);
     herodFloor.push(ciPlug);
     for (const m of herodFloor) {
@@ -222,11 +233,18 @@
     // duchan end at the south face of the chamber (z -54) - they do not stand out inside it; in the south - to the court's wall (67.5)
     // SALT_144_D (fix-d, 22.11.2026 - the user's decision 144 א): in the south they end at the north face of לשכת המלח (z 55; until now
     // to the court's wall, 67.5); in the reading of the tunnel (SALT_144_D below) a piece of them runs on to z 59.3, before its opening
+    // CHAMBERS_EAST_N2 (fix-n2): the chambers now stand in the court of Israel (x 82..91.5) and the step and the duchan stop at their faces:
+    // the Pinchas chamber (z -28.5..-19.5), the chavitin makers' (19.5..28.5) and the Madichin (29.4..39.4) - the step runs in two pieces,
+    // z -54..-28.5 and -19.5..19.5 (between the two chambers of the gate - the way to the gate), and south of the Madichin not at all
+    // (the alley of the mesibah, the Parvah's door opens onto it)
     const DUCH = { z0: -54, z1: 55 };
+    DUCH.segs = [[-54, -28.5], [-19.5, 19.5]];
     DUCH.w = DUCH.z1 - DUCH.z0; DUCH.z = (DUCH.z0 + DUCH.z1) / 2;
     ctx2.shared.duchanSpan = DUCH;
-    H2.stairs(duchanDef, { width: DUCH.w, totalRise: 1, steps: 1, dir: "W", x: 85, y: 13.5, z: DUCH.z, tread: 1 });
-    H2.stairs(duchanDef, { width: DUCH.w, totalRise: 1.5, steps: 3, dir: "W", x: 84, y: 14.5, z: DUCH.z, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
+    for (const [dz0, dz1] of DUCH.segs) {
+      H2.stairs(duchanDef, { width: dz1 - dz0, totalRise: 1, steps: 1, dir: "W", x: 85, y: 13.5, z: (dz0 + dz1) / 2, tread: 1 });
+      H2.stairs(duchanDef, { width: dz1 - dz0, totalRise: 1.5, steps: 3, dir: "W", x: 84, y: 14.5, z: (dz0 + dz1) / 2, tread: 0.5 });   // 1.1.0: tread 0.5 (Rambam Beit HaBechirah 6:3)
+    }
     {
       const st = new Group();   // SALT_144_D: z 55..59.3 - shown by ctx2.shared.saltChamber in the tunnel's reading
       st.name = "duchanSaltStub";
@@ -256,7 +274,7 @@
     {
       const x0 = CIH.x - CIH.w / 2, x1 = CIH.x + CIH.w / 2, z0 = CIH.z - CIH.d / 2, z1 = CIH.z + CIH.d / 2;   // 76.5, 82.5, -7, 25
       H2.box(duchanCI, CIH.w, 1.15, CIH.d, M2.paveFine, CIH.x, 13.35, CIH.z);                  // the chamber's floor, top 14.5
-      H2.box(duchanCI, 0.5, 0.5, CIH.d, M2.stoneSmooth, x1 + 0.25, 13.5, CIH.z);              // the step of half an amah before it, in the court of Israel
+      H2.box(duchanCI, 0.5, 0.5, 19.5 - z0, M2.stoneSmooth, x1 + 0.25, 13.5, (z0 + 19.5) / 2);   // the step of half an amah before it, in the court of Israel (CHAMBERS_EAST_N2: to z 19.5 - from there the chavitin makers' chamber stands against the recess's face)
       H2.box(duchanCI, 2, 1.5, 16, M2.stoneSmooth, x0 + 1, 14.5, CIH.z);                      // the bima, against the west face
       H2.stairs(duchanCI, { width: 16, totalRise: 1.5, steps: 3, dir: "W", x: x0 + 3.5, y: 14.5, z: CIH.z, tread: 0.5 });
       for (const zc of [z0 + 2, z1 - 2]) H2.stairs(duchanCI, { width: 4, totalRise: 1.5, steps: 3, dir: "W", x: x0 + 1.5, y: 14.5, z: zc, tread: 0.5 });   // up to the priests' court
@@ -267,13 +285,29 @@
         { text: "שלוש מעלות לעזרת הכהנים", x: x0 + 0.8, y: 17.6, z: z0 + 2, size: 1, layer: "duchanChazonIsh" },
         { text: "מעלה של חצי אמה — הכניסה ממזרח", x: x1 + 0.6, y: 15.4, z: z1 - 6, size: 1, layer: "duchanChazonIsh" });
     }
+    // PISPASIN_COURTS_N2 (fix-n2, 23.11.2026 - the user's decision, on Middot 2:6, book 89 line 17): the row "הדוכן ומעלות עזרת הכהנים" has
+    // a third reading, the first Tanna's: "וראשי פספסין מבדילין בין עזרת ישראל לעזרת הכהנים" and no more - no step of an amah and no
+    // duchan (those are R. Eliezer ben Yaakov's: "מעלה היתה שם, וגבוהה אמה, והדוכן נתון עליה, ובה שלש מעלות של חצי חצי אמה. נמצאת עזרת
+    // הכהנים גבוהה מעזרת ישראל שתי אמות ומחצה"). The pispasin themselves (beam-ends or a low lattice - the row "ראשי פספסין") stand in every
+    // reading. In this one the step and the duchan are gone; the priests' court's height over the court of Israel is as in the others
+    // (the whole inner court is built on it) - the Mishnah does not give it for the first Tanna: a model choice, said in the card.
+    const duchanTanna = new Group();
+    duchanTanna.name = "duchanTanna";
+    duchanTanna.visible = false;
+    g.add(duchanTanna);
+    ctx2.layers.duchanDefault = duchanDef;
+    ctx2.layers.duchanTanna = duchanTanna;
+    ctx2.labels.push(
+      { text: "דוכן הלויים", x: 83.5, y: 19.5, z: 0, size: 2.5, layer: "duchanDefault" },
+      { text: "ראשי פספסין מבדילין בלבד — אין מעלה ואין דוכן (תנא קמא)", x: 83.5, y: 19.5, z: 0, size: 1.6, layer: "duchanTanna" });
     ctx2.shared.duchanReading = {
       mode: "mishnah",
       set(m) {
-        this.mode = m === "chazonIsh" ? "chazonIsh" : "mishnah";
-        const ci = this.mode === "chazonIsh";
-        duchanCI.visible = ci; duchanDef.visible = !ci; ciPlug.visible = !ci;
-        if (ci && ctx2.layers.zoneDuchan) ctx2.layers.zoneDuchan.visible = false;
+        this.mode = m === "chazonIsh" ? "chazonIsh" : m === "tanna" ? "tanna" : "mishnah";
+        const ci = this.mode === "chazonIsh", tn = this.mode === "tanna";
+        duchanCI.visible = ci; duchanDef.visible = !ci && !tn; duchanTanna.visible = tn; ciPlug.visible = !ci;
+        if ((ci || tn) && ctx2.layers.zoneDuchan) ctx2.layers.zoneDuchan.visible = false;
+        if (ctx2.requestRender) ctx2.requestRender();
         return this.mode;
       }
     };
@@ -282,7 +316,7 @@
     lbl("עזרת ישראל — י״א אמה", 88, 16.5, 25, 2.2);
     lbl("עזרת כהנים — י״א אמה", 77, 19, 25, 2.2);
     lbl("בין האולם ולמזבח — כ״ב אמה", 28.5, 19.5, -30, 2.2);
-    lbl("דוכן הלויים", 83.5, 19.5, 0, 2.5);   // DUCHAN_GAP_A2: over the steps (x 82.5..85)
+    // (the label "דוכן הלויים", over the steps (x 82.5..85), is in the layer of the default reading - above, PISPASIN_COURTS_N2)
     {
       const guards = new Group();
       guards.visible = false;
@@ -1299,7 +1333,7 @@
     // with the floor and nothing of it is seen, so nothing is drawn there. One amah thick - a model choice.
     {
       const bs = (x0, x1, z0, z1) => { const m = H2.box(g, x1 - x0, 2.5, z1 - z0, M2.stoneSmooth, (x0 + x1) / 2, 13.5, (z0 + z1) / 2); m.name = "barShura"; return m; };
-      for (const [z0, z1] of [[-65, -26], [-22, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 22], [26, 65]]) bs(90, 91, z0, z1);   // KLI_SHIR_211: broken at the chambers' doors (z +-24) too
+      for (const [z0, z1] of [[-65, -28.5], [-19.5, -14.6], [-9.4, -5.6], [5.6, 9.4], [14.6, 19.5], [28.5, 65]]) bs(90, 91, z0, z1);   // CHAMBERS_EAST_N2: broken where the two chambers of the gate stand against the wall (z -28.5..-19.5, 19.5..28.5); KLI_SHIR_211: at the doors (z +-24) until now
       for (const sg of [-1, 1]) bs(85.02, 90, sg < 0 ? -65 : 64, sg < 0 ? -64 : 65);   // DUCHAN_GAP_A2: to the step's east face (x 85)
       lbl("בר שורא — חומה קטנה לפנים מן החומה (רש״י פסחים פו.)", 89.4, 17.6, 38, 1.2);
     }
@@ -1500,18 +1534,19 @@
       const sideWall = (nx, nz) => {   // the wall whose outer normal is (nx, nz)
         const along = nx ? d : w;
         const wx = cx + nx * (w / 2 - T / 2), wz = cz + nz * (d / 2 - T / 2);
-        if (doors.some((dr) => dr.dx === nx && dr.dz === nz)) {
-          const segW = (along - DW) / 2;
-          for (const sgn of [-1, 1]) {
-            const ox = nx ? 0 : sgn * (DW / 2 + segW / 2), oz = nx ? sgn * (DW / 2 + segW / 2) : 0;
-            H2.box(g, nx ? T : segW, h, nx ? segW : T, M2.stoneLight, wx + ox, y0, wz + oz);
+        const dro = doors.find((dr) => dr.dx === nx && dr.dz === nz);
+        if (dro) {
+          const dof = dro.off || 0;   // CHAMBERS_EAST_N2: the door's middle, off the wall's middle (along the wall)
+          for (const [a0, a1] of [[-along / 2, dof - DW / 2], [dof + DW / 2, along / 2]]) {
+            const segW = a1 - a0, ctr = (a0 + a1) / 2;
+            if (segW > 1e-3) H2.box(g, nx ? T : segW, h, nx ? segW : T, M2.stoneLight, wx + (nx ? 0 : ctr), y0, wz + (nx ? ctr : 0));
           }
-          if (h - DH > 0.01) H2.box(g, nx ? T : DW, h - DH, nx ? DW : T, M2.stoneLight, wx, y0 + DH, wz);                 // over the door
+          if (h - DH > 0.01) H2.box(g, nx ? T : DW, h - DH, nx ? DW : T, M2.stoneLight, wx + (nx ? 0 : dof), y0 + DH, wz + (nx ? dof : 0));                 // over the door
           if (opts && opts.noLeaf) return;
           const leafGeo = H2.uvWorldBox(new BoxGeometry(nx ? 0.25 : DW * 0.92, DH - 0.2, nx ? DW * 0.92 : 0.25), nx ? 0.25 : DW * 0.92, DH - 0.2, nx ? DW * 0.92 : 0.25);
           leafGeo.translate(nx ? 0 : DW * 0.46, (DH - 0.2) / 2, nx ? DW * 0.46 : 0);   // hinged at one jamb
           const leaf = new Mesh(leafGeo, cedarDark);
-          leaf.position.set(wx - nx * (T / 2 + 0.15) - (nx ? 0 : DW / 2), y0 + 0.3, wz - nz * (T / 2 + 0.15) - (nx ? DW / 2 : 0));
+          leaf.position.set(wx - nx * (T / 2 + 0.15) - (nx ? 0 : DW / 2) + (nx ? 0 : dof), y0 + 0.3, wz - nz * (T / 2 + 0.15) - (nx ? DW / 2 : 0) + (nx ? dof : 0));
           leaf.rotation.y = (nx ? -nx : nz) * 0.6;   // ajar, into the room
           leaf.castShadow = leaf.receiveShadow = true;
           g.add(leaf);
@@ -1525,6 +1560,22 @@
       if (name) lbl(name, cx, ly || y0 + h + 3, cz, 3);
       if (furnish) furnish(cx, cz, y0 + 0.3, roof);
       return roof;
+    };
+    // CHAMBERS_EAST_N2: what build() adds to g (and the labels it adds) is turned by th about the vertical through (cx, cz) - a chamber furnished
+    // with its door in the west wall, set with its door toward the gate (the two chambers of the Nikanor gate)
+    const rotated = (cx, cz, th, build) => {
+      const n0 = g.children.length, l0 = ctx2.labels.length;
+      const r = build();
+      const pg = new Group();
+      pg.position.set(cx, 0, cz); pg.rotation.y = th;
+      for (const o of g.children.slice(n0)) { g.remove(o); o.position.x -= cx; o.position.z -= cz; pg.add(o); }
+      g.add(pg);
+      const c = Math.cos(th), sn = Math.sin(th);
+      for (let i = l0; i < ctx2.labels.length; i++) {
+        const L = ctx2.labels[i];
+        if (L && typeof L.x === "number" && typeof L.z === "number") { const dx = L.x - cx, dz = L.z - cz; L.x = cx + dx * c + dz * sn; L.z = cz - dx * sn + dz * c; }
+      }
+      return r;
     };
     // the six chambers "בעזרה" (Middot 5:3) stand INSIDE the court, against its long walls (until 1.4.0 the solid blocks straddled the wall;
     // a hollow room cannot - the wall would cut through it): their outer face at the wall's inner face (z +-65)
@@ -1639,6 +1690,7 @@
       for (const dx of [-3.2, 2.6]) { H2.box(g, 4, 0.25, 2, M2.marble, cx + dx, y + 1.2, cz - 2.6); for (const lx of [-1.7, 1.7]) for (const lz of [-0.8, 0.8]) H2.box(g, 0.2, 1.2, 0.2, M2.marble, cx + dx + lx, y, cz - 2.6 + lz); }
       const px = MPIT.x, pz = MPIT.z, iw = MPIT.w - 0.8, id = MPIT.d - 0.8, bot = y - 2.4;
       H2.box(g, MPIT.w, 0.2, MPIT.d, M2.stoneSmooth, px, bot - 0.2, pz);
+      H2.box(g, MPIT.w, bot - 0.2, MPIT.d, M2.stone, px, 0, pz);   // CHAMBERS_EAST_N2: the room stands on the court of Israel's floor now - the podium's shaft under the pit is filled
       for (const s2 of [-1, 1]) {
         H2.box(g, MPIT.w, y - bot, 0.4, M2.stoneSmooth, px, bot, pz + s2 * (id / 2 + 0.2));
         H2.box(g, 0.4, y - bot, id, M2.stoneSmooth, px + s2 * (iw / 2 + 0.2), bot, pz);
@@ -3285,8 +3337,11 @@
         }
       };
     }
-    annex(54, 1, 14, 10, 14, "לשכת הפרוה", 0, F_PARVAH);
-    annex(34, 1, 14, 10, 13.5, "לשכת המדיחין", 0, F_MADICHIN, [{ dx: 1, dz: 0 }], { floorHole: MPIT });   // x 27..41: leaves room for the laver west of it; 1.9.1: a door east, to the mesibah
+    // CHAMBERS_EAST_N2: the Parvah (x 77..91, z 45..55; floor 13.5, roof as before - 30; door north, onto the alley) and the Madichin (x 77..91,
+    // z 29.4..39.4; roof 29.5 as before; the door to the mesibah in its south wall, near the east end - the pit and the tables are clear of it).
+    // Until now both stood on the priests' court's floor (16), opposite the altar and the ramp - the Parvah x 47..61 and the Madichin x 27..41.
+    room(84, 50, 14, 10, 16.5, LV.AZ, [{ dx: 0, dz: -1 }], "לשכת הפרוה", 0, F_PARVAH);
+    room(84, 34.4, 14, 10, 16, LV.AZ, [{ dx: 0, dz: 1, off: 4.2 }], "לשכת המדיחין", 0, F_MADICHIN, { floorHole: MPIT });
     // the mesibah from לשכת המדיחין up to the roof of בית הפרוה (Middot 5:3 "ומשם מסבה עולה לגג בית הפרוה"). 1.8.0: as the Bartenura - "בנין
     // אבנים מעלות מגלגלות וסובבות לעלות לגג בית הפרוה" - a winding stair of stone in the gap between the two rooms (x 41..47), up to the
     // Parvah's roof (28.2); until 1.7.1 a straight flight along the rooms' face, which crossed the ramp's foot. Its radius - model choice.
@@ -3294,7 +3349,10 @@
       // 1.9.1 (the user: "לשכת המדיחין — פתח למסיבה לפרוה"; Middot 5:3 "לשכת המדיחין... ומשם מסבה עולה לגג בית הפרוה"): the stair begins
       // at the door in the Madichin's east wall (its first step points west, to the door) and ends at the Parvah's roof (its last step points
       // east, to the landing): 31 steps, two and a half turns, from the court's floor (16) to the roof (30.7)
-      const SX = 44, SZ = 60, PER = 12, Y0 = LV.KOH, YT = 30.7, N = 31, RISE = (YT - Y0) / N, A0 = Math.PI;
+      // CHAMBERS_EAST_N2: the stair stands in the alley between the two rooms (x 88.2, z 42.2): its first step to the door in the Madichin's
+      // south wall (north), its last to the Parvah's roof (south) - 43 steps, three and a half turns, from the court of Israel's floor (13.5)
+      // to the roof (30.7), each 0.4 high (31 steps from 16 until now)
+      const SX = 88.2, SZ = 42.2, PER = 12, Y0 = LV.AZ, YT = 30.7, N = 43, RISE = (YT - Y0) / N, A0 = Math.PI / 2;
       const stairG = new Group();   // 1.9.2: the steps, the posts and the handrail - instanced at the end (93 pieces -> 4 draws)
       g.add(stairG);
       H2.cyl(g, 0.45, 0.45, YT - Y0 + 0.7, M2.stoneSmooth, SX, Y0, SZ, 12);
@@ -3304,7 +3362,7 @@
         st.geometry.translate(1.45, 0, 0);
         st.rotation.y = a;
       }
-      H2.box(g, 3.2, 0.7, 2.2, M2.stoneSmooth, 46.6, YT - 0.7, SZ);   // the landing to the Parvah's roof
+      H2.box(g, 2.2, 0.7, 3.2, M2.stoneSmooth, SX, YT - 0.7, SZ + 2.6);   // the landing to the Parvah's roof
       // 1.9.1 (the user: "את המדרגות בלשכת הפרוה, כדאי לעשות עם מעקה וכדו, הם נראות ממש מפחיד"): a railing on the stair's outer edge -
       // a post on every step and a handrail from post to post (cedar; height 1.1 - model choice), and two posts on the landing
       {
@@ -3323,7 +3381,7 @@
           seg.castShadow = true;
           stairG.add(seg);
         }
-        for (const dz of [-1.05, 1.05]) H2.box(g, 3.2, 0.12, 0.12, rail, 46.6, YT + RH - 0.06, SZ + dz);
+        for (const dx of [-1.05, 1.05]) H2.box(g, 0.12, 0.12, 3.2, rail, SX + dx, YT + RH - 0.06, SZ + 2.6);
         H2.instancify(stairG);   // 1.9.2
       }
       lbl("מסיבה לגג בית הפרוה", SX, YT + 3, SZ - 1, 1.3);
@@ -3362,7 +3420,11 @@
     // "למקום בית עושי חבתים" inside the court. Until 2.0.1 the two stood on the women's court's floor, 19.5 high, their doors east.
     // Their place under the two (the user's), the opening's width, the instruments' number and form - model choices.
     for (const [sz, name] of [[-1, "לשכת פנחס המלביש"], [1, "לשכת עושי חביתין"]]) {
-      room(98, sz * 24, 9, 9, 12, LV.AZ, { dx: -1, dz: 0 }, name, 28, sz < 0 ? F_PINCHAS : F_CHAVITIN);
+      // CHAMBERS_EAST_N2 (the user's decision, on the Rambam 5:17: "ושתי לשכות אחרות היו שם בעזרת ישראל. אחת מימין שער מזרחי... ואחד
+      // משמאלו"): the two stand in the court of Israel, against the east wall, x 82.5..91.5 - not in the women's court (x 93.5..102.5, as
+      // until now); the door in the wall toward the gate (they were furnished with the door west): the Pinchas chamber's (north) in its
+      // south wall, the chavitin makers' (south) in its north wall - the way between them, z -19.5..19.5, leads to the gate
+      rotated(87, sz * 24, sz < 0 ? HP : -HP, () => room(87, sz * 24, 9, 9, 12, LV.AZ, { dx: -1, dz: 0 }, name, 28, sz < 0 ? F_PINCHAS : F_CHAVITIN));
       // KLI_DEEP_211: twenty long (it was nine, all of it east of the court's wall), 0.4 lower than the court's floor - its ceiling is
       // two slabs: under the floor strip of the court of Israel (top 13.35, the strip lies on it), and under the wall's doorway and the
       // chamber above (top 13.5). The depth (to the duchan's line, x 82.5) - model choice.
@@ -3459,18 +3521,18 @@
         grp.name = "zoneDuchan";
         const pm = new MeshBasicMaterial({ color: 0xffc94a, transparent: true, opacity: 0.38, depthWrite: false });
         const steps = [[84, 85, 13.5, 14.5], [83.5, 84, 13.5, 15], [83, 83.5, 13.5, 15.5], [82.5, 83, 13.5, 16]];   // [x0, x1, y0, y1]
-        for (const [x0, x1, y0, y1] of steps) {
-          const m = new Mesh(new BoxGeometry(x1 - x0 + 0.04, y1 - y0 + 0.06, DUCH.w), pm);   // DUCHAN_GAZIT_A2
-          m.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.03, DUCH.z);
+        for (const [dz0, dz1] of DUCH.segs) for (const [x0, x1, y0, y1] of steps) {   // CHAMBERS_EAST_N2: the pieces of the step
+          const m = new Mesh(new BoxGeometry(x1 - x0 + 0.04, y1 - y0 + 0.06, dz1 - dz0), pm);   // DUCHAN_GAZIT_A2
+          m.position.set((x0 + x1) / 2, (y0 + y1) / 2 + 0.03, (dz0 + dz1) / 2);
           m.userData.noPick = true;
           grp.add(m);
         }
         const fm = new MeshBasicMaterial({ color: 0xffa21a });
-        for (const [x, y] of [[85, 14.55], [82.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, DUCH.w), fm); b.position.set(x, y, DUCH.z); b.userData.noPick = true; grp.add(b); }
+        for (const [dz0, dz1] of DUCH.segs) for (const [x, y] of [[85, 14.55], [82.5, 16.05]]) { const b = new Mesh(new BoxGeometry(0.25, 0.22, dz1 - dz0), fm); b.position.set(x, y, (dz0 + dz1) / 2); b.userData.noPick = true; grp.add(b); }
         g.add(grp);
         ctx2.layers.zoneDuchan = grp;
         ctx2.shared.features.zoneDuchan = { key: "zoneDuchan", isOn: () => grp.visible, on: () => { grp.visible = true; }, off: () => { grp.visible = false; } };
-        ctx2.labels.push({ text: "דוכן הלויים — מעלה של אמה ושלוש מעלות של חצי אמה", x: 83.5, y: 19.5, z: 30, size: 2, layer: "zoneDuchan" });
+        ctx2.labels.push({ text: "דוכן הלויים — מעלה של אמה ושלוש מעלות של חצי אמה", x: 83.5, y: 19.5, z: 0, size: 2, layer: "zoneDuchan" });   // CHAMBERS_EAST_N2: z 0 (30 until now - inside the Madichin)
       }
     }
     // ===== FIX-B2 (22.11.2026): THE GATES' PALMS, THE RAMPS FOR THE BEASTS, THE OIL CHAMBER'S SECOND DOOR, THE BLEMISHED PRIESTS =====
