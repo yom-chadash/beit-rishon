@@ -2361,7 +2361,7 @@
           }
         }
       }
-      // ROVDIN_A2 (the user's decision 58): "ומוקף רובדין של אבן, וזקני בית אב ישנים שם" (Middot 1:8) - a switch,
+      // ROVDIN_A2 (the user's decision 58): "מקף רובדין של אבן, וזקני בית אב ישנים שם" (Middot 1:8) - a switch,
       // ctx2.shared.rovdin.set("rosh" | "mefaresh"): the Rosh (2224:9) "אצטבאות חתיכות של אבני גזית בולטות מן החומה זו למעלה מזו ועליהם
       // היו ישנים" and the Tiferet Yisrael (819:114) "כעין מדריגות" - stone steps along the walls (as until now); the Mefaresh, Tamid 25b-26b
       // (2105:9-10, 57) "שמן הרובדין היו עולין ע״ג מטותיהן שהיו בתוך כניסת החומה כעין מטות" - "ישנים בתוך כניסת החומה" - recesses in the
