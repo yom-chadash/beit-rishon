@@ -1417,7 +1417,7 @@
       if (x > 17.5 && x <= 39.5 && Math.abs(z) <= 50) return F + 6 * clamp((39.5 - x) / 19, 0, 1);          // the ulam's steps
       if (x > 1.5 && x <= 17.5 && Math.abs(z) <= 50) return HEI;                                            // the ulam
       if (x <= 1.5 && x > -82.5 && Math.abs(z) <= 35) return HEI + houseRise(x);                            // the house
-      if (x > 85) return MK;                                                                                 // the court of Israel (DUCHAN_GAP_A2: the duchan x 82.5..85)
+      if (x > 85) return MK + (SH.israelLift ? SH.israelLift() : 0);                                                                                 // the court of Israel (DUCHAN_GAP_A2: the duchan x 82.5..85)
       return F;
     };
     const floorCache = new Map();

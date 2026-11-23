@@ -25,7 +25,8 @@
   async function buildPayis(ctx2) {
     const { M: M2, LV } = ctx2;
     const SH = ctx2.shared;
-    const FYG = (ctx2.shared.gazitFloor != null ? ctx2.shared.gazitFloor : LV.KOH) + 0.02;   // the Gazit hall's floor (30-courts.js; GAZIT_FLOOR_B2 - 13.5 from 22.11.2026, 16 until then)
+    const FYG0 = (ctx2.shared.gazitFloor != null ? ctx2.shared.gazitFloor : LV.KOH) + 0.02;
+    let FYG = FYG0;   // ISRAEL_LIFT_N2: + ctx2.shared.israelLift() (2.5 in the first Tanna's reading of the pispasin - the hall rises with the court of Israel), refreshed at each start   // the Gazit hall's floor (30-courts.js; GAZIT_FLOOR_B2 - 13.5 from 22.11.2026, 16 until then)
     const g = new Group();
     g.name = "payisDemo";
     g.visible = false;
@@ -380,6 +381,7 @@
     };
     // ---------- the places
     const GZ = { x: 86.25, z: -67, r: 2.4, y: FYG };   // NORTH_CHAMBERS_N2: the holy half is 5.5 wide now (10 until now): the ring, r 2.4 (3.9 until now)                       // the ring in the Gazit's east half ("פייס במזרחה")
+    const refreshFYG = () => { FYG = FYG0 + (ctx2.shared.israelLift ? ctx2.shared.israelLift() : 0); GZ.y = FYG; ELDER.position.y = FYG; };
     const MK = { x: -18, z: -61.6, r: 3.0, y: LV.KOH };   // FLOOR_211: clear of the hearth, whose southern half now stands on the one floor (z -62.6, r 3.3 until 2.0.1)                 // the ring in Beit HaMoked's holy half (the Tiferet Yisrael)
     const ringAt = (R, i, n) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [R.x + R.r * Math.cos(a), R.y, R.z + R.r * Math.sin(a)]; };
     const ROLES = ["שוחט", "זורק", "מדשן מזבח הפנימי", "מדשן את המנורה", "הראש והרגל", "שתי הידים", "העקץ והרגל", "החזה והגרה", "שתי הדפנות", "הקרבים", "הסלת", "החבתין", "היין"];
@@ -830,6 +832,7 @@
     const roofsBtn = () => (Array.isArray(SH.modelButtons) ? SH.modelButtons.find((b) => b && b.id === "crt-lishkot-roofs") : null);
     const labelsObj = () => ctx2.scene.getObjectByName("labels");
     function start() {
+      refreshFYG();
       if (RUN) stop();
       garmentsOff();
       try { if (typeof SH.stopDemos === "function") SH.stopDemos(); } catch (_) {}

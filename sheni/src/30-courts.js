@@ -306,6 +306,35 @@
       duchanTanna.add(LVL);
       for (const [z0, z1] of [[-54, -28.9], [-19.1, 19.1], [39.8, 44.6]]) H2.box(LVL, 8.5, 2.5, z1 - z0, M2.pave, 86.75, 13.5, (z0 + z1) / 2);
     }
+    // ISRAEL_LIFT_N2 (fix-n2, 23.11.2026): in this reading everything that stands on the court of Israel's floor rises with it (2.5): the
+    // chambers (the Pinchas, the chavitin makers', the Madichin, the Parvah, the salt), the Gazit hall and what stands on the free floor
+    // (the shofar chests, the low partitions between the chambers). Found by their places when the reading is set (the court's group
+    // `g`, its direct children); the figures of the demonstrations read ctx2.shared.israelLift() for their floor (55-tamid.js, 55-payis.js).
+    // Not lifted: the Golah and the Etz (the priests' court's floor, 16), the foundations (they end at 13.5).
+    let liftNow = 0;
+    const liftBoxes = [[81.8, 91.9, -29.2, -18.8], [81.8, 91.9, 18.8, 29.2], [76.2, 91.9, 28.8, 40.2], [76.2, 91.9, 44.2, 55.8], [78.6, 91.9, 54.2, 66], [75.8, 91.9, -80.8, -53.2]];
+    const liftBox = new Box3(), liftTmp = new Box3();
+    const liftIsrael = (to) => {
+      if (to === liftNow) return;
+      const dy = to - liftNow; liftNow = to;
+      for (const o of g.children) {
+        if (o.userData.israelLifted === undefined) {
+          o.userData.israelLifted = false;
+          try {
+            liftBox.setFromObject(o);
+            if (o.isMesh || o.isGroup || o.isInstancedMesh) {
+              const b = liftBox;
+              const inRoom = liftBoxes.some(([x0, x1, z0, z1]) => b.min.x >= x0 && b.max.x <= x1 && b.min.z >= z0 && b.max.z <= z1);
+              const onStrip = b.min.x >= 82.4 && b.max.x <= 91.9 && b.min.y >= 13.3 && b.min.y <= 13.8;
+              o.userData.israelLifted = (inRoom || onStrip) && b.max.y > 13.7 && b.min.y > 13.2 && !o.userData.noLift;
+            }
+          } catch (_) {}
+        }
+        if (o.userData.israelLifted) o.position.y += dy;
+      }
+      if (ctx2.requestRender) ctx2.requestRender();
+    };
+    ctx2.shared.israelLift = () => liftNow;
     ctx2.layers.duchanDefault = duchanDef;
     ctx2.layers.duchanTanna = duchanTanna;
     ctx2.labels.push(
@@ -317,6 +346,7 @@
         this.mode = m === "chazonIsh" ? "chazonIsh" : m === "tanna" ? "tanna" : "mishnah";
         const ci = this.mode === "chazonIsh", tn = this.mode === "tanna";
         duchanCI.visible = ci; duchanDef.visible = !ci && !tn; duchanTanna.visible = tn; ciPlug.visible = !ci;
+        liftIsrael(tn ? 2.5 : 0);
         if ((ci || tn) && ctx2.layers.zoneDuchan) ctx2.layers.zoneDuchan.visible = false;
         if (ctx2.requestRender) ctx2.requestRender();
         return this.mode;
@@ -1198,8 +1228,8 @@
     const WEST_T = new Map(), WEST_K = new Map();
     for (const [grp, extra, extraN] of [[g7, false, null], [g13, true, NASHIM_X], [g13r, true, SHIR_R_X]]) {
       const opsN = ops(gN).concat([{ center: 79, width: 20, height: 16 }, { center: 65.5, width: 2, height: 9.5 }], extraN != null ? [small(extraN)] : []);   // 1.9.5 THREE_CHAMBERS_195: the hall in the north-east (centre 60, 22 wide until 1.9.4) and the wood chamber's door to the Hel
-      wallPart(grp, -96, MW0, opsN);
-      wallPart(grp, MW1, 96, opsN);   // 1.8.0: the wall is open over בית המוקד's hall (its own walls close it)
+      wallPart(grp, -96, MW0 - 1, opsN);   // ROVDIN_NICHES_N2: ends at the hall's west wall's OUTER face (-34): the hall's own wall (one amah, with the niches cut into it) stands there - until now the two overlapped
+      wallPart(grp, MW1 + 1, 96, opsN);   // 1.8.0: the wall is open over בית המוקד's hall (its own walls close it)
       H2.wall(grp, { axis: "x", length: 192, height: 26.5, thickness: 5, mat: M2.stone, cx: 0, cz: 67.5, y: 13.5, openings: ops(gS).concat(extra ? [small(SMALL_X)] : []) });
       if (!extra) H2.wall(grp, { axis: "z", length: 135, height: 26.5, thickness: 5, mat: M2.stone, cx: -93.5, cz: 0, y: 13.5, openings: [] });
       else {   // WEST2_D
@@ -1358,6 +1388,7 @@
     gS.forEach(([n, x]) => lbl(n, x, 35.5, 70.5, 3.2));
     H2.occ(H2.box(g, MW0 + 97, 0.9, 6.5, M2.stoneLight, (MW0 - 97) / 2, 40, -67.5));   // 1.9.1: west and east of Beit HaMoked's strip
     H2.occ(H2.box(g, 97 - MW1, 0.9, 6.5, M2.stoneLight, (MW1 + 97) / 2, 40, -67.5));
+    for (const xw of [MW0 - 0.5, MW1 + 0.5]) H2.box(g, 1, 2.5, 5, M2.stone, xw, 37.5, -67.5);   // ROVDIN_NICHES_N2: the court wall now ends at the hall's outer face - closes the gap over the hall's end walls (37.5..40)
     H2.occ(H2.box(g, 194, 0.9, 6.5, M2.stoneLight, 0, 40, 67.5));
     H2.occ(H2.box(g, 6.5, 0.9, 137, M2.stoneLight, -93.5, 40, 0));
     H2.occ(H2.box(g, 6.5, 0.9, 137, M2.stoneLight, 93.5, 40, 0));
@@ -2019,10 +2050,26 @@
           H2.box(mokedRosh, 0.5, 0.5 * (k + 1), RG.d, M2.stoneSmooth, X + W / 2 - 1 - 0.25 - 0.5 * k, 13.5, RG.z);
         }
       }
-      H2.box(g, 1, Hh, D, M2.stoneLight, X - (W / 2 - 0.5), 13.5, Z);                       // the west wall
+      // ROVDIN_NICHES_N2 (the user's decision, 23.11.2026, on the Mefaresh): the bed-niches are CUT INTO the end walls (0.7 deep in the wall's one
+      // amah), in the northern half of the hall only (the half built in the chel: z -70..-67.5 - "אותו בית המוקד שבנוי בחול היה מוקף רובדין",
+      // 2105:10), two levels, one bed in each. In the other reading (the Rosh's) the niches are filled back with stone (ctx2 rovdin group below).
+      const NZ0 = -69.8, NZ1 = -67.7, NY0 = [FL + 1.6, FL + 4.4], NH = 1.5, NDEP = 0.7;
+      const carvedWall = (xc, innerSign, za, zb, parts) => {   // a wall one amah thick, centred on xc, z za..zb, the niches cut in its inner face (the side `innerSign`: +1 = the +x face)
+        const xi = xc + innerSign * 0.5;                       // the inner face
+        const put = (mat) => (x0, x1, y0, y1, z0, z1) => { if (x1 - x0 > 1e-6 && y1 - y0 > 1e-6 && z1 - z0 > 1e-6) H2.box(parts, x1 - x0, y1 - y0, z1 - z0, mat, (x0 + x1) / 2, y0, (z0 + z1) / 2); };
+        const w = put(M2.stoneLight), y0 = 13.5, y1 = 13.5 + Hh;
+        const xm = xi - innerSign * NDEP, xe = xi - innerSign;   // the niches' bottom, and the wall's outer face
+        const xa = Math.min(xi, xm), xb = Math.max(xi, xm);                               // the front layer (the niches' depth)
+        w(Math.min(xm, xe), Math.max(xm, xe), y0, y1, za, zb);                           // the back layer, whole
+        w(xa, xb, y0, y1, za, NZ0); w(xa, xb, y0, y1, NZ1, zb);                           // the front layer, round the niches' columns
+        w(xa, xb, y0, NY0[0], NZ0, NZ1);
+        w(xa, xb, NY0[0] + NH, NY0[1], NZ0, NZ1);
+        w(xa, xb, NY0[1] + NH, y1, NZ0, NZ1);
+      };
+      carvedWall(X - (W / 2 - 0.5), 1, Z - D / 2, Z + D / 2, g);                           // the west wall
       {
         const XE = X + W / 2 - 0.5;                                                           // the east wall, in pieces round the Rosh's gate
-        H2.box(g, 1, Hh, 13.3, M2.stoneLight, XE, 13.5, -64.15);                              // z -70.8..-57.5
+        carvedWall(XE, -1, -70.8, -57.5, g);                                                  // z -70.8..-57.5 (the niches cut in)
         H2.box(g, 1, Hh, 1.7, M2.stoneLight, XE, 13.5, -76.65);                               // z -77.5..-75.8
         H2.box(g, 1, Hh - 10, 5, M2.stoneLight, XE, 23.5, -73.3);                             // over the gate
         H2.box(mokedDef, 1, 10, 5, M2.stoneLight, XE, 13.5, -73.3);                           // the default: no gate there
@@ -2320,35 +2367,36 @@
       // (2105:9-10, 57) "שמן הרובדין היו עולין ע״ג מטותיהן שהיו בתוך כניסת החומה כעין מטות" - "ישנים בתוך כניסת החומה" - recesses in the
       // wall, like beds, and the stones standing out below them, by which one goes up to them. Their number and measures - model choices.
       {
-        const rR = new Group(), rM = new Group();
-        g.add(rR); g.add(rM); rM.visible = false;
-        // ROVDIN_SHAPES_N2 (fix-n2, 23.11.2026 - the user: "לא ניכר הבדל כלל" between the two readings): they differ in the SHAPE now. On each
-        // end wall, in the free stretch between the corner chambers (five amot, z -2.5..+2.5 from the hall's axis):
+        const rR = new Group(), rM = new Group(), rRne = new Group();
+        g.add(rR); g.add(rM); rM.visible = false; mokedDef.add(rRne);   // rRne: the north-east corner's - it stands where the default reading's chamber stands
+        // ROVDIN_SHAPES_N2 (fix-n2, 23.11.2026 - the user: "לא ניכר הבדל כלל" between the two readings): they differ in the SHAPE now.
         //   the Rosh, the Bartenura, the Rambam and the Tiferet Yisrael - "אצטבאות" one on another, each shorter than the one under it,
-        //   "כעין מדריגות": five whole-length terraces (a stone stair up the wall, four and a half amot deep at the foot, to five amot high);
-        //   the Mefaresh - no terrace: separate bed-niches "בתוך כניסת החומה כעין מטות" in two levels, two beds in each, each bed in a stone
-        //   frame with a dark back, a mattress and a pillow, and under it its own stone standing out of the wall, "שמן הרובדין היו עולין
-        //   ע"ג מטותיהן". Their number, sizes and the niches' frames standing out of the wall (not cut into it) - model choices.
+        //   "כעין מדריגות": on each end wall, in the free stretch between the corner chambers (five amot), five whole-length terraces (a
+        //   stone stair up the wall, four and a half amot deep at the foot, five amot high); and - the user's decision, after the Tiferet
+        //   Yisrael (819:114): "ונ״ל שפתחי הד׳ לשכות היו מבינות גובה האצטבאות הנ״ל, באופן שרווח הלשכות בעצמן היה תחת רובדי האצטבאות,
+        //   והאצטבאות היו גגי הלשכות" - on each corner chamber's roof (six amot) three more terraces rise against the long wall;
+        //   the Mefaresh - no terrace: bed-niches cut into the end walls ("בתוך כניסת החומה כעין מטות"), in the northern half only, two levels,
+        //   a mattress and a pillow in each, and under each a stone standing out of the wall ("שמן הרובדין היו עולין ע"ג מטותיהן").
+        // Their number, sizes and the niches' depth - model choices.
         const clothM = new MeshStandardMaterial({ color: 0xd9ccac, roughness: 0.95 }), pillowM = new MeshStandardMaterial({ color: 0xf0e8d4, roughness: 0.95 });
-        const dark = new MeshStandardMaterial({ color: 0x2a2018, roughness: 1 });
+        const zc = (NZ0 + NZ1) / 2;
         for (const sx of [-1, 1]) {
           const wallX = X + sx * (W / 2 - 1);   // the end wall's inner face
           const at = (d) => wallX - sx * d / 2;   // the centre of a block d deep, standing on the wall
           for (let k = 0; k < 5; k++) H2.box(rR, 4.5 - 0.9 * k, 1, 4.8, M2.stoneSmooth, at(4.5 - 0.9 * k), FL + k, Z);
-          for (const y0 of [FL + 1.6, FL + 4.4]) {
-            H2.box(rM, 1.5, 0.25, 4.8, M2.stoneSmooth, at(1.5), y0 - 0.25, Z);                                  // the floor of the niches
-            H2.box(rM, 1.5, 0.25, 4.8, M2.stoneSmooth, at(1.5), y0 + 1.5, Z);                                   // their roof
-            for (const dz of [-2.4, 0, 2.4]) H2.box(rM, 1.5, 1.5, 0.25, M2.stoneSmooth, at(1.5), y0, Z + dz);   // the posts
-            const back = new Mesh(new BoxGeometry(0.06, 1.5, 4.6), dark); back.position.set(wallX - sx * 0.04, y0 + 0.75, Z); rM.add(back);
-            for (const dz of [-1.2, 1.2]) {
-              H2.box(rM, 1.2, 0.22, 2.0, clothM, at(1.2) , y0, Z + dz);                                          // the mattress
-              H2.box(rM, 0.4, 0.14, 1.0, pillowM, at(0.5), y0 + 0.22, Z + dz);                                    // the pillow
-              H2.box(rM, 1.1, 0.7, 1.4, M2.stoneSmooth, at(1.1), y0 - 1.2, Z + dz);                               // the stone that stands out of the wall, under the bed
-            }
+          for (const y0 of NY0) {
+            H2.box(rR, NDEP, NH, NZ1 - NZ0, M2.stoneLight, wallX + sx * NDEP / 2, y0, zc);                  // the niche filled back (the Rosh's reading)
+            H2.box(rM, 1.1, 0.7, 1.4, M2.stoneSmooth, at(1.1), y0 - 1.2, zc);                               // the stone that stands out of the wall, under the bed
+            H2.box(rM, 0.62, 0.2, NZ1 - NZ0 - 0.1, clothM, wallX + sx * (NDEP / 2 + 0.02), y0, zc);        // the mattress, in the niche
+            H2.box(rM, 0.3, 0.14, 0.7, pillowM, wallX + sx * 0.3, y0 + 0.2, zc + 0.6);                       // the pillow
           }
-          for (const dz of [-1.2, 1.2]) H2.box(rM, 1.9, 0.8, 1.4, M2.stoneSmooth, at(1.9), FL, Z + dz);          // the stone to go up by from the floor
+          H2.box(rM, 1.9, 0.8, 1.4, M2.stoneSmooth, at(1.9), FL, zc);                                       // the stone to go up by from the floor
         }
-        ctx2.shared.rovdin = { mode: "rosh", set(m) { this.mode = m === "mefaresh" ? "mefaresh" : "rosh"; rR.visible = this.mode === "rosh"; rM.visible = this.mode === "mefaresh"; return this.mode; } };
+        for (const [sx2, sz2] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {   // the corner chambers' roofs: three terraces against the long wall
+          const [cx, cz] = chC(sx2, sz2), par = (sx2 > 0 && sz2 < 0) ? rRne : rR, wz = Z + sz2 * (D / 2 - 1);
+          for (let k = 0; k < 3; k++) H2.box(par, 2 * RMX, 1, 2.4 - 0.8 * k, M2.stoneSmooth, cx, FL + CHH + 0.3 + k, wz - sz2 * (2.4 - 0.8 * k) / 2);
+        }
+        ctx2.shared.rovdin = { mode: "rosh", set(m) { this.mode = m === "mefaresh" ? "mefaresh" : "rosh"; rR.visible = rRne.visible = this.mode === "rosh"; rM.visible = this.mode === "mefaresh"; return this.mode; } };
         ctx2.layers = ctx2.layers || {}; ctx2.layers.rovdinR = rR; ctx2.layers.rovdinM = rM;
         const RV = { info: "**רובדין של אבן** (מידות א, ח): ״מקף רובדין של אבן, וזקני בית אב ישנים שם״. להרא״ש, לברטנורא, לרמב״ם ולתפארת ישראל — אצטבאות של אבן זו על גבי זו, כעין מדריגות; למפרש — גומחות בכותל כעין מטות, ואבנים בולטות מן הכותל לעלות אליהן. המתג — בתפריט, ״רובדין של אבן בבית המוקד״.", refs: [["מידות א, ח", { book: 89, index: 9 }], ["פירוש הרא״ש תמיד כה:", { book: 2224, index: 9 }], ["המפרש תמיד כה:", { book: 2105, index: 9 }]] };   // QUOTES_Q: מידות א, ח (89:9): 'מקף' בלי ו׳
         ctx2.labels.push(Object.assign({ text: "רובדין של אבן — זקני בית אב ישנים שם", x: X, y: FL + 3.5, z: Z, size: 1.2, layer: "rovdinR" }, RV),
