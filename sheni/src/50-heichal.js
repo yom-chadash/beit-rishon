@@ -3112,6 +3112,7 @@
         KOH.pose({ x: 0, y: -400, z: 0, props: null });
         KOH.hide();
         ownOff();
+        if (ctx2.shared.tefOff) ctx2.shared.tefOff.delete("tevila");   // TEF_S2
         if (M) { M.towel.visible = true; M.ripple.visible = false; }
         const s = D.saved;
         D.saved = null;
@@ -3133,6 +3134,7 @@
         M.see(false);                 // the eye walks inside: no x-ray through the walls
         setFov(66);
         B.sleepG.visible = true;
+        (ctx2.shared.tefOff || (ctx2.shared.tefOff = new Set())).add("tevila");   // TEF_S2 (the user: "כהן לא יורד לבית הטבילה עם תפילין"): by night, none
         D.shot = -1;
         D.look = null;
         D.t0 = performance.now();
