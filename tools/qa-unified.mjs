@@ -52,6 +52,13 @@ async function clickIn(page, frame, sel) {
   await page.mouse.click(r[0], r[1]);
 }
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: path.join(shots, name + '.png') }); };
+async function dismissWelcome(page) {
+  // The shell now has its own first-visit note/news, above the house buttons.
+  // Use their real controls; a coordinate click on a covered picker never enters a house.
+  for (const [dialog, button] of [['#uni-note', '#uni-note-ok'], ['#news', '#news-close']]) {
+    if (await page.$eval(dialog, e => !e.hidden)) { await page.click(button); await sleep(650); }
+  }
+}
 
 try {
   // ---------------- in "Otzaria" ----------------
@@ -84,6 +91,7 @@ try {
   await sleep(800);
   ok('choice screen shown, no house loaded yet', await page.evaluate(() => !document.getElementById('home').classList.contains('off') && !document.querySelector('iframe')));
   await shot(page, '01-choice');
+  await dismissWelcome(page);
 
   // enter the First Temple
   await page.click('#pick-rishon');
@@ -179,6 +187,7 @@ try {
     await p2.evaluateOnNewDocument((v) => { try { localStorage.setItem('tm1.news.seen', v.rishon); localStorage.setItem('tm2.news.seen', v.sheni); } catch (_) {} }, { rishon: CFG.houses.rishon.version, sheni: CFG.houses.sheni.version });
     await p2.goto(pathToFileURL(path.resolve(standalone)).href, { waitUntil: 'load' });
     await sleep(500);
+    await dismissWelcome(p2);
     await p2.click('#pick-sheni');
     const a = await waitReady(p2, 'sheni');
     const s2 = frameOf(p2, 'sheni');
