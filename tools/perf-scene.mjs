@@ -58,7 +58,9 @@ try {
         samples.push(now() - start);
       }
       c.scene.updateMatrixWorld(true);
-      r.render(c.scene, c.camera);
+      // Let the shadow cache settle without advancing animation. A single render
+      // can include a shadow refresh in only one revision and distort draw counts.
+      for (let i = 0; i < 3; i++) r.render(c.scene, c.camera);
       const queries = [];
       const measure = (name, query) => {
         const times = []; let result;

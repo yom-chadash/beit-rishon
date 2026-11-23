@@ -29,6 +29,7 @@ jobs:
           node tools/perf-hq-test.mjs
           node tools/test-lamp-lifecycle.mjs
           node tools/perf-geometry.mjs --baseline-ref 695456732c1d93db67268d13b7367cca76783aee --out qa/performance/geometry.json
+          node tools/perf-ray-model.mjs --out qa/performance/rays.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
