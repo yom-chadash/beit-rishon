@@ -324,18 +324,57 @@
     // in the north, in the wall's thickness, each a niche with knives in it; Bilga's shut with stone. Drawn in each reading of the ulam's
     // width on the face of the north part toward the ulam (the Mishnah's: the block's face, z -35; the Tiferet Yisrael's: the room's
     // north wall, z -45 (its partition has the door); the Rambam's: the hall's north end, z -45). Three rows of eight; their size, height and places, and
-    // which window is Bilga's - model choices.
+    // the order of the windows (WINDOW_NAMES_H: the order of the watches in I Chronicles 24 - the user's decision 197 a) - model choices.
     {
       const nDark = new MeshBasicMaterial({ color: 0x17110b });
       const bladeM = new MeshStandardMaterial({ color: 0xb9bcc0, metalness: 0.85, roughness: 0.3 });
       const handleM = new MeshStandardMaterial({ color: 0x5a3c22, roughness: 0.8 });
       const plugM = M2.stoneSmooth;
+      // WINDOW_NAMES_H (fix-h, 23.11.2026 - the user: "השמות של המשמרות"): each window's watch written on a small stone plate over it, in
+      // the three readings. The names - ctx2.shared.watches24 (30-courts.js: I Chronicles 24:7-18, the order of the lots). THE ORDER OF THE
+      // WINDOWS - this one array, WIN_WALL: the wall as one sees it standing before it (the rows from the top, each from the left to the
+      // right); each number - the watch by the order of the lots (1 Yehoyariv ... 24 Maazyahu). The user's decision 197 a (23.11.2026): from
+      // the right to the left and from the top down, for one standing before them - the top row 1-8, the second 9-16, the third 17-24;
+      // Bilga, the fifteenth, the seventh from the right in the second row - and only its window shut (it goes by its name).
+      const WIN_WALL = [
+        [8, 7, 6, 5, 4, 3, 2, 1],
+        [16, 15, 14, 13, 12, 11, 10, 9],
+        [24, 23, 22, 21, 20, 19, 18, 17]
+      ];
+      const W24N = ctx2.shared.watches24 || null;
+      const watchAt = (r, c) => WIN_WALL[2 - r][c] - 1;   // r 0 the lowest row, c 0 the westmost (the viewer's left)
+      // the plates: one picture of the 24 names (4 x 8 cells of 256 x 64), each plate's face on its own cell
+      const plateM = (() => {
+        if (!W24N) return null;
+        const cv = document.createElement("canvas"); cv.width = 1024; cv.height = 512;
+        const g2 = cv.getContext("2d");
+        g2.direction = "rtl"; g2.textAlign = "center"; g2.textBaseline = "middle";
+        for (let i = 0; i < 24; i++) {
+          const gx = (i % 4) * 256, gy = Math.floor(i / 4) * 64;
+          g2.fillStyle = "#d9cba6"; g2.fillRect(gx, gy, 256, 64);
+          g2.strokeStyle = "#8c7650"; g2.lineWidth = 4; g2.strokeRect(gx + 3, gy + 3, 250, 58);
+          g2.fillStyle = "#33240f"; g2.font = "bold 44px 'David','Frank Ruhl Libre','Times New Roman',serif";
+          g2.fillText(W24N[i], gx + 128, gy + 34);
+        }
+        const tx = new CanvasTexture(cv); tx.colorSpace = SRGBColorSpace; tx.anisotropy = 8;
+        return new MeshStandardMaterial({ map: tx, roughness: 0.85 });
+      })();
+      const PL_W = 1.0, PL_H = 0.22, PL_DY = 0.65;   // over the window's frame (its top at +0.52), under the next row's (at +0.78)
+      const plateGeo = (i, x, y, z, dir) => {   // dir: the way its face looks (+1: +z)
+        const q = new PlaneGeometry(PL_W, PL_H), uv = q.attributes.uv, cx = i % 4, cy = Math.floor(i / 4);
+        for (let j = 0; j < uv.count; j++) uv.setXY(j, (cx + uv.getX(j)) / 4, (8 - cy - 1 + uv.getY(j)) / 8);
+        if (dir < 0) q.rotateY(Math.PI);
+        return q.translate(x, y, z);
+      };
       const windows = (parent, zFace, dir) => {   // dir: +1 the niches face +z (their back toward -z)
-        const tmp = new Group();
-        let k = 0;
+        const tmp = new Group(), plates = [];
+        let k = 0, bilgaAt = null;
         for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++, k++) {
           const x = 2.6 + c * 1.25, y = F + 2.4 + r * 1.3, z = zFace + dir * 0.02;
-          const bilga = k === 15;   // (which one - a model choice)
+          const wi = watchAt(r, c);
+          if (plateM) plates.push(plateGeo(wi, x, y + PL_DY, zFace + dir * 0.03, dir));
+          const bilga = W24N ? W24N[wi] === "בלגה" : k === 15;   // WINDOW_NAMES_H: Bilga's by its name (until now the 16th - a model choice)
+          if (bilga) bilgaAt = [x, y];
           if (bilga) { const p = new Mesh(new BoxGeometry(0.85, 0.85, 0.12), plugM); p.position.set(x, y, zFace + dir * 0.06); tmp.add(p); continue; }
           const d = new Mesh(new PlaneGeometry(0.8, 0.8), nDark); d.position.set(x, y, z); d.rotation.y = dir > 0 ? 0 : Math.PI; tmp.add(d);
           for (const [fx, fy, fw, fh] of [[0, 0.46, 1.0, 0.12], [0, -0.46, 1.0, 0.12], [-0.46, 0, 0.12, 0.8], [0.46, 0, 0.12, 0.8]]) {
@@ -350,8 +389,10 @@
         const byMat = new Map();
         tmp.traverse((o) => { if (o.isMesh) { if (!byMat.has(o.material)) byMat.set(o.material, []); byMat.get(o.material).push(o.geometry.clone().applyMatrix4(o.matrixWorld)); } });
         for (const [mat, list] of byMat) { const m = new Mesh(mergeGeometries(list), mat); m.userData.noPick = true; m.receiveShadow = true; parent.add(m); }
+        if (plateM && plates.length) { const pm = new Mesh(mergeGeometries(plates), plateM); pm.userData.noPick = true; parent.add(pm); }   // WINDOW_NAMES_H
         ctx2.labels.push({ text: "בית החליפות — ״ששם גונזים את הסכינים״ (מידות ד, ז): כ״ד חלונות, אחד לכל משמר", x: 7, y: F + 7.2, z: zFace + dir * 1.5, size: 0.9, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
-        ctx2.labels.push({ text: "״וחלונה סתומה״ — של משמר בלגה (סוכה ה, ח)", x: 2.6 + 7 * 1.25, y: F + 2.4 + 1.3 + 0.9, z: zFace + dir * 0.9, size: 0.6, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
+        // WINDOW_NAMES_H: on Bilga's shut stone (its plate over it says "בלגה"); until now over the windows above it, and crowding them
+        ctx2.labels.push({ text: "״וחלונה סתומה״ (סוכה ה, ח)", x: bilgaAt ? bilgaAt[0] : 2.6 + 7 * 1.25, y: bilgaAt ? bilgaAt[1] : F + 2.4 + 1.3, z: zFace + dir * 0.35, size: 0.36, layer: parent === ulamM ? "ulamMishnah" : parent === ulamT ? "ulamTiferet" : "ulamRambam" });
       };
       windows(ulamM, -35, 1);          // the Mishnah's reading: on the north block's face toward the ulam
       windows(ulamT, -45, 1);          // the Tiferet Yisrael's: in the room, on its north wall (the partition has its door)

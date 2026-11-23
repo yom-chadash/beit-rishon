@@ -177,7 +177,10 @@
       lo.add(new Mesh(gHeadLo, mFace), F.hair.lo);
       lod.addLevel(hi, 0, 0.1);
       lod.addLevel(lo, LOD_FAR, 0.1);
-      const fill = () => { F.hair.hi = new Mesh(hairGeo("hi", F.k, F.beard), F.mH.hi); hi.add(new Mesh(FACE.head("hi"), mFace), new Mesh(FACE.eyes(), mEye), F.hair.hi); hi.updateMatrixWorld(true); };   // (made during a frame: placed at once)
+      const fill = () => { F.hair.hi = new Mesh(hairGeo("hi", F.k, F.beard), F.mH.hi); hi.add(new Mesh(FACE.head("hi"), mFace), new Mesh(FACE.eyes(), mEye), F.hair.hi); hi.updateMatrixWorld(true);
+        // NOPICK_HEAD_H (fix-h): made late, the near head takes the far one's noPick - else the figures' heads (noPick when built) caught the
+        // rays for the floor and the clicks once the eye had come near (the figure for scale stood on a priest's head)
+        if (lo.children.some((m) => m.userData && m.userData.noPick)) for (const m of hi.children) m.userData.noPick = true; };   // (made during a frame: placed at once)
       lod.update = function (cam) {
         if (!F.hair.hi && this.getWorldPosition(_lv).distanceTo(cam.position) / (cam.zoom || 1) < LOD_FAR * 1.4) fill();
         return LOD.prototype.update.call(this, cam);
