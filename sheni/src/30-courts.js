@@ -35,17 +35,26 @@
     // every straight flight from the mount up to the courts - built in the flight's own frame (H2.stairs: rising along +x, its width
     // along z): posts on the steps, and a sloped handrail over them. The rails are not in the sources - a model choice (so the label)
     const railMat = M2.bronze;
+    // The posts never move independently: retain every post but submit one instance batch per flight/landing.
+    // One immutable geometry is shared; the original posts neither cast nor receive shadows.
+    const railPostGeo = new BoxGeometry(0.1, 1.35, 0.1);
+    const addRailPosts = (parent, positions) => {
+      if (!positions.length) return;
+      const batch = new InstancedMesh(railPostGeo, railMat, positions.length), mm = new Matrix4();
+      positions.forEach((p, i) => batch.setMatrixAt(i, mm.makeTranslation(p[0], p[1], p[2])));
+      batch.computeBoundingSphere();
+      parent.add(batch);
+    };
     const stairRail = (gS, o) => {
       const tread = o.tread || 0.75, n = o.steps, rise = o.totalRise / n, L = n * tread, HH = 1.35;
       const hAt = (x) => Math.min(n, Math.floor(x / tread) + 1) * rise;
+      const posts = [];
       for (const zs of [-1, 1]) {
         const zz = zs * (o.width / 2 - 0.12);
         const np = Math.max(2, Math.round(L / 3) + 1);
         for (let i = 0; i < np; i++) {
           const x = 0.12 + (L - 0.24) * i / (np - 1), b = hAt(x);
-          const post = new Mesh(new BoxGeometry(0.1, HH, 0.1), railMat);
-          post.position.set(x, b + HH / 2, zz);
-          gS.add(post);
+          posts.push([x, b + HH / 2, zz]);
         }
         const x0 = 0.12, x1 = L - 0.12, y0 = hAt(x0) + HH, y1 = hAt(x1) + HH;
         const len = Math.hypot(x1 - x0, y1 - y0);
@@ -54,6 +63,7 @@
         rail.rotation.z = Math.atan2(y1 - y0, x1 - x0);
         gS.add(rail);
       }
+      addRailPosts(gS, posts);
       return gS;
     };
     const stairsR = (parent, o) => stairRail(H2.stairs(parent, o), o);
@@ -180,7 +190,7 @@
     const railPostsG = new Set();
     const platRail = (parent, x0, x1, z0, z1, y, sides) => {   // a bronze rail on the named edges ("n" = z0, "s" = z1, "w" = x0, "e" = x1) of a landing
       const HH = 1.35;
-      const posts = new Set();
+      const posts = new Set(), positions = [];
       const run = (ax, a0, a1, fixed) => {
         const len = a1 - a0, n = Math.max(1, Math.round(len / 3));
         for (let i = 0; i <= n; i++) {
@@ -188,9 +198,7 @@
           if (posts.has(k) || (parent !== g && railPostsG.has(k))) continue;
           posts.add(k);
           if (parent === g) railPostsG.add(k);
-          const p = new Mesh(new BoxGeometry(0.1, HH, 0.1), railMat);
-          p.position.set(px, y + HH / 2, pz);
-          parent.add(p);
+          positions.push([px, y + HH / 2, pz]);
         }
         const r = new Mesh(new BoxGeometry(ax === "x" ? len : 0.13, 0.11, ax === "x" ? 0.13 : len), railMat);
         r.position.set(ax === "x" ? (a0 + a1) / 2 : fixed, y + HH, ax === "x" ? fixed : (a0 + a1) / 2);
@@ -200,6 +208,7 @@
         if (sd === "n") run("x", x0, x1, z0 + 0.12); else if (sd === "s") run("x", x0, x1, z1 - 0.12);
         else if (sd === "w") run("z", z0, z1, x0 + 0.12); else if (sd === "e") run("z", z0, z1, x1 - 0.12);
       }
+      addRailPosts(parent, positions);
     };
     // a landing before a gate (centre gx, on the side s of the court) and its flight along the wall: dx = 1 down eastwards, -1 westwards
     const chelFlight = (parent, gx, s, dx, o = {}) => {
