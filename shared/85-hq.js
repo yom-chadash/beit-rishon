@@ -862,6 +862,14 @@
     // ---- once a frame, before the canvas is drawn
     function frame() {
       if (!S.ao && !S.gi) { U.tmHQOn.value = 0; return; }
+      // GI cannot consume the normal/depth prepass until its lit shaders finish compiling. With AO off, drawing that scene
+      // meanwhile is entirely discarded. Keep the same unmodified lighting and start all GI passes on its first ready frame.
+      if (!S.ao && S.giWarm !== 2) {
+        U.tmGITex.value = BLACK;
+        U.tmAOMask.value.set(1, 0, 0, 0);
+        U.tmHQOn.value = 0;
+        return;
+      }
       const rt = renderer.getRenderTarget(), auto = renderer.autoClear, alpha = renderer.getClearAlpha();
       renderer.getClearColor(CC);
       let swapped = false;

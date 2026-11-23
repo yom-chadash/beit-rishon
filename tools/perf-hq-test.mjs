@@ -89,8 +89,10 @@ async function run(house) {
   hq.set(false, false); frame([]);
   assert.equal(hq.U.tmHQOn.value, 0);
   hq.set(false, true);
-  frame(['normal']); // GI-only warmup: no lighting is applied until its shaders are ready.
+  for (let i = 0; i < 120; i++) frame([]); // GI-only warmup does no discarded scene prepasses.
   assert.equal(hq.U.tmHQOn.value, 0);
+  hq.set(true, true); frame(['normal', 'gtaoM', 'pdM']); // AO still works while GI is compiling.
+  assert.deepEqual(hq.U.tmAOMask.value.toArray(), [1, 0, 0, 0]);
   resolveCompile(); await Promise.resolve(); await Promise.resolve();
   assert.equal(hq.S.giWarm, 2);
   frame(['normal', 'lit', 'giM', 'gdM']);
