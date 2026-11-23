@@ -1116,13 +1116,19 @@
       //          mount to the soreg's opening before the Water Gate, along the chel and up the stair to the landing;
       //   IN   - through the Water Gate into the court, north of the chambers and the laver, up the ramp, to the left, to the western bowl.
       // The legs meet where he stands (the filling, the Water Gate); on a leg one pace by its length (WALK_V amot a demonstration second),
-      // easing in and out (EASE s) at each stop (the trumpeters' turn, the filling, the Water Gate, the bowl). Everyone walks on these curves:
+      // easing in and out at each stop (the trumpeters' turn, the filling, the Water Gate, the bowl) - PACE_G below. Everyone walks on these curves:
       // the two with trumpets ahead of him to the eastern gate; the procession (104) waits beyond the soreg in its order, takes him into its
       // middle and goes with him, stops before the spring and turns about where it stands, comes back with him and stops before the soreg; the
       // eye goes ahead of him on the same curve looking back at him, and comes to a still view at each station by a soft blend. The floor:
       // under him read along each leg once (on stairs the body goes up evenly and each foot stands on its own tread), outside - the mount's
       // floor (0), the ramp's slope, the valley's ground (the terrain's own triangles). The pace, the eye's distances - model choices.
-      const WALK_V = 13, EASE = 0.8, STRIDE = 2.4, STEP = 0.25;
+      // PACE_G (the coordinator, after the draft: 13 amot a second is four times a man's walk - "בצעידה"): a man's pace (V_WALK - 3 amot a
+      // second on the screen, at demoSlow) where it matters - the gates, the spring, the filling, the Water Gate, the court - and between them, on
+      // the long stretches, a soft speeding-up (to V_FAST at most) while the eye rises for a view from the air, so that the speed reads as time
+      // shortened and not as a run; then a soft slowing down. Acceleration A_MAX at most (no jump in speed); the step's cadence is a walk's
+      // (the legs no faster than at V_CAD - from the air they are not seen)
+      const V_WALK = 4.5, V_FAST = 27, A_MAX = 5, V_CAD = 6.5, STRIDE = 2.6, STEP = 0.25, SIM_DT = 1 / 120;
+      const WALK_V = V_WALK;   // (the step's amplitude is measured against a walk)
       const crPt = (P0, P1, P2, P3, u) => {   // centripetal Catmull-Rom (alpha 0.5) between P1 and P2
         const d = (A, B) => Math.max(1e-4, Math.sqrt(Math.hypot(B[0] - A[0], B[1] - A[1])));
         const t1 = d(P0, P1), t2 = t1 + d(P1, P2), t3 = t2 + d(P2, P3), t = t1 + u * (t2 - t1);
@@ -1276,6 +1282,14 @@
           [BACK, [[0, 10, 3.6], [L.U_R + 4, 15, 6], [BACK.near(0, 376), 16, 6.5], [L.U_CHULDA - 6, 15, 4.8], [sB(-4.6, 280) + 6, 15, 4.8], [sB(-12.6, 180), 20, 10],
             [L.U_P - 20, 18, 9], [L.U_P + 4, 14, 6], [U_SOR, 10, 4.6], [sB(4.6, 76.0), 9, 4.6], [BACK.len, 9, 4.6]]],
           [IN, [[0, 6, 4.4], [12, 7, 4.8], [IN.near(-5, 53.4), 11, 8.5], [IN.near(40, 53.4), 12, 7], [IN.len, 10, 4.5]]]]);   // (over the laver and the ulam's steps)
+        // PACE_G: the speed along each leg (amot a demonstration second; V_WALK - a man's walk)
+        const W = V_WALK, sStoa = sO(-2.5, 276), uStoaN = sB(-4.6, 280), uRampF = BACK.near(0, RP.zf);
+        L.pace = new Map([
+          [OUT, [[0, W], [30, W], [52, 9], [S_TG - 34, 9], [S_TG - 12, W], [L.S_J + 12, W], [L.S_J + 44, V_FAST], [sStoa - 60, V_FAST], [sStoa - 16, 6], [L.S_CHULDA - 10, W],
+            [L.S_CHULDA + 6, W], [L.S_CHULDA + 22, 9], [L.S_RAMPF - 12, 9], [L.S_RAMPF + 16, 24], [L.S_A - 34, 24], [L.S_A - 6, W], [S_T, W]]],
+          [BACK, [[0, W], [L.U_R + 4, W], [L.U_R + 30, 24], [uRampF - 26, 24], [uRampF + 2, 9], [L.U_CHULDA - 14, 9], [L.U_CHULDA - 4, W], [L.U_CHULDA + 8, W],
+            [L.U_CHULDA + 24, 9], [uStoaN + 8, 9], [uStoaN + 40, V_FAST], [L.U_P - 44, V_FAST], [L.U_P - 6, W], [BACK.len, W]]],
+          [IN, [[0, W], [16, W], [26, 6], [L.S_FOOT - 8, 6], [L.S_FOOT, W], [IN.len, W]]]]);
         return L;
       };
       const rigAt = (L, leg, s) => {   // [ahead, height]
@@ -1284,25 +1298,41 @@
         for (let i = 1; i < K2.length; i++) if (s <= K2[i][0]) { const a = K2[i - 1], b = K2[i], u = smooth(clamp((s - a[0]) / Math.max(1e-3, b[0] - a[0]), 0, 1)); return [lerp(a[1], b[1], u), lerp(a[2], b[2], u)]; }
         const e = K2[K2.length - 1]; return [e[1], e[2]];
       };
-      // ---- the timeline: holds and walks (a walk: EASE s to the pace and to a stop); stateAt(t) -> { leg, s, v, g, dist }
+      // ---- the timeline: holds and walks; a walk follows its leg's pace (PACE_G: knots [s, speed], smooth between them), its speed changing by
+      // A_MAX at most and coming to rest at its end - simulated once into a table (every SIM_DT); stateAt(t) -> { leg, s, v, g, dist (for the step) }
       let TL = null;
-      const sOf = (g, t) => {
-        if (g.hold) return [g.s0, 0];
-        const tau = clamp(t - g.t0, 0, g.dur), V = WALK_V;
-        if (tau < EASE) return [g.s0 + V * tau * tau / (2 * EASE), V * tau / EASE];
-        if (tau > g.dur - EASE) { const r = g.dur - tau; return [g.s1 - V * r * r / (2 * EASE), V * r / EASE]; }
-        return [g.s0 + V * EASE / 2 + V * (tau - EASE), V];
+      const paceAt = (K2, s) => {
+        if (s <= K2[0][0]) return K2[0][1];
+        for (let i = 1; i < K2.length; i++) if (s <= K2[i][0]) { const a = K2[i - 1], b = K2[i], u = smooth(clamp((s - a[0]) / Math.max(1e-3, b[0] - a[0]), 0, 1)); return lerp(a[1], b[1], u); }
+        return K2[K2.length - 1][1];
+      };
+      const simWalk = (g, K2) => {   // the walk's table: s, v and the step's distance at each SIM_DT
+        const S2 = [g.s0], Vv = [0], P2 = [0];
+        let s0 = g.s0, v = 0, pd = 0, n = 0;
+        while (s0 < g.s1 - 1e-4 && n < 400000) {
+          const want = Math.min(paceAt(K2, s0), Math.sqrt(2 * A_MAX * Math.max(0, g.s1 - s0)) + 0.05);
+          v = Math.max(0.05, v + clamp(want - v, -A_MAX * SIM_DT, A_MAX * SIM_DT));
+          s0 = Math.min(g.s1, s0 + v * SIM_DT); pd += Math.min(v, V_CAD) * SIM_DT; n++;
+          S2.push(s0); Vv.push(s0 >= g.s1 ? 0 : v); P2.push(pd);
+        }
+        g.tab = { s: Float64Array.from(S2), v: Float32Array.from(Vv), p: Float64Array.from(P2) };
+        g.dur = (S2.length - 1) * SIM_DT; g.pd = pd;
+      };
+      const sOf = (g, t) => {   // [s, v, the step's distance in this walk]
+        if (g.hold) return [g.s0, 0, 0];
+        const T3 = g.tab, f = clamp((t - g.t0) / SIM_DT, 0, T3.s.length - 1), i = Math.min(T3.s.length - 2, Math.floor(f)), u = f - i;
+        return [lerp(T3.s[i], T3.s[i + 1], u), lerp(T3.v[i], T3.v[i + 1], u), lerp(T3.p[i], T3.p[i + 1], u)];
       };
       const mkTimeline = (L) => {
         const segs = [];
         let dist = 0;
-        const add = (o) => { o.t0 = segs.length ? segs[segs.length - 1].t1 : 0; o.t1 = o.t0 + o.dur; o.d0 = dist; dist += o.s1 - o.s0; segs.push(o); return o; };
-        const walk = (leg, s0, s1) => add({ leg, s0, s1, dur: (s1 - s0) / WALK_V + EASE });
+        const add = (o) => { o.t0 = segs.length ? segs[segs.length - 1].t1 : 0; o.t1 = o.t0 + o.dur; o.d0 = dist; dist += o.pd || 0; segs.push(o); return o; };
+        const walk = (leg, s0, s1) => { const g = { leg, s0, s1 }; simWalk(g, L.pace.get(leg)); return add(g); };
         const hold = (leg, s, dur, tag) => add({ leg, s0: s, s1: s, dur, hold: true, tag });
         hold(L.OUT, 0, 3.6, "open"); walk(L.OUT, 0, L.S_D); hold(L.OUT, L.S_D, 3.2, "decl"); walk(L.OUT, L.S_D, L.OUT.len);
         hold(L.OUT, L.OUT.len, 6.6, "spring"); walk(L.BACK, 0, L.BACK.len); hold(L.BACK, L.BACK.len, 6.4, "wgate"); walk(L.IN, 0, L.IN.len);
         hold(L.IN, L.IN.len, 7.2, "pour");
-        const tAt = (leg, s) => { for (const g of segs) if (!g.hold && g.leg === leg && s >= g.s0 - 1e-6 && s <= g.s1 + 1e-6) { let a = g.t0, b = g.t1; for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (sOf(g, m)[0] < s) a = m; else b = m; } return (a + b) / 2; } return 0; };
+        const tAt = (leg, s) => { for (const g of segs) if (!g.hold && g.leg === leg && s >= g.s0 - 1e-6 && s <= g.s1 + 1e-6) { const T3 = g.tab; let a = 0, b = T3.s.length - 1; while (b - a > 1) { const m = (a + b) >> 1; if (T3.s[m] < s) a = m; else b = m; } return g.t0 + b * SIM_DT; } return 0; };
         const tag = (k) => segs.find((g) => g.tag === k);
         const T2 = { walk0: tag("open").t1, decl0: tag("decl").t0, decl1: tag("decl").t1, rim1: tag("spring").t0, wg0: tag("wgate").t0, in0: tag("wgate").t1,
           top1: tag("pour").t0, end: tag("pour").t1,
@@ -1316,8 +1346,8 @@
       const stateAt = (t) => {
         const S = TL.segs; let g = S[0];
         for (const q of S) if (t >= q.t0) g = q;
-        const [s, v] = sOf(g, Math.min(t, g.t1));
-        return { leg: g.leg, s, v, g, dist: g.d0 + (s - g.s0) };
+        const [s, v, pd] = sOf(g, Math.min(t, g.t1));
+        return { leg: g.leg, s, v, g, dist: g.d0 + pd };
       };
       // the floor under each foot: on stairs each on its own tread (the body between them)
       const footY1 = (x, z, by) => (inCourts(x, z) ? rayFloor(x, z, by + 1.2) : FLOOR(x, z, by));
@@ -1327,10 +1357,10 @@
         const q = leg.at(s), [x, z] = off ? leg.off(q, off) : [q[0], q[1]], y = leg.body(s, off || 0);
         f.g.position.set(x, y, z);
         f.g.rotation.y = yaw;
-        const k = clamp(v / WALK_V, 0, 1), ph = dist * 2 * Math.PI / STRIDE, sw = Math.sin(ph);
+        const k = clamp(v / WALK_V, 0, 1), ph = dist * 2 * Math.PI / STRIDE, sw = Math.sin(ph);   // (dist - the step's distance: at most V_CAD a second)
         const FS = K.FS, cy = Math.cos(yaw), sy = Math.sin(yaw);
         for (const [ft, sd, sg] of [[f.fl, 1, 1], [f.fr, -1, -1]]) {
-          const fz = sg * 0.24 * k * sw, lx = sd * 0.1 * FS;
+          const fz = sg * 0.3 * k * sw, lx = sd * 0.1 * FS;
           ft.position.z = fz;
           ft.position.y = footY(x + cy * lx + sy * fz, z - sy * lx + cy * fz, y, sy, cy) - y;
         }
@@ -1387,7 +1417,14 @@
         const L = SHL.L, T2 = T, st = stateAt(t), q = st.leg.at(st.s), py = st.leg.body(st.s);
         // (while he stands at a leg's end, the eye's place is already the next leg's - the change is made under the still view, not seen)
         const rl = st.g.tag === "wgate" ? L.IN : st.g.tag === "spring" ? L.BACK : st.leg, rs = rl === st.leg ? st.s : 0;
-        const [A, H] = rigAt(L, rl, rs), sc = Math.min(rs + A, rl.len), qc = rl.at(sc);
+        // PACE_G: the faster he goes, the higher and farther the eye (a view from the air); but under the royal stoa's roof and below the
+        // courts' walls near them (smoothly)
+        const [A0, H0] = rigAt(L, rl, rs), fast = Math.max(0, st.v - 6), A = A0 + 0.7 * fast;
+        const sc = Math.min(rs + A, rl.len), qc = rl.at(sc);
+        const wX = (x, a, b) => smooth(clamp((x - a) / 24, 0, 1)) * (1 - smooth(clamp((x - b) / 24, 0, 1)));   // 1 between a + 24 and b, 0 outside a..b + 24
+        const capS = lerp(60, 5.2, smooth(clamp((qc[1] - 196) / 82, 0, 1)) * (1 - smooth(clamp((qc[1] - 338) / 10, 0, 1))));   // the royal stoa - all along the south (z 284..335)
+        const capC = lerp(60, 6.5, wX(qc[0], -64, 30) * smooth(clamp((192 - qc[1]) / 82, 0, 1)));   // the court's south wall (z 65-70)
+        const H = Math.min(H0 + 1.25 * fast, Math.max(H0, Math.min(capS, capC)));
         let eye = [qc[0], rl.body(sc) + H, qc[1]], look = [q[0], py + 1.9, q[1]];
         const SP = SHL.SP, sy = SP.gy != null ? SP.gy : Y0, B = BOWL();
         const pourV = (() => {
@@ -1400,7 +1437,7 @@
           [1 - smooth(clamp((t - T2.walk0 + 0.2) / 2.6, 0, 1)), [[108.5, 16.8, 3.2], [95.6, 15.2, 0]]],   // the opening: the two in the Nikanor gate, near
           // the eastern gate: from inside the women's court, beside them - they turn to the west, toward him and the house (the eye ahead of him
           // would stand in the gate's open leaves)
-          [smooth(clamp((t - T2.decl0 + 2.4) / 2.4, 0, 1)) * (1 - smooth(clamp((t - T2.decl1) / 2.4, 0, 1))), [[213.5, 10.6, 3.6], [223.5, 8.0, 0]]],   // (in line with the gate: the blend out goes through its opening)
+          [smooth(clamp((t - T2.decl0 + 2.4) / 2.4, 0, 1)) * (1 - smooth(clamp((t - T2.decl1) / 2.4, 0, 1))), [[213.5, 10.6, 0.8], [223.5, 8.0, 0]]],   // (in line with the gate: the blend out goes through its opening)
           [smooth(clamp((t - T2.rim1 + 2.6) / 2.6, 0, 1)) * (1 - smooth(clamp((t - T2.back0 - 0.2) / 2.8, 0, 1))), [[SP.x + 3.4, sy + 2.0, SP.z - 5.6], [SP.x - 0.4, SP.y - 0.3, SP.z - 0.4]]],
           [smooth(clamp((t - T2.wg0 + 3) / 3, 0, 1)) * (1 - smooth(clamp((t - T2.in0 + 2.0) / 2.4, 0, 1))), [[-21, 16.6, 83.2], [-16.5, 14.8, 72.4]]],   // (into the court before he goes: the eye through the gate's opening)   // the Water Gate, near (in line with its opening: the blend into the court goes through it)
           [smooth(clamp((t - T2.top1 + 3.2) / 3.2, 0, 1)), pourV]
@@ -1417,6 +1454,7 @@
         if (!L || !TL) return;
         // the floor tables, a little each frame (ahead of the walkers; what is asked before is read at once)
         { let budget = 48; for (const [leg, off, upto] of SHL.fillList) { const n0 = (leg.tabs.get(off) || { n: 0 }).n; if (n0 > upto) continue; const n1 = leg.fill(off, Math.min(upto, n0 + budget - 1)).n; budget -= n1 - n0; if (budget <= 0) break; } }
+        eznLeaves(SHL.run ? smooth(clamp((t - T.walk0) / 4, 0, 1)) : 0);   // EZN_GATE_G
         const st = stateAt(t), q = st.leg.at(st.s);
         // the priest: on his leg; while he stands - the turns (to the fall and back, to the gate, to the bowls)
         let yaw = q[2];
@@ -1570,7 +1608,7 @@
         if (FS2 && SHL.glass !== want) { if (want && !FS2.isOn()) { FS2.on(); SHL.glassOurs = true; } else if (!want && SHL.glassOurs) { FS2.off(); SHL.glassOurs = false; } SHL.glass = want; }
       };
       // ---- the eye's keys for the walk engine: the eye above, every tenth of a second (Catmull-Rom through them gives it back)
-      const keys = () => { const out = []; for (let t = 0; t <= T.end + 1e-6; t += 0.1) { const [e, l] = camAt(t); out.push([+t.toFixed(2), e, l]); } return out; };
+      const keys = () => { const out = []; for (let k = 0, n = Math.ceil(T.end / 0.05); k <= n; k++) { const t = Math.min(T.end, k * 0.05); const [e, l] = camAt(t); out.push([+t.toFixed(3), e, l]); } return out; };
       const capsOf = () => [
         [0, "״נסוך המים כיצד. צלוחית של זהב מחזקת שלשת לגים היה ממלא מן השלוח״ (סוכה ד, ט)"],
         [1.2, "״ועמדו שני כהנים בשער העליון שיורד מעזרת ישראל לעזרת נשים, ושתי חצוצרות בידיהן... תקעו והריעו ותקעו״ (סוכה ה, ד)"],
@@ -1610,11 +1648,38 @@
         if (SHL.glassOurs) { const FS2 = SH.features && SH.features.sfalimSee; if (FS2) FS2.off(); SHL.glassOurs = false; SHL.glass = false; }
         streamTo(SHL.SP.base || 0);
         if (SHL.kit) SHL.kit.setLit(0);
+        eznLeaves(0);   // EZN_GATE_G: the gate as it was
         const sv = SHL.saved;
         if (sv && sv.lg) sv.lg.visible = sv.labels;
         if (sv && sv.view && SH.viewLimits) SH.viewLimits.set(sv.view);   // the view's limits as they were
         if (SHL.kit) SH.camLow = Y0 - 3; else delete SH.camLow;   // SHILOACH_WEST_B2: the valley stays open to the eye once the spring is built
         SHL.saved = null;
+      };
+      // EZN_GATE_G: the women's court's eastern gate - "הגיעו לשער היוצא ממזרח" (Sukkah 5:4). If its two gold leaves stand less than 1.1 radian
+      // open (in 30-courts.js they stood 0.3 ajar - almost shut), they open wide into the court while the procession comes, and at the end go
+      // back to the very angle they had (read from the leaves at the start - so whatever angle that module gives them)
+      const EZN = { m: null, base: null, k: 0 };
+      const eznRead = () => {   // at each start: the leaves' places and their opening now
+        if (EZN.m === null) {
+          EZN.m = false;
+          ctx2.root.traverse((o) => { if (EZN.m || !o.isInstancedMesh || o.count !== 2) return; const m = new Matrix4(), p = new Vector3(); o.getMatrixAt(0, m); p.setFromMatrixPosition(m); if (Math.abs(p.x - 228.5) < 0.01 && Math.abs(p.y - 6) < 0.01 && Math.abs(Math.abs(p.z) - 5) < 0.01) EZN.m = o; });
+        }
+        if (!EZN.m) return;
+        EZN.base = [0, 1].map((i) => {
+          const m = new Matrix4(); EZN.m.getMatrixAt(i, m);
+          const p = new Vector3().setFromMatrixPosition(m), e = m.elements, a = Math.atan2(e[8], e[0]), sg = p.z < 0 ? -1 : 1;
+          let open = sg < 0 ? -a : a - Math.PI; while (open > Math.PI) open -= 2 * Math.PI; while (open < -Math.PI) open += 2 * Math.PI;
+          return { p, a, sg, open, to: open < 1.1 ? 1.4 : open };
+        });
+        EZN.k = 0;
+      };
+      const eznLeaves = (k) => {
+        if (!EZN.m || !EZN.base || Math.abs(EZN.k - k) < 1e-4) return;
+        EZN.k = k;
+        const m = new Matrix4();
+        EZN.base.forEach((b, i) => { m.makeRotationY(b.a + b.sg * (b.to - b.open) * k); m.setPosition(b.p); EZN.m.setMatrixAt(i, m); });
+        EZN.m.instanceMatrix.needsUpdate = true;
+        EZN.m.boundingSphere = null; EZN.m.boundingBox = null;   // (the rays and the culling take the open leaves)
       };
       const goldEnv = (D2) => {   // GOLD_FLASK_G ("צלוחית של זהב", Sukkah 4:9 - 56:48): at night the scene has no environment map (55-payis.js), and a
         // metal without one is drawn dark brown - the gold keeps the day's reflections as its own map, and a faint warm glow of its own
@@ -1628,6 +1693,7 @@
         if (fnc(SH.stopDemos)) SH.stopDemos("shiloachDemo");
         const D2 = prime();
         goldEnv(D2);
+        eznRead();   // EZN_GATE_G
         for (const f of [D2.p, D2.t1, D2.t2, D2.t3, D2.t4, D2.t5, D2.t6, D2.w, D2.sg].filter(Boolean)) f.sash.material = (SH.tamid && SH.tamid.belt === "white") ? K.mSashWhite : K.mSashDyed;
         let lg = null;
         try { lg = ctx2.root.getObjectByName("labels"); } catch (_) {}
@@ -1670,7 +1736,7 @@
         "**שער המים** (מידות ב, ו): ״ולמה נקרא שמו שער המים. שבו מכניסין צלוחית של מים של נסוך בחג. רבי אליעזר בן יעקב אומר, ובו המים מפכים, ועתידין להיות יוצאין מתחת מפתן הבית״; וכן בתוספתא (סוכה ג, ג).\n" +
         "**שערי חולדה** (מידות א, ג): ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״.\n" +
         "**השילוח** — תני, רבן שמעון בן גמליאל אומר: ״שילוח היה מוציא מים כאיסר. אמרו: נרחיבנו וירבו מימיו. הרחיבוהו ונתמעטו מימיו. חזרו וגדרוהו וחזר לכמות שהיה״ (ירושלמי סוכה ה, ו).\n" +
-        "**מקום המעין** (ה־117 וה־160): מדרום להר הבית ולמטה ממנו, בצד הדרומי־מערבי. **מלבי״ם** (דברי הימים ב לג, יד): ״מערבה לגיחון. הוא בצד מערב ירושלים״; ושם (לב, ל): ״מערבה. כי ברכת השלח היה בצד מערב כמבואר בנחמיה ג׳״; ולפי ההקפה שלו בנחמיה ג — ברכת השלח בחלק הדרומי של הצד המערבי, קרוב לפינה הדרומית־מערבית. **מעשי למלך** (בית הבחירה ה, א), בשם מהרי״ט: ״ואלו שערי חולדה שבדרום הנם בגובה העיר היורד לשילוח, ומשם מכניסין צלוחית של מים בחג דרך שער המים״.\n**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. המעין מצויר בתחתית העמק, כמאתיים אמה מדרום לחומה ומתחת לפינה הדרומית־מערבית של הר הבית, והשביל אליו יורד מרגלי הכבש שלפני שער חולדה המערבי דרומה ודרומה־מערבה — המקום המדויק והדרך הן בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): בפתיחה שני כהנים תוקעים בשער ניקנור, יורדים במעלות ותוקעים בהליכה עד שער עזרת נשים, ושם הופכים פניהם למערב (סוכה ה, ד); משם עוברים את הר הבית ויוצאים בשער חולדה המערבי שבדרום (ה־180; ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״ — מדות א, ג), ובלפידים יורדים בכבש שלפניו, ומרגליו דרומה ודרומה־מערבה אל מעין השילוח; ובחזרה, עם עלות השחר, ״עולה בכבש הדרומי של הר הבית״ ונכנסת בשער חולדה אל שער המים. במשנה נאמר רק ״הגיעו לשער המים״ — הדרך בחירת מודל; ההליכה מחוץ להר הבית מואצת. **הכבש הדרומי**: לפני שני שערי חולדה כבש משופע (במקום מדרגות) — כפי שהוא נקרא בחלמיש; שיפועו ורוחבו — בחירת מודל. **המעין**: המים נובעים בקול גדול ויוצאים בפתח קטן שבתחתית צוק — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו) — ונופלים במפל לבן צר ישר אל בריכה טבעית שבין סלעים אפורים, ובה קצף ומערבולת (ה־122); הכהן עומד על שפת הבריכה, לצד המפל, וממלא מתחת לזרם. כמו בחלמיש (עמ׳ 13): צוק כתום־חום, הרבה שרכים ושיחים, אור הלפידים ואור ירח כחלחל. צורת הצוק, רוחב המפל, הבריכה והצמחייה — בחירת מודל. **התוקעים בשעת הניסוך** — לשון המשנה (תמיד ז, ג): ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו״; **הרמב״ם** (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״. במודל — על שלחן החלבים. **הסגן והסודר** — ״הסגן עומד על הקרן והסודרים בידו״, ״והניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם). בהדגמה כמאה איש הולכים בתהלוכה, והמון עומד משני צדי הדרך — בהר הבית ומחוצה לו. צורת הבריכה והסלע, הפתח, צורת הכד, מספר ההולכים והעומדים והלפידים, ומקומות התוקעים והסגן — בחירות מודל. בהדגמה הכהן ממלא את הכד מתחת לזרם, ומנסך ביד מורמת לתוך הספל המערבי, וכהן היין בספל המזרחי. ההליכה בהדגמה מואצת, בדרך אחת רציפה.";
+        "**מקום המעין** (ה־117 וה־160): מדרום להר הבית ולמטה ממנו, בצד הדרומי־מערבי. **מלבי״ם** (דברי הימים ב לג, יד): ״מערבה לגיחון. הוא בצד מערב ירושלים״; ושם (לב, ל): ״מערבה. כי ברכת השלח היה בצד מערב כמבואר בנחמיה ג׳״; ולפי ההקפה שלו בנחמיה ג — ברכת השלח בחלק הדרומי של הצד המערבי, קרוב לפינה הדרומית־מערבית. **מעשי למלך** (בית הבחירה ה, א), בשם מהרי״ט: ״ואלו שערי חולדה שבדרום הנם בגובה העיר היורד לשילוח, ומשם מכניסין צלוחית של מים בחג דרך שער המים״.\n**במודל:** אין מקור שמתאר את הדרך מהמקדש אל השילוח ואת מרחקו. המעין מצויר בתחתית העמק, כמאתיים אמה מדרום לחומה ומתחת לפינה הדרומית־מערבית של הר הבית, והשביל אליו יורד מרגלי הכבש שלפני שער חולדה המערבי דרומה ודרומה־מערבה — המקום המדויק והדרך הן בחירת מודל. הדרך בהדגמה — כפי שהיא מצוירת בחלמיש (״אלחנן וחיים שמחים בירושלים״, עמ׳ 10–14): בפתיחה שני כהנים תוקעים בשער ניקנור, יורדים במעלות ותוקעים בהליכה עד שער עזרת נשים, ושם הופכים פניהם למערב (סוכה ה, ד); משם עוברים את הר הבית ויוצאים בשער חולדה המערבי שבדרום (ה־180; ״שני שערי חלדה מן הדרום, משמשין כניסה ויציאה״ — מדות א, ג), ובלפידים יורדים בכבש שלפניו, ומרגליו דרומה ודרומה־מערבה אל מעין השילוח; ובחזרה, עם עלות השחר, ״עולה בכבש הדרומי של הר הבית״ ונכנסת בשער חולדה אל שער המים. במשנה נאמר רק ״הגיעו לשער המים״ — הדרך בחירת מודל; ההליכה מחוץ להר הבית מואצת. **הכבש הדרומי**: לפני שני שערי חולדה כבש משופע (במקום מדרגות) — כפי שהוא נקרא בחלמיש; שיפועו ורוחבו — בחירת מודל. **המעין**: המים נובעים בקול גדול ויוצאים בפתח קטן שבתחתית צוק — ״שילוח היה מוציא מים כאיסר״ (ירושלמי סוכה ה, ו) — ונופלים במפל לבן צר ישר אל בריכה טבעית שבין סלעים אפורים, ובה קצף ומערבולת (ה־122); הכהן עומד על שפת הבריכה, לצד המפל, וממלא מתחת לזרם. כמו בחלמיש (עמ׳ 13): צוק כתום־חום, הרבה שרכים ושיחים, אור הלפידים ואור ירח כחלחל. צורת הצוק, רוחב המפל, הבריכה והצמחייה — בחירת מודל. **התוקעים בשעת הניסוך** — לשון המשנה (תמיד ז, ג): ״ושני כהנים עומדים על שלחן החלבים ושתי חצוצרות של כסף בידם, תקעו והריעו ותקעו״; **הרמב״ם** (כלי המקדש ז, ו): ״וכן תוקעין שלש למלוי המים שמנסכין בחג, ואין תוקעים למלוי המים בשבת. ותוקעין שלש על גבי המזבח בשעה שמנסכין המים״. במודל — על שלחן החלבים. **הסגן והסודר** — ״הסגן עומד על הקרן והסודרים בידו״, ״והניף הסגן בסודרין, והקיש בן ארזא בצלצל, ודברו הלוים בשיר״ (תמיד ז, ג); ״וסודרין — הם דגלים״ (פירוש המשניות לרמב״ם). בהדגמה כמאה איש הולכים בתהלוכה, והמון עומד משני צדי הדרך — בהר הבית ומחוצה לו. צורת הבריכה והסלע, הפתח, צורת הכד, מספר ההולכים והעומדים והלפידים, ומקומות התוקעים והסגן — בחירות מודל. בהדגמה הכהן ממלא את הכד מתחת לזרם, ומנסך ביד מורמת לתוך הספל המערבי, וכהן היין בספל המזרחי. בהדגמה דרך אחת רציפה: בשערים, במעיין ובעזרה — בקצב הליכה; בקטעים הארוכים ההליכה מואצת, והמבט עולה למעלה.";
       const REFS = [["סוכה ד, ט", { book: 56, index: 48 }], ["סוכה ד, י", { book: 56, index: 49 }], ["מידות ב, ו", "Mishnah_Middot.2.6"], ["מידות א, ג", "Mishnah_Middot.1.3"], ["רמב״ם כלי המקדש ז, ו", { book: 338, index: 107 }], ["תמיד ז, ג", { book: 88, index: 40 }], ["סוכה ה, ד", { book: 56, index: 54 }], ["מלבי״ם דברי הימים ב לג, יד — בצד מערב", { book: 3364, index: 971 }], ["מלבי״ם דברי הימים ב לב, ל — ברכת השלח", { book: 3364, index: 958 }], ["מלבי״ם נחמיה ג — צד המערב", { book: 3370, index: 81 }], ["מלבי״ם נחמיה ג — מי השלוח", { book: 3370, index: 85 }], ["מעשי למלך בית הבחירה ה, א — בשם מהרי״ט", { book: 4304, index: 349 }]];   // SHILOACH_WEST_B2
       SH.shiloach = { demo: start, stop, get T() { return T; }, info: INFO, refs: REFS, POOL: SHL.POOL, kit: () => SHL.kit,
         // (tests and pictures: the scene at second t, and the eye there)
