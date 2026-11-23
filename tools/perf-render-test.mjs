@@ -208,6 +208,50 @@ check('nearest ties keep input order even when broad-phase box order differs', (
   assert.equal(compare(cast, ray, [b, a])[0].object, b);
 });
 
+check('indoor orbit prefilter preserves camera corrections and never raycasts unmarked terrain', () => {
+  const source = read('shared/90-entry.js');
+  const section = source.slice(source.indexOf('  var cam_in = '), source.indexOf('  function cam_decideSoon('));
+  assert(section.includes('ent_intersect(ray, walls)'), 'room-surface prefilter is required');
+  const terrain = new Mesh(new PlaneGeometry(5200, 5200, 220, 220).rotateX(-Math.PI / 2), mat);
+  terrain.geometry.attributes.position.setY(0, 100); // a distant hill makes the global terrain box overlap indoor rays
+  terrain.geometry.attributes.position.needsUpdate = true;
+  const wall = new Mesh(new BoxGeometry(0.5, 12, 20), mat); wall.position.set(5, 6, 0); wall.userData.tmPass = true;
+  const ignored = new Mesh(new BoxGeometry(0.5, 12, 20), mat); ignored.position.set(2, 6, 0);
+  const lowFloor = new Mesh(new BoxGeometry(20, 0.2, 20), mat); lowFloor.position.y = 4.5; lowFloor.userData.tmPass = true;
+  const objects = [terrain, ignored, lowFloor, wall];
+  for (const o of objects) o.updateMatrixWorld();
+  const make = (filtered) => new Function('T', 'objects',
+    'const {Vector3,Raycaster,Box3}=T;const camera={},cam={},ent_sec={on:false};const ent_solids=()=>objects,ent_intersect=T.makeRaycast();\n' +
+    (filtered ? section : section.replace('ent_intersect(ray, walls)', 'ent_intersect(ray, ent_solids(false))')) +
+    '\nreturn {keep:cam_keepInside,section:ent_sec};')(T, objects);
+  const before = make(false), after = make(true), q = new Vector3(0, 5, 0), p = new Vector3(10, 10, 0);
+  const compareGuard = (eye = p, target = q) => {
+    const a = eye.clone(), b = eye.clone(); before.keep(a, target); after.keep(b, target);
+    assert.deepEqual(a.toArray(), b.toArray()); return b;
+  };
+  assert(compareGuard().x < 5, 'wall must constrain the eye');
+  for (const axis of ['x', 'y', 'z']) {
+    before.section.on = after.section.on = true;
+    before.section.axis = after.section.axis = axis;
+    before.section.v = after.section.v = q[axis];
+    compareGuard();
+  }
+  before.section.on = after.section.on = false;
+  wall.userData.tmPass = false; compareGuard();
+  wall.userData.tmPass = true; ignored.userData.tmPass = true; compareGuard();
+  ignored.userData.tmPass = false;
+  wall.material = mat.clone(); wall.material.transparent = true; wall.material.opacity = 0.1; compareGuard();
+  compareGuard(new Vector3(5.5, 6, 0), new Vector3(4.5, 6, 0));
+  compareGuard(new Vector3(0, 5.1, 0), q);
+  const original = Mesh.prototype._computeIntersections;
+  let terrainTests = 0;
+  Mesh.prototype._computeIntersections = function (...args) { if (this === terrain) terrainTests++; return original.apply(this, args); };
+  try {
+    before.keep(p.clone(), q); assert.equal(terrainTests, 1);
+    after.keep(p.clone(), q); assert.equal(terrainTests, 1, 'filtered guard must not intersect the terrain');
+  } finally { Mesh.prototype._computeIntersections = original; }
+});
+
 check('bridge lets loading finish, holds hidden ready frames and resumes once', () => {
   let ready = false, mutation, next = 0;
   const events = new Map(), callbacks = [], parent = { postMessage() {} };

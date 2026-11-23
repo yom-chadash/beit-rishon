@@ -405,7 +405,7 @@
     cam_decide();
     return true;
   }
-  var cam_in = { dir: new Vector3() };
+  var cam_in = { dir: new Vector3(), walls: [] };
   function cam_keepInside(p, q) {
     try {
       const v = cam_in.dir.copy(p).sub(q), L = v.length();
@@ -416,7 +416,13 @@
       ray.set(q, v);
       ray.near = 0.3;
       ray.far = L;
-      for (const h of ent_intersect(ray, ent_solids(false))) {
+      // Only the surfaces marked by the wall-fade system can constrain this orbit.
+      // Filtering after raycasting made every indoor frame intersect the terrain and
+      // all props too, although their hits were immediately ignored below.
+      const walls = cam_in.walls;
+      walls.length = 0;
+      for (const o of ent_solids(false)) if (o.userData.tmPass) walls.push(o);
+      for (const h of ent_intersect(ray, walls)) {
         if (!h.object.userData.tmPass || h.distance >= L - 0.05) continue;
         // KEEP_CUT_211 (the place of the vessels' chamber, 15.11.2026: the eye looks down into a cell whose ceiling the section has cut
         // away - and the ceiling, which no one sees, still drew the eye down to a span from the shelves): a surface that stands in the
