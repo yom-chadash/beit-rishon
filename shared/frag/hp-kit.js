@@ -313,13 +313,173 @@
         // the low relief of puffy (MITZ_RELIEF_A2) - Rashi's ("כמין כפת כובע") fainter, the Ramban's ("כפל על כפל") a little deeper
         const RT = 0, BT = 0;
         const rashiG = puffy(6, 0.016, 1.3);
-        const rambanG = puffy(6, 0.026, 2.1);
         // a point on its face (th 0 before, along +z), out along it by off - for the cords
         const at = (j, th, off) => { const q = PROF[Math.max(0, Math.min(PROF.length - 1, j))], r = q.x + off; return [r * Math.sin(th), q.y + off * 0.3, r * EZ * Math.cos(th)]; };
-        // the same, with the lower edge's drop at the sides and behind (as puffy) - for the Ramban's cord round behind
-        const atD = (j, th, off) => { const jj = Math.max(0, Math.min(PROF.length - 1, j)), q = PROF[jj], vv = ARC[jj] / LEN, cf = Math.max(0, Math.cos(th)), dw = (1 - cf * cf) * smo(0.32, 0, vv), r = q.x + off; return [r * Math.sin(th) * (1 + 0.06 * dw), q.y - SIDE_DROP * dw, r * EZ * Math.cos(th) * (1 + 0.04 * dw)]; };
-        MZC = { mat, rashiG, rambanG, at, atD, nP: PROF.length, dome0: DOME0, out: 0.0035 + RT * 1.8 };
+        MZC = { mat, rashiG, at, nP: PROF.length, dome0: DOME0, out: 0.0035 + RT * 1.8 };
         return MZC;
+      };
+      // MITZ_RAMBAN_M (the user, 23.11.2026: "צריך להיות שמשתפל לאחריו כמין מטפחת"; the coordinator's specification, approved, with
+      // the user's decision 203): THE MITZNEFET BY THE RAMBAN - a wreath of turns round the head, not a cap. The Ramban on Shemot 28:37
+      // (3627:713): "והנה היה צונף המצנפת סביב הראש, לא על המצח כלל, אלא למעלה במקום שער... היה מניח גם מקצת שער ראשו כנגד פניו לתפלין.
+      // והיתה הצניפה בגבה שבראש כנגד המוח האמצעי, והוא מכסה בה כל הראש כנגד אחוריו... בשפוע... אבל מאזן לאזן מאחוריו כנגד כל הערף
+      // תהיה המצנפת, והפתיל שנקשר בו יבא עליה"; on 28:31 (3627:709) "מגלגל ומחזיר מגלגל ומחזיר סביב ראשו כפל על כפל" (sixteen amot -
+      // about fifteen turns round this head); on 29:7 (3627:721) "אבל הנכון שהיתה הצניפה סביב סביב ואמצע הראש מגלה ועליו יצק השמן".
+      // So: its lower edge before on the hair above the tefillin (not on the forehead), along the band of hair over the tzitz to the
+      // tzitz's end, over the ear and down right behind it, and behind down to the nape - all the back of the head covered, from ear to
+      // ear; high before (3 fingers, about 1.2 thick), lying on the back of the head behind as a kerchief (about half a finger thick);
+      // the turns seen as 8 soft steps (each two turns), close before and spread behind - sloping back; the middle of the head open,
+      // its hair seen (an opening of about 5 fingers by 3.5); the band's end tucked in (none hanging). Under it, between it and the
+      // head, the hair and the head's tefillin strap with its knot at the nape (the user's rule for the kippah, 03:47: the strap round
+      // the head under the rim): its inner face laid outside all of them - the kit's hair (tm_face hairR), the cap of hair over the
+      // crown (GHC, below) and the strap and knot themselves (tef: the head's tefillin geometry) - with a margin. Built in the head's
+      // own frame (its middle at 0; the high priest's head is the kit's, 1.3 times - 1 unit = 1.3 amot = 31.2 fingers), once for a kit.
+      // The wreath's height, the turns' thickness and the opening's size - model choices.
+      let RBW = null;
+      const rbWreath = (tefGeo) => {
+        if (RBW) return RBW;
+        const MZ = mzCloth(), FACE = typeof tm_face === "function" ? tm_face() : null;
+        const smo = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+        const DEG = Math.PI / 180, FG = 1 / 31.2;   // a degree; a finger in head units
+        // the kit's skull (as face.js headR) - if there is no tm_face (never in the plugin)
+        const skull = (th, y) => { const yn = clamp(y / 0.16, -0.999, 0.999), j = yn < 0 ? yn * yn : 0; return Math.sqrt(1 - yn * yn) / Math.hypot(Math.sin(th) / (0.128 * (1 - 0.2 * j)), Math.cos(th) / (0.14 * (1 - 0.1 * j))); };
+        const hairR = FACE && FACE.hairR ? (th, y) => FACE.hairR(th, y) : (th, y) => skull(th, y) + 0.016;
+        // GHC (figure(), below): the cap of hair over the crown - an ellipsoid (0.166, 0.246, 0.194) about the head's middle, down to 1 radian
+        // from its top (GY0); in head units. Below its rim the cloth comes softly in to the hair (no step in its inner face)
+        const GA = [0.166 / 1.3, 0.246 / 1.3, 0.194 / 1.3], GY0 = GA[1] * Math.cos(1.0);
+        const ell = (th, y) => Math.sqrt(Math.max(0, 1 - (y / GA[1]) * (y / GA[1]))) / Math.hypot(Math.sin(th) / GA[0], Math.cos(th) / GA[2]);
+        const base = (th, y) => { const h = hairR(th, y); if (y < GY0 - 0.04) return h; return Math.max(h, lerp(h, ell(th, Math.max(y, GY0)), smo(GY0 - 0.04, GY0, y))); };
+        // the head's tefillin under the cloth - the strap behind the ears, its knot and its two ends at the nape (before, from 50 degrees
+        // on each side, the box, its passage and the strap's start are not under it: the lower edge is above them) - binned round (2
+        // degrees) and up (0.004): the farthest out in each; spread to the neighbouring bins and smoothed (the cloth goes softly over them)
+        const NB = 180, Y0 = -0.24, DY = 0.004, NY = 125, TB = new Float32Array(NB * NY);
+        const tefTop = new Float32Array(NB).fill(-1);   // the tefillin's highest point in each bin (the lower edge above it before)
+        if (tefGeo) {
+          const P = tefGeo.attributes.position;
+          for (let i = 0; i < P.count; i++) {
+            const x = P.getX(i), y = P.getY(i), z = P.getZ(i), r = Math.hypot(x, z), th = Math.atan2(x, z);
+            const b = Math.min(NB - 1, Math.floor(((th + Math.PI) / (2 * Math.PI)) * NB)), j = Math.floor((y - Y0) / DY);
+            if (y > tefTop[b]) tefTop[b] = y;
+            if (Math.abs(th) < 50 * DEG) continue;
+            if (j >= 0 && j < NY) TB[b * NY + j] = Math.max(TB[b * NY + j], r);
+          }
+          const pass = (f) => { const T2 = new Float32Array(NB * NY); for (let b = 0; b < NB; b++) for (let j = 0; j < NY; j++) T2[b * NY + j] = f(b, j); TB.set(T2); };
+          const at = (b, j) => (j < 0 || j >= NY ? 0 : TB[((b + NB) % NB) * NY + j]);
+          pass((b, j) => { let m = 0; for (let db = -3; db <= 3; db++) for (let dj = -2; dj <= 2; dj++) m = Math.max(m, at(b + db, j + dj)); return m; });
+          pass((b, j) => { let m = 0; for (let db = -3; db <= 3; db++) for (let dj = -2; dj <= 2; dj++) m += at(b + db, j + dj); return m / 35; });
+        }
+        const tefR = (th, y) => {
+          const fb = ((th + Math.PI) / (2 * Math.PI)) * NB - 0.5, fj = (y - Y0) / DY - 0.5, b0 = Math.floor(fb), j0 = Math.floor(fj), u = fb - b0, v = fj - j0;
+          const g = (b, j) => (j < 0 || j >= NY ? 0 : TB[((b + NB) % NB) * NY + j]);
+          return (g(b0, j0) * (1 - u) + g(b0 + 1, j0) * u) * (1 - v) + (g(b0, j0 + 1) * (1 - u) + g(b0 + 1, j0 + 1) * u) * v;
+        };
+        const M = 0.004;   // the margin between the cloth and what is under it (0.12 finger)
+        const rIn = (th, y) => Math.max(base(th, y), tefR(th, y)) + M;
+        const topAt = (th) => { const f = ((th + Math.PI) / (2 * Math.PI)) * NB - 0.5, b0 = Math.floor(f), u = f - b0; let m = -1; for (let d = -2; d <= 3; d++) m = Math.max(m, tefTop[(b0 + d + NB) % NB]); return m; };
+        // a smooth curve through keys [degrees, value] (symmetric: |th|)
+        const curve = (K) => (th) => {
+          const d = Math.abs(th) / DEG;
+          for (let i = 1; i < K.length; i++) if (d <= K[i][0]) { const u = smo(0, 1, (d - K[i - 1][0]) / (K[i][0] - K[i - 1][0])); return lerp(K[i - 1][1], K[i][1], u); }
+          return K[K.length - 1][1];
+        };
+        // the lower edge: before at 4.4 fingers over the eyes' height - and in any case 0.005 above the tefillin there (the box's top, its
+        // passage, the strap going out of it); over the band of hair above the tzitz (its top at 0.091) to its end at 90 degrees; down
+        // behind it, over the ear (its top at 0.0285, between 86 and 103 degrees) at 1.3 - 1.6 fingers; right behind it down; behind at
+        // the nape's hair edge (-0.106)
+        let front = 4.4 * FG;
+        for (let b = 0; b < NB; b++) { const th = ((b + 0.5) / NB) * 2 * Math.PI - Math.PI; if (Math.abs(th) < 32 * DEG) front = Math.max(front, tefTop[b] + 0.005); }   // (level before: no bump over the box's corners)
+        const yLk = curve([[0, front], [30, front], [60, 0.124], [80, 0.112], [90, 0.104], [96, 0.052], [102, 0.042], [110, 0.004], [120, -0.048], [140, -0.092], [160, -0.104], [180, -0.106]]);
+        const yL = (th) => { const a = Math.abs(th); let y = yLk(th) + 0.0015 * Math.sin(5 * th + 0.7) * smo(100 * DEG, 130 * DEG, a); if (a < 91 * DEG) y = Math.max(y, topAt(th) + 0.005); return y; };
+        // the rim (the opening's edge): seen from above an ellipse about the head's axis - 0.058 to each side, 0.07 before and 0.09 behind
+        // it (about 3.6 by 5 fingers); its height on a plane sloping down to the back - before 3 fingers over the lower edge, behind where
+        // it lies on the hair. So the band stands before (leaning back about 16 degrees) and at the sides (leaning in), and lies on the
+        // back of the head behind - its top edge going down evenly from before to behind, as its turns
+        const OX = 0.058, OZ = 0.08, OC = -0.01;
+        const rOpen = (th) => { const s = Math.sin(th), c = Math.cos(th), A = (s * s) / (OX * OX) + (c * c) / (OZ * OZ), B = (2 * c * -OC) / (OZ * OZ), C = (OC * OC) / (OZ * OZ) - 1; return (-B + Math.sqrt(B * B - 4 * A * C)) / (2 * A); };
+        const ySolve = (th, ro) => { let a = -0.06, b = 0.2; for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (rIn(th, m) > ro) a = m; else b = m; } return (a + b) / 2; };
+        const smax = (a, b, k) => Math.max(a, b) + Math.pow(Math.max(0, k - Math.abs(a - b)), 2) / (4 * k);
+        const ZB = -rOpen(Math.PI), YB = ySolve(Math.PI, rOpen(Math.PI)), TAN = (front + 3 * FG - YB) / (rOpen(0) - ZB);   // the rim behind; the plane's slope
+        const yPlane = (th) => YB + TAN * (rOpen(th) * Math.cos(th) - ZB);
+        // the thickness: 1.2 fingers before, half a finger behind
+        const thick = (th) => lerp(0.5 * FG, 1.2 * FG, Math.pow(0.5 + 0.5 * Math.cos(th), 1.4));
+        // the section at th: the inner face (against the head) from the lower edge (s 0) to the rim (s 1) - the straight way from edge to
+        // rim, but never nearer the axis than the head and what is on it (rIn); its hollows filled (the cloth is stretched over them),
+        // and its normal in the (r, y) plane - out along it the outer face
+        const NF = 56, SEC = new Map();
+        const section = (th) => {
+          const key = Math.round(th * 1e5);
+          let S = SEC.get(key);
+          if (S) return S;
+          const yl = yL(th), rl = rIn(th, yl);
+          const rr = rOpen(th), ys = ySolve(th, rr), yu = smax(ys, yPlane(th), 0.004), ru = Math.max(rr, rIn(th, yu));
+          const R0 = new Float32Array(NF + 1), Y = new Float32Array(NF + 1), R = new Float32Array(NF + 1);
+          for (let i = 0; i <= NF; i++) { const s = i / NF; Y[i] = lerp(yl, yu, s); R0[i] = smax(rIn(th, Y[i]), lerp(rl, ru, s), 0.006); R[i] = R0[i]; }
+          for (let it = 0; it < 40; it++) for (let i = 1; i < NF; i++) R[i] = Math.max(R0[i], 0.5 * (R[i - 1] + R[i + 1]));
+          const NR = new Float32Array(NF + 1), NY2 = new Float32Array(NF + 1);
+          for (let i = 0; i <= NF; i++) { const i0 = Math.max(0, i - 1), i1 = Math.min(NF, i + 1); let nr = Y[i1] - Y[i0], ny = -(R[i1] - R[i0]); const l = Math.hypot(nr, ny) || 1; NR[i] = nr / l; NY2[i] = ny / l; }
+          S = { yl, yu, rl, ru, Y, R, NR, NY: NY2 };
+          SEC.set(key, S);
+          return S;
+        };
+        const prof = (s) => Math.sqrt(Math.max(0, 1 - Math.pow(Math.abs(2 * s - 1), 8)));   // its two edges rolled round (the lowest turn's fold, the top one's)
+        const STEPS = 8;
+        // the steps: a layer's lower edge a little raised, sinking under the next at its top; a spiral (one step to a turn round), a little
+        // uneven - as a long band wound (8 steps, each two of the about fifteen turns); fade: none at the edges
+        const step = (th, s) => {
+          const ph = STEPS * s - th / (2 * Math.PI) + 0.07 * Math.sin(2 * th + 1.9) + 0.035 * Math.sin(3 * th + 4.2), f = ph - Math.floor(ph);
+          return { f, h: f < 0.22 ? smo(0, 0.22, f) : 1 - 0.85 * smo(0.22, 1, f), fade: smo(0, 0.07, s) * smo(1, 0.9, s) };
+        };
+        const outerOff = (th, s) => {
+          const st = step(th, s), A = lerp(0.0034, 0.0036, 0.5 + 0.5 * Math.cos(th));   // (the steps soft - not tyres: MITZ_RELIEF_A2)
+          return thick(th) * prof(s) + A * (st.h - 0.5) * st.fade * prof(s) + 0.0007 * Math.sin(7 * th + 5 * s + 0.6 * Math.sin(3 * th)) * st.fade;
+        };
+        // a point of the section at s, out along its normal by off
+        const pt = (th, s, off) => {
+          const S = section(th), f = clamp(s, 0, 1) * NF, i = Math.min(NF - 1, Math.floor(f)), u = f - i;
+          const r = lerp(S.R[i], S.R[i + 1], u), y = lerp(S.Y[i], S.Y[i + 1], u);
+          let nr = lerp(S.NR[i], S.NR[i + 1], u), ny = lerp(S.NY[i], S.NY[i + 1], u); const l = Math.hypot(nr, ny) || 1; nr /= l; ny /= l;
+          const rr = r + nr * off;
+          return [rr * Math.sin(th), y + ny * off, rr * Math.cos(th)];
+        };
+        // the mesh: rings round (NT) of the closed section - out along the outer face from the lower edge to the rim, and back along the
+        // inner face (NO points each way)
+        const NT = 160, NO = 72, NI = 22, TILE = 0.085 / 1.3, pos = [], col = [], uv = [], idx = [], ring = NO + NI + 1;
+        for (let i = 0; i <= NT; i++) {
+          const th = (i / NT) * 2 * Math.PI - Math.PI;
+          let arc = 0, prev = null;
+          for (let k = 0; k < ring; k++) {
+            let p, ao;
+            if (k <= NO) {
+              const s = k / NO, st = step(th, s);
+              p = pt(th, s, outerOff(th, s));
+              ao = (1 - 0.2 * smo(0.5, 1, st.f) * st.fade) * (1 - 0.12 * smo(0.12, 0, s)) * (1 - 0.08 * smo(0.85, 1, s));
+            } else {
+              const s = 1 - (k - NO) / (NI + 1);
+              p = pt(th, s, 0);
+              ao = 0.86;
+            }
+            if (prev) arc += Math.hypot(p[0] - prev[0], p[1] - prev[1], p[2] - prev[2]);
+            prev = p;
+            pos.push(p[0], p[1], p[2]);
+            col.push(ao, ao * 0.993, ao * 0.975);
+            uv.push(((th + Math.PI) * 0.13) / TILE, arc / TILE);
+          }
+        }
+        for (let i = 0; i < NT; i++) for (let k = 0; k < ring; k++) {
+          const a = i * ring + k, b = a + ring, a1 = i * ring + ((k + 1) % ring), b1 = a1 + ring;
+          idx.push(a, b, a1, a1, b, b1);
+        }
+        const g = new BufferGeometry();
+        g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+        g.setAttribute("color", new Float32BufferAttribute(col, 3));
+        g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+        g.setIndex(idx);
+        g.computeVertexNormals();
+        const nn = g.attributes.normal, w3 = new Vector3();   // the seam behind (th -pi and pi) one normal
+        for (let k = 0; k < ring; k++) { const a = k, b = NT * ring + k; w3.set(nn.getX(a) + nn.getX(b), nn.getY(a) + nn.getY(b), nn.getZ(a) + nn.getZ(b)).normalize(); nn.setXYZ(a, w3.x, w3.y, w3.z); nn.setXYZ(b, w3.x, w3.y, w3.z); }
+        // a point on the outer face at th, at the height y (its s from the inner face), out by off - for the cord
+        const onCloth = (th, y, off) => { const S = section(th), s = clamp((y - S.yl) / (S.yu - S.yl), 0, 1); return pt(th, s, outerOff(th, s) + off); };
+        RBW = { geo: g, onCloth, section, rIn, front, yL };
+        return RBW;
       };
       const buildHP = (f) => {
         const L = f.lean, out = {}, TILE = 0.42;   // TILE: amot to the ephod's texture
@@ -523,8 +683,8 @@
         hd.rotation.x = TILT;
         L.add(hd);
         const rashi = new Group(), rashiW = new Group(), ramban = new Group();
-        hd.add(rashi, ramban);
-        L.add(rashiW);
+        hd.add(rashi);
+        L.add(rashiW, ramban);   // MITZ_RAMBAN_M: the Ramban's in the figure's own frame (not tilted with Rashi's)
         // the cords of techelet. MITZ_CORD_A2 (the user, 22.11.2026: "פתיל התכלת עבה מדי" - a thick twined rope; Rashi on Shemot 39:31,
         // 3692:2684 "פתיל תכלת זה חוטין הן, לקשרו בהן במצנפת"): thin, as a thick thread or a lace - much thinner than the tefillin's
         // strap - smooth, no plies (until now twined, 0.0115; before that 0.0075)
@@ -544,24 +704,23 @@
         const MI = [3, 12, 24, 36, 48, 60, 72, N0 - 6];
         const mer = [...MI.map((j) => MZ.at(j, 0, OFF)), MZ.at(N0, 0, OFF), ...MI.slice().reverse().map((j) => MZ.at(j, Math.PI, OFF))];
         tubeIn(rashi, [loc(0, 3.116, 0.197 + HZ), loc(0, 3.15, 0.18 + HZ), ...mer, loc(0, 3.03, HZ - 0.222), loc(NP[0], NP[1], NP[2])], MZ_CORD, M.techelet);   // MITZ_HAIR_A2: up over the hair, behind the tefillin
-        // the Ramban: "כעין צניף שצונף בו את ראשו, מגלגל ומחזיר... כפל על כפל"; the Rambam's one cord, tied behind over it, on the roll
-        // (MITZ_REF_A2: the same outline as Rashi's, its turns plain)
-        // MITZ_RAMBAN_A2 (the user's answer to question 175 - a: the Ramban on Shemot 28:37, 3627:713 "והיתה הצניפה בגבה שבראש כנגד המוח
-        // האמצעי, והוא מכסה בה כל הראש כנגד אחוריו", "בשפוע", "אבל מאזן לאזן מאחוריו כנגד כל העורף תהיה המצנפת, והפתיל שנקשר בו יבא
-        // עליה"): the same outline sloped back (RB_TILT about the head's middle, and down RB_Y) - over the back of the head, its front over
-        // the band of hair; the one cord from the tzitz's ends round behind, tied on it there. How far back - a model choice
-        const RB_TILT = -0.27, RB_Y = -0.05, rbM = new Group();
-        rbM.rotation.x = RB_TILT;
-        rbM.position.y = RB_Y;
-        ramban.add(rbM);
-        mk(MZ.rambanG, MZ.mat, 0, 0, 0, rbM);
-        const rb = (x, y, z) => { const c = Math.cos(RB_TILT), sn = Math.sin(RB_TILT); return [x, y * c - z * sn + RB_Y, y * sn + z * c]; };   // a point of rbM in hd
-        const RO = MZ.out + 0.006;   // on the wound layers
-        // round behind on its lower part, a little over its edge (MZ.atD - with the edge's drop there), in hd through rbM's turn
-        const RJ = 17, rbA = (th) => { const q = MZ.atD(RJ, th, RO + 0.004); return rb(q[0], q[1], q[2]); };
-        tubeIn(ramban, [loc(0.174, 3.079, HZ), ...[1.25, 1.75, 2.25, 2.7, Math.PI, -2.7, -2.25, -1.75, -1.25].map(rbA), loc(-0.174, 3.079, HZ)], MZ_CORD, M.techelet);
-        const KN = rbA(Math.PI);
-        mk(new SphereGeometry(MZ_KNOT, 8, 6), M.techelet, KN[0], KN[1], KN[2], ramban);
+        // the Ramban: the wreath (MITZ_RAMBAN_M, rbWreath above) on the head - in the head's frame (its middle at (0, 3.0, HZ), 1.3 times;
+        // f.tef: the head's tefillin, that it be laid over them); and the one cord of techelet, as his words (28:37, 3627:713) "והפתיל
+        // שנקשר בו יבא עליה... והיה הפתיל על המצנפת לאחורי אזניו כנגד הערף" (and the Rambam, Klei HaMikdash 9:2 "כדי שיהיה נקשר בפתיל
+        // כנגד העורף"): from each end of the tzitz (before the ear) back over the ear, onto the cloth right behind it, and along it down
+        // to the knot on it over the nape (over the tefillin's knot, which is under it). Its way - a model choice
+        const rw = new Group();
+        rw.position.set(0, 3.0, HZ);
+        rw.scale.setScalar(1.3);
+        ramban.add(rw);
+        const RW = rbWreath(f.tef && f.tef.geometry ? f.tef.geometry : null);
+        mk(RW.geo, MZ.mat, 0, 0, 0, rw);
+        const CR = MZ_CORD / 1.3, KR = MZ_KNOT / 1.3, onC = (deg, y, o = 0) => RW.onCloth((deg * Math.PI) / 180, y, CR + 0.0006 + o);
+        const WAY = [[98, 0.056], [105, 0.045], [115, 0.03], [130, 0.005], [145, -0.02], [160, -0.04], [172, -0.052]];
+        const tzEnd = (sd) => [sd * 0.1338, (3.079 - 3.0) / 1.3, -0.002];   // the tzitz's end (its middle; buildHP's tzitz: 0.174 from the axis, before the ear)
+        tubeIn(rw, [tzEnd(1), ...WAY.map(([d, y]) => onC(d, y)), onC(180, -0.056), ...WAY.slice().reverse().map(([d, y]) => onC(-d, y)), tzEnd(-1)], CR, M.techelet);
+        const KN = onC(180, -0.056, KR * 0.55);
+        mk(new SphereGeometry(KR, 8, 6), M.techelet, KN[0], KN[1], KN[2], rw);
         out.mitz = { rashi: [rashi, rashiW], ramban: [ramban] };
         return out;
       };
@@ -629,9 +788,9 @@
         hs.position.set(0, 3.0 - 1.3 * K.HEAD_Y, HZ);
         lean.add(hs);
         const hh = K.headOn(hs, K.HEAD_Y, K.mBeards[0], 1);
-        if (K.tefOn) K.tefOn(hh, { TY: 0.098 });   // TEFILLIN_A2: "שערו היה נראה בין ציץ למצנפת, ששם מניחין תפילין" (Zevachim 19a); MITZ_HAIR_A2: on the band of hair over the tzitz (the box a little lower than the priests')
+        const tef = K.tefOn ? K.tefOn(hh, { TY: 0.098 }) : null;   // TEFILLIN_A2: "שערו היה נראה בין ציץ למצנפת, ששם מניחין תפילין" (Zevachim 19a); MITZ_HAIR_A2: on the band of hair over the tzitz (the box a little lower than the priests')
         const [L, R] = arms(lean, AH, true), [fl, fr] = feet(g);
-        const garb = buildHP({ lean });
+        const garb = buildHP({ lean, tef });
         return { g, lean, A: AH, L, R, fl, fr, body, belt, garb };
       };
       // a priest in his four - "כתנת ומכנסים ומצנפת ואבנט" (the Rambam, Klei HaMikdash 8:1): the kit's kutonet, avnet and migba'at;
