@@ -1369,6 +1369,8 @@
     }
     // SOUNDS_300: what a stopped demonstration sounds stops with it (a one-shot already playing - the gate, the wheel - is cut, not left to end)
     if (any && typeof ctx.shared.sfxCut === "function") ctx.shared.sfxCut();
+    // DEMO_CLOCK_N1: the speed chosen for a demonstration is for it alone - with none left running the clock goes back to the real time
+    if (tm_clock.rate !== 1) { let live = false; for (const d of ctx.shared.demoStops) { try { if (d.running()) live = true; } catch (_) {} } if (!live) tm_clock.setRate(1); }
   };
   // DEMO_PAUSE_207 (the user, 12.11.2026 20:34: "יש סיכוי להשהות"): a demonstration may pause - its entry has pause(), resume(), paused()
   // (and restart()). A press on the model pauses it; the bar below resumes it from the same second, starts it again or ends it.
@@ -1377,7 +1379,8 @@
     const tourOn = () => { const T = ctx.shared.tour; try { const s = T && fnc(T.state) ? T.state() : null; return !!(s && s.running); } catch (_) { return false; } };
     const live = () => ctx.shared.demoStops.filter((d) => { try { return fnc(d.pause) && d.running(); } catch (_) { return false; } });
     const isPaused = (d) => { try { return fnc(d.paused) && !!d.paused(); } catch (_) { return false; } };
-    let el = null, bP = null, bR = null, bS = null, shown = false;
+    let el = null, bP = null, bR = null, bS = null, bBk = null, bFw = null, bSl = null, bFa = null, lR = null, shown = false;
+    const RATES = [0.5, 0.75, 1, 1.5, 2, 3], E = { v: 0, last: 0 };   // DEMO_BAR_N1: the speeds; E - the time a demonstration with no walk has run (the clock's ms), to keep "אחורה" from going before its start
     const press = (fn) => (e) => { e.preventDefault(); e.stopPropagation(); try { fn(); } catch (_) {} paint(); };
     const mk = (txt, title, fn) => {
       const b = document.createElement("button");
@@ -1385,7 +1388,7 @@
       b.textContent = txt;
       b.title = title;
       Object.assign(b.style, { background: "rgba(201,168,76,0.16)", color: "#f4ead0", border: "1px solid rgba(201,168,76,0.55)", borderRadius: "8px",
-        padding: "3px 12px", font: "14px/1.4 var(--font-main, inherit)", cursor: "pointer" });
+        padding: "3px 12px", font: "0.875rem/1.4 var(--font-main, inherit)", cursor: "pointer" });
       b.addEventListener("click", press(fn));
       return b;
     };
@@ -1395,12 +1398,25 @@
       el.setAttribute("dir", "rtl");
       // DPAUSE_LEFT_300 (the user, 18.11.2026: "הכפתור הזה לא במרכז, הוא מסתיר ראות, שים אותו בצד שמאל מעל המצפן"): no longer in the
       // middle of the picture - at the left, over the compass and the nav row (place(), below)
-      Object.assign(el.style, { position: "fixed", left: "12px", bottom: "110px", display: "none", gap: "8px",
+      // DEMO_BAR_N1: two rows - the pause, the start again and the stop; below them the stages and the speed
+      Object.assign(el.style, { position: "fixed", left: "12px", bottom: "110px", display: "none", flexDirection: "column", gap: "6px",
         background: "rgba(14,17,28,0.82)", padding: "6px 10px", borderRadius: "10px", zIndex: "41", boxShadow: "0 2px 10px rgba(0,0,0,0.35)" });
+      const row1 = document.createElement("div"), row2 = document.createElement("div");
+      for (const r of [row1, row2]) Object.assign(r.style, { display: "flex", gap: "8px", alignItems: "center", justifyContent: "center", flexWrap: "wrap" });
       bP = mk("⏸ השהה", "השהיית ההדגמה. אפשר להסתובב ולהסתכל, ואחר כך להמשיך מאותו רגע.", () => (live().some((d) => !isPaused(d)) ? ctx.shared.demoPause() : ctx.shared.demoResume()));
       bR = mk("⟲ מההתחלה", "מתחיל את ההדגמה מההתחלה.", () => { for (const d of live()) if (fnc(d.restart)) { d.restart(); return; } });
       bS = mk("■ עצור", "עוצר את ההדגמה.", () => ctx.shared.stopDemos());
-      el.appendChild(bP); el.appendChild(bR); el.appendChild(bS);
+      row1.appendChild(bP); row1.appendChild(bR); row1.appendChild(bS);
+      // DEMO_BAR_N1 (the user, 23.11.2026: "בכל המצגות: קדימה ואחורה, מהר יותר ולאט יותר"): a stage forward or back (a stage is a caption of the walk; a
+      // demonstration with no walk - a step of 6 written seconds), and the speed of every clock of the demonstration (tm_clock, 00-lib.js)
+      bBk = mk("אחורה", "חוזר להתחלת השלב שבו ההדגמה נמצאת (שלב הוא כיתוב אחד); ואם השלב התחיל זה עתה - לשלב שלפניו.", () => skip(-1));
+      bFw = mk("קדימה", "מדלג אל השלב הבא של ההדגמה.", () => skip(1));
+      bSl = mk("לאט יותר", "מאט את ההדגמה. הקולות שנקבעו מראש נפסקים.", () => speed(-1));
+      bFa = mk("מהר יותר", "מאיץ את ההדגמה. הקולות שנקבעו מראש נפסקים.", () => speed(1));
+      lR = document.createElement("span");
+      Object.assign(lR.style, { color: "#f4ead0", font: "0.8125rem/1.4 var(--font-main, inherit)", minWidth: "4.5em", textAlign: "center" });
+      row2.appendChild(bBk); row2.appendChild(bFw); row2.appendChild(bSl); row2.appendChild(lR); row2.appendChild(bFa);
+      el.appendChild(row1); el.appendChild(row2);
       document.body.appendChild(el);
     };
     // DPAUSE_LEFT_300: over whichever is higher, the compass or the nav row, 8 px above it; its left edge with the compass's
@@ -1437,9 +1453,42 @@
             }
           }
         }
+        // DEMO_BAR_N1: the bar is two rows now - it does not lie on the demonstration's caption (#tm-walk-cap and its like), also with no card open
+        {
+          const w = el.offsetWidth || 260, h = el.offsetHeight || 40;
+          for (const cp of document.body.children) {
+            if (!/-cap$/.test(cp.id || "") || !seen(cp)) continue;
+            const q = cp.getBoundingClientRect(), t = window.innerHeight - bottom - h, bt = window.innerHeight - bottom;
+            if (q.width > 0 && q.left < left + w && left < q.right && q.top < bt && t < q.bottom) bottom = Math.round(window.innerHeight - q.top + 8);
+          }
+        }
         el.style.left = left + "px";
         el.style.bottom = bottom + "px";
       } catch (_) {}
+    };
+    // DEMO_BAR_N1: a stage forward or back. With a walk (most of the demonstrations: its captions are its stages) - to the start of the next
+    // stage or of this one; without - 6 written seconds (the demonstration clock's ms: 6 x demoSlow x 1000), and "אחורה" near the start - from the start.
+    // The demonstration runs on from there (one paused is resumed: the eye is to show the stage). The clock of the plugin jumps, and with it every
+    // clock of the demonstration (its own and the walk's); the sounds timed ahead are cut.
+    const STEP_MS = () => 6 * (ctx.shared.demoSlow || 1.5) * 1000;
+    const skip = (dir) => {
+      const W = ctx.shared.walk;
+      let ms = null;
+      if (W && W.on && fnc(W.stageMs)) ms = W.stageMs(dir);
+      else if (dir > 0) ms = STEP_MS();
+      else if (E.v > STEP_MS() + 500) ms = -STEP_MS();
+      else { for (const d of live()) if (fnc(d.restart)) { d.restart(); E.v = 0; return; } return; }
+      if (ms == null) return;
+      ctx.shared.demoResume();
+      tm_clock.jump(ms);
+      E.v = Math.max(0, E.v + ms);
+      if (typeof ctx.shared.sfxCut === "function") ctx.shared.sfxCut();
+    };
+    const speed = (dir) => {
+      const i = RATES.indexOf(tm_clock.rate), j = Math.max(0, Math.min(RATES.length - 1, (i < 0 ? RATES.indexOf(1) : i) + dir));
+      if (j === i) return;
+      tm_clock.setRate(RATES[j]);
+      if (typeof ctx.shared.sfxCut === "function") ctx.shared.sfxCut();
     };
     const paint = () => {
       const L = tourOn() ? [] : live();
@@ -1447,9 +1496,16 @@
       if (on && !el) build();
       if (!el) return;
       if (on !== shown) { el.style.display = on ? "flex" : "none"; shown = on; }
-      if (!on) return;
+      if (!on) { E.v = 0; E.last = 0; if (tm_clock.rate !== 1 && !tourOn()) tm_clock.setRate(1); return; }   // DEMO_CLOCK_N1: no demonstration - the real time
       place();   // DPAUSE_LEFT_300
       const any = L.some((d) => !isPaused(d));
+      // DEMO_BAR_N1: the speed's label, the buttons at the ends of the speeds
+      const rt = tm_clock.rate, ri = RATES.indexOf(rt);
+      const rl = "מהירות ×" + (rt === 0.75 ? "¾" : rt === 0.5 ? "½" : String(rt));
+      if (lR && lR.textContent !== rl) lR.textContent = rl;
+      if (bSl) bSl.disabled = ri === 0;
+      if (bFa) bFa.disabled = ri === RATES.length - 1;
+      { const nw = tm_clock.now(); if (any && E.last) E.v += Math.max(0, nw - E.last); E.last = nw; }
       const t = any ? "⏸ השהה" : "▶ המשך";
       if (bP.textContent !== t) bP.textContent = t;
       bP.title = any ? "השהיית ההדגמה. אפשר להסתובב ולהסתכל, ואחר כך להמשיך מאותו רגע." : "ממשיך את ההדגמה מהרגע שבו נעצרה.";

@@ -1545,6 +1545,9 @@
         let cap = "";
         for (const [ct, txt] of S.caps) if (t >= ct) cap = txt;
         caption(cap);
+        // DEMO_SKIP_N1: the walk's time went back (the bar's "אחורה"): the events after the new second are to come again
+        if (S.lastT != null && t < S.lastT - 1e-6) S.events = S.evAll.filter((ev) => ev[0] > t);
+        S.lastT = t;
         while (S.events.length && t >= S.events[0][0]) { const ev = S.events.shift(); try { ev[1](); } catch (_) {} if (!S) return; }
         if (t >= S.keys[S.keys.length - 1][0] + 0.4) stop();
       });
@@ -1575,6 +1578,20 @@
           S = { t0: performance.now(), onEnd, soft, keys: K,
             caps: (caps || []).map(([t, txt]) => [wp(t + LEAD), txt]),
             events: (events || []).map(([t, fn]) => [wp(t + LEAD), fn]).sort((a, b) => a[0] - b[0]) };
+          S.evAll = S.events.slice();
+        },
+        // DEMO_SKIP_N1 (the user, 23.11.2026: "קדימה / אחורה" in every demonstration): the milliseconds (of the demonstration clock) to the start of the
+        // next stage - a stage is a caption - or, backward, to the start of this one (to the one before it when this one began less than 1.5 written
+        // seconds ago, and to the very start before the first); null where there is none
+        stageMs(dir) {
+          if (!S) return null;
+          const t = ((S.pausedAt != null ? S.pausedAt : performance.now()) - S.t0) / 1000 / SLOW, end = S.keys[S.keys.length - 1][0] + 0.4;
+          const T = [0].concat(S.caps.map((c) => c[0])).filter((x) => x < end - 0.3).sort((a, b) => a - b);
+          if (dir > 0) { const nx = T.find((x) => x > t + 0.05); return nx == null ? null : (nx - t) * 1000 * SLOW; }
+          if (t < 0.15) return null;
+          let pv = 0;
+          for (const x of T) if (x < t - 1.5) pv = x;
+          return (pv - t) * 1000 * SLOW;
         },
         // the walk's written second now, from its own start (after the lead-in)
         now() { if (!S) return -1; const t = ((S.pausedAt != null ? S.pausedAt : performance.now()) - S.t0) / 1000 / SLOW; return (S.soft ? pw(S.soft.ts, S.soft.src, t) : t) - LEAD; },   // DEMO_PAUSE_207: stands while paused
@@ -3313,7 +3330,7 @@
     // Yose's and R. Meir's one parochet) - into the heichal, as the outer one's. The height, the reach and the corner's form - model choices.
     const PAR_Y = FL + houseRise(-45), PAR_H = 39.9 - houseRise(-45), PAR_BEND = 2;
     const PAR_W = 18.78, PAR_T = 0.12, PAR_FOLD = 5, PAR_LIFT = 0.16;   // liner to liner (a hair into each); the cloth; the corner's legs; the fold off the face
-    const TYT_OUT = 3, TYT_AMAH = 0.35, TYT_Y = 5.5;   // TYT_218: the corner's reach east into the heichal, into the amah; the hook's height
+    const TYT_OUT = 1, TYT_AMAH = 0.35, TYT_Y = 5.5;   // TYT_218: the corner's reach east into the heichal, into the amah; the hook's height (HP_FOLD_N1: the reach was 3 - it filled the way along the wall, and the High Priest walked through it; now 1)
     const parFaces = [];   // [mesh, side]: the woven faces, dressed by the figures below; side +1 toward the heichal (east), -1 toward the devir
     const parRolls = [];   // the folds' round edges (Rashi), in the plain weave below
     const parShape = (pts) => { const s = new Shape(); pts.forEach(([a, b], i) => (i ? s.lineTo(a, b) : s.moveTo(a, b))); return s; };
@@ -4087,7 +4104,7 @@
         const E = (x, h) => F + houseRise(Math.min(-4.5, x)) + h;
         const NORTH = Math.PI, WESTY = -Math.PI / 2;
         const PATH = {
-          two: [[0, -7.5, 1.2], [3, -17, 2.8], [7.5, -33.5, 3.3], [8.87, -37.17, 4.25], [9.34, -38.37, 4.79], [9.82, -39.34, 5.69], [10.65, -40.75, 7.52], [10.93, -41.3, 8.05], [11.2, -41.98, 8.38], [11.48, -42.73, 8.5], [11.75, -43.5, 8.5], [11.92, -43.96, 8.43], [12.09, -44.38, 8.21], [12.26, -44.71, 7.88], [12.43, -44.93, 7.46], [12.6, -45, 7], [17.36, -45, -7.62], [17.7, -45.5, -7.96], [18.17, -46.35, -7.96], [18.32, -46.6, -7.86], [18.48, -46.77, -7.61], [18.62, -46.8, -7.36], [19.6, -46.8, -5.6]],
+          two: [[0, -7.5, 1.2], [3, -17, 2.8], [7.5, -33.5, 3.3], [8.87, -37.17, 4.25], [9.34, -38.37, 4.79], [9.82, -39.34, 5.69], [10.65, -40.75, 7.52], [10.93, -41.3, 8.05], [11.2, -41.98, 8.38], [11.48, -42.73, 8.7], [11.75, -43.5, 8.7], [11.92, -43.96, 8.7], [12.09, -44.38, 8.65], [12.26, -44.71, 8.5], [12.43, -44.93, 8.15], [12.6, -45, 7], [17.36, -45, -8.45], [17.7, -45.5, -8.7], [18.17, -46.35, -8.7], [18.32, -46.6, -8.4], [18.48, -46.77, -7.9], [18.62, -46.8, -7.36], [19.6, -46.8, -5.6]],
           one: [[0, -7.5, -1.2], [1.6, -11.5, -6.6], [2.05, -12.6, -7.5], [2.52, -14, -8.05], [3.09, -15.8, -8.35], [3.95, -18.5, -8.55], [4.89, -21.5, -8.66], [11.84, -43.6, -8.66], [12.2, -44.75, -8.66], [12.38, -45.05, -8.58], [12.57, -45.27, -8.36], [12.75, -45.35, -8.06], [15.8, -45.35, -0.5], [16.6, -46.95, 0]],
           // MEIR_218 (the user, 17.11.2026: "יש להוסיף גם את דעת ר' מאיר"; "רבי מאיר הוא עוד שיטה"): "רבי מאיר אומר: בין שלחן למזבח" (Yoma
           // 51b; 107:1318); "לעולם כרבי יוסי סבירא ליה" (1320) - the opening in the north, one parochet (the Meiri, 2199:464; the Tosafot Yom
@@ -4099,7 +4116,7 @@
           // east row's southern head (its east face -34; ALTAR_EAST_305), west along the heads (z 0), between the west row (-42) and the
           // parochet north to the opening, and in as before (2.75 s later). The same way clears the tables east-west. Until 2.0.13 he
           // went west along z -3.4 and turned north past Moses' table (one table)
-          meir: [[0, -7.5, -1.2], [2.6, -15.5, -1.3], [7.0, -29.5, -1.3], [8.0, -32.3, -1.35], [8.45, -33.2, -1.25], [8.85, -33.4, -0.6], [9.25, -33.4, 0.55], [9.7, -34.5, 0.7], [11.5, -40.0, 0.7], [12.4, -42.7, 0.5], [12.8, -43.3, -0.3], [14.9, -43.6, -6.9], [15.4, -44.2, -8.2], [15.6, -44.5, -8.3], [15.82, -44.86, -8.27], [16.04, -45.18, -8.05], [16.24, -45.32, -7.76], [16.35, -45.35, -7.57], [19.35, -45.35, -0.5], [20.15, -46.95, 0]]
+          meir: [[0, -7.5, -1.2], [2.6, -15.5, -1.3], [7.0, -29.5, -1.3], [8.0, -32.3, -1.35], [8.45, -33.2, -1.25], [8.85, -33.4, -0.6], [9.25, -33.4, 0.55], [9.7, -34.5, 0.7], [11.5, -40.0, 0.7], [12.4, -42.7, 0.5], [12.8, -43.3, -0.3], [14.9, -43.25, -6.9], [15.3, -43.3, -8.0], [15.55, -43.55, -8.6], [15.82, -44.3, -8.7], [16.04, -44.9, -8.6], [16.2, -45.2, -8.3], [16.35, -45.35, -7.57], [19.35, -45.35, -0.5], [20.15, -46.95, 0]]
         };
         const BACK = {
           two: [[26.0, -45.0, 3.0, NORTH], [28.0, -45.0, 8.5, NORTH], [28.8, -43.6, 8.5, WESTY], [30.0, -41.6, 7.0, WESTY]],

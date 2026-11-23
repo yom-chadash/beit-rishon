@@ -1,4 +1,17 @@
 var OtzariaPlugin = (() => {
+  // DEMO_CLOCK_N1 (the user, 23.11.2026: in every demonstration, buttons "קדימה", "אחורה", "מהר יותר", "לאט יותר"): the demonstrations keep their time by
+  // performance.now() (every one of them: "(performance.now() - t0) / 1000 / SLOW", and its pause: pausedAt, t0 += the pause). Inside this plugin
+  // performance is the same object with a clock that can go faster or slower and jump: tm_clock. At rate 1 and no jump it returns the browser's
+  // clock as it is, to the last bit. The bar of the demonstrations (90-entry.js) is the only one that moves it, and puts it back (rate 1) when no
+  // demonstration runs - the presentation and everything else keep the real time.
+  var tm_clock = (() => {
+    const P = window.performance;
+    let V0 = 0, R0 = 0, r = 1;
+    return { now: () => V0 + (P.now() - R0) * r, get rate() { return r; },
+      setRate(k) { const R = P.now(); V0 = V0 + (R - R0) * r; R0 = R; r = k; },
+      jump(ms) { V0 += ms; } };
+  })();
+  var performance = new Proxy(window.performance, { get(t, k) { if (k === "now") return tm_clock.now; const v = t[k]; return typeof v === "function" ? v.bind(t) : v; } });
   var __defProp = Object.defineProperty;
   var __export = (target, all) => {
     for (var name in all)

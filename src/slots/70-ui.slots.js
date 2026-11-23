@@ -1807,8 +1807,9 @@
             ]);
           }
           // ----- the thirteen shofarot (item 22; decision 112 ג: a switch of its own, off by default; 59-parallels.js, section 11) -----
+          // SHOFAROT_VIEW_N1: the eye stood at x 97, east of the court's east wall (the row is at x 80, its mouths to the west), and saw the wall (faded, as a glass) in front of the boxes; now from the west, inside the court, at the row's middle: the wall behind them
           parAt("הר הבית והחצרות", "ארון יהוידע שבשער — לתקלין עתיקין", [
-            { t: "שלושה עשר השופרות — מתג", tg: [80, 7, -23], cam: [97, 15, -6], feature: parFeat("shofarot13"),
+            { t: "שלושה עשר השופרות — מתג", tg: [80, 7, -23], cam: [58, 16, -23], feature: parFeat("shofarot13"),
               info: "**המשנה** (שקלים ו, ה): ״שלשה עשר שופרות היו במקדש, וכתוב עליהם, תקלין חדתין ותקלין עתיקין, קנין וגוזלי עולה, עצים, ולבונה, זהב לכפרת. ששה, לנדבה״; ושם (ו, ו): ״זה מדרש דרש יהוידע כהן גדול״.\n" +
                 "**המלבי״ם** (מלכים ב יב, י), על ״ויקח יהוידע הכהן ארון אחד״: ״ומבואר בפ\"ו דשקלים כי י\"ג שופרות היו במקדש וכתוב עליהם תקלין חדתין תקלין עתיקין קינים וגוזלים עולות עצים ולבונה וכו', וי\"ל שרמז זה במ\"ש ארון אחד... (וי\"ל שרמז שכל הי\"ג ארונות נקראו בשם ארון אחד שאחד מספרו י\"ג...)״.\n" +
                 "**הירושלמי** (שקלים ו, ד): ״אמר רבי יוחנן. על ידי שהנדבה מרובה ריבו לה שופרות הרבה. [שנאמר] וככלותם הביאו לפני המלך ויהוידע וגו׳״.\n" +

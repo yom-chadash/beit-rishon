@@ -693,6 +693,9 @@
         let cap = "";
         for (const [ct, txt] of S.caps) if (t >= ct) cap = txt;
         caption(cap);
+        // DEMO_SKIP_N1: the walk's time went back (the bar's "אחורה"): the events after the new second are to come again
+        if (S.lastT != null && t < S.lastT - 1e-6) S.events = S.evAll.filter((ev) => ev[0] > t);
+        S.lastT = t;
         while (S.events.length && t >= S.events[0][0]) { const ev = S.events.shift(); try { ev[1](); } catch (_) {} if (!S) return; }
         if (t >= S.keys[S.keys.length - 1][0] + 0.4) stop();
       });
@@ -716,6 +719,20 @@
             keys: [k0].concat(keys.map(([t, eye, look]) => [t + LEAD, eye, look])),
             caps: (caps || []).map(([t, txt]) => [t + LEAD, txt]),
             events: (events || []).map(([t, fn]) => [t + LEAD, fn]).sort((a, b) => a[0] - b[0]) };
+          S.evAll = S.events.slice();
+        },
+        // DEMO_SKIP_N1 (the user, 23.11.2026: "קדימה / אחורה" in every demonstration): the milliseconds (of the demonstration clock) to the start of the
+        // next stage - a stage is a caption - or, backward, to the start of this one (to the one before it when this one began less than 1.5 written
+        // seconds ago, and to the very start before the first); null where there is none
+        stageMs(dir) {
+          if (!S) return null;
+          const t = ((S.pausedAt != null ? S.pausedAt : performance.now()) - S.t0) / 1000 / SLOW, end = S.keys[S.keys.length - 1][0] + 0.4;
+          const T = [0].concat(S.caps.map((c) => c[0])).filter((x) => x < end - 0.3).sort((a, b) => a - b);
+          if (dir > 0) { const nx = T.find((x) => x > t + 0.05); return nx == null ? null : (nx - t) * 1000 * SLOW; }
+          if (t < 0.15) return null;
+          let pv = 0;
+          for (const x of T) if (x < t - 1.5) pv = x;
+          return (pv - t) * 1000 * SLOW;
         },
         stop,
         get on() { return !!S; },
