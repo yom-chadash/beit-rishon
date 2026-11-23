@@ -1,5 +1,5 @@
 // Exact picking regression + CPU benchmark on the actual model builders and vendored Three.js.
-// node tools/perf-ray-model.mjs [--house rishon|sheni] [--out report.json] [--source-root /path/to/repo]
+// node tools/perf-ray-model.mjs [--house rishon|sheni] [--room-only] [--out report.json] [--source-root /path/to/repo]
 // Uses perf-geometry.mjs's Canvas/DOM/audio stubs: this measures CPU ray queries, not startup, GPU or FPS.
 // The reference is the SAME current scene, with the terrain's _computeIntersections replaced temporarily
 // by Three.js's original method. No triangle, material, transform, visibility or scene configuration changes.
@@ -22,12 +22,67 @@ const report = {
   reference: 'Same scene and queries, with the coarse terrain using Three.js original _computeIntersections.',
   environment: { node: process.version, platform: process.platform, arch: process.arch, cpu: os.cpus()[0]?.model },
   workload: { warmQueriesPerBatch: 40, timingBatches: 3, statistic: 'median milliseconds per batch', randomSeed: 729418 },
-  states: []
+  states: [], rooms: []
 };
 const encode = (hits) => JSON.stringify(hits.map(h => ({
   object: h.object.id, instance: h.instanceId, face: h.faceIndex, distance: h.distance,
   point: h.point.toArray(), uv: h.uv?.toArray(), normal: h.normal?.toArray()
 })));
+
+function roomBenchmark(ctx, house, entry, querySection) {
+  ctx.scene.updateMatrixWorld(true);
+  // Execute the real UI selector: this is what marks the walls eligible for the indoor camera guard.
+  const ui = houseText(house, '70-ui.js', root);
+  const begin = ui.indexOf('        const HIDE_GROUPS ='), end = ui.indexOf('        const hideShown =');
+  assert(begin >= 0 && end > begin, 'UI room-surface selector not found');
+  const walls = new Function('ctx', 'performance', 'const {Box3,Vector3}=ctx.THREE;const OCCL=ctx.H.OCC,UI_FADE_OPACITY=.35;\n' +
+    ui.slice(begin, end) + '\nreturn hideList();')(ctx, performance);
+  const guardStart = entry.indexOf('  var cam_in = '), guardEnd = entry.indexOf('  function cam_decideSoon(');
+  assert(guardStart >= 0 && guardEnd > guardStart, 'indoor camera guard not found');
+  const guard = entry.slice(guardStart, guardEnd);
+  assert(guard.includes('ent_intersect(ray, walls)'), 'room-surface prefilter is required');
+  // Reference: identical guard and exact AABB raycast, with its previous all-solids candidate list.
+  const reference = guard.replace(/const walls = cam_in\.walls;\s*walls\.length = 0;\s*for \(const o of ent_solids\(false\)\) if \(o\.userData\.tmPass\) walls\.push\(o\);/, '')
+    .replace('ent_intersect(ray, walls)', 'ent_intersect(ray, ent_solids(false))');
+  const make = (body) => new Function('ctx', 'performance',
+    'const {Box3,Vector3,Mesh,InstancedMesh,Matrix4,Raycaster}=ctx.THREE;const scene=ctx.scene,camera=ctx.camera,cam={},ent_sec={on:false};\n' +
+    querySection + body + '\nreturn {keep:cam_keepInside,section:ent_sec,solids:ent_solids};')(ctx, performance);
+  const before = make(reference), after = make(guard), { Vector3 } = ctx.THREE;
+  const views = Object.entries(ctx.shared.flyPoints || {}).filter(([id, v]) =>
+    /kodesh|menor|shulchan|incense|ulamInside|throne/.test(id) && Array.isArray(v.pos) && Array.isArray(v.target));
+  assert(views.length > 0, 'interior viewpoints not found');
+  let verifiedPoses = 0;
+  for (const [id, v] of views) {
+    for (const axis of [null, 'x', 'y', 'z']) {
+      for (const api of [before, after]) Object.assign(api.section, {
+        on: axis !== null, axis, v: axis === null ? 0 : v.target[{ x: 0, y: 1, z: 2 }[axis]]
+      });
+      const p0 = new Vector3(...v.pos), p1 = p0.clone(), q = new Vector3(...v.target);
+      before.keep(p0, q); after.keep(p1, q);
+      assert.equal(JSON.stringify(p0.toArray()), JSON.stringify(p1.toArray()), `${house}/${id}/${axis}: indoor camera correction changed`);
+      verifiedPoses++;
+    }
+  }
+  before.section.on = after.section.on = false;
+  // Time only close views within the production orbit threshold; distant hall views use look mode.
+  // The guard is conditional on being indoors/keeping the eye inside; this is its CPU cost, not full-frame time.
+  const near = Number(/var CAM_NEAR = ([\d.]+)/.exec(entry)?.[1]);
+  assert(Number.isFinite(near), 'camera orbit threshold not found');
+  const timed = views.filter(([, v]) => new Vector3(...v.pos).distanceTo(new Vector3(...v.target)) <= near);
+  assert(timed.length > 0, 'close orbit viewpoints not found');
+  const run = (api) => {
+    const t0 = performance.now();
+    for (let n = 0; n < 5; n++) for (const [, v] of timed) api.keep(new Vector3(...v.pos), new Vector3(...v.target));
+    return performance.now() - t0;
+  };
+  run(before); run(after);
+  const a = [], b = [];
+  for (let i = 0; i < 3; i++) { a.push(run(before)); b.push(run(after)); }
+  a.sort((x, y) => x - y); b.sort((x, y) => x - y);
+  return { house, verifiedPoses, markedRoomSurfaces: walls.length, solids: before.solids(false).length,
+    timedViews: timed.map(([id]) => id), queriesPerBatch: timed.length * 5, baselineMs: a[1], candidateMs: b[1],
+    note: 'Median of three batches; actual close viewpoints, unchanged camera result. Includes current terrain acceleration in both paths.' };
+}
 
 for (const house of selected ? [selected] : ['rishon', 'sheni']) {
   const ctx = await buildModel(house, root), { Vector3, Raycaster, Mesh } = ctx.THREE;
@@ -51,7 +106,7 @@ for (const house of selected ? [selected] : ['rishon', 'sheni']) {
     for (const t of terrains) t.mesh._computeIntersections = on ? t.accelerated : Mesh.prototype._computeIntersections;
   };
   try {
-    for (const state of house === 'rishon' ? ['coarse', 'refined-valleys'] : ['coarse']) {
+    for (const state of argv.includes('--room-only') ? [] : house === 'rishon' ? ['coarse', 'refined-valleys'] : ['coarse']) {
       if (state === 'refined-valleys') {
         // Run only the real deferred valley builder, without advancing demonstrations or unrelated animations.
         const refine = ctx.animated.find(fn => String(fn).includes('rowOf(ST.j++)'));
@@ -131,6 +186,9 @@ for (const house of selected ? [selected] : ['rishon', 'sheni']) {
       report.states.push(result);
       console.log(JSON.stringify(result, null, 2));
     }
+    const room = roomBenchmark(ctx, house, source, section);
+    report.rooms.push(room);
+    console.log(JSON.stringify(room, null, 2));
   } finally { setTerrain(true); }
 }
 
@@ -140,3 +198,4 @@ if (option('--out')) {
   fs.writeFileSync(out, JSON.stringify(report, null, 2) + '\n');
 }
 console.log(`Verified ${report.states.reduce((sum, s) => sum + s.verifiedRays, 0)} actual-model ray cases; exact results unchanged.`);
+console.log(`Verified ${report.rooms.reduce((sum, s) => sum + s.verifiedPoses, 0)} actual indoor camera corrections; positions unchanged.`);
