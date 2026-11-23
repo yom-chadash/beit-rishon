@@ -3518,14 +3518,27 @@
         const BL = basketL(t, H), B0 = H.B0;
         MB.rotation.set(0, 0, 0);
         BR.G.updateMatrixWorld(true);
-        if (t < T.take) { const c0 = d.comps[0].G; c0.updateMatrixWorld(true); MB.visible = c0.visible; MB.position.copy(new Vector3(0.0, 1.55, 0.42).applyMatrix4(c0.matrixWorld)); MB.rotation.y = c0.rotation.y; }
-        else if (t < T.put) { MB.position.copy(BR.G.localToWorld(BL.clone())); MB.rotation.y = b.yaw; MB.visible = BR.G.visible; }
-        else { const [px, pz] = [40.0, 13.15 + dz]; MB.position.set(px, hAt(px, pz, 30), pz); MB.visible = t < T.end + 5; }
-        // the bringer's hands: the right under the rim from T.take (on the shoulder too), the left from the lowering; both let go at T.put
-        const rel = 1 - sm(T.put - 0.05, T.put + 0.5);
+        // BASKET_FLOW_K (fix-k, 23.11.2026 - the coordinator: "הסל 'קופץ'... תעביר את הסל ברצף, בכחצי שנייה עד שנייה, והידיים מלוות אותו"):
+        // the basket never changes hands in one frame - from his fellow's hands to his shoulder it goes in an arc over TKD seconds about
+        // T.take, and from his hands down to its place beside the corner over PTD seconds from T.put, his hands with it as far as they
+        // reach and then letting go. Until now it was in one place in one frame and in the other in the next
+        const TKA = T.take - 0.6, TKB = T.take + 0.15, PTD = 0.9, uT = sm(TKA, TKB), uP = sm(T.put, T.put + PTD);
+        const c0 = d.comps[0].G; c0.updateMatrixWorld(true);
+        const pC = new Vector3(0.0, 1.55, 0.42).applyMatrix4(c0.matrixWorld), pB = BR.G.localToWorld((t < T.put ? BL : basketL(T.put - 0.001, H)).clone());
+        const [px0, pz0] = [40.0, 13.15 + dz], pF = new Vector3(px0, hAt(px0, pz0, 30), pz0);
+        // (at T.take he turns in one frame to his next way - the basket on his shoulder swings round with him in 0.18 s, not in that frame)
+        if (t >= T.take && t < T.take + 0.2) { const dyw = Math.atan2(Math.sin(b.yaw - Math.PI), Math.cos(b.yaw - Math.PI)), yS = Math.PI + dyw * sm(T.take, T.take + 0.18) - b.yaw; pB.sub(BR.G.position).applyAxisAngle(new Vector3(0, 1, 0), yS).add(BR.G.position); }
+        if (t < TKB) { MB.position.lerpVectors(pC, pB, uT); MB.position.y += 0.3 * Math.sin(Math.PI * uT); MB.rotation.y = c0.rotation.y + Math.atan2(Math.sin(b.yaw - c0.rotation.y), Math.cos(b.yaw - c0.rotation.y)) * uT; MB.visible = uT > 0 ? true : c0.visible; }
+        else if (t < T.put) { MB.position.copy(pB); MB.rotation.y = b.yaw; MB.visible = BR.G.visible; }
+        else { MB.position.lerpVectors(pB, pF, uP); MB.rotation.y = b.yaw; MB.visible = t < T.end + 5; }
+        // the bringer's hands: the right to the rim as the basket comes (on the shoulder too), the left from the lowering; both go down
+        // with it at T.put and let go as it passes out of their reach
+        const rel = 1 - sm(T.put + 0.3, T.put + 0.75);
+        const offP = t >= T.put ? BR.G.worldToLocal(MB.position.clone()).sub(basketL(T.put - 0.001, H)) : null;
         for (const sd of [1, -1]) {
-          const s = (sd < 0 ? sm(T.take, T.take + 0.4) : sm(T.wave0 - 0.15, T.wave0 + 0.3)) * rel;
+          const s = (sd < 0 ? sm(TKA + 0.15, TKB) : sm(T.wave0 - 0.15, T.wave0 + 0.3)) * rel;
           const W = (t < T.put ? BL : basketL(T.put - 0.001, H)).clone().add(kV.copy(H.WO[sd]).sub(B0));
+          if (offP) W.add(offP);
           blendArm(BR.arms[sd], s, W, H.qO[sd], POLE_HOLD[sd], H.pO[sd]);
         }
         // the priest: waiting at the corner; to before him for the waving (from 1.6 s before it); back after he sets it down
@@ -3555,6 +3568,9 @@
           if (t >= T.nik + 0.6) { const sx = 90.5 + (i % 2) * 1.6, sz = -2 - i * 1.4; F.G.visible = true; F.G.position.set(sx, hAt(sx, sz, 30), sz); F.G.rotation.y = -Math.PI / 2; return; }
           if (w === W[W.length - 1] || w === W[W.length - 2]) { F.G.visible = false; return; }
           placeF(F, w[0], w[1], w[2], w[3], Math.min(tt, w[2]), w[4], (i % 2 ? 1 : -1) * 1.1, 0);
+          // BASKET_FLOW_K: in the gate the floor's height 1.1 to the side of the way was taken from the gate's own stones (the fellow, and
+          // the basket in his hands, went up 3 amot in a frame, three times) - never higher than the way's own floor beside him
+          if (w[3] === "floor") { const yw = F.G.rotation.y, dxv = (i % 2 ? 1 : -1) * 1.1, cy = hAt(F.G.position.x - Math.cos(yw) * dxv, F.G.position.z + Math.sin(yw) * dxv, 30); if (F.G.position.y > cy + 0.06) F.G.position.y = cy; }
         });
         // OX_B2 / OX_IN_B2: the ox before them all - up the ramp, (unseen) across the mount, through the women's court and the steps, ahead of
         // them; from the Nikanor gate to its place by the rings, where it stands until the end. OX_K: one smooth way (oxPose, above)
