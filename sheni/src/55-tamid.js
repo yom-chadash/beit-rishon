@@ -130,7 +130,7 @@
       moked: () => CAMK.moked()[0].slice(1),   // NIGHT_WATCH_305: the moving eye's first key (MOKED_WIDE_211's eye at its end)
       lot1: (o) => (o === "rambam" ? GZV : [[-18, 50.5, -58.6], [-18, 15, -69]]),
       patrol: () => CAMK.patrol()[0].slice(1),
-      kiyor: () => [[9, 24.5, 63.3], [20.5, 20.6, 56]],   // KIYOR_A2: the wheel at the crane's foot, the laver on its base; KIYOR_VIEW_S2 (the user: "צריך מהכיוון השני, לראות גם את הכיור וגם את המוכני"): from the south-west - the toothed wheel (on the windlass's south side), the well and the laver; until now from the north-west, the wheel behind its posts
+      kiyor: () => CAMK.kiyor()[0].slice(1),   // KIYOR_A2; KIYOR_VIEW_S2: the moving eye's first key (CAMK.kiyor)
       kiyor12: () => [[34.5, 28, 44.5], [22, 17.6, 54.7]],   // KIYOR_A2: the twelve round the laver
       terumah: () => [V3(88, 44, 46), V3(56, 21, 18)],
       tapuach: () => [V3(82, 42, 28), V3(55.5, 25, -3.5)],
@@ -148,7 +148,7 @@
       akedah: () => [[54, 25, -10], [42, 16.5, -25]],
       dam: () => CAMK.dam()[0].slice(1),
       evarim: () => [V3(34, 46, 40), V3(50, 18, 32)],
-      melach: () => [V3(40, 34, 43), V3(48.6, 18.6, 35.6)],   // SALT_STAGE_S2: the ramp's lower half from the west, above (over the ramp's side)
+      melach: () => [V3(37.8, 22.6, 34.9), V3(48.6, 19.2, 35.5)],   // SALT_STAGE_S2: from the west, a little above - the nine in their row on the ramp's lower half, the parts before them
       shema: () => GZV,
       lot34: () => GZV,
       machta: () => [V3(80, 44, 50), V3(52, 22, 20)],
@@ -170,6 +170,12 @@
       // NIGHT_WATCH_305: with Ish Har HaBayit along the north chel, then with Ben Bavi by the west
       // (NIGHT_SIT_305: the sleepers seen beside the one who comes to them - from the west of the gate of the spark, from the south-west
       // behind the house of the kaporet; until the second draft the eye looked over the officer's back)
+      // KIYOR_VIEW_S2 (the user: "צריך מהכיוון השני, לראות גם את הכיור וגם את המוכני"; the coordinator: "הכיור והמוכני גדולים וברורים, מאירים,
+      // ובלי עמוד לפניהם. בזמן הקידוש רואים גם את הכהן המקדש"): from the south, between the well and the court's wall - above, while the
+      // at a man's height, under the exedra's overhang (from above it hides the wheel) and east of the well (the laver comes up beside the
+      // eye, not under it), west of the wall of לשכת המדיחין: the toothed wheel, the well, the laver rising and set on its base, and at the
+      // kiddush the priest at its west spout. Until now from the north-west, the wheel behind its posts
+      kiyor: () => [[0, [26.3, 20.4, 62.8], [20.6, 17.8, 59.4]], [10.5, [26.3, 20.4, 62.8], [20.6, 17.8, 59.4]], [13.6, [26.3, 20.4, 62.8], [20.2, 19.7, 56.5]], [40, [26.3, 20.4, 62.8], [20.2, 19.6, 56.4]]],   // (the well's mouth seen at first, the eye lifted with the laver)
       ihb: () => [[0, [-28, 17, -99], [-42, 1.6, -77.2]], [2.6, [-49, 7.5, -89], [-41.2, 1.5, -76.9]], [6.4, [-49, 7.5, -89], [-41.2, 1.5, -76.9]],
         [11.2, [-80, 6.2, -83], [-71.3, 1.3, -76.7]], [12.0, [-82, 4.6, -80.5], [-71.3, 1.2, -76.6]], [18.6, [-82, 4.6, -80.5], [-71.3, 1.2, -76.6]],
         [19.4, [-79, 3.8, -80.6], [-71.0, 0.8, -76.6]], [25.6, [-79, 3.8, -80.6], [-71.0, 0.8, -76.6]],
@@ -1141,6 +1147,11 @@
           cloakG.add(fl);
           cloakFl.push(fl);
         }
+        // KIYOR_LIGHT_S2 (the coordinator, of the stage "kiyor": "המבט כהה... הכיור והמוכני גדולים וברורים, מאירים"): a soft light over the
+        // laver and the machine while that night stage is shown (N.kiyorLit; no lamp is drawn - a viewing light, a model choice)
+        const kiyorL = new PointLight(0xffe2bc, 0, 26, 1.4);
+        kiyorL.position.set(21.5, 25.5, 62.5);
+        grp.add(kiyorL);
         const cloakL = new PointLight(0xff8a3a, 0, 10, 1.8);
         cloakL.position.set(0, 0.6, 0);
         cloakG.add(cloakL);
@@ -1179,6 +1190,7 @@
             cloakL.intensity = cf > 0.02 ? cf * (5 + 1.2 * Math.sin(tt * 13)) : 0;
             mCloak.color.copy(cloakCol).lerp(charCol, clamp(cf * 1.4, 0, 1) * 0.7);   // the cloth blackens as it burns
             for (const c of cloakCloth) c.visible = !(N.cloakCloth < 0.5);   // CLOAK_S2: the fire alone at the hem of the cloak he wears
+            kiyorL.intensity = N.kiyorLit > 0 ? 34 * N.kiyorLit : 0;   // KIYOR_LIGHT_S2
           }
         };
       })();
@@ -1237,6 +1249,8 @@
         prop("p" + i, o, { p: [0, -0.16, 0.24], r: [0, 0, 0] });
       }
       prop("salt", (() => { const g = new Group(); for (let i = 0; i < 9; i++) g.add(mesh(new SphereGeometry(0.06, 6, 4), MAT.salt, Math.cos(i) * 0.3, 0.06, (i - 4) * 1.2)); return g; })());
+      // SALT_STAGE_S2: each of the nine's pinch of salt, in his right hand while he salts (SC.melach)
+      for (let i = 1; i <= 9; i++) prop("saltH" + i, (() => { const g = new Group(); for (const [x, y, z] of [[0, 0, 0], [0.06, 0.035, 0.02], [-0.05, 0.03, -0.03], [0.01, 0.07, -0.01]]) g.add(mesh(new SphereGeometry(0.05, 6, 4), MAT.salt, x, y, z)); return g; })());
       // MAARACHOT2_211 (stage ב; the user: the arrangements in detail): the limbs and the fats not consumed from the evening - charred, on the
       // old fire until "סונקין אותם לצדדי המזבח" (Tamid 2:1) and "מחזירין אותן למערכה" (2:5); and the kindling lit in the gaps between the
       // new logs - "ורוח היה בין הגזרין, שהיו מציתין את האליתא משם" (2:4). Their number, form and places - model choices
@@ -1536,6 +1550,7 @@
         lanterns: 0, lantA: 0, joltN: 0, joltP: 0, cloakFire: 0, ltorchOut: 0 });   // NIGHT_WATCH_305 //   // NIGHT_COALS_304: night
       N.lamps.fill(1);
       N.cloakCloth = 1;   // CLOAK_S2
+      N.kiyorLit = 0;   // KIYOR_LIGHT_S2
     };
     const snap = () => { for (const id in W.figs) { const s = W.figs[id].st, o = S0[id]; o.vis = s.vis; o.x = s.x; o.z = s.z; o.yaw = s.yaw; } };
     // the script API of one stage at its second `tau` (every call does nothing before its own time)
@@ -2226,6 +2241,9 @@
       });
       a.tag("s5", "האברים", 2, 14);   // SALT_STAGE_S2: the salt in the stage of its own (below; until now put here at 15 s)
     };
+    // KIYOR_LIGHT_S2: the stage "kiyor" (its own script is not touched - the kiddush is agent H's, HANDS_K) lit while it is shown, and
+    // not in the stages after it (they replay it at its end: the light off at its end)
+    { const sk0 = SC.kiyor; if (sk0) SC.kiyor = (a) => { sk0(a); a.set("kiyorLit", 1, 0); a.set("kiyorLit", 0, (DATA.stages.kiyor ? DATA.stages.kiyor.dur : 20) + 0.5); }; }
     // SALT_STAGE_S2: "ומלחום" (Tamid 4:3) - each of the nine, on the ramp east of what he set down, his face to the west: a scoop of salt,
     // then over his part, twice; the grains seen on the parts
     SC.melach = (a) => {
@@ -2236,6 +2254,8 @@
           const t0 = 0.8 + r + i * 0.28;
           a.pose(k, "scoop", t0, t0 + 1.1);
           a.pose(k, "place", t0 + 1.2, t0 + 2.4);
+          a.hold(k, "saltH" + (i + 1), "R", t0 + 0.7);   // the pinch, from the scoop until it is strewn over his part
+          a.gone("saltH" + (i + 1), t0 + 2.2);
         }
       });
       a.put("salt", onRamp(4)[0] + 0.05, null, onRamp(4)[1], 2.2);
