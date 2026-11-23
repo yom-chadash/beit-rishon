@@ -477,9 +477,11 @@
         const r0 = 0.043, r1 = 0.027, r2 = 0.098, a = l.x / r0, b = l.y / r1, c = l.z / r2, k0 = Math.hypot(a, b, c), k1 = Math.hypot(a / r0, b / r1, c / r2);
         return k1 > 1e-9 ? (k0 * (k0 - 1)) / k1 : -r1;
       };
-      const settle = (sd, dist) => {   // move hand sd along its palm's normal until dist (its least) is 0.0006 in (kit units)
+      // (to 0.003 off it in kit units: the arms that the houses then turn to these wrists bring each hand down 0.004 - 0.012 amah more - the
+      // measured hands then lie 0 - 0.009 amah into the foot's surface, touching it)
+      const settle = (sd, dist) => {   // move hand sd along its palm's normal until dist (its least) is 0.003 (kit units)
         const W = wrist[sd].clone().multiplyScalar(1 / FS);
-        for (let it = 0; it < 8; it++) { const m = Math.min(...ptsOf(sd, W).map(dist)); if (Math.abs(m + 0.0006) < 0.0002) break; W.addScaledVector(palmN[sd], m + 0.0006); }
+        for (let it = 0; it < 8; it++) { const m = Math.min(...ptsOf(sd, W).map(dist)); if (Math.abs(m - 0.003) < 0.0002) break; W.addScaledVector(palmN[sd], m - 0.003); }
         wrist[sd] = W.multiplyScalar(FS);
       };
       if (M0.palms) {
