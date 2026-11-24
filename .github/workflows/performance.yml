@@ -28,8 +28,15 @@ jobs:
           node tools/perf-resources-crowd.mjs
           node tools/perf-hq-test.mjs
           node tools/test-lamp-lifecycle.mjs
+          node tools/test-officer-lifecycle.mjs
+          node tools/test-water-lifecycle.mjs
+          node tools/test-payis-label-lifecycle.mjs
+          node tools/test-spring-geometry.mjs
+          node tools/perf-frame-matrices.mjs --out qa/performance/frame-matrices.json
           node tools/perf-geometry.mjs --baseline-ref 695456732c1d93db67268d13b7367cca76783aee --out qa/performance/geometry.json
           node tools/perf-ray-model.mjs --out qa/performance/rays.json
+          node tools/perf-oblique-model.mjs --out qa/performance/oblique-rays.json
+          node tools/perf-ui-rays.mjs --out qa/performance/ui-rays.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -78,6 +85,8 @@ jobs:
         run: |
           node tools/perf-scene.mjs dist-unified/plugin rishon qa/performance
           node tools/perf-scene.mjs dist-unified/plugin sheni qa/performance
+          node tools/perf-environment.mjs --out qa/performance/environment.json
+          node tools/perf-frame-matrices.mjs --browser --out qa/performance/frame-matrices-webgl.json
       - name: Unified plugin regression checks
         run: |
           standalone="$(node -e "console.log('dist-unified/' + require('node:fs').readdirSync('dist-unified').find(f => f.endsWith('.html')))" )"
