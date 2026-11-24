@@ -11,7 +11,8 @@ permissions:
 
 jobs:
   regression:
-    runs-on: ubuntu-latest
+    # Pin the tested OS instead of following the moving ubuntu-latest image.
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +45,7 @@ jobs:
           path: qa/performance/
           retention-days: 14
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 25
     env:
       CHROME: /usr/bin/google-chrome
