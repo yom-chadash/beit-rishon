@@ -1,4 +1,4 @@
-// Actual Shiloach construction, vendored Three.js and the previous published source. Canvas drawing is stubbed:
+// Actual Shiloach construction, vendored Three.js and the upstream baseline. Canvas drawing is stubbed:
 // this checks every expanded geometry/material/transform and animated water state, not rendered pixels or FPS.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { buildModel, snapshot, compare } from './perf-geometry.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const baselineRef = 'f8b9bef4ab312467f1a03367879e88df8422d1ba';
+// Keep the reference reachable from upstream even when this PR is squash-merged.
+const baselineRef = '695456732c1d93db67268d13b7367cca76783aee';
 const read = f => fs.readFileSync(path.join(root, f), 'utf8');
 const original = f => execFileSync('git', ['show', baselineRef + ':' + f], { cwd: root, encoding: 'utf8' });
 const oldSpring = original('shared/frag/shiloach.js');

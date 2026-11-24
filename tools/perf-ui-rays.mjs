@@ -12,7 +12,8 @@ import { buildModel } from './perf-geometry.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
-const baseline = 'f8b9bef4ab312467f1a03367879e88df8422d1ba';
+// Keep the reference reachable from upstream even when this PR is squash-merged.
+const baseline = '695456732c1d93db67268d13b7367cca76783aee';
 const oldUI = execFileSync('git', ['show', baseline + ':shared/70-ui.js'], { cwd: root, encoding: 'utf8' });
 const oldEntry = execFileSync('git', ['show', baseline + ':shared/90-entry.js'], { cwd: root, encoding: 'utf8' });
 const ui = read('shared/70-ui.js');

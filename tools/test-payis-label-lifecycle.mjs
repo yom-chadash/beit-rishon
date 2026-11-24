@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { buildModel } from './perf-geometry.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const baselineRef = 'f8b9bef4ab312467f1a03367879e88df8422d1ba';
+// Keep the reference reachable from upstream even when this PR is squash-merged.
+const baselineRef = '695456732c1d93db67268d13b7367cca76783aee';
 const baselineRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'beit-payis-baseline-'));
 const sprites = ctx => ctx.scene.getObjectByName('payisDemo').children.filter(o => o.isSprite);
 const visible = ctx => JSON.parse(JSON.stringify(sprites(ctx).filter(s => s.visible).map(s => ({

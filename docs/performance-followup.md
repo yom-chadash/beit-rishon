@@ -91,7 +91,9 @@ The old 40% AO/GI render-target estimate applies after visiting internal GI as w
 
 ## Verification status and reproduction
 
-Targeted Node regressions passed during development and independent review. Both final house builds have passed locally. The local Chromium process cannot launch because `socket()` is denied by the environment; no local browser success is claimed. The final integrated follow-up CI run, environment-pixel fixture, matrix-pixel fixture, tracked-bundle comparison and shell/browser checks await publication and CI completion. A final run-specific addendum should record their outcome and tested commit.
+All 15 Node commands from the regression workflow passed sequentially on `f0a843af6174740379c0b4c1559b582775b3aff8`, with unchanged source trees throughout the run. The subsequent test-only maintenance change moves lottery, spring and UI comparison references to the reachable upstream baseline, so squash-merging the PR does not require a fork-only Git object; all three affected checks passed again. Historical measurement snapshots retain their original, explicitly recorded references.
+
+Both final house builds have passed locally. The local Chromium process cannot launch because `socket()` is denied by the environment; no local browser success is claimed. The integrated environment/matrix pixel fixtures, tracked-bundle comparison and shell/browser checks run in GitHub Actions. Their final tested revision and run-specific outcome are recorded in [PR #1](https://github.com/yoniny/beit-rishon/pull/1) and [Issue #2](https://github.com/yoniny/beit-rishon/issues/2), separately from these local results.
 
 [The performance workflow](../.github/workflows/performance.yml) runs Node and browser/build jobs separately and retains reports/screenshots as artifacts. Its commands are the authoritative complete reproduction list. Focused follow-up entry points include:
 
